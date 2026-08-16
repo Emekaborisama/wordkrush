@@ -1,0 +1,30 @@
+# Secrets — never commit. Real values live in .env; template in .env.example
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Expo / build output
+.expo/
+dist/
+web-build/
+ios/
+android/
+*.ipa
+*.apk
+
+# Test / tooling
+coverage/
+*.tsbuildinfo
+
+# Python (validator/)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# OS / editor
+.DS_Store

@@ -1,0 +1,211 @@
+{
+  "category": {
+    "id": "wikipedia-popularity",
+    "name": "Popularity",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to return data. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "Albert Einstein",
+      "term": "Albert Einstein"
+    },
+    {
+      "label": "Avocado",
+      "term": "Avocado"
+    },
+    {
+      "label": "Barack Obama",
+      "term": "Barack Obama"
+    },
+    {
+      "label": "Basketball",
+      "term": "Basketball"
+    },
+    {
+      "label": "Beyoncé",
+      "term": "Beyoncé"
+    },
+    {
+      "label": "Bitcoin",
+      "term": "Bitcoin"
+    },
+    {
+      "label": "Black hole",
+      "term": "Black hole"
+    },
+    {
+      "label": "Blue whale",
+      "term": "Blue whale"
+    },
+    {
+      "label": "Brazil",
+      "term": "Brazil"
+    },
+    {
+      "label": "Cat",
+      "term": "Cat"
+    },
+    {
+      "label": "Cheetah",
+      "term": "Cheetah"
+    },
+    {
+      "label": "Chess",
+      "term": "Chess"
+    },
+    {
+      "label": "Chocolate",
+      "term": "Chocolate"
+    },
+    {
+      "label": "Coffee",
+      "term": "Coffee"
+    },
+    {
+      "label": "Cristiano Ronaldo",
+      "term": "Cristiano Ronaldo"
+    },
+    {
+      "label": "Dog",
+      "term": "Dog"
+    },
+    {
+      "label": "Egypt",
+      "term": "Egypt"
+    },
+    {
+      "label": "Elon Musk",
+      "term": "Elon Musk"
+    },
+    {
+      "label": "Formula One",
+      "term": "Formula One"
+    },
+    {
+      "label": "Great Pyramid of Giza",
+      "term": "Great Pyramid of Giza"
+    },
+    {
+      "label": "Halloween",
+      "term": "Halloween"
+    },
+    {
+      "label": "IPhone",
+      "term": "IPhone"
+    },
+    {
+      "label": "Iceland",
+      "term": "Iceland"
+    },
+    {
+      "label": "Instagram",
+      "term": "Instagram"
+    },
+    {
+      "label": "Japan",
+      "term": "Japan"
+    },
+    {
+      "label": "Keanu Reeves",
+      "term": "Keanu Reeves"
+    },
+    {
+      "label": "Komodo dragon",
+      "term": "Komodo dragon"
+    },
+    {
+      "label": "Lionel Messi",
+      "term": "Lionel Messi"
+    },
+    {
+      "label": "McDonald's",
+      "term": "McDonald's"
+    },
+    {
+      "label": "Michael Jackson",
+      "term": "Michael Jackson"
+    },
+    {
+      "label": "Mona Lisa",
+      "term": "Mona Lisa"
+    },
+    {
+      "label": "Mount Everest",
+      "term": "Mount Everest"
+    },
+    {
+      "label": "Netflix",
+      "term": "Netflix"
+    },
+    {
+      "label": "New York City",
+      "term": "New York City"
+    },
+    {
+      "label": "Nintendo",
+      "term": "Nintendo"
+    },
+    {
+      "label": "Octopus",
+      "term": "Octopus"
+    },
+    {
+      "label": "Paris",
+      "term": "Paris"
+    },
+    {
+      "label": "Penguin",
+      "term": "Penguin"
+    },
+    {
+      "label": "Pizza",
+      "term": "Pizza"
+    },
+    {
+      "label": "PlayStation",
+      "term": "PlayStation"
+    },
+    {
+      "label": "Ramen",
+      "term": "Ramen"
+    },
+    {
+      "label": "Serena Williams",
+      "term": "Serena Williams"
+    },
+    {
+      "label": "Spotify",
+      "term": "Spotify"
+    },
+    {
+      "label": "Sushi",
+      "term": "Sushi"
+    },
+    {
+      "label": "Taylor Swift",
+      "term": "Taylor Swift"
+    },
+    {
+      "label": "Tesla",
+      "term": "Tesla, Inc."
+    },
+    {
+      "label": "TikTok",
+      "term": "TikTok"
+    },
+    {
+      "label": "Titanic",
+      "term": "Titanic"
+    },
+    {
+      "label": "Yoga",
+      "term": "Yoga"
+    },
+    {
+      "label": "YouTube",
+      "term": "YouTube"
+    }
+  ]
+}

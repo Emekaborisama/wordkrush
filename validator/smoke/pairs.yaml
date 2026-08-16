@@ -1,0 +1,81 @@
+# Smoke test pairs — curated questions with answers a human is confident about.
+#
+# This is NOT a unit test. Unit tests use a fake judge, cost nothing, and prove
+# the LOGIC is right. Smoke tests call the real LLM over the real network, cost
+# real money, and prove the SYSTEM actually works against reality.
+#
+# `expect` is a LIST of acceptable verdicts. For genuinely close pairs,
+# "too_close" is a correct and honest answer, not a failure.
+#
+# `wiki` records measured Wikipedia pageviews (Jan-Jul 2025) where we have them,
+# so a human can see what the ground truth actually is.
+
+pairs:
+  # --- canaries: if these fail, something is badly broken ---
+  - term_a: youtube
+    term_b: kumquat marmalade
+    expect: [a_higher]
+    why: One of the most-visited sites on earth vs a near-zero niche phrase.
+
+  - term_a: cat
+    term_b: Zanzibar red colobus
+    expect: [a_higher]
+    why: Universal concept vs an obscure primate species.
+
+  - term_a: instagram
+    term_b: myspace
+    expect: [a_higher]
+    why: Active global platform vs a long-dead one.
+
+  # --- known direction, less extreme ---
+  - term_a: iphone
+    term_b: blackberry
+    expect: [a_higher]
+    why: iPhone dominates; BlackBerry exited the phone market.
+
+  - term_a: netflix
+    term_b: ramen
+    expect: [a_higher]
+    wiki: { a: 246823, b: 42462 }
+    why: Measured pageviews put Netflix ~5.8x above ramen.
+
+  # KNOWN DIVERGENCE (reports as WARN, not FAIL).
+  # Wikipedia pageviews put Bitcoin 2.7x above sushi, but the LLM returns
+  # too_close. Both may be defensible: encyclopedic interest and commercial
+  # search interest are different things -- "sushi" as a Google query carries
+  # restaurant and recipe intent that never shows up in pageviews. This pair
+  # stays here as a live demonstration that pageviews are a PROXY for search
+  # volume, not a substitute for it.
+  - term_a: bitcoin
+    term_b: sushi
+    expect: [a_higher]
+    known_divergence: true
+    wiki: { a: 152368, b: 55999 }
+    why: Measured pageviews put Bitcoin ~2.7x above sushi; LLM says too_close.
+
+  # --- the honest-uncertainty cases ---
+  # The owner asked this one directly. Real measured data says Messi by 1.49x,
+  # which is ABOVE the game's 1.15 fairness guard, so it is a fair question.
+  # The LLM alone returns too_close -- documented, expected, and exactly why
+  # the LLM is a referee and not the source of numbers (STACK D-010).
+  - term_a: lionel messi
+    term_b: beyonce
+    expect: [a_higher, too_close]
+    wiki: { a: 3879233, b: 2605936 }
+    why: Genuinely close. LLM says too_close; measured data says Messi 1.49x.
+
+  # Below the fairness guard (1.05x measured) -- the game would never ask this.
+  # too_close is the ideal answer; either side is tolerated.
+  - term_a: pizza
+    term_b: sushi
+    expect: [too_close, a_higher, b_higher]
+    wiki: { a: 53420, b: 55999 }
+    why: 1.05x apart -- under the fairness guard. Tests that we do not get false confidence.
+
+  # --- consistency trap: reversed form of a canary ---
+  # Same question as the first pair with the terms swapped. Catches position
+  # bias leaking through the consistency check.
+  - term_a: kumquat marmalade
+    term_b: youtube
+    expect: [b_higher]
+    why: Mirror of the first canary. Must give the mirrored verdict.

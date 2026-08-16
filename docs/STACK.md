@@ -1,7 +1,7 @@
 # Stack
 
 **Project:** Best Games — a collection of casual games for iOS. First title: *More or Less*.
-**Status:** Pre-scaffold. No application code exists yet.
+**Status:** Foundation scaffold, CI, and content pipeline are in place; the game runtime and UI are still under construction.
 **Last updated:** 2026-08-16
 
 This is a living document. Every stack change gets a row in the Decision Log at the bottom — including reversals. Do not silently rewrite a past decision; supersede it with a new entry so the reasoning trail survives.
@@ -21,6 +21,13 @@ This is a living document. Every stack change gets a row in the Decision Log at 
 | Build & signing | EAS Build (Expo cloud) | Removes manual cert/provisioning work. |
 | Submission | EAS Submit → App Store Connect | |
 | Distribution | TestFlight → App Store | |
+| Targets | iOS + Web, one codebase | Via `react-native-web`. See D-006. |
+| Content DB | Supabase Postgres | Content **factory** only — never a runtime dependency of the app. See D-007. |
+| Data sourcing | **Wikimedia pageviews** via `pipeline/sources/wikipedia.ts` | Free, measured, no auth. Resolves O-2. See D-012. |
+| Pipeline runtime | Node + `tsx`, `npm run pipeline:*` | Reads `.env` locally; scripts in `pipeline/`. |
+| CI | GitHub Actions | Typecheck + tests on every push/PR (`.github/workflows/ci.yml`). |
+| Content validation | Python 3.13 + Pydantic v2 + FastAPI + OpenAI structured outputs (`validator/`) | Offline **playability** referee, never a game runtime dependency. See D-010, D-014. |
+| Task board | Superthread — *BestGame* board | Board of record for status; cards follow the task contract in [WORKFLOW.md](WORKFLOW.md). [ROADMAP.md](ROADMAP.md) mirrors the work for repo-only readers. See D-011/D-015. |
 
 ## Local environment
 
@@ -63,10 +70,11 @@ Xcode is deliberately *not* on the critical path: EAS builds run in Expo's cloud
 
 | # | Question | Blocking? |
 |---|---|---|
-| O-1 | Which categories ship in v1, and what is the comparable metric for each? | Yes — blocks data schema |
-| O-2 | Where does the data come from, and what is its licensing status? | Yes — blocks content |
+| ~~O-1~~ | ~~Which category ships first?~~ | **Resolved 2026-08-16: Wikimedia pageviews ("Popularity"), owner's call.** More categories later. |
+| ~~O-2~~ | ~~Which real data source for search volume?~~ | **Resolved 2026-08-16 → D-012: Wikimedia pageviews.** Paid keyword APIs remain a later upgrade if true Google volumes justify the cost. |
+| O-6 | Web host for the static export (Vercel / Netlify / EAS Hosting)? | No — CI has a commented deploy slot |
 | O-3 | Lives (3 hearts) vs. single-life endless streak? | No — engine supports both |
-| O-4 | Does the app need a web build too, or iOS only? | No |
+| ~~O-4~~ | ~~Does the app need a web build too, or iOS only?~~ | **Resolved 2026-08-16 → D-006: both, one codebase** |
 | O-5 | Monetization: ads, IAP, or free? | No — out of scope for v1 |
 
 ## Decision log
@@ -78,6 +86,16 @@ Xcode is deliberately *not* on the critical path: EAS builds run in Expo's cloud
 | D-003 | 2026-08-16 | EAS Build + EAS Submit for the release pipeline | Code signing and provisioning are the hardest part of shipping to the App Store, and EAS automates both. Cloud builds also keep Xcode off the critical path. | Active |
 | D-004 | 2026-08-16 | v1 data is static JSON bundled in the app | No backend to run or pay for; enables offline play (helps the 4.2 case) and makes tests deterministic. Cost: content updates need an app release. | Active — revisit when content churn becomes painful |
 | D-005 | 2026-08-16 | Vitest over Jest | Faster, native ESM and TypeScript, and we only test the pure layer so React Native's Jest preset buys us nothing. | Active |
+| D-006 | 2026-08-16 | Ship iOS **and** web from one Expo codebase via `react-native-web` | `src/game/` and `src/data/` are already platform-free, and the UI is simple enough that RN primitives map cleanly to DOM. Adds a fast browser testing loop that needs neither simulator nor phone. Cost: larger bundle and weaker SEO than a purpose-built web app — acceptable for a game behind a Play button. Split into a monorepo (shared logic package + Next.js web) only if web becomes a marketing/SEO surface. | Active |
+| D-007 | 2026-08-16 | Supabase Postgres is the content **factory**, not a runtime dependency | Owner supplied Supabase keys and proposed batch-validating data into Postgres — adopted, with one boundary: the app still ships bundled JSON snapshots (D-004 stands). DB holds full provenance (snapshots, raw responses, flags); app gets a clean export. Preserves offline play, zero client keys, deterministic tests. Supabase may later serve leaderboards/daily challenges — separate decision. | Active |
+| D-008 | 2026-08-16 | Data sources are pluggable adapters; ship the pipeline on a deterministic mock first | There is **no official public Google search-volume API**, so the source choice (O-2) involves cost/licensing trade-offs the owner must make. The adapter interface (`pipeline/sources/types.ts`) makes that choice a one-file swap instead of a blocker: the whole ingest→validate→store→export chain is provable end-to-end today with mock data. | Active |
+| D-010 | 2026-08-16 | LLM (OpenAI) is a **referee** over content, never a source of search-volume numbers | Owner proposed OpenAI for validation — adopted, with a hard boundary. Models hallucinate absolute figures ("pizza gets 3.2M searches") with total confidence, so asking for numbers would manufacture fake facts and then validate them circularly. Relative pairwise judgement ("is pizza searched more than sushi") is a different task models are genuinely good at. So: constrained enum schema, both orderings checked for position bias, flag only confident contradictions with our data. Python chosen over TS here because Pydantic + OpenAI structured outputs is best-in-class and the pipeline is language-independent from the app. | Active |
+| D-012 | 2026-08-16 | **Wikimedia pageviews is the v1 data source**; the metric is "monthly Wikipedia pageviews", never "Google searches" | Owner asked whether a web-search-grounded LLM could supply real numbers. Tested, not assumed: a bare prompt returned a stable 13.6M for "pizza", but demanding a citation made two runs disagree on every one of five terms, and the stable figure traced to an SEO farm quoting **Etsy** keyword data. Web search relocates the failure from hallucination to garbage-in. Wikimedia instead publishes *measured* pageviews — free, no auth, CC-licensed, batch-friendly. Cost: pageviews track encyclopedic, not commercial, interest, so the label must state exactly that. Enforced by a test asserting no category claims "Google". | Active |
+| D-013 | 2026-08-16 | Median monthly pageviews over 6 **complete** months, not mean | Found by inspecting real output. (1) Including the in-progress month pulled in a partial count (August showed 33,711 on day 16), deflating every item by an amount depending on the run date. (2) Pageviews spike hard on events — Messi hit 5.85M during the 2026 World Cup vs a ~500K baseline — and the mean let one month define an item for the whole window. Median reports a typical month and ignores the tail; sustained shifts (Michael Jackson's 3-month biopic elevation) still come through, which is correct. | Active |
+| D-014 | 2026-08-16 | Keep the OpenAI validator, but narrow its job from **truth-checking** to **playability-checking** | With Wikimedia (D-012) the numbers are measured truth for their own metric, so there is nothing left for an LLM to "verify" — asking it to would be theatre. Its remaining job is real and different: pageviews are a *proxy* for popularity, and where the proxy diverges from what a player would expect, the card is unfair even though the data is correct. The LLM is a cheap stand-in for player intuition; a confident LLM/data disagreement means "this pair will feel wrong", not "this number is wrong". The `bitcoin vs sushi` WARN in the smoke suite is the standing example. Also still earns its keep on mis-resolved articles (e.g. a title that means something else to players). | Active |
+| D-011 | 2026-08-16 | Superthread *BestGame* board is the task board of record; `docs/ROADMAP.md` mirrors it | Owner's call. Board holds live status; the doc holds the work breakdown, blockers, and ordering so an LLM reading the repo cold needs no board access. Doc also records the Superthread API gotchas (team-scoped paths, required `project_id` query param, Cloudflare UA ban). | Active |
+| D-015 | 2026-08-16 | Superthread cards use a compact agile task contract | Each card should state the outcome, context, scope boundaries, acceptance criteria, verification, and sign-off so collaborators can work without guessing or widening scope. Keep the board Kanban-style; no sprint ceremony required. | Active |
+| D-009 | 2026-08-16 | Deployment-first: scaffold + CI + EAS profiles + pipeline before features | Owner's call: all config up front so future work is features-only. GitHub Actions runs typecheck+tests on every push; eas.json defines dev/preview/production; release process documented in WORKFLOW.md. Remaining setup steps need owner accounts (Expo login, Apple Developer, Supabase migration, web host) — listed in WORKFLOW.md checklist. | Active |
 
 ## How to update this document
 
