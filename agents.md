@@ -1,4 +1,4 @@
-# Agent Guide — More or Less
+# Agent Guide — WordCrush
 
 This is the operating guide for every human or LLM working in this repository.
 Read it before making changes. It exists to keep the project coherent while the
@@ -6,9 +6,11 @@ app, data, and release process are still taking shape.
 
 ## Project at a glance
 
-**Best Games** is a collection of casual games for iOS and web. The first title
-is **More or Less**: a higher/lower comparison game where a player decides
-whether a hidden item has a greater or lesser value than a revealed item.
+**WordCrush** is a collection of casual games for iOS and web designed to
+strengthen cognitive skills and pattern recognition through repeated play. Its
+core comparison mode asks a player whether a hidden item has a greater or
+lesser value than a revealed item: guess correctly, keep the streak alive, and
+beat your best score.
 
 The repository has an Expo + TypeScript scaffold, but the actual game engine,
 data set, tests, and game UI are still to be built. Do not infer that a feature
@@ -75,18 +77,25 @@ criteria, Verification, Sign-off. Keep cards outcome-first and Kanban-native
 behavior, architecture, cost, security, or deployment, mark the card blocked on
 the owner instead of widening scope.
 
+Every feature or fix is a pull request. Use the Superthread card's git branch
+name (`suggested_branch_name` / Copy git branch name) when creating the branch
+and opening the PR. Do not invent a different branch name. Stacked PRs are
+allowed; see `docs/WORKFLOW.md`.
+
 ## Non-negotiable architecture
 
 - Use TypeScript with strict typing. Do not add `any`, disable strict mode, or
   paper over type errors with broad casts.
-- Keep `src/game/` pure TypeScript. It must never import React, React Native,
-  Expo, storage, network clients, timers, or other platform APIs.
+- Keep each game's logic in `src/games/<game-id>/`. Reducers and deterministic
+  logic there must never import React, React Native, Expo, storage, network
+  clients, timers, or other platform APIs.
 - Model game behaviour as deterministic, testable functions. The engine should
   remain a pure reducer: `(state, action) => state`.
 - Pass a seeded RNG into pairing/sequence logic; do not call `Math.random()`
   inside the game engine.
 - Keep UI as a renderer and dispatcher over the engine. Platform effects such
-  as haptics, persistence, sharing, and Game Center belong outside `src/game/`.
+  as haptics, persistence, sharing, and Game Center belong outside game
+  reducers; shared adapters can live directly under `src/games/`.
 - Keep v1 offline-first with bundled static data. Do not introduce a backend,
   account system, analytics SDK, or remote content dependency without an
   explicit owner decision and matching documentation update.
@@ -115,11 +124,17 @@ These rules protect the fairness of the game:
 1. Add or update focused tests whenever pure game/data behaviour changes.
 2. Run the narrowest relevant verification first, then the project check when
    the standard above requires it.
-3. Update `docs/BRAINSTORM.md` for design changes and `docs/STACK.md` for stack
-   decisions. Preserve their decision/correction history; append rather than
-   rewriting prior rationale.
+3. Classify documentation impact while the implementation context is fresh:
+   behavior → `CHANGELOG.md`; built-system/workflow behavior →
+   `HOW-IT-WORKS.md`; stack/tooling decisions → `STACK.md`; game-design
+   decisions → `BRAINSTORM.md`; task status/blockers → `ROADMAP.md` and
+   Superthread; process changes → `WORKFLOW.md`.
 4. Follow `docs/WORKFLOW.md` for branch, changelog, CI, content-pipeline, and
    release requirements.
+
+Preserve decision and correction history by appending or superseding prior
+rationale. `npm run check:docs` enforces the path-based minimum, but it cannot
+infer semantic design or status changes; agent judgement remains required.
 
 ## Commands
 
@@ -131,7 +146,8 @@ npm run ios         # Expo iOS development server
 npm run web         # Expo web development server
 npm run typecheck   # TypeScript validation
 npm test            # Vitest test suite
-npm run check       # typecheck + tests
+npm run check:docs  # changed-file documentation impact
+npm run check       # documentation + typecheck + tests
 npm run build:web   # static web export
 ```
 
@@ -155,6 +171,10 @@ substituting an untested implementation.
 
 ## UX and release bar
 
+- The product goal is to create engaging word and comparison games that
+  strengthen cognitive skills and pattern recognition through repeated play.
+- The player-facing promise is: "Guess correctly, keep the streak alive, and
+  beat your best score."
 - The product is a quick, readable casual game: optimise for a clear comparison,
   fast feedback, and an obvious next action.
 - The value-reveal moment is central to the game loop; do not reduce it to an

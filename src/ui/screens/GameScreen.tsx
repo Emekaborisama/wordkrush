@@ -1,9 +1,17 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
-import { newRun, reducer, type GameState } from '../../game/engine';
-import { isGameState, isResumable, matchesDataset } from '../../game/persistence';
+import { captureAnalytics } from '../../analytics/client';
+import { streakBucket } from '../../analytics/events';
+import {
+  isCorrect,
+  newRun,
+  reducer,
+  type GameState,
+  type Guess,
+} from '../../games/more-or-less/engine';
+import { isGameState, isResumable, matchesDataset } from '../../games/more-or-less/persistence';
+import type { Category, Item } from '../../games/more-or-less/types';
 import { clearProgress, loadProgress, saveProgress } from '../../games/progress';
-import type { Category, Item } from '../../game/types';
 import { tapCorrect, tapWrong } from '../../native/haptics';
 import { HowToPlay } from '../HowToPlay';
 import { Sparkle } from '../Sparkle';
@@ -34,13 +42,19 @@ export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
     let cancelled = false;
     void loadProgress('more-or-less', category.id, isGameState).then((saved) => {
       if (cancelled) return;
-      if (saved && isResumable(saved) && matchesDataset(saved, pool)) {
+      const canResume = Boolean(saved && isResumable(saved) && matchesDataset(saved, pool));
+      if (saved && canResume) {
         dispatch({ type: 'restore', state: saved });
       } else if (saved) {
         // Stale or unresumable — drop it rather than leaving it to be retried.
         void clearProgress('more-or-less');
       }
       restored.current = true;
+      captureAnalytics('run_started', {
+        game_id: 'more-or-less',
+        is_resume: canResume,
+        category_id: category.id,
+      });
     });
     return () => {
       cancelled = true;
@@ -79,6 +93,23 @@ export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
 
   const correct = state.lastGuessCorrect;
 
+  const submitGuess = (choice: Guess) => {
+    const guessedCorrectly = isCorrect(state.left, state.right, choice);
+    captureAnalytics('guess_submitted', {
+      game_id: 'more-or-less',
+      guess_index: state.streak + 1,
+      choice,
+      result_kind: guessedCorrectly ? 'correct' : 'incorrect',
+    });
+    captureAnalytics('round_resolved', {
+      game_id: 'more-or-less',
+      correct: guessedCorrectly,
+      round_index: state.streak + 1,
+      streak_bucket: streakBucket(guessedCorrectly ? state.streak + 1 : state.streak),
+    });
+    dispatch({ type: 'guess', choice });
+  };
+
   return (
     <View style={styles.root}>
       <View style={styles.header}>
@@ -103,6 +134,12 @@ export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
           value={revealed ? counted.value : null}
           highlight={correct === null ? undefined : correct}
           sparkling={sparkling}
+          onImageError={() =>
+            captureAnalytics('card_image_load_failed', {
+              game_id: 'more-or-less',
+              has_image_url: true,
+            })
+          }
         />
         {/* Floating badge rather than its own row — every pixel it doesn't
             take is a pixel the images get. */}
@@ -120,13 +157,13 @@ export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
           <View style={styles.buttonRow}>
             <Pressable
               style={({ pressed }) => [styles.button, styles.more, pressed && styles.pressed]}
-              onPress={() => dispatch({ type: 'guess', choice: 'more' })}
+              onPress={() => submitGuess('more')}
             >
               <Text style={styles.buttonText}>▲  MORE</Text>
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.button, styles.less, pressed && styles.pressed]}
-              onPress={() => dispatch({ type: 'guess', choice: 'less' })}
+              onPress={() => submitGuess('less')}
             >
               <Text style={styles.buttonText}>▼  LESS</Text>
             </Pressable>
@@ -157,7 +194,7 @@ export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
       <HowToPlay
         visible={help}
         onClose={() => setHelp(false)}
-        title="How to play More or Less"
+        title="How to play WordCrush"
         intro="Two things, one revealed number. Guess whether the hidden one is bigger or smaller."
         steps={[
           {
@@ -195,12 +232,14 @@ function Card({
   value,
   highlight,
   sparkling = false,
+  onImageError,
 }: {
   item: Item;
   metricLabel: string;
   value: number | null;
   highlight?: boolean;
   sparkling?: boolean;
+  onImageError?: () => void;
 }) {
   const borderColor =
     highlight === undefined ? theme.border : highlight ? theme.accent : theme.danger;
@@ -242,7 +281,10 @@ function Card({
       style={[styles.card, { borderColor }]}
       imageStyle={styles.cardImage}
       resizeMode="cover"
-      onError={() => setImageFailed(true)}
+      onError={() => {
+        setImageFailed(true);
+        onImageError?.();
+      }}
       accessibilityLabel={item.label}
     >
       {/* Scrim: photos vary wildly in brightness, and white text on a pale

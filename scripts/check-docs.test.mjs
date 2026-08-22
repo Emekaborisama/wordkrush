@@ -1,0 +1,44 @@
+import { describe, expect, it } from 'vitest';
+
+import { requiredDocumentsFor } from './check-docs.mjs';
+
+function requiredFor(paths) {
+  return requiredDocumentsFor(paths).map(({ document }) => document);
+}
+
+describe('documentation impact rules', () => {
+  it('requires a changelog for runtime behavior', () => {
+    expect(requiredFor(['src/games/more-or-less/engine.ts'])).toEqual([
+      'docs/CHANGELOG.md',
+    ]);
+  });
+
+  it('does not require product documentation for test-only changes', () => {
+    expect(requiredFor(['src/games/more-or-less/engine.test.ts'])).toEqual([]);
+  });
+
+  it('requires system documentation for pipeline behavior', () => {
+    expect(requiredFor(['pipeline/ingest.ts'])).toEqual([
+      'docs/CHANGELOG.md',
+      'docs/HOW-IT-WORKS.md',
+    ]);
+  });
+
+  it('requires all relevant documents for dependency changes', () => {
+    expect(requiredFor(['package.json'])).toEqual([
+      'docs/CHANGELOG.md',
+      'docs/HOW-IT-WORKS.md',
+      'docs/STACK.md',
+    ]);
+  });
+
+  it('requires workflow documentation for agent policy', () => {
+    expect(requiredFor(['agents.md'])).toEqual(['docs/WORKFLOW.md']);
+  });
+
+  it('accepts the required document in the same change', () => {
+    expect(
+      requiredFor(['pipeline/ingest.ts', 'docs/CHANGELOG.md', 'docs/HOW-IT-WORKS.md']),
+    ).toEqual([]);
+  });
+});

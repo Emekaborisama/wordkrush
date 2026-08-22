@@ -24,7 +24,7 @@ describe('registry', () => {
   });
 
   it('finds a game by id and returns undefined otherwise', () => {
-    expect(getGame('more-or-less')?.name).toBe('More or Less');
+    expect(getGame('more-or-less')?.name).toBe('WordCrush');
     expect(getGame('nope')).toBeUndefined();
   });
 

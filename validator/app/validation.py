@@ -25,7 +25,7 @@ from .schemas import (
     Verdict,
 )
 
-# Mirrors FAIRNESS_MIN_RATIO in src/game/pairing.ts. Values closer than this
+# Mirrors FAIRNESS_MIN_RATIO in src/games/more-or-less/pairing.ts. Values closer than this
 # are never asked in the game, so "too_close" from the LLM is not a problem
 # for pairs we would actually show.
 FAIRNESS_MIN_RATIO = 1.15

@@ -3,14 +3,14 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { isCorrect, newRun, reducer, selectChallenger, type GameState } from './engine';
 import { isFairPair } from './pairing';
-import { nextRandom, seedFromDate } from './rng';
+import { nextRandom, seedFromDate } from '../rng';
 import type { Item } from './types';
 
 // Run against the REAL shipped dataset, not fixtures: a synthetic pool can
 // hide the exact flatness problems the engine has to survive.
 const category = JSON.parse(
   readFileSync(
-    fileURLToPath(new URL('../data/categories/wikipedia-popularity.json', import.meta.url)),
+    fileURLToPath(new URL('../../data/categories/wikipedia-popularity.json', import.meta.url)),
     'utf8',
   ),
 );

@@ -7,7 +7,7 @@ import type { Item } from './types';
 
 const category = JSON.parse(
   readFileSync(
-    fileURLToPath(new URL('../data/categories/wikipedia-popularity.json', import.meta.url)),
+    fileURLToPath(new URL('../../data/categories/wikipedia-popularity.json', import.meta.url)),
     'utf8',
   ),
 );

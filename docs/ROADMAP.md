@@ -1,6 +1,6 @@
 # Roadmap & Task List
 
-**Last updated:** 2026-08-16
+**Last updated:** 2026-08-22
 **Board of record:** Superthread → *My Private Space* → **BestGame** board (team `tbJ3qEwK`, board `2`, lists: To do `8` / Doing `9` / Done `10`).
 
 Live status lives on the board, not here. This file exists so an LLM reading the repo cold knows what the work *is*, what blocks it, and what order it goes in — without needing board access.
@@ -11,7 +11,7 @@ Every task card should carry the same contract from [WORKFLOW.md](WORKFLOW.md): 
 
 1. Read [HOW-IT-WORKS.md](HOW-IT-WORKS.md) → [STACK.md](STACK.md) → [BRAINSTORM.md](BRAINSTORM.md) first.
 2. Pick a task whose blockers are clear and whose card already has Description, Context, Scope, Acceptance criteria, Verification, and Sign-off. **Never start a `[decide]` task** — those are the owner's calls.
-3. Follow [WORKFLOW.md](WORKFLOW.md): branch → build with tests → `npm run check` → changelog line → docs update.
+3. Follow [WORKFLOW.md](WORKFLOW.md): use the Superthread card's git branch name (`suggested_branch_name`) → build with tests → `npm run check` → changelog line → docs update → open a PR. Features and fixes never land on `master` without a PR. Stacked PRs are allowed.
 4. Move the card on the board and tick the box here in the same PR.
 
 ### Superthread API notes (learned the hard way)
@@ -20,6 +20,7 @@ Every task card should carry the same contract from [WORKFLOW.md](WORKFLOW.md): 
 - `GET /v1/users/me` is the only unscoped endpoint; team id comes from `user.teams[0].id`.
 - `GET /v1/{team}/boards` **requires** `project_id`; `bookmarked` and `archived` are filters, not substitutes. Use `?project_id=2&archived=false` for BestGame.
 - `POST /v1/{team}/cards` body: `{title, content, board_id, list_id}` (ids are strings).
+- Cards expose `suggested_branch_name` (same value as **Copy git branch name**). Use that exact string as the git branch when opening the PR.
 - **Cloudflare returns 403 "error code: 1010" for the default Python-urllib User-Agent.** Set a normal `User-Agent` header or use curl.
 
 ---
@@ -30,13 +31,12 @@ Every task card should carry the same contract from [WORKFLOW.md](WORKFLOW.md): 
 - [ ] **`npx expo login`** + link EAS project — blocks `eas build`
 - [ ] **Apply `supabase/migrations/0001_init.sql`** in the Supabase SQL editor — blocks the whole pipeline
 - [ ] **Confirm the core mechanic** (BRAINSTORM [OPEN]) — blocks UI
-- [ ] **Choose a web host** (STACK O-6)
 
 ### The shipped v1 metric, stated plainly
 
 The first shipped category uses monthly Wikipedia pageviews, not Google searches. The metric is measured, free, and already wired through `pipeline/sources/wikipedia.ts`, `src/data/categories/wikipedia-popularity.json`, and the validator/export path. Treat the label as settled: **monthly Wikipedia pageviews**. If a future paid keyword source is ever added, it is a separate upgrade, not a v1 blocker.
 
-## Track: game logic (`src/game/`) — pure TS, no UI needed
+## Track: More-or-Less logic (`src/games/more-or-less/`) — pure TS, no UI needed
 
 - [x] Fairness guard + difficulty bands (`pairing.ts`, 9 tests)
 - [ ] Engine reducer — pure `(state, action) => state`; actions `newRun` / `guess` / `nextRound`, no side effects
@@ -72,8 +72,9 @@ Guideline 4.2 rejects apps that are too thin. These are the mitigation:
 ## Track: infra
 
 - [x] GitHub Actions CI (typecheck + TS tests)
+- [ ] Documentation sync enforcement (ST-71) — **Doing**; path-based local/CI audit plus one completion hook
 - [ ] Add the Python validator suite to CI — must run with `validator/` as cwd (`npm run test:validator`), else pytest loses `asyncio_mode` and the async tests error out
-- [ ] Web deploy step ← blocked on O-6
+- [x] Web deploy to Railway after green CI (STACK D-020)
 - [ ] First TestFlight build ← blocked on Apple Developer + Expo login
 
 ## Suggested order

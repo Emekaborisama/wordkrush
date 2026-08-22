@@ -14,7 +14,7 @@ export type ScoreEntry = {
   /**
    * How long the run took, where the game measures it.
    *
-   * Optional because it is not universal: More or Less is an untimed streak and
+   * Optional because it is not universal: WordCrush comparison is an untimed streak and
    * has nothing meaningful to report here. Entries written before this field
    * existed simply omit it, which is why nothing may require it.
    */
@@ -36,7 +36,7 @@ export const EMPTY_BOARD: ScoreBoard = { bestStreak: 0, totalRuns: 0, history: [
 export const MAX_HISTORY = 50;
 
 /**
- * Which way is better for a given game. More or Less scores a streak (higher
+ * Which way is better for a given game. WordCrush comparison scores a streak (higher
  * wins); Clueless scores guesses used (lower wins). Everything that compares
  * scores has to be told which, or one game's board comes out upside down.
  */

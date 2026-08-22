@@ -29,7 +29,7 @@ from .schemas import (
 from .validation import validate_batch, validate_pair
 
 app = FastAPI(
-    title="More or Less — Validator",
+    title="WordCrush — Validator",
     version="0.1.0",
     description="Offline LLM adjudication for game content. Not a runtime dependency of the game.",
 )

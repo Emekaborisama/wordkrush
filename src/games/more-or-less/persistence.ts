@@ -1,5 +1,5 @@
 /**
- * Validation for resumed More or Less runs.
+ * Validation for resumed WordCrush comparison runs.
  *
  * A run is worth resuming: losing a streak of 15 because you glanced at the
  * scores is the kind of thing that makes people stop playing.

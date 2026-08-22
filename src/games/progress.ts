@@ -8,6 +8,7 @@
  * per title, so a mismatch (new day, new puzzle) simply reads as "no progress".
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { captureRuntimeAnalytics } from '../analytics/runtime';
 
 function key(gameId: string): string {
   return `bestgames.progress.${gameId}.v1`;
@@ -29,6 +30,11 @@ export async function saveProgress<T>(
     const envelope: Envelope<T> = { session, savedAt: new Date().toISOString(), state };
     await AsyncStorage.setItem(key(gameId), JSON.stringify(envelope));
   } catch {
+    captureRuntimeAnalytics('progress_persist_failed', {
+      game_id: gameId,
+      operation: 'save',
+      error_category: 'storage',
+    });
     // Non-fatal: losing the ability to resume is worse than a crash only if we
     // let it become one.
   }
@@ -46,15 +52,38 @@ export async function loadProgress<T>(
   session: string | number,
   validate: (value: unknown) => value is T,
 ): Promise<T | null> {
+  let raw: string | null;
   try {
-    const raw = await AsyncStorage.getItem(key(gameId));
-    if (!raw) return null;
+    raw = await AsyncStorage.getItem(key(gameId));
+  } catch {
+    captureRuntimeAnalytics('progress_persist_failed', {
+      game_id: gameId,
+      operation: 'load',
+      error_category: 'storage',
+    });
+    return null;
+  }
+
+  if (!raw) return null;
+
+  try {
     const envelope = JSON.parse(raw) as Partial<Envelope<unknown>>;
     // A different session means yesterday's puzzle or an abandoned run; not an
     // error, just nothing to resume.
     if (envelope?.session !== session) return null;
-    return validate(envelope.state) ? envelope.state : null;
+    if (validate(envelope.state)) return envelope.state;
+    captureRuntimeAnalytics('progress_persist_failed', {
+      game_id: gameId,
+      operation: 'load',
+      error_category: 'parse_or_validation',
+    });
+    return null;
   } catch {
+    captureRuntimeAnalytics('progress_persist_failed', {
+      game_id: gameId,
+      operation: 'load',
+      error_category: 'parse_or_validation',
+    });
     return null;
   }
 }
@@ -63,6 +92,11 @@ export async function clearProgress(gameId: string): Promise<void> {
   try {
     await AsyncStorage.removeItem(key(gameId));
   } catch {
+    captureRuntimeAnalytics('progress_persist_failed', {
+      game_id: gameId,
+      operation: 'clear',
+      error_category: 'storage',
+    });
     /* ignore */
   }
 }

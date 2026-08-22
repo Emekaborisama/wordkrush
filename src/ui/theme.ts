@@ -13,33 +13,108 @@
  */
 
 export const theme = {
-  // Elevation ramp: further back -> darker.
-  bg: '#080A0F',
-  bgElevated: '#10141C',
-  card: '#171D28',
-  cardHigh: '#1F2735',
+  // Deep indigo rather than neutral black: playful colour can glow against it
+  // without the app turning into a wall of disconnected neon outlines.
+  bg: '#0A0817',
+  bgElevated: '#121025',
+  card: '#1A1732',
+  cardHigh: '#241F43',
   /** Hairline highlight for the top edge of a raised surface. */
-  edge: 'rgba(255,255,255,0.07)',
-  border: '#242D3C',
-  borderStrong: '#313D50',
+  edge: 'rgba(255,255,255,0.10)',
+  border: '#332D55',
+  borderStrong: '#4B4171',
 
-  text: '#F7F9FC',
-  textMuted: '#A3B0C2',
-  textDim: '#6B7A90',
+  text: '#FFF9F6',
+  textMuted: '#C5BED8',
+  textDim: '#87809E',
 
-  accent: '#3DDC84',
-  accentSoft: 'rgba(61,220,132,0.14)',
-  accentDim: '#12341F',
-  danger: '#FF6B6B',
-  dangerSoft: 'rgba(255,107,107,0.13)',
-  dangerDim: '#3A1416',
-  violet: '#A78BFA',
-  violetSoft: 'rgba(167,139,250,0.14)',
+  // WordCrush umbrella brand. Individual games use registry accents.
+  accent: '#FF5D8F',
+  accentSoft: 'rgba(255,93,143,0.16)',
+  accentDim: '#3B152B',
+  accentSecondary: '#8B6BFF',
+  accentSecondarySoft: 'rgba(139,107,255,0.16)',
+  success: '#32E487',
+  successSoft: 'rgba(50,228,135,0.16)',
+  successDim: '#103624',
+  danger: '#FF5E72',
+  dangerSoft: 'rgba(255,94,114,0.16)',
+  dangerDim: '#3B1520',
+  warning: '#FFB020',
+  warningSoft: 'rgba(255,176,32,0.16)',
+  violet: '#9B78FF',
+  violetSoft: 'rgba(155,120,255,0.16)',
+  overlay: 'rgba(5,3,14,0.78)',
 } as const;
 
-export const radius = { sm: 10, md: 16, lg: 24, pill: 999 } as const;
+export const radius = { sm: 12, md: 18, lg: 28, xl: 36, pill: 999 } as const;
 
-export const space = { xs: 4, sm: 8, md: 12, lg: 18, xl: 26, xxl: 38 } as const;
+export const space = { xxs: 2, xs: 5, sm: 9, md: 14, lg: 20, xl: 28, xxl: 40, hero: 56 } as const;
+
+/** Bundled, offline display faces. Body copy deliberately stays on the
+ * platform system face for Apple-grade legibility at small sizes. */
+export const font = {
+  medium: 'Fredoka_500Medium',
+  semibold: 'Fredoka_600SemiBold',
+  bold: 'Fredoka_700Bold',
+} as const;
+
+/**
+ * Interaction constants. One pressed-state and one touch-target minimum for
+ * the whole app, so `PressableScale` is the only place that decides what a
+ * tap looks like — screens stop inventing their own opacity value.
+ */
+export const interaction = {
+  pressedOpacity: 0.9,
+  pressedScale: 0.97,
+  pressedTranslateY: 3,
+  minTouch: 44,
+} as const;
+
+/**
+ * Surface depth, back to front. Screens pick a level, not a raw token, so
+ * "how far forward is this card" is a single decision made once here rather
+ * than re-guessed per screen.
+ */
+const ELEVATION = [
+  { backgroundColor: '#0A0817', borderColor: '#211C3A', borderTopColor: 'rgba(255,255,255,0.06)' }, // 0 — page
+  { backgroundColor: '#121025', borderColor: '#2A2547', borderTopColor: 'rgba(255,255,255,0.08)' }, // 1 — bgElevated
+  { backgroundColor: '#1A1732', borderColor: '#332D55', borderTopColor: 'rgba(255,255,255,0.10)' }, // 2 — card
+  { backgroundColor: '#241F43', borderColor: '#4B4171', borderTopColor: 'rgba(255,255,255,0.13)' }, // 3 — cardHigh
+] as const;
+
+export function elevation(level: 0 | 1 | 2 | 3) {
+  return ELEVATION[level];
+}
+
+/** Hex (`#rrggbb`) + 0–1 alpha -> `#rrggbbaa`. Keeps tint math in one place. */
+export function withAlpha(hex: string, alpha: number): string {
+  const a = Math.round(Math.max(0, Math.min(1, alpha)) * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return `${hex}${a}`;
+}
+
+/**
+ * Derives a game's full accent ramp from its one registry hex, so a hub card,
+ * an active nav item, and a CTA button all agree on what "this game's colour"
+ * means without each screen recomputing an alpha tint by hand.
+ */
+export function gameAccentTokens(accent: string) {
+  return {
+    accent,
+    /** Tinted fill — art tiles, active nav rows. */
+    soft: withAlpha(accent, 0.16),
+    /** Near-black tint for a filled button on a dark background. */
+    dim: withAlpha(accent, 0.22),
+    /** Same hex as the border colour of an accented outline control. */
+    border: accent,
+    /** Broad ambient colour used behind key art, never behind body copy. */
+    glow: withAlpha(accent, 0.28),
+    /** Dark text on a bright CTA. */
+    ink: '#100E20',
+  } as const;
+}
 
 /**
  * Numbers in a vertical list must use tabular figures, or digits of different
@@ -59,13 +134,15 @@ export const frame = { maxWidth: 460, maxHeight: 900 } as const;
  * typography. Small caps labels get positive tracking for the opposite reason.
  */
 export const type = {
-  display: { fontSize: 34, fontWeight: '800', letterSpacing: -0.8, lineHeight: 38 },
-  title: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4, lineHeight: 27 },
+  hero: { fontFamily: font.bold, fontSize: 44, fontWeight: '700', letterSpacing: -1.2, lineHeight: 48 },
+  display: { fontFamily: font.bold, fontSize: 36, fontWeight: '700', letterSpacing: -0.9, lineHeight: 41 },
+  title: { fontFamily: font.semibold, fontSize: 23, fontWeight: '600', letterSpacing: -0.45, lineHeight: 28 },
+  subtitle: { fontFamily: font.semibold, fontSize: 18, fontWeight: '600', letterSpacing: -0.2, lineHeight: 23 },
   body: { fontSize: 15, fontWeight: '500', letterSpacing: -0.1, lineHeight: 22 },
   bodyStrong: { fontSize: 15, fontWeight: '700', letterSpacing: -0.1, lineHeight: 22 },
-  caption: { fontSize: 12.5, fontWeight: '500', letterSpacing: 0, lineHeight: 17 },
+  caption: { fontSize: 13, fontWeight: '500', letterSpacing: 0, lineHeight: 18 },
   /** Small-caps section labels. */
-  overline: { fontSize: 10, fontWeight: '700', letterSpacing: 1.4, lineHeight: 13 },
+  overline: { fontFamily: font.semibold, fontSize: 10.5, fontWeight: '600', letterSpacing: 1.45, lineHeight: 14 },
 } as const;
 
 /**
@@ -75,17 +152,24 @@ export const type = {
 export const shadow = {
   card: {
     shadowColor: '#000',
-    shadowOpacity: 0.4,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
+    shadowOpacity: 0.42,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 9 },
+    elevation: 7,
   },
   raised: {
     shadowColor: '#000',
-    shadowOpacity: 0.5,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 14 },
-    elevation: 12,
+    shadowOpacity: 0.52,
+    shadowRadius: 26,
+    shadowOffset: { width: 0, height: 15 },
+    elevation: 13,
+  },
+  glow: {
+    shadowColor: theme.accent,
+    shadowOpacity: 0.3,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 9,
   },
 } as const;
 
@@ -97,8 +181,11 @@ export const shadow = {
  * entering, `snappy` for direct responses to a tap.
  */
 export const motion = {
-  gentle: { damping: 18, stiffness: 140, mass: 0.9 },
-  snappy: { damping: 22, stiffness: 260, mass: 0.7 },
+  gentle: { damping: 18, stiffness: 145, mass: 0.9 },
+  snappy: { damping: 17, stiffness: 290, mass: 0.66 },
+  celebratory: { damping: 12, stiffness: 190, mass: 0.72 },
+  fastMs: 150,
+  standardMs: 240,
   /** Duration for value counting, which should feel deliberate, not instant. */
   countMs: 620,
 } as const;

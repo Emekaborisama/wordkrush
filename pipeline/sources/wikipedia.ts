@@ -21,7 +21,7 @@ const API = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article';
 
 // Wikimedia asks for a descriptive User-Agent identifying the client, and
 // rate-limits/blocks generic ones. https://wikimedia.org/api/rest_v1/
-const USER_AGENT = 'moreless-game/0.1 (https://github.com/Emekaborisama/more-or-less-game)';
+const USER_AGENT = 'wordcrush/0.1 (https://github.com/Emekaborisama/more-or-less-game)';
 
 // Wikimedia's published limit is 200 req/s; we stay far under it deliberately.
 // Content builds are not latency-sensitive and being a good API citizen costs

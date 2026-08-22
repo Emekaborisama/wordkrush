@@ -9,6 +9,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { captureAnalytics } from '../../analytics/client';
+import { rankBucket } from '../../analytics/events';
 import { VOCABULARY, puzzleByNumber } from '../../data/clueless';
 import { bestRank, closeness, indexPuzzle, newPuzzle, reducer, type Action } from '../../games/clueless/engine';
 import { isCluelessState, rehydrate } from '../../games/clueless/persistence';
@@ -57,6 +59,16 @@ export function CluelessScreen({ puzzleNumber, onWin, showHelpInitially = false 
         if (saved.status === 'won') reported.current = true;
       }
       restored.current = true;
+      captureAnalytics('run_started', {
+        game_id: 'clueless',
+        is_resume: Boolean(saved && saved.status !== 'won'),
+        puzzle_number: puzzleNumber,
+      });
+      captureAnalytics('daily_puzzle_viewed', {
+        game_id: 'clueless',
+        puzzle_number: puzzleNumber,
+        already_completed: saved?.status === 'won',
+      });
     });
     return () => {
       cancelled = true;
@@ -75,6 +87,20 @@ export function CluelessScreen({ puzzleNumber, onWin, showHelpInitially = false 
     const next = reducer(state, { type: 'guess', word: input }, index);
     dispatch({ type: 'guess', word: input });
     setInput('');
+
+    const rejectionKind =
+      next.rejection?.kind === 'not-a-word'
+        ? 'not_a_word'
+        : next.rejection?.kind === 'already-guessed'
+          ? 'already_guessed'
+          : undefined;
+    captureAnalytics('guess_submitted', {
+      game_id: 'clueless',
+      guess_index: next.guesses.length || state.guesses.length + 1,
+      result_kind:
+        next.status === 'won' ? 'correct' : rejectionKind ?? 'valid',
+      rank_bucket: next.rejection ? undefined : rankBucket(bestRank(next)),
+    });
 
     if (next.status === 'won' && before !== 'won') {
       void tapCorrect();

@@ -22,7 +22,7 @@ export type GameDefinition = {
   /** What a score means in this game, e.g. "streak". Used in score UI copy. */
   scoreNoun: string;
   /**
-   * Which way is better. More or Less scores a streak (higher wins); Clueless
+   * Which way is better. WordCrush scores a streak (higher wins); Clueless
    * scores guesses used (lower wins). Score UI and leaderboard sorting must
    * read this rather than assuming, or one game's board is upside down.
    */
@@ -32,8 +32,8 @@ export type GameDefinition = {
 export const GAMES: GameDefinition[] = [
   {
     id: 'more-or-less',
-    name: 'More or Less',
-    tagline: 'Which one is more popular?',
+    name: 'WordCrush',
+    tagline: 'Guess correctly, keep the streak alive, and beat your best score.',
     accent: '#4ADE80',
     emoji: '⚖️',
     status: 'available',

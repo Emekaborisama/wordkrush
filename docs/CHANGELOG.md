@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Best Games. Format follows [Keep a Changelog](https://keepachangelog.com); versions follow semver and match `version` in `package.json` / `app.json`.
+All notable changes to WordCrush. Format follows [Keep a Changelog](https://keepachangelog.com); versions follow semver and match `version` in `package.json` / `app.json`.
 
 Rules:
 - Every PR that changes behavior adds a line under **[Unreleased]** in the same PR.
@@ -9,8 +9,9 @@ Rules:
 ## [Unreleased]
 
 ### Added
+- Documentation drift guard: one changed-file audit shared by local checks, CI, and a Cursor completion hook, with explicit document-impact guidance
 - Expo SDK 57 + TypeScript scaffold (iOS + web from one codebase)
-- Pure game-logic layer `src/game/` with ratio-based pairing fairness guard and streak difficulty bands, unit-tested (Vitest, 9 tests)
+- Pure More-or-Less logic in `src/games/more-or-less/` with ratio-based pairing fairness guard and streak difficulty bands, unit-tested (Vitest, 9 tests)
 - Content pipeline: Supabase Postgres schema (`supabase/migrations/0001_init.sql`), source-agnostic ingest with batch fetch + sanity checks (`pipeline/ingest.ts`), snapshot export to bundled JSON (`pipeline/export-snapshot.ts`), deterministic mock data source
 - First category keyword list: Search Popularity, 40 terms (`pipeline/keywords/google-search.json`)
 - EAS build profiles (`eas.json`): development / preview (simulator) / production
@@ -37,7 +38,7 @@ Rules:
   - Level 9 asks for the same six words as level 1, with the clock as the only change — introducing a mechanic alongside a new objective makes it impossible to tell which one is beating you
   - The clock pauses while the how-to-play or level sheet is open, stops on the winning move, and survives leaving the screen without charging for the gap
   - Time limits are estimates, not calibration: a solver finds words instantly and cannot measure a human scanning a grid. The suite pins the assumption they were sized from (~7s per move) so tightening one past winnability fails loudly
-- **Completion time is recorded and shown** — `ScoreEntry.durationMs` (optional; More or Less has nothing meaningful to report), rendered on the level-complete card and in the scores list
+- **Completion time is recorded and shown** — `ScoreEntry.durationMs` (optional; WordCrush comparison has nothing meaningful to report), rendered on the level-complete card and in the scores list
   - Scores rows now label the unit from the registry instead of hardcoding "rounds", which read as "8,436 rounds" for Wordfall and "5 rounds" for Clueless
 - **Wordfall dictionary** (`npm run pipeline:wordfall` → `src/data/wordfall/dictionary.json`, 550 KB) — Webster's 1913 (public domain) plus a curated core-English and modern-word supplement, intersected with the existing Clueless frequency vocab to produce a rarity ranking and measured per-letter spawn weights
   - Inflections are derived at lookup by suffix-stripping rather than stored: 40% smaller than generating them (995 KB → 550 KB) and better recall, since it covers words the generator never would
@@ -47,6 +48,13 @@ Rules:
   - Railway builds from source (`npm run build:web`) and serves `dist/` with a zero-dependency Node static server: brotli pre-compressed at boot (2.89 MB → 0.77 MB over the wire), ETag/304 revalidation, `immutable` caching for Expo's hashed bundle and `no-cache` for the `index.html` that points at it, and SPA fallback for extensionless routes only
   - `npm run serve:web` runs the same server locally, so a production build can be checked before it ships
   - CI deploys on green `master` only (`.github/workflows/ci.yml`); the job skips with a warning when `RAILWAY_TOKEN` is absent rather than failing the build
+- **Consent-gated PostHog analytics** — typed product, game-balance, auth-status, persistence, and reliability events; anonymous opt-in prompt plus a persistent drawer control; no PII, account identification, autocapture, person profiles, exception capture, feature flags, or session replay
+
+### Changed
+- Consolidated game-specific logic under `src/games/<game-id>/`; More or Less
+  now lives beside Clueless and Wordfall, with shared RNG utilities directly
+  under `src/games/`.
+- Renamed the product to **WordCrush** and aligned the app, game registry, and current documentation around the promise: "Guess correctly, keep the streak alive, and beat your best score." The broader goal is engaging repeated play that strengthens cognitive skills and pattern recognition.
 
 ### Security
 - Untracked `.env` from git before Supabase keys could be pushed; added `.gitignore` + `.env.example`

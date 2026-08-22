@@ -16,7 +16,7 @@
  * the still-open framing questions stay cheap to change.
  */
 import { isFairPair, ratio, targetBandForStreak } from './pairing';
-import { nextInt } from './rng';
+import { nextInt } from '../rng';
 import type { Item } from './types';
 
 export type Guess = 'more' | 'less';
