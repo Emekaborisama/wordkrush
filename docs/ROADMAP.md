@@ -80,6 +80,7 @@ Guideline 4.2 rejects apps that are too thin. These are the mitigation:
 - [ ] Documentation sync enforcement (ST-71) — **Doing**; path-based local/CI audit plus one completion hook
 - [ ] Add the Python validator suite to CI — must run with `validator/` as cwd (`npm run test:validator`), else pytest loses `asyncio_mode` and the async tests error out
 - [x] Web deploy to Railway after green CI (STACK D-020)
+- [ ] **Railway Expo export needs `CI=true`** (ST-74) — **Doing**; Nixpacks leaves `CI` empty and Expo throws `GetEnv.NoBoolean`. Service is `wordcrush`.
 - [ ] First TestFlight build ← blocked on Apple Developer + Expo login
 
 ## Suggested order

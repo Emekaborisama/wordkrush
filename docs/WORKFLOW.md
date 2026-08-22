@@ -106,21 +106,21 @@ Every push to `master` that passes `check` and the Expo web export deploys to Ra
 | Need | Command |
 |---|---|
 | Preview the production build locally | `npm run build:web && npm run serve:web` → http://localhost:8080 |
-| Deploy from your machine (bypasses CI) | `railway up --service web` |
-| Watch a deploy | `railway logs --service web` |
+| Deploy from your machine (bypasses CI) | `railway up --service wordcrush` |
+| Watch a deploy | `railway logs --service wordcrush` |
 | Roll back | `railway down` (removes the most recent deployment) |
 | Open the dashboard | `railway open` |
 
 Build-time configuration lives in Railway, not in the repo. Only `EXPO_PUBLIC_*` variables reach the browser bundle, so the deployed app needs its own copies to enable accounts and the leaderboard:
 
 ```bash
-railway variable set --service web EXPO_PUBLIC_SUPABASE_URL=...
-railway variable set --service web EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
-railway variable set --service web EXPO_PUBLIC_POSTHOG_KEY=...
-railway variable set --service web EXPO_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
+railway variable set --service wordcrush EXPO_PUBLIC_SUPABASE_URL=...
+railway variable set --service wordcrush EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+railway variable set --service wordcrush EXPO_PUBLIC_POSTHOG_KEY=...
+railway variable set --service wordcrush EXPO_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
 ```
 
-Without them the site still works — `isBackendConfigured` is false, and the game runs offline as guest. **Never set `SUPABASE_SECRET_KEY` on this service**: it is a client bundle, and anything there is public.
+Without them the site still works — `isBackendConfigured` is false, and the game runs offline as guest. **Never import `.env` and never set `SUPABASE_SECRET_KEY`, `OPENAI_API_KEY`, `SUPERTHREAD_API`, or `TEST_PLAYER_*` on this service**: Nixpacks bakes every service variable into the image as `ENV`, and this is a public client bundle. Set the four `EXPO_PUBLIC_*` names individually. `CI=true` is required so Expo's `getenv` does not crash on Railway's empty `CI`.
 
 The PostHog project token is also public client configuration, not a secret.
 Without it analytics is a no-op and no consent prompt appears. With it,
