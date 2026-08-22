@@ -3,7 +3,7 @@
  * TEST_PLAYER_* names into `.env`. Values are never printed.
  *
  * This is a confirmed ordinary player, not a service-role substitute.
- * Runtime play still uses magic link / SMS (D-033, D-034). The password exists
+ * Runtime play still uses magic link (D-033, D-037). The password exists
  * so agents can sign in from Node without waiting on email.
  *
  * Run: npm run auth:ensure-test-player

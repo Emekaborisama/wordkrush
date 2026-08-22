@@ -2,14 +2,20 @@
  * Auth operations. Every function degrades safely when the backend is absent
  * or unreachable — signing in is an enhancement, never a gate on playing.
  *
- * Accounts use Supabase Auth (D-033, D-034): email magic link or SMS OTP.
- * No passwords. The email path can also complete with the 6-digit code from
- * that message when a deep link cannot open the app.
+ * Accounts use Supabase Auth (D-033, D-037): email magic link only. One unique
+ * leaderboard username per account. No passwords, no phone identity.
+ * The 6-digit code from the same email can complete sign-in when a deep link
+ * cannot open the app.
  */
 import type { User } from '@supabase/supabase-js';
 import { isAuthCallbackUrl, parseAuthCallbackUrl } from './callback';
 import { supabase } from './client';
-import { friendlyAuthError, normalizePhone, normalizeUsername } from './validation';
+import {
+  friendlyAuthError,
+  normalizeUsername,
+  USERNAME_TAKEN_MESSAGE,
+  validateUsername,
+} from './validation';
 
 export type Profile = { id: string; username: string; email: string | null };
 export type AuthResult = { ok: true; profile: Profile } | { ok: false; error: string };
@@ -38,34 +44,17 @@ export async function requestMagicLink(input: {
 }): Promise<MagicLinkResult> {
   if (!supabase) return { ok: false, error: UNCONFIGURED };
   try {
+    if (input.createUser) {
+      const usernameError = validateUsername(input.username ?? '');
+      if (usernameError) return { ok: false, error: usernameError };
+      if (await usernameTaken(input.username ?? '')) {
+        return { ok: false, error: USERNAME_TAKEN_MESSAGE };
+      }
+    }
     const { error } = await supabase.auth.signInWithOtp({
       email: input.email.trim(),
       options: {
         emailRedirectTo: input.redirectTo,
-        shouldCreateUser: input.createUser,
-        ...(input.username
-          ? { data: { username: normalizeUsername(input.username) } }
-          : {}),
-      },
-    });
-    if (error) return { ok: false, error: friendlyAuthError(error.message) };
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, error: friendlyAuthError((err as Error).message) };
-  }
-}
-
-export async function requestPhoneOtp(input: {
-  phone: string;
-  createUser: boolean;
-  username?: string;
-}): Promise<MagicLinkResult> {
-  if (!supabase) return { ok: false, error: UNCONFIGURED };
-  try {
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: normalizePhone(input.phone),
-      options: {
-        channel: 'sms',
         shouldCreateUser: input.createUser,
         ...(input.username
           ? { data: { username: normalizeUsername(input.username) } }
@@ -86,25 +75,6 @@ export async function verifyEmailOtp(email: string, token: string): Promise<Auth
       email: email.trim(),
       token: token.trim(),
       type: 'email',
-    });
-    if (error) return { ok: false, error: friendlyAuthError(error.message) };
-    const user = data.user ?? data.session?.user;
-    if (!user) return { ok: false, error: 'Signed in, but could not load your profile.' };
-    const profile = await profileFromUser(user);
-    await persistDisplayName(profile);
-    return { ok: true, profile };
-  } catch (err) {
-    return { ok: false, error: friendlyAuthError((err as Error).message) };
-  }
-}
-
-export async function verifyPhoneOtp(phone: string, token: string): Promise<AuthResult> {
-  if (!supabase) return { ok: false, error: UNCONFIGURED };
-  try {
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: normalizePhone(phone),
-      token: token.trim(),
-      type: 'sms',
     });
     if (error) return { ok: false, error: friendlyAuthError(error.message) };
     const user = data.user ?? data.session?.user;
@@ -180,10 +150,15 @@ export async function signOut(): Promise<void> {
 export async function updateUsername(username: string): Promise<AuthResult> {
   if (!supabase) return { ok: false, error: UNCONFIGURED };
   const name = normalizeUsername(username);
+  const usernameError = validateUsername(name);
+  if (usernameError) return { ok: false, error: usernameError };
   try {
     const { data } = await supabase.auth.getSession();
     const user = data.session?.user;
     if (!user) return { ok: false, error: 'You are not signed in.' };
+    if (await usernameTaken(name, user.id)) {
+      return { ok: false, error: USERNAME_TAKEN_MESSAGE };
+    }
     const { error } = await supabase.from('players').upsert({ id: user.id, display_name: name });
     if (error) return { ok: false, error: friendlyAuthError(error.message) };
     return { ok: true, profile: { id: user.id, username: name, email: user.email ?? null } };
@@ -223,4 +198,32 @@ async function persistDisplayName(profile: Profile): Promise<void> {
   if (error) {
     console.warn('players upsert failed:', error.message);
   }
+}
+
+function escapeIlike(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
+
+/**
+ * True when another player already claims this name. False if the backend
+ * cannot answer — the unique index is then the backstop on persist.
+ */
+async function usernameTaken(raw: string, exceptId?: string): Promise<boolean> {
+  if (!supabase) return false;
+  const name = normalizeUsername(raw);
+  const { data, error } = await supabase.rpc('username_taken', {
+    raw: name,
+    ...(exceptId ? { except_id: exceptId } : {}),
+  });
+  if (!error && typeof data === 'boolean') return data;
+
+  let query = supabase
+    .from('players')
+    .select('id')
+    .ilike('display_name', escapeIlike(name))
+    .limit(1);
+  if (exceptId) query = query.neq('id', exceptId);
+  const { data: rows, error: selectError } = await query;
+  if (selectError) return false;
+  return (rows?.length ?? 0) > 0;
 }
