@@ -211,7 +211,7 @@ export function authErrorCategory(
     normalized.includes('password') ||
     normalized.includes('credential') ||
     normalized.includes('email') ||
-    normalized.includes('phone') ||
+    normalized.includes('username') ||
     normalized.includes('otp')
   ) {
     return 'credentials';

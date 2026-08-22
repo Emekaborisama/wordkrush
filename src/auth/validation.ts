@@ -38,16 +38,6 @@ export function validateEmail(raw: string): FieldError {
   return null;
 }
 
-export function validatePhone(raw: string): FieldError {
-  const value = raw.trim();
-  if (value.length === 0) return 'Enter your phone number';
-  if (!value.startsWith('+')) return 'Start with + and your country code';
-  const normalized = normalizePhone(value);
-  // E.164: + then 7–15 digits, first digit not zero.
-  if (!/^\+[1-9]\d{6,14}$/.test(normalized)) return 'That does not look like a phone number';
-  return null;
-}
-
 export function validateOtpCode(raw: string): FieldError {
   const value = raw.trim();
   if (value.length === 0) return 'Enter the code we sent';
@@ -63,12 +53,20 @@ export function normalizeUsername(raw: string): string {
   return raw.trim().replace(/\s+/g, ' ');
 }
 
-/** E.164-ish: keep a leading + and digits only. */
-export function normalizePhone(raw: string): string {
-  const trimmed = raw.trim();
-  const digits = trimmed.replace(/[^\d]/g, '');
-  if (trimmed.startsWith('+')) return `+${digits}`;
-  return digits;
+/** Case-insensitive identity key. Must match `username_key()` in 0004. */
+export function usernameKey(raw: string): string {
+  return normalizeUsername(raw).toLowerCase();
+}
+
+export const USERNAME_TAKEN_MESSAGE = 'That username is taken. Try another.';
+
+export function isUsernameTakenError(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m.includes('players_display_name_unique') ||
+    (m.includes('duplicate key') && m.includes('display_name')) ||
+    m.includes('username is taken')
+  );
 }
 
 /**
@@ -81,16 +79,10 @@ export function friendlyAuthError(message: string): string {
     return 'No account for those details. Create one first.';
   }
   if (m.includes('already registered') || m.includes('already been registered')) {
-    return 'That email or number already has an account. Try signing in.';
+    return 'That email already has an account. Try signing in.';
   }
-  if (m.includes('invalid') && m.includes('phone')) {
-    return 'That phone number is not accepted.';
-  }
-  if (
-    m.includes('sms') &&
-    (m.includes('provider') || m.includes('twilio') || m.includes('error sending'))
-  ) {
-    return 'Could not send a text. Try email instead.';
+  if (isUsernameTakenError(message)) {
+    return USERNAME_TAKEN_MESSAGE;
   }
   if (
     (m.includes('otp') || m.includes('token') || m.includes('code') || m.includes('magic')) &&

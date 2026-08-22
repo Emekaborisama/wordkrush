@@ -10,18 +10,12 @@ import {
 } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import { authErrorCategory } from '../../analytics/events';
-import {
-  requestMagicLink,
-  requestPhoneOtp,
-  verifyEmailOtp,
-  verifyPhoneOtp,
-  type Profile,
-} from '../../auth/auth';
+import { requestMagicLink, verifyEmailOtp, type Profile } from '../../auth/auth';
 import { authRedirectUrl } from '../../auth/redirect';
 import {
+  isUsernameTakenError,
   validateEmail,
   validateOtpCode,
-  validatePhone,
   validateUsername,
 } from '../../auth/validation';
 import {
@@ -35,7 +29,6 @@ import {
 import { font, radius, space, theme, type } from '../theme';
 
 type Mode = 'signin' | 'signup';
-type Channel = 'email' | 'phone';
 
 type Props = {
   profile: Profile | null;
@@ -45,9 +38,7 @@ type Props = {
 
 export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
   const [mode, setMode] = useState<Mode>('signup');
-  const [channel, setChannel] = useState<Channel>('email');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [username, setUsername] = useState('');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
@@ -56,7 +47,6 @@ export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
   const [busy, setBusy] = useState(false);
 
   const isSignup = mode === 'signup';
-  const isPhone = channel === 'phone';
   const analyticsMode = isSignup ? 'sign_up' : 'sign_in';
 
   useEffect(() => {
@@ -68,8 +58,7 @@ export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
   async function sendCode() {
     const next: Record<string, string | null> = {
       username: isSignup ? validateUsername(username) : null,
-      email: isPhone ? null : validateEmail(email),
-      phone: isPhone ? validatePhone(phone) : null,
+      email: validateEmail(email),
     };
     setErrors(next);
     setFormError(null);
@@ -87,18 +76,12 @@ export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
     });
 
     setBusy(true);
-    const result = isPhone
-      ? await requestPhoneOtp({
-          phone,
-          createUser: isSignup,
-          username: isSignup ? username : undefined,
-        })
-      : await requestMagicLink({
-          email,
-          redirectTo: authRedirectUrl(),
-          createUser: isSignup,
-          username: isSignup ? username : undefined,
-        });
+    const result = await requestMagicLink({
+      email,
+      redirectTo: authRedirectUrl(),
+      createUser: isSignup,
+      username: isSignup ? username : undefined,
+    });
     setBusy(false);
 
     if (result.ok) {
@@ -110,6 +93,10 @@ export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
       mode: analyticsMode,
       error_category: authErrorCategory(result.error),
     });
+    if (isUsernameTakenError(result.error)) {
+      setErrors({ username: result.error });
+      return;
+    }
     setFormError(result.error);
   }
 
@@ -126,9 +113,7 @@ export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
     }
 
     setBusy(true);
-    const result = isPhone
-      ? await verifyPhoneOtp(phone, code)
-      : await verifyEmailOtp(email, code);
+    const result = await verifyEmailOtp(email, code);
     setBusy(false);
 
     if (result.ok) {
@@ -153,8 +138,9 @@ export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
           <Text style={styles.eyebrow}>OPTIONAL ACCOUNT</Text>
           <Text style={styles.title}>{isSignup ? 'Keep your scores with you' : 'Welcome back'}</Text>
           <Text style={styles.subtitle}>
-            Scores already save offline on this device. Sign in with email or
-            phone to post your best run to the global board. No password.
+            Scores already save offline on this device. Sign in with email to
+            post your best run to the global board. One username per person. No
+            password.
           </Text>
         </View>
 
@@ -167,20 +153,11 @@ export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
           <ModeTab label="Sign in" active={!isSignup} onPress={() => switchMode('signin')} />
         </Surface>
 
-        <Surface level={1} radius={radius.md} padded={false} style={styles.tabs}>
-          <ModeTab label="Email" active={!isPhone} onPress={() => switchChannel('email')} />
-          <ModeTab label="Phone" active={isPhone} onPress={() => switchChannel('phone')} />
-        </Surface>
-
         {sent ? (
           <>
             <FeedbackBanner
-              title={isPhone ? 'Check your texts' : 'Check your inbox'}
-              body={
-                isPhone
-                  ? `We sent a code to ${phone.trim()}. Type it below.`
-                  : `We sent a sign-in link to ${email.trim()}. Open it on this device, or type the code from the email.`
-              }
+              title="Check your inbox"
+              body={`We sent a sign-in link to ${email.trim()}. Open it on this device, or type the code from the email.`}
               tone="success"
             />
             <TextField
@@ -202,13 +179,13 @@ export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
               leading={busy ? <ActivityIndicator color={theme.bg} /> : undefined}
             />
             <Button
-              title={busy ? 'Sending…' : isPhone ? 'Resend code' : 'Resend link'}
+              title={busy ? 'Sending…' : 'Resend link'}
               variant="tonal"
               onPress={sendCode}
               disabled={busy}
             />
             <Button
-              title={isPhone ? 'Use a different number' : 'Use a different email'}
+              title="Use a different email"
               variant="ghost"
               size="sm"
               onPress={() => {
@@ -233,34 +210,21 @@ export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
               />
             )}
 
-            {isPhone ? (
-              <TextField
-                label="Phone"
-                value={phone}
-                onChangeText={setPhone}
-                error={errors.phone ?? undefined}
-                placeholder="+44 7700 900123"
-                keyboardType="phone-pad"
-                autoComplete="tel"
-                textContentType="telephoneNumber"
-              />
-            ) : (
-              <TextField
-                label="Email"
-                value={email}
-                onChangeText={setEmail}
-                error={errors.email ?? undefined}
-                placeholder="you@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-              />
-            )}
+            <TextField
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              error={errors.email ?? undefined}
+              placeholder="you@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+            />
 
             {formError ? <FeedbackBanner title="Couldn’t continue" body={formError} tone="danger" /> : null}
 
             <Button
-              title={busy ? 'Sending…' : isPhone ? 'Text me a code' : 'Email me a link'}
+              title={busy ? 'Sending…' : 'Email me a link'}
               onPress={sendCode}
               disabled={busy}
               size="lg"
@@ -281,14 +245,6 @@ export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
 
   function switchMode(nextMode: Mode) {
     setMode(nextMode);
-    setSent(false);
-    setCode('');
-    setErrors({});
-    setFormError(null);
-  }
-
-  function switchChannel(nextChannel: Channel) {
-    setChannel(nextChannel);
     setSent(false);
     setCode('');
     setErrors({});

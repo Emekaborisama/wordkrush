@@ -141,8 +141,7 @@ analytics still starts opted out and requires the player's explicit consent.
 
 - [ ] `npx expo login` (Expo account, for EAS builds)
 - [ ] Apple Developer Program ($99/yr) + `eas credentials` once
-- [ ] Apply `supabase/migrations/0001_init.sql`, `0002_leaderboard.sql`, and `0003_global_scores.sql` in the Supabase SQL editor
+- [ ] Apply `supabase/migrations/0001_init.sql`, `0002_leaderboard.sql`, `0003_global_scores.sql`, and `0004_unique_username.sql` in the Supabase SQL editor
 - [ ] **Supabase Auth magic link (D-033):** Authentication → URL Configuration. Site URL must be exactly `https://wordkrush.com` (include `https://`; a bare `wordkrush.com` becomes the path `/wordkrush.com` on the API host). Redirect allow-list: `https://wordkrush.com/**`, `http://localhost:8081/**`, `http://localhost:8080/**`, `wordkrush://**`, `exp://**`. This free project cannot edit Auth email templates on the default mailer (June 2026). Enable custom SMTP only after a provider is ready — an empty host/user/pass breaks sending. Typical path is [Resend](https://resend.com/docs/send-with-supabase-smtp): verify `wordkrush.com`, then Host `smtp.resend.com`, Port `465`, Username `resend`, Password = Resend API key. Sender `noreply@wordkrush.com`, name `WordKrush`. Then Authentication → Email Templates → Magic Link: subject `Sign in to WordKrush`, body from `supabase/templates/magic-link.html` (keep `{{ .ConfirmationURL }}` and `{{ .Token }}`). SMTP credentials stay in the dashboard, never in `.env` or `EXPO_PUBLIC_*`.
-- [ ] **Supabase Auth phone SMS (D-034):** Phone provider is enabled. Confirm an SMS provider is configured on that Phone settings page (Twilio or equivalent) or texts will not send. Test with an E.164 number (`+` and country code).
 
 Web hosting and the v1 data source are resolved by STACK D-020 and D-012.

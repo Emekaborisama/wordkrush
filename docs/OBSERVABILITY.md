@@ -105,7 +105,7 @@ expose a typed event map so names and property shapes cannot drift.
 | `game_over_action` | P1 | WordKrush comparison result-screen action | `action: play_again \| scores \| home`, `streak_bucket`, `is_new_best` | Replay and post-run intent |
 | `scores_viewed` | P2 | Scores screen mount | `game_id`, `run_count_bucket`, `has_highlight`, `auth_status` | Score-surface value |
 | `auth_prompt_viewed` | P1 | Scores screen shows eligible account prompt | `game_id`, `run_count_bucket` | Account CTA reach |
-| `auth_submitted` | P1 | Auth form after local validation (magic-link send, SMS send, or OTP code) | `mode: sign_in \| sign_up`, `validation_result`, `error_category?` | Form friction |
+| `auth_submitted` | P1 | Auth form after local validation (magic-link send or OTP code) | `mode: sign_in \| sign_up`, `validation_result`, `error_category?` | Form friction |
 | `auth_succeeded` | P1 | Session established (magic-link click or OTP verify) | `mode` | Account conversion |
 | `auth_failed` | P1 | Auth operation fails | `mode`, `error_category: credentials \| network \| rate_limit \| unconfirmed \| other` | Actionable auth failure mix |
 | `auth_skipped` | P2 | Auth skip action | none | Prompt abandonment |

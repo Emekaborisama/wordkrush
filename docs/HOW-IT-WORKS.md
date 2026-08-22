@@ -224,11 +224,19 @@ anyone when the backend is configured; posting requires a session. Opening
 Scores while signed in is the retry boundary: `syncPendingScores` upserts
 unsynced rows to `global_scores` keyed by `(player_id, client_entry_id)` so a
 flaky retry cannot double-post, then marks only confirmed rows `synced`.
-Optional accounts use **Supabase Auth** (D-033, D-034): email magic link or
-SMS one-time code. Email: the player enters an address, Supabase sends the
-link, and the session lands when they open it (web URL parse, or native PKCE
-exchange from `wordkrush://` / Expo Go) or type the 6-digit code from the
-same email. Web `emailRedirectTo` is the current origin, produced by
+Optional accounts use **Supabase Auth** (D-033, D-037): an email magic link, no
+password. The player enters an address, Supabase sends the link, and the
+session lands when they open it (web URL parse, or native PKCE exchange from
+`wordkrush://` / Expo Go) or type the 6-digit code from the same email. The
+auth screen is email-only — there is no phone tab. Create-account still
+collects a leaderboard username. That name is public identity, not a login:
+[0004_unique_username.sql](../supabase/migrations/0004_unique_username.sql)
+adds `username_key()` (trim, collapse spaces, lower-case — same as the
+client `normalizeUsername` then `.toLowerCase()`) and a unique index on
+`players.display_name`, so two accounts cannot post as the same name. A
+duplicate is mapped to "That username is taken. Try another." on the username
+field, not a generic form error. Web `emailRedirectTo` is the current origin,
+produced by
 `webAuthRedirectUrl` in [redirect-url.ts](../src/auth/redirect-url.ts). That
 helper prefixes `https://` when the value has no scheme — GoTrue treats a
 bare `wordkrush.com` as the path `/wordkrush.com` on the Auth API host and
@@ -240,9 +248,7 @@ button is `{{ .ConfirmationURL }}` (never `{{ .SiteURL }}`, which is the
 dashboard Site URL, not the one-time link) and the 6-digit `{{ .Token }}`
 stays as the in-app fallback. This free project cannot save that template
 until custom SMTP is configured (dashboard only; credentials never enter the
-app). Phone: E.164 number, SMS code, `verifyOtp` type `sms`. There is no
-password. Phone numbers are not sent to PostHog. Skip remains a guest path;
-a missing backend still plays offline.
+app). Skip remains a guest path; a missing backend still plays offline.
 
 **4. The public board is a view, not a client-ranked dump.** [BUILT]
 [0003_global_scores.sql](../supabase/migrations/0003_global_scores.sql) stores
@@ -337,7 +343,8 @@ Quick map of where each journey step lives:
 | LLM validator (schema/API/CLI) | `validator/` (+ 18 tests) | [BUILT] |
 | Content DB schema | `supabase/migrations/0001_init.sql` | [BUILT: apply on the owner project] |
 | Accounts + first leaderboard tables | `supabase/migrations/0002_leaderboard.sql` | [BUILT: apply on the owner project] |
-| Optional auth (magic link + SMS) | `src/auth/` (`redirect-url.ts` `webAuthRedirectUrl`), `src/ui/screens/AuthScreen.tsx`, `supabase/templates/magic-link.html` | [BUILT] — magic link + SMS OTP; web origin (scheme required) / native deep-link restore. Template keeps `{{ .ConfirmationURL }}` + `{{ .Token }}`. Custom SMTP required to save it on this free project (D-033, D-034) |
+| Optional auth (email magic link) | `src/auth/` (`redirect-url.ts` `webAuthRedirectUrl`), `src/ui/screens/AuthScreen.tsx`, `supabase/templates/magic-link.html` | [BUILT] — email-only magic link; unique username; web origin (scheme required) / native deep-link restore. Template keeps `{{ .ConfirmationURL }}` + `{{ .Token }}`. Custom SMTP required to save it on this free project (D-033, D-037) |
+| Unique leaderboard username | `supabase/migrations/0004_unique_username.sql`, `src/auth/validation.ts` `usernameKey` | [BUILT: apply on the owner project] — unique index on `username_key(display_name)`; duplicate maps to "That username is taken." |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |
