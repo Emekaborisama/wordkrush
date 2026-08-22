@@ -61,7 +61,7 @@ export function HomeScreen({ category, board, onPlay, onScores }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg, padding: 24, justifyContent: 'space-between' },
-  hero: { alignItems: 'center', paddingTop: 60 },
+  hero: { alignItems: 'center', paddingTop: 12 },
   title: { color: theme.text, fontSize: 42, fontWeight: '900', letterSpacing: -1 },
   subtitle: { color: theme.textDim, fontSize: 15, marginTop: 8 },
 

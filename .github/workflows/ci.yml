@@ -17,6 +17,35 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run test
-      # Web deploy: once a host is chosen (see docs/STACK.md O-6), add:
-      #   - run: npm run build:web
-      #   - deploy ./dist to the chosen host
+
+  # Deploys the web build to Railway (docs/STACK.md D-020).
+  #
+  # Gated on `check` rather than running beside it: the repo's definition of
+  # done is "npm run check green", and a host that deploys a red build turns
+  # that from a rule into a suggestion. Pull requests never reach this job, so
+  # a fork cannot deploy.
+  deploy:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    # Railway builds the bundle itself (railway.json -> npm run build:web), so
+    # this job only uploads the source and streams the result.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Railway
+        env:
+          # Project token, scoped to one project + environment.
+          # Railway dashboard -> best-games -> Settings -> Tokens.
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -z "${RAILWAY_TOKEN}" ]; then
+            echo "::warning::RAILWAY_TOKEN is not set — skipping deploy."
+            echo "Add it under Settings → Secrets and variables → Actions to enable auto-deploy."
+            exit 0
+          fi
+          npm install -g @railway/cli@4
+          # --ci streams build logs and exits non-zero if the build or the
+          # health check fails, so a broken deploy fails the workflow instead of
+          # going green while the site is down.
+          railway up --service web --ci --message "${GITHUB_SHA::7} — ${GITHUB_REF_NAME}"

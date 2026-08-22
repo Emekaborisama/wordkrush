@@ -40,7 +40,9 @@ export type GameState = {
 export type Action =
   | { type: 'newRun'; seed: number }
   | { type: 'guess'; choice: Guess }
-  | { type: 'next' };
+  | { type: 'next' }
+  /** Replace state wholesale when resuming a saved run. */
+  | { type: 'restore'; state: GameState };
 
 /** How many recent items are excluded from being picked again. */
 const RECENT_WINDOW = 12;
@@ -116,6 +118,11 @@ export function reducer(state: GameState, action: Action, pool: Item[]): GameSta
   switch (action.type) {
     case 'newRun':
       return newRun(pool, action.seed, state.bestStreak);
+
+    case 'restore':
+      // Land on 'playing': a run saved mid-reveal would otherwise resume with
+      // a timer that already fired and never advance.
+      return { ...action.state, status: 'playing', lastGuessCorrect: null };
 
     case 'guess': {
       // Ignore input while the reveal is on screen or the run is over —

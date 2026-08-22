@@ -81,6 +81,22 @@ describe('isValidEntry', () => {
     expect(isValidEntry(entry(4))).toBe(true);
   });
 
+  it('treats a completion time as optional', () => {
+    // Only some games measure one, and entries written before the field
+    // existed simply omit it. Requiring it would discard a player's history.
+    expect(isValidEntry({ ...entry(4), durationMs: undefined })).toBe(true);
+    expect(isValidEntry({ ...entry(4), durationMs: 43_000 })).toBe(true);
+    expect(isValidEntry({ ...entry(4), durationMs: 0 })).toBe(true);
+  });
+
+  it('rejects a completion time that is present but nonsense', () => {
+    // A bad value here would be rendered to the player as a time.
+    expect(isValidEntry({ ...entry(4), durationMs: -1 })).toBe(false);
+    expect(isValidEntry({ ...entry(4), durationMs: '43s' })).toBe(false);
+    expect(isValidEntry({ ...entry(4), durationMs: Number.NaN })).toBe(false);
+    expect(isValidEntry({ ...entry(4), durationMs: Infinity })).toBe(false);
+  });
+
   it('rejects malformed or hostile shapes', () => {
     // Persisted JSON is untrusted: hand-edited files, partial writes, old versions.
     expect(isValidEntry(null)).toBe(false);
@@ -90,6 +106,55 @@ describe('isValidEntry', () => {
     expect(isValidEntry({ ...entry(4), streak: '99' })).toBe(false);
     expect(isValidEntry({ ...entry(4), playedAt: 'not-a-date' })).toBe(false);
     expect(isValidEntry({ ...entry(4), id: '' })).toBe(false);
+  });
+});
+
+describe('lower-is-better scoring (Clueless)', () => {
+  it('treats a smaller score as the new best', () => {
+    const board = addScore(addScore(EMPTY_BOARD, entry(12), 'lower'), entry(5), 'lower');
+    expect(board.bestStreak).toBe(5);
+  });
+
+  it('does not let a worse (larger) score overwrite the best', () => {
+    const board = addScore(addScore(EMPTY_BOARD, entry(5), 'lower'), entry(30), 'lower');
+    expect(board.bestStreak).toBe(5);
+  });
+
+  it('takes the first run as the best rather than the empty-board zero', () => {
+    // A fresh board stores 0, which for lower-is-better would be an
+    // unbeatable phantom best that no real run could ever match.
+    expect(addScore(EMPTY_BOARD, entry(9), 'lower').bestStreak).toBe(9);
+  });
+
+  it('sorts the table smallest-first', () => {
+    let board = EMPTY_BOARD;
+    for (const s of [14, 3, 27]) {
+      board = addScore(board, entry(s, `2026-08-0${s % 9}T00:00:00.000Z`), 'lower');
+    }
+    expect(topScores(board, 10, 'lower').map((e) => e.streak)).toEqual([3, 14, 27]);
+  });
+
+  it('ranks a smaller score higher', () => {
+    let board = EMPTY_BOARD;
+    for (const s of [10, 6, 3]) {
+      board = addScore(board, entry(s, `2026-08-0${s}T00:00:00.000Z`), 'lower');
+    }
+    expect(rankOf(board, 2, 'lower')).toBe(1);
+    expect(rankOf(board, 7, 'lower')).toBe(3);
+  });
+
+  it('reconstructs the best from history on reload', () => {
+    const raw = JSON.stringify({
+      bestStreak: 4,
+      totalRuns: 2,
+      history: [entry(4), entry(11)],
+    });
+    expect(parseBoard(raw, 'lower').bestStreak).toBe(4);
+  });
+
+  it('does not read a fresh board zero as a perfect score', () => {
+    const raw = JSON.stringify({ bestStreak: 0, totalRuns: 1, history: [entry(7)] });
+    expect(parseBoard(raw, 'lower').bestStreak).toBe(7);
   });
 });
 

@@ -11,6 +11,8 @@ export default defineConfig({
       'src/data/**/*.test.ts',
       'src/ui/**/*.test.ts',
       'src/scores/**/*.test.ts',
+      'src/auth/**/*.test.ts',
+      'src/games/**/*.test.ts',
       'pipeline/**/*.test.ts',
     ],
   },

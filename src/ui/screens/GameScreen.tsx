@@ -1,10 +1,13 @@
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 import { newRun, reducer, type GameState } from '../../game/engine';
+import { isGameState, isResumable, matchesDataset } from '../../game/persistence';
+import { clearProgress, loadProgress, saveProgress } from '../../games/progress';
 import type { Category, Item } from '../../game/types';
 import { tapCorrect, tapWrong } from '../../native/haptics';
+import { HowToPlay } from '../HowToPlay';
 import { Sparkle } from '../Sparkle';
-import { formatValue, radius, theme } from '../theme';
+import { formatValue, radius, space, theme, type } from '../theme';
 import { useCountUp } from '../useCountUp';
 
 type Props = {
@@ -16,11 +19,39 @@ type Props = {
 
 export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
   const pool: Item[] = category.items;
+  const [help, setHelp] = useState(false);
   const [state, dispatch] = useReducer(
     (s: GameState, a: Parameters<typeof reducer>[1]) => reducer(s, a, pool),
     undefined,
     () => newRun(pool, seed, bestStreak),
   );
+
+  // A run is keyed by category, not by seed: resuming has to work when the
+  // screen remounts with a brand new seed.
+  const restored = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadProgress('more-or-less', category.id, isGameState).then((saved) => {
+      if (cancelled) return;
+      if (saved && isResumable(saved) && matchesDataset(saved, pool)) {
+        dispatch({ type: 'restore', state: saved });
+      } else if (saved) {
+        // Stale or unresumable — drop it rather than leaving it to be retried.
+        void clearProgress('more-or-less');
+      }
+      restored.current = true;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [category.id]);
+
+  useEffect(() => {
+    if (!restored.current) return;
+    if (state.status === 'over') void clearProgress('more-or-less');
+    else void saveProgress('more-or-less', category.id, state);
+  }, [state, category.id]);
 
   const revealed = state.status !== 'playing';
   const counted = useCountUp(state.right.value, 900, revealed);
@@ -54,6 +85,14 @@ export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
         <Text style={styles.streak}>{state.streak}</Text>
         <Text style={styles.streakLabel}>STREAK</Text>
         <Text style={styles.best}>best {state.bestStreak}</Text>
+        <Pressable
+          onPress={() => setHelp(true)}
+          style={({ pressed }) => [styles.helpBtn, pressed && styles.helpPressed]}
+          hitSlop={10}
+          accessibilityLabel="How to play"
+        >
+          <Text style={styles.helpMark}>?</Text>
+        </Pressable>
       </View>
 
       <View style={styles.arena}>
@@ -114,6 +153,30 @@ export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
           {imageCredits([state.left, state.right])}
         </Text>
       </View>
+
+      <HowToPlay
+        visible={help}
+        onClose={() => setHelp(false)}
+        title="How to play More or Less"
+        intro="Two things, one revealed number. Guess whether the hidden one is bigger or smaller."
+        steps={[
+          {
+            n: 1,
+            title: 'Read the left card',
+            body: 'It shows its real monthly Wikipedia pageviews.',
+          },
+          {
+            n: 2,
+            title: 'Judge the right card',
+            body: 'Tap MORE if you think it gets more views than the left one, LESS if fewer.',
+          },
+          {
+            n: 3,
+            title: 'Keep the streak alive',
+            body: 'Get it right and the winner slides left to face a new challenger. One wrong answer ends the run.',
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -195,6 +258,21 @@ function Card({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg, paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
   header: { alignItems: 'center' },
+  helpBtn: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  helpMark: { color: theme.textMuted, fontSize: 15, fontWeight: '800' },
+  helpPressed: { opacity: 0.7 },
   streak: { color: theme.text, fontSize: 34, fontWeight: '800', lineHeight: 38 },
   streakLabel: { color: theme.textDim, fontSize: 10, letterSpacing: 2, fontWeight: '700' },
   best: { color: theme.textDim, fontSize: 11, marginTop: 3 },

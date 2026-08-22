@@ -16,12 +16,15 @@
     "check:all": "npm run check && npm run test:validator",
     "pipeline:ingest": "tsx --env-file=.env pipeline/ingest.ts",
     "pipeline:preview": "tsx pipeline/preview-category.ts",
-    "pipeline:export": "tsx --env-file=.env pipeline/export-snapshot.ts"
+    "pipeline:export": "tsx --env-file=.env pipeline/export-snapshot.ts",
+    "pipeline:wordfall": "tsx pipeline/build-wordfall-dictionary.ts",
+    "serve:web": "node server/serve.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.112.3",
     "expo": "~57.0.13",
+    "expo-haptics": "~57.0.1",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -34,5 +37,8 @@
     "typescript": "~6.0.3",
     "vitest": "^4.1.10"
   },
-  "private": true
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
 }

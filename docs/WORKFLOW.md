@@ -63,7 +63,28 @@ The app only ever reads the bundled JSON. Changing game data = run pipeline, com
 1. Move CHANGELOG [Unreleased] → `[x.y.z] - date`; bump `package.json` + `app.json` versions.
 2. Tag `vx.y.z`, push.
 3. `eas build --platform ios --profile production` → `eas submit --platform ios` → TestFlight → App Store.
-4. Web: `npm run build:web` → deploy `dist/` (host TBD, STACK O-6).
+4. Web: nothing to do — merging to `master` deploys to Railway automatically once CI is green (D-020).
+
+## Web deploys
+
+Every push to `master` that passes `check` deploys to Railway. There is no manual step in the normal path.
+
+| Need | Command |
+|---|---|
+| Preview the production build locally | `npm run build:web && npm run serve:web` → http://localhost:8080 |
+| Deploy from your machine (bypasses CI) | `railway up --service web` |
+| Watch a deploy | `railway logs --service web` |
+| Roll back | `railway down` (removes the most recent deployment) |
+| Open the dashboard | `railway open` |
+
+Build-time configuration lives in Railway, not in the repo. Only `EXPO_PUBLIC_*` variables reach the browser bundle, so the deployed app needs its own copies to enable accounts and the leaderboard:
+
+```bash
+railway variable set --service web EXPO_PUBLIC_SUPABASE_URL=...
+railway variable set --service web EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+```
+
+Without them the site still works — `isBackendConfigured` is false, and the game runs offline as guest. **Never set `SUPABASE_SECRET_KEY` on this service**: it is a client bundle, and anything there is public.
 
 ## Security rules (non-negotiable)
 
