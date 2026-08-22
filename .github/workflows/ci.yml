@@ -71,4 +71,4 @@ jobs:
           # --ci streams build logs and exits non-zero if the build or the
           # health check fails, so a broken deploy fails the workflow instead of
           # going green while the site is down.
-          railway up --service web --ci --message "${GITHUB_SHA::7} — ${GITHUB_REF_NAME}"
+          railway up --service wordcrush --ci --message "${GITHUB_SHA::7} — ${GITHUB_REF_NAME}"
