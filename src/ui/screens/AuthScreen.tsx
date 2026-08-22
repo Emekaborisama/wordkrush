@@ -1,48 +1,78 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import { authErrorCategory } from '../../analytics/events';
-import { signIn, signUp, type Profile } from '../../auth/auth';
-import { validateEmail, validatePassword, validateUsername } from '../../auth/validation';
-import { radius, theme } from '../theme';
+import {
+  requestMagicLink,
+  requestPhoneOtp,
+  verifyEmailOtp,
+  verifyPhoneOtp,
+  type Profile,
+} from '../../auth/auth';
+import { authRedirectUrl } from '../../auth/redirect';
+import {
+  validateEmail,
+  validateOtpCode,
+  validatePhone,
+  validateUsername,
+} from '../../auth/validation';
+import {
+  BrandArtwork,
+  Button,
+  FeedbackBanner,
+  PressableScale,
+  Surface,
+  TextField,
+} from '../components';
+import { font, radius, space, theme, type } from '../theme';
 
 type Mode = 'signin' | 'signup';
+type Channel = 'email' | 'phone';
 
 type Props = {
+  profile: Profile | null;
   onAuthed: (profile: Profile) => void;
   onSkip: () => void;
 };
 
-export function AuthScreen({ onAuthed, onSkip }: Props) {
+export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
   const [mode, setMode] = useState<Mode>('signup');
+  const [channel, setChannel] = useState<Channel>('email');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const [username, setUsername] = useState('');
+  const [code, setCode] = useState('');
+  const [sent, setSent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const isSignup = mode === 'signup';
+  const isPhone = channel === 'phone';
+  const analyticsMode = isSignup ? 'sign_up' : 'sign_in';
 
-  async function submit() {
+  useEffect(() => {
+    if (!profile) return;
+    captureAnalytics('auth_succeeded', { mode: analyticsMode });
+    onAuthed(profile);
+  }, [profile?.id]);
+
+  async function sendCode() {
     const next: Record<string, string | null> = {
-      email: validateEmail(email),
-      password: validatePassword(password),
       username: isSignup ? validateUsername(username) : null,
+      email: isPhone ? null : validateEmail(email),
+      phone: isPhone ? validatePhone(phone) : null,
     };
     setErrors(next);
     setFormError(null);
-    const analyticsMode = isSignup ? 'sign_up' : 'sign_in';
     if (Object.values(next).some(Boolean)) {
       captureAnalytics('auth_submitted', {
         mode: analyticsMode,
@@ -57,21 +87,59 @@ export function AuthScreen({ onAuthed, onSkip }: Props) {
     });
 
     setBusy(true);
-    const result = isSignup
-      ? await signUp(email, password, username)
-      : await signIn(email, password);
+    const result = isPhone
+      ? await requestPhoneOtp({
+          phone,
+          createUser: isSignup,
+          username: isSignup ? username : undefined,
+        })
+      : await requestMagicLink({
+          email,
+          redirectTo: authRedirectUrl(),
+          createUser: isSignup,
+          username: isSignup ? username : undefined,
+        });
     setBusy(false);
 
     if (result.ok) {
-      captureAnalytics('auth_succeeded', { mode: analyticsMode });
-      onAuthed(result.profile);
-    } else {
-      captureAnalytics('auth_failed', {
-        mode: analyticsMode,
-        error_category: authErrorCategory(result.error),
-      });
-      setFormError(result.error);
+      setSent(true);
+      setCode('');
+      return;
     }
+    captureAnalytics('auth_failed', {
+      mode: analyticsMode,
+      error_category: authErrorCategory(result.error),
+    });
+    setFormError(result.error);
+  }
+
+  async function submitCode() {
+    const codeError = validateOtpCode(code);
+    setErrors({ code: codeError });
+    setFormError(null);
+    if (codeError) {
+      captureAnalytics('auth_submitted', {
+        mode: analyticsMode,
+        validation_result: 'invalid',
+      });
+      return;
+    }
+
+    setBusy(true);
+    const result = isPhone
+      ? await verifyPhoneOtp(phone, code)
+      : await verifyEmailOtp(email, code);
+    setBusy(false);
+
+    if (result.ok) {
+      onAuthed(result.profile);
+      return;
+    }
+    captureAnalytics('auth_failed', {
+      mode: analyticsMode,
+      error_category: authErrorCategory(result.error),
+    });
+    setFormError(result.error);
   }
 
   return (
@@ -81,157 +149,207 @@ export function AuthScreen({ onAuthed, onSkip }: Props) {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.title}>{isSignup ? 'Create an account' : 'Welcome back'}</Text>
+          <BrandArtwork variant="lockup" size={168} />
+          <Text style={styles.eyebrow}>OPTIONAL ACCOUNT</Text>
+          <Text style={styles.title}>{isSignup ? 'Keep your scores with you' : 'Welcome back'}</Text>
           <Text style={styles.subtitle}>
-            Optional. Your scores already save on this device — an account lets them follow you
-            across devices and onto the global board.
+            Scores already save offline on this device. Sign in with email or
+            phone to post your best run to the global board. No password.
           </Text>
         </View>
 
-        {isSignup && (
-          <Field
-            label="Username"
-            value={username}
-            onChange={setUsername}
-            error={errors.username}
-            placeholder="Shown on the leaderboard"
-            autoCapitalize="none"
-            maxLength={24}
+        <Surface level={1} radius={radius.md} padded={false} style={styles.tabs}>
+          <ModeTab
+            label="Create account"
+            active={isSignup}
+            onPress={() => switchMode('signup')}
           />
+          <ModeTab label="Sign in" active={!isSignup} onPress={() => switchMode('signin')} />
+        </Surface>
+
+        <Surface level={1} radius={radius.md} padded={false} style={styles.tabs}>
+          <ModeTab label="Email" active={!isPhone} onPress={() => switchChannel('email')} />
+          <ModeTab label="Phone" active={isPhone} onPress={() => switchChannel('phone')} />
+        </Surface>
+
+        {sent ? (
+          <>
+            <FeedbackBanner
+              title={isPhone ? 'Check your texts' : 'Check your inbox'}
+              body={
+                isPhone
+                  ? `We sent a code to ${phone.trim()}. Type it below.`
+                  : `We sent a sign-in link to ${email.trim()}. Open it on this device, or type the code from the email.`
+              }
+              tone="success"
+            />
+            <TextField
+              label="Code"
+              value={code}
+              onChangeText={setCode}
+              error={errors.code ?? undefined}
+              placeholder="6-digit code"
+              keyboardType="number-pad"
+              autoComplete="one-time-code"
+              textContentType="oneTimeCode"
+            />
+            {formError ? <FeedbackBanner title="Couldn’t continue" body={formError} tone="danger" /> : null}
+            <Button
+              title={busy ? 'Checking…' : 'Verify code'}
+              onPress={submitCode}
+              disabled={busy}
+              size="lg"
+              leading={busy ? <ActivityIndicator color={theme.bg} /> : undefined}
+            />
+            <Button
+              title={busy ? 'Sending…' : isPhone ? 'Resend code' : 'Resend link'}
+              variant="tonal"
+              onPress={sendCode}
+              disabled={busy}
+            />
+            <Button
+              title={isPhone ? 'Use a different number' : 'Use a different email'}
+              variant="ghost"
+              size="sm"
+              onPress={() => {
+                setSent(false);
+                setCode('');
+                setFormError(null);
+                setErrors({});
+              }}
+            />
+          </>
+        ) : (
+          <>
+            {isSignup && (
+              <TextField
+                label="Username"
+                value={username}
+                onChangeText={setUsername}
+                error={errors.username ?? undefined}
+                placeholder="Shown on the leaderboard"
+                autoCapitalize="none"
+                maxLength={24}
+              />
+            )}
+
+            {isPhone ? (
+              <TextField
+                label="Phone"
+                value={phone}
+                onChangeText={setPhone}
+                error={errors.phone ?? undefined}
+                placeholder="+44 7700 900123"
+                keyboardType="phone-pad"
+                autoComplete="tel"
+                textContentType="telephoneNumber"
+              />
+            ) : (
+              <TextField
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                error={errors.email ?? undefined}
+                placeholder="you@example.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+              />
+            )}
+
+            {formError ? <FeedbackBanner title="Couldn’t continue" body={formError} tone="danger" /> : null}
+
+            <Button
+              title={busy ? 'Sending…' : isPhone ? 'Text me a code' : 'Email me a link'}
+              onPress={sendCode}
+              disabled={busy}
+              size="lg"
+              leading={busy ? <ActivityIndicator color={theme.bg} /> : undefined}
+            />
+          </>
         )}
 
-        <Field
-          label="Email"
-          value={email}
-          onChange={setEmail}
-          error={errors.email}
-          placeholder="you@example.com"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-        />
-
-        <Field
-          label="Password"
-          value={password}
-          onChange={setPassword}
-          error={errors.password}
-          placeholder={isSignup ? 'At least 8 characters' : ''}
-          secureTextEntry
-          autoCapitalize="none"
-          autoComplete={isSignup ? 'new-password' : 'current-password'}
-        />
-
-        {formError && <Text style={styles.formError}>{formError}</Text>}
-
-        <Pressable
-          style={({ pressed }) => [styles.primary, (pressed || busy) && styles.pressed]}
-          onPress={submit}
-          disabled={busy}
-        >
-          {busy ? (
-            <ActivityIndicator color={theme.bg} />
-          ) : (
-            <Text style={styles.primaryText}>{isSignup ? 'CREATE ACCOUNT' : 'SIGN IN'}</Text>
-          )}
-        </Pressable>
-
-        <Pressable
-          onPress={() => {
-            setMode(isSignup ? 'signin' : 'signup');
-            setErrors({});
-            setFormError(null);
-          }}
-        >
-          <Text style={styles.switch}>
-            {isSignup ? 'Already have an account? Sign in' : 'Need an account? Create one'}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [styles.skip, pressed && styles.pressed]}
+        <Button
+          title="Keep playing as guest"
+          variant="ghost"
+          size="sm"
           onPress={onSkip}
-        >
-          <Text style={styles.skipText}>Keep playing without an account</Text>
-        </Pressable>
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
+
+  function switchMode(nextMode: Mode) {
+    setMode(nextMode);
+    setSent(false);
+    setCode('');
+    setErrors({});
+    setFormError(null);
+  }
+
+  function switchChannel(nextChannel: Channel) {
+    setChannel(nextChannel);
+    setSent(false);
+    setCode('');
+    setErrors({});
+    setFormError(null);
+  }
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-  error,
-  ...input
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string | null;
-  // TextInput has its own event-based `onChange`/`value`; omit both so our
-  // text-only callback does not collide with it.
-} & Omit<React.ComponentProps<typeof TextInput>, 'onChange' | 'value'>) {
+function ModeTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label.toUpperCase()}</Text>
-      <TextInput
-        style={[styles.input, error ? styles.inputError : null]}
-        value={value}
-        onChangeText={onChange}
-        placeholderTextColor={theme.textDim}
-        {...input}
-      />
-      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
-    </View>
+    <PressableScale
+      onPress={onPress}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      style={[styles.tab, active && styles.tabActive]}
+    >
+      <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
-  content: { padding: 24, gap: 16, paddingTop: 48, paddingBottom: 40 },
-  header: { gap: 8, marginBottom: 4 },
-  title: { color: theme.text, fontSize: 26, fontWeight: '900' },
-  subtitle: { color: theme.textDim, fontSize: 13, lineHeight: 19 },
-
-  field: { gap: 6 },
-  label: { color: theme.textDim, fontSize: 10, letterSpacing: 1.5, fontWeight: '700' },
-  input: {
-    backgroundColor: theme.bgElevated,
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+  content: {
+    padding: space.lg,
+    gap: space.md,
+    paddingTop: space.xl,
+    paddingBottom: space.xxl,
+    width: '100%',
+    maxWidth: 460,
+    alignSelf: 'center',
+  },
+  header: { alignItems: 'center', marginBottom: space.xs },
+  eyebrow: { ...type.overline, color: theme.accent, marginTop: space.md },
+  title: {
+    ...type.display,
     color: theme.text,
-    fontSize: 15,
-  },
-  inputError: { borderColor: theme.danger },
-  fieldError: { color: theme.danger, fontSize: 11 },
-  formError: {
-    color: theme.danger,
-    fontSize: 13,
+    fontSize: 31,
+    lineHeight: 36,
     textAlign: 'center',
-    backgroundColor: theme.dangerDim,
-    borderRadius: radius.sm,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    overflow: 'hidden',
+    marginTop: space.xs,
   },
-
-  primary: {
-    backgroundColor: theme.accent,
-    paddingVertical: 17,
+  subtitle: {
+    ...type.body,
+    color: theme.textMuted,
+    textAlign: 'center',
+    marginTop: space.sm,
+    maxWidth: 360,
+  },
+  tabs: {
+    flexDirection: 'row',
+    padding: 4,
+    marginBottom: space.xs,
+  },
+  tab: {
+    flex: 1,
+    minHeight: 42,
     borderRadius: radius.md,
     alignItems: 'center',
-    marginTop: 4,
-    minHeight: 54,
     justifyContent: 'center',
   },
-  primaryText: { color: theme.bg, fontSize: 15, fontWeight: '900', letterSpacing: 2 },
-  switch: { color: theme.accent, fontSize: 13, textAlign: 'center', paddingVertical: 6 },
-  skip: { paddingVertical: 14, alignItems: 'center' },
-  skipText: { color: theme.textDim, fontSize: 13, textDecorationLine: 'underline' },
-  pressed: { opacity: 0.75 },
+  tabActive: { backgroundColor: theme.cardHigh },
+  tabText: { color: theme.textDim, fontFamily: font.medium, fontSize: 13, fontWeight: '500' },
+  tabTextActive: { color: theme.text, fontFamily: font.semibold, fontWeight: '600' },
 });

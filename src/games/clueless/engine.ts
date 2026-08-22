@@ -1,5 +1,5 @@
 /**
- * Clueless engine — a pure reducer, same shape as the WordCrush comparison engine.
+ * Clueless engine — a pure reducer, same shape as the WordKrush comparison engine.
  *
  * All the semantic work happened offline: the puzzle arrives as a list of words
  * ordered by closeness to the secret, so playing is just a lookup. No model, no

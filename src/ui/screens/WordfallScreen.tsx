@@ -6,7 +6,7 @@ import {
   scoreDeltaBucket,
   wordLengthBucket,
 } from '../../analytics/events';
-import { DICTIONARY, LAST_LEVEL, LEVELS, levelByNumber } from '../../data/wordfall';
+import { DICTIONARY, LEVELS, levelByNumber } from '../../data/wordfall';
 import { loadProgress, saveProgress } from '../../games/progress';
 import { randomSeed } from '../../games/rng';
 import {
@@ -25,10 +25,30 @@ import {
   rehydrate,
   type WordfallSave,
 } from '../../games/wordfall/persistence';
+import {
+  formatDropDay,
+  isLevelPlayable,
+  isLevelReleased,
+  isNewestRelease,
+  lastReleasedNumber,
+  nextDropDate,
+  parseAvailableFrom,
+  unlockAfterWin,
+} from '../../games/wordfall/schedule';
 import type { Level, SpecialKind, WordfallState } from '../../games/wordfall/types';
+import { getGame } from '../../games/registry';
 import { tapCorrect, tapWrong } from '../../native/haptics';
 import { HowToPlay } from '../HowToPlay';
-import { formatDuration, radius, shadow, space, theme, type } from '../theme';
+import {
+  Badge,
+  GameArtwork,
+  GameHeader,
+  IconButton,
+  ResultPanel,
+  Surface,
+} from '../components';
+import { Mascot } from '../lottie/Mascot';
+import { elevation, font, formatDuration, radius, space, theme, type } from '../theme';
 import { BoardView } from '../wordfall/BoardView';
 import { describeObjective, Hud, TracePreview } from '../wordfall/Hud';
 import { SPECIAL_VISUALS } from '../wordfall/visuals';
@@ -40,15 +60,16 @@ const GAME_ID = 'wordfall';
  * in the middle of.
  */
 const SESSION = 'campaign';
-const ACCENT = '#F0A742';
+const ACCENT = getGame('wordfall')?.accent ?? theme.warning;
 
 type Props = {
   /** Called once per level cleared, with the score and how long it took. */
   onLevelWon: (score: number, levelNumber: number, elapsedMs: number) => void;
+  onExit: () => void;
   showHelpInitially?: boolean;
 };
 
-export function WordfallScreen({ onLevelWon, showHelpInitially = false }: Props) {
+export function WordfallScreen({ onLevelWon, onExit, showHelpInitially = false }: Props) {
   const [loaded, setLoaded] = useState(false);
   const [unlocked, setUnlocked] = useState(1);
   const [levelNumber, setLevelNumber] = useState(1);
@@ -63,16 +84,19 @@ export function WordfallScreen({ onLevelWon, showHelpInitially = false }: Props)
     void loadProgress<WordfallSave>(GAME_ID, SESSION, isWordfallSave).then((save) => {
       if (cancelled) return;
       if (save) {
-        const unlockedNow = Math.min(save.unlocked, LAST_LEVEL);
-        setUnlocked(unlockedNow);
+        setUnlocked(save.unlocked);
         if (save.state && levelByNumber(save.state.levelNumber)) {
           setLevelNumber(save.state.levelNumber);
           setResume(rehydrate(save.state));
         } else {
           // A finished level clears the board but keeps the unlock. Opening at
           // level 1 in that case would send a returning player back to the
-          // tutorial with no explanation.
-          setLevelNumber(unlockedNow);
+          // tutorial with no explanation. Prefer the newest released level
+          // they are allowed to open — a future weekly drop may sit above
+          // LAST_LEVEL in the saved unlock without existing yet.
+          const now = new Date();
+          const latest = lastReleasedNumber(LEVELS, now);
+          setLevelNumber(Math.min(save.unlocked, latest));
         }
       }
       setLoaded(true);
@@ -113,20 +137,24 @@ export function WordfallScreen({ onLevelWon, showHelpInitially = false }: Props)
         resume={resume?.levelNumber === levelNumber ? resume : null}
         unlocked={unlocked}
         onStateChange={handleStateChange}
+        onExit={onExit}
         onHelp={() => setHelp(true)}
         onPickLevel={() => setPicking(true)}
         // The clock stops while a sheet is open: losing a timed level because
         // you read the instructions would be a bad joke.
         paused={help || picking}
         onWin={(score, elapsedMs) => {
-          const next = Math.max(unlocked, Math.min(levelNumber + 1, LAST_LEVEL));
+          const next = unlockAfterWin(unlocked, levelNumber);
           setUnlocked(next);
           persist(null, next);
           onLevelWon(score, levelNumber, elapsedMs);
         }}
         onNext={() => {
           setResume(null);
-          if (levelNumber < LAST_LEVEL) setLevelNumber(levelNumber + 1);
+          const upcoming = levelByNumber(levelNumber + 1);
+          if (upcoming && isLevelPlayable(upcoming, unlockAfterWin(unlocked, levelNumber), new Date())) {
+            setLevelNumber(upcoming.number);
+          }
           setAttempt((a) => a + 1);
         }}
         onRetry={() => {
@@ -152,7 +180,7 @@ export function WordfallScreen({ onLevelWon, showHelpInitially = false }: Props)
         visible={help}
         onClose={() => setHelp(false)}
         title="How to play Wordfall"
-        intro="Drag across touching letters to spell a word. What the word is made of decides what it leaves behind."
+        intro="Drag across touching letters to spell a word. What the word is made of decides what it leaves behind. New levels drop every Monday."
         accent={ACCENT}
         steps={[
           {
@@ -214,6 +242,7 @@ function LevelPlay({
   onWin,
   onNext,
   onRetry,
+  onExit,
   onHelp,
   onPickLevel,
 }: {
@@ -226,6 +255,7 @@ function LevelPlay({
   onWin: (score: number, elapsedMs: number) => void;
   onNext: () => void;
   onRetry: () => void;
+  onExit: () => void;
   onHelp: () => void;
   onPickLevel: () => void;
 }) {
@@ -236,6 +266,7 @@ function LevelPlay({
     (saved) => saved ?? newGame(ctx, randomSeed()),
   );
   const reported = useRef(false);
+  const [boardBounds, setBoardBounds] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     captureAnalytics('run_started', {
@@ -405,29 +436,32 @@ function LevelPlay({
 
   return (
     <View style={styles.play}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={onPickLevel}
-          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
-          hitSlop={8}
-          accessibilityLabel="Choose a level"
-        >
-          <Text style={styles.headerBtnText}>☰</Text>
-        </Pressable>
-        <Text style={styles.title}>Wordfall</Text>
-        <Pressable
-          onPress={onHelp}
-          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
-          hitSlop={8}
-          accessibilityLabel="How to play"
-        >
-          <Text style={styles.headerBtnText}>?</Text>
-        </Pressable>
-      </View>
+      <GameHeader
+        title="Wordfall"
+        subtitle={`LEVEL ${level.number} · ${level.name.toUpperCase()}`}
+        accent={ACCENT}
+        onExit={onExit}
+        sideWidth={92}
+        trailing={
+          <View style={styles.headerActions}>
+            <IconButton
+              icon={<Text style={styles.levelListMark}>≡</Text>}
+              accessibilityLabel="Choose a level"
+              onPress={onPickLevel}
+              color={ACCENT}
+            />
+            <IconButton
+              icon={<Text style={styles.helpMark}>?</Text>}
+              accessibilityLabel="How to play"
+              onPress={onHelp}
+              color={ACCENT}
+            />
+          </View>
+        }
+      />
 
       <Hud
-        levelNumber={level.number}
-        levelName={level.name}
+        levelDescription={level.description}
         movesLeft={state.movesLeft}
         timeLeftMs={timeLeft}
         timeLimitMs={level.timeLimitMs}
@@ -437,16 +471,28 @@ function LevelPlay({
         accent={ACCENT}
       />
 
-      <View style={styles.boardWrap}>
-        <BoardView
-          board={state.board}
-          selection={state.selection}
-          accent={ACCENT}
-          disabled={over}
-          onTrace={(index) => dispatch({ type: 'trace', index })}
-          onRelease={submit}
-          onCancel={() => dispatch({ type: 'cancel' })}
-        />
+      <View
+        style={styles.boardWrap}
+        onLayout={(event) => {
+          const { width, height } = event.nativeEvent.layout;
+          setBoardBounds((current) =>
+            current.width === width && current.height === height ? current : { width, height },
+          );
+        }}
+      >
+        {boardBounds.width > 0 && boardBounds.height > 0 ? (
+          <BoardView
+            board={state.board}
+            selection={state.selection}
+            accent={ACCENT}
+            maxWidth={boardBounds.width}
+            maxHeight={boardBounds.height}
+            disabled={over}
+            onTrace={(index) => dispatch({ type: 'trace', index })}
+            onRelease={submit}
+            onCancel={() => dispatch({ type: 'cancel' })}
+          />
+        ) : null}
       </View>
 
       <TracePreview
@@ -488,69 +534,66 @@ function LevelOutcome({
   onRetry: () => void;
 }) {
   const won = state.status === 'won';
-  const finished = won && level.number >= LAST_LEVEL && unlocked >= LAST_LEVEL;
+  const latest = lastReleasedNumber(LEVELS, new Date());
+  const finished = won && level.number >= latest;
 
   return (
     <View style={styles.outcomeScrim}>
-      <View style={[styles.outcome, { borderColor: won ? ACCENT : theme.border }]}>
-        <Text style={[styles.outcomeEyebrow, { color: won ? ACCENT : theme.textDim }]}>
-          {finished
+      <ResultPanel
+        eyebrow={
+          finished
             ? 'ALL LEVELS CLEARED'
             : won
               ? 'LEVEL COMPLETE'
               : outOfTime
                 ? 'OUT OF TIME'
-                : 'OUT OF MOVES'}
-        </Text>
-        <Text style={styles.outcomeScore}>{state.score.toLocaleString('en-US')}</Text>
-        <Text style={styles.outcomeMeta}>
-          {state.played.length} {state.played.length === 1 ? 'word' : 'words'}
-          {' · '}
-          {formatDuration(state.elapsedMs)}
-          {/* Only mention spare moves on a level where moves were the limit —
-              a timed level always ends with dozens left, which means nothing. */}
-          {won && level.timeLimitMs === undefined && state.movesLeft > 0
-            ? ` · ${state.movesLeft} moves to spare`
-            : ''}
-        </Text>
-
-        {!won && (
+                : 'OUT OF MOVES'
+        }
+        title={finished ? 'Wordfall master!' : won ? 'Board crushed!' : 'Almost there.'}
+        value={state.score.toLocaleString('en-US')}
+        valueLabel="POINTS"
+        body={`${state.played.length} ${state.played.length === 1 ? 'word' : 'words'} · ${formatDuration(
+          state.elapsedMs,
+        )}${
+          won && level.timeLimitMs === undefined && state.movesLeft > 0
+            ? ` · ${state.movesLeft} moves spare`
+            : ''
+        }`}
+        accent={won ? ACCENT : theme.danger}
+        art={<Mascot size={64} pose={won ? 'celebrate' : 'wince'} />}
+        primary={{
+          label: won && !finished ? 'Next level' : won ? 'Replay level' : 'Try again',
+          onPress: won && !finished ? onNext : onRetry,
+        }}
+        secondary={won && !finished ? { label: 'Replay level', onPress: onRetry } : undefined}
+      >
+        {!won ? (
           // Naming what fell short is the difference between "try again" and
           // knowing what to try differently.
-          <View style={styles.missed}>
-            {level.objectives.map((objective, i) => {
-              const progress = state.progress[i] ?? 0;
+          <Surface level={1} radius={radius.md} borderColor={theme.danger} style={styles.missed}>
+            <Text style={styles.missedTitle}>STILL TO DO</Text>
+            {level.objectives.map((objective, index) => {
+              const progress = state.progress[index] ?? 0;
               if (progress >= objective.target) return null;
               const { label } = describeObjective(objective);
               return (
-                <Text key={i} style={styles.missedRow}>
+                <Text key={index} style={styles.missedRow}>
                   {label}: {progress.toLocaleString('en-US')} of{' '}
                   {objective.target.toLocaleString('en-US')}
                 </Text>
               );
             })}
-          </View>
-        )}
-
-        <View style={styles.outcomeButtons}>
-          <Pressable
-            style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
-            onPress={onRetry}
-          >
-            <Text style={styles.secondaryText}>{won ? 'Replay' : 'Try again'}</Text>
-          </Pressable>
-          {won && !finished && (
-            <Pressable
-              style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
-              onPress={onNext}
-            >
-              <Text style={styles.primaryText}>Next level</Text>
-            </Pressable>
-          )}
-        </View>
-      </View>
+          </Surface>
+        ) : null}
+      </ResultPanel>
     </View>
   );
+}
+
+function pickerIntro(now: Date): string {
+  const upcoming = nextDropDate(LEVELS, now);
+  if (upcoming) return `A new level drops every Monday. Next: ${formatDropDay(upcoming)}.`;
+  return 'A new level drops every Monday. Beat the campaign and come back next week.';
 }
 
 function LevelPicker({
@@ -571,41 +614,86 @@ function LevelPicker({
       <View style={styles.pickerRoot}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
         <View style={styles.picker}>
-          <Text style={styles.pickerTitle}>Levels</Text>
+          <View style={styles.pickerHandle} />
+          <View style={styles.pickerHeader}>
+            <GameArtwork gameId={GAME_ID} accent={ACCENT} size={54} raised />
+            <View style={styles.pickerHeaderCopy}>
+              <Text style={styles.pickerTitle}>Choose a level</Text>
+              <Text style={styles.pickerIntro}>
+                {pickerIntro(new Date())}
+              </Text>
+            </View>
+          </View>
           <ScrollView contentContainerStyle={styles.pickerList} showsVerticalScrollIndicator={false}>
             {LEVELS.map((level) => {
-              const locked = level.number > unlocked;
+              const now = new Date();
+              const released = isLevelReleased(level, now);
+              const playable = isLevelPlayable(level, unlocked, now);
+              const upcoming = !released && level.availableFrom
+                ? parseAvailableFrom(level.availableFrom)
+                : null;
+              const locked = !playable;
               const active = level.number === current;
+              const fresh = isNewestRelease(level, now);
               return (
-                <Pressable
+                <Surface
                   key={level.number}
+                  level={active ? 3 : 2}
+                  radius={radius.md}
                   disabled={locked}
                   onPress={() => onSelect(level.number)}
-                  style={({ pressed }) => [
-                    styles.pickerRow,
-                    active && { borderColor: ACCENT },
-                    locked && styles.pickerRowLocked,
-                    pressed && !locked && styles.pressed,
-                  ]}
+                  borderColor={active ? ACCENT : undefined}
+                  style={styles.pickerRow}
                   accessibilityRole="button"
-                  accessibilityState={{ disabled: locked, selected: active }}
                   accessibilityLabel={
-                    locked ? `Level ${level.number}, locked` : `Play level ${level.number}, ${level.name}`
+                    !released && upcoming
+                      ? `Level ${level.number}, ${level.name}, drops ${formatDropDay(upcoming)}. ${level.description}`
+                      : locked
+                        ? `Level ${level.number}, ${level.name}, locked. ${level.description}`
+                        : `Play level ${level.number}, ${level.name}. ${level.description}`
                   }
                 >
-                  <Text style={[styles.pickerNumber, active && { color: ACCENT }]}>
-                    {locked ? '🔒' : level.number}
-                  </Text>
+                  <View
+                    style={[
+                      styles.pickerNumber,
+                      active && { backgroundColor: ACCENT, borderColor: ACCENT },
+                    ]}
+                  >
+                    {locked ? (
+                      <LockMark />
+                    ) : (
+                      <Text style={[styles.pickerNumberText, active && { color: theme.bg }]}>
+                        {level.number}
+                      </Text>
+                    )}
+                  </View>
                   <View style={styles.pickerBody}>
-                    <Text style={[styles.pickerName, locked && styles.dim]}>{level.name}</Text>
-                    <Text style={styles.pickerGoals} numberOfLines={1}>
+                    <View style={styles.pickerNameRow}>
+                      <Text style={[styles.pickerName, locked && styles.dim]}>{level.name}</Text>
+                      {fresh ? <Badge label="THIS WEEK" color={ACCENT} /> : null}
+                      {upcoming ? <Badge label={`DROPS ${formatDropDay(upcoming).toUpperCase()}`} /> : null}
+                      {active ? <Badge label="CURRENT" color={ACCENT} /> : null}
+                    </View>
+                    <Text style={styles.pickerDescription} numberOfLines={2}>
+                      {level.description}
+                    </Text>
+                    <Text style={styles.pickerGoals} numberOfLines={2}>
                       {level.objectives
                         .map((o) => `${describeObjective(o).label} ${o.target.toLocaleString('en-US')}`)
                         .join(' · ')}
                     </Text>
                   </View>
-                  <Text style={styles.pickerMoves}>{level.moves}</Text>
-                </Pressable>
+                  <View style={styles.pickerBudget}>
+                    <Text style={styles.pickerBudgetValue}>
+                      {level.timeLimitMs === undefined
+                        ? level.moves
+                        : formatDuration(level.timeLimitMs)}
+                    </Text>
+                    <Text style={styles.pickerBudgetLabel}>
+                      {level.timeLimitMs === undefined ? 'MOVES' : 'TIME'}
+                    </Text>
+                  </View>
+                </Surface>
               );
             })}
           </ScrollView>
@@ -615,23 +703,32 @@ function LevelPicker({
   );
 }
 
+function LockMark() {
+  return (
+    <View style={styles.lock}>
+      <View style={styles.lockShackle} />
+      <View style={styles.lockBody} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg },
-  play: { flex: 1, paddingHorizontal: space.lg, gap: space.md },
-
-  header: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  title: { ...type.display, color: theme.text, fontSize: 26, flex: 1, textAlign: 'center' },
-  headerBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.card,
-    alignItems: 'center',
-    justifyContent: 'center',
+  play: { flex: 1, paddingHorizontal: space.md, paddingBottom: space.sm, gap: space.sm },
+  levelListMark: {
+    color: theme.text,
+    fontFamily: font.semibold,
+    fontSize: 21,
+    fontWeight: '600',
+    lineHeight: 22,
   },
-  headerBtnText: { color: theme.textMuted, fontSize: 14, fontWeight: '800' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  helpMark: {
+    color: theme.text,
+    fontFamily: font.semibold,
+    fontSize: 16,
+    fontWeight: '600',
+  },
 
   // The board takes whatever height is left and centres itself, so the HUD and
   // the read-out keep their positions on every screen size.
@@ -643,79 +740,101 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(8,10,15,0.88)',
+    backgroundColor: theme.overlay,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: space.xl,
+    padding: space.lg,
   },
-  outcome: {
+  missed: {
     width: '100%',
-    backgroundColor: theme.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    padding: space.xl,
+    marginTop: space.lg,
+    gap: 3,
     alignItems: 'center',
-    ...shadow.raised,
   },
-  outcomeEyebrow: { ...type.overline },
-  outcomeScore: { ...type.display, color: theme.text, marginTop: 6, fontVariant: ['tabular-nums'] },
-  outcomeMeta: { ...type.caption, color: theme.textMuted, marginTop: 2 },
-  missed: { marginTop: space.md, gap: 2, alignItems: 'center' },
-  missedRow: { ...type.caption, color: theme.textDim },
-  outcomeButtons: { flexDirection: 'row', gap: space.sm, marginTop: space.lg },
-  primary: {
-    backgroundColor: ACCENT,
-    borderRadius: radius.sm + 2,
-    paddingHorizontal: space.xl,
-    paddingVertical: 12,
-  },
-  primaryText: { color: theme.bg, fontSize: 14, fontWeight: '800' },
-  secondary: {
-    borderWidth: 1,
-    borderColor: theme.borderStrong,
-    borderRadius: radius.sm + 2,
-    paddingHorizontal: space.lg,
-    paddingVertical: 12,
-  },
-  secondaryText: { color: theme.textMuted, fontSize: 14, fontWeight: '700' },
+  missedTitle: { ...type.overline, color: theme.danger, marginBottom: 2 },
+  missedRow: { ...type.caption, color: theme.textMuted },
 
-  pickerRoot: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(8,10,15,0.7)' },
+  pickerRoot: { flex: 1, justifyContent: 'flex-end', backgroundColor: theme.overlay },
   picker: {
-    backgroundColor: theme.bgElevated,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
+    ...elevation(1),
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     borderTopWidth: 1,
-    borderColor: theme.edge,
-    paddingTop: space.lg,
     paddingHorizontal: space.lg,
     paddingBottom: space.xl,
-    maxHeight: '80%',
+    maxHeight: '88%',
   },
-  pickerTitle: { ...type.title, color: theme.text, marginBottom: space.md },
+  pickerHandle: {
+    width: 38,
+    height: 4,
+    borderRadius: radius.pill,
+    backgroundColor: theme.borderStrong,
+    alignSelf: 'center',
+    marginVertical: space.md,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginBottom: space.lg,
+  },
+  pickerHeaderCopy: { flex: 1 },
+  pickerTitle: { ...type.title, color: theme.text },
+  pickerIntro: { ...type.caption, color: theme.textMuted, marginTop: 2 },
   pickerList: { gap: space.sm, paddingBottom: space.md },
   pickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    backgroundColor: theme.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.border,
-    padding: space.md,
   },
-  pickerRowLocked: { opacity: 0.45 },
   pickerNumber: {
-    ...type.title,
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
+    backgroundColor: elevation(1).backgroundColor,
+    borderWidth: 1,
+    borderColor: elevation(1).borderColor,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickerNumberText: {
     color: theme.textMuted,
-    width: 26,
-    textAlign: 'center',
+    fontFamily: font.bold,
+    fontSize: 18,
+    fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },
   pickerBody: { flex: 1 },
-  pickerName: { ...type.bodyStrong, color: theme.text },
-  pickerGoals: { ...type.caption, color: theme.textDim, marginTop: 1 },
-  pickerMoves: { ...type.caption, color: theme.textDim, fontVariant: ['tabular-nums'] },
+  pickerNameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  pickerName: { ...type.subtitle, color: theme.text },
+  pickerDescription: { ...type.caption, color: theme.textMuted, marginTop: 3, lineHeight: 16 },
+  pickerGoals: { ...type.caption, color: ACCENT, marginTop: 4 },
+  pickerBudget: { width: 48, alignItems: 'flex-end' },
+  pickerBudgetValue: {
+    ...type.caption,
+    color: theme.text,
+    fontFamily: font.semibold,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
+  pickerBudgetLabel: { ...type.overline, color: theme.textDim, marginTop: 1 },
   dim: { color: theme.textDim },
+  lock: { width: 18, height: 21, alignItems: 'center', justifyContent: 'flex-end' },
+  lockShackle: {
+    position: 'absolute',
+    top: 0,
+    width: 12,
+    height: 12,
+    borderWidth: 2,
+    borderColor: theme.textDim,
+    borderRadius: 7,
+  },
+  lockBody: {
+    width: 17,
+    height: 13,
+    borderRadius: 4,
+    backgroundColor: theme.textDim,
+  },
 
   legend: { gap: space.sm },
   legendCaption: { ...type.caption, color: theme.textDim, marginBottom: 2 },
@@ -727,13 +846,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.cardHigh,
+    backgroundColor: elevation(3).backgroundColor,
   },
   legendGlyphText: { fontSize: 15, fontWeight: '900' },
   legendBody: { flex: 1 },
-  legendName: { ...type.bodyStrong, fontSize: 13.5 },
-  legendCondition: { color: theme.textMuted, fontWeight: '600' },
+  legendName: { ...type.bodyStrong },
+  legendCondition: { color: theme.textMuted, fontFamily: font.semibold, fontWeight: '600' },
   legendEffect: { ...type.caption, color: theme.textDim },
 
-  pressed: { opacity: 0.75 },
 });

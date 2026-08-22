@@ -1,5 +1,6 @@
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { radius, space, theme, type } from './theme';
+import { Modal, StyleSheet, Text, View } from 'react-native';
+import { Button, Surface } from './components';
+import { font, radius, shadow, space, theme, type } from './theme';
 
 type Props = {
   visible: boolean;
@@ -11,33 +12,34 @@ export function AnalyticsConsentPrompt({ visible, onAllow, onDecline }: Props) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDecline}>
       <View style={styles.backdrop}>
-        <View style={styles.card} accessibilityRole="alert">
-          <Text style={styles.eyebrow}>YOUR PRIVACY</Text>
-          <Text style={styles.title}>Help improve WordCrush?</Text>
+        <Surface level={3} raised style={styles.card} accessibilityRole="alert">
+          <View style={styles.privacyMark}>
+            <Text style={styles.privacyCheck}>✓</Text>
+          </View>
+          <Text style={styles.eyebrow}>PRIVATE BY DEFAULT</Text>
+          <Text style={styles.title}>Help improve WordKrush?</Text>
           <Text style={styles.body}>
-            Share anonymous play and reliability events so we can improve game balance,
-            cognitive challenges, pattern recognition, and app stability.
+            Share anonymous play and reliability events so we can tune game balance and fix
+            problems faster.
           </Text>
           <Text style={styles.detail}>
             We do not send your email, username, guesses, words, item names, or screen recordings.
             You can change this choice from the menu at any time.
           </Text>
 
-          <Pressable
-            style={({ pressed }) => [styles.allow, pressed && styles.pressed]}
+          <Button
+            title="Allow anonymous analytics"
             onPress={onAllow}
-            accessibilityRole="button"
-          >
-            <Text style={styles.allowText}>ALLOW ANONYMOUS ANALYTICS</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.decline, pressed && styles.pressed]}
+            size="lg"
+            style={styles.allow}
+          />
+          <Button
+            title="Not now"
             onPress={onDecline}
-            accessibilityRole="button"
-          >
-            <Text style={styles.declineText}>NOT NOW</Text>
-          </Pressable>
-        </View>
+            variant="ghost"
+            size="sm"
+          />
+        </Surface>
       </View>
     </Modal>
   );
@@ -46,7 +48,7 @@ export function AnalyticsConsentPrompt({ visible, onAllow, onDecline }: Props) {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.72)',
+    backgroundColor: theme.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     padding: space.lg,
@@ -54,33 +56,26 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 420,
-    backgroundColor: theme.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: theme.border,
     padding: space.xl,
-    gap: space.md,
+    alignItems: 'center',
+    ...shadow.raised,
   },
-  eyebrow: { ...type.overline, color: theme.accent },
-  title: { ...type.title, color: theme.text, fontSize: 23 },
-  body: { ...type.body, color: theme.textMuted, lineHeight: 21 },
-  detail: { ...type.caption, color: theme.textDim, lineHeight: 17 },
-  allow: {
-    minHeight: 50,
-    borderRadius: radius.md,
+  privacyMark: {
+    width: 58,
+    height: 64,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
     backgroundColor: theme.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: space.sm,
-    paddingHorizontal: space.md,
+    marginBottom: space.lg,
   },
-  allowText: { ...type.overline, color: theme.bg, textAlign: 'center' },
-  decline: {
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-  },
-  declineText: { ...type.overline, color: theme.textDim },
-  pressed: { opacity: 0.82 },
+  privacyCheck: { color: theme.bg, fontFamily: font.bold, fontSize: 27, fontWeight: '700' },
+  eyebrow: { ...type.overline, color: theme.accent, textAlign: 'center' },
+  title: { ...type.title, color: theme.text, fontSize: 25, marginTop: space.xs, textAlign: 'center' },
+  body: { ...type.body, color: theme.textMuted, lineHeight: 21, marginTop: space.md, textAlign: 'center' },
+  detail: { ...type.caption, color: theme.textDim, lineHeight: 17, marginTop: space.sm, textAlign: 'center' },
+  allow: { marginTop: space.lg },
 });

@@ -210,7 +210,9 @@ export function authErrorCategory(
   if (
     normalized.includes('password') ||
     normalized.includes('credential') ||
-    normalized.includes('email')
+    normalized.includes('email') ||
+    normalized.includes('phone') ||
+    normalized.includes('otp')
   ) {
     return 'credentials';
   }

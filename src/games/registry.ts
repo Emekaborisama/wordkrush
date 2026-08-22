@@ -21,8 +21,15 @@ export type GameDefinition = {
   status: GameStatus;
   /** What a score means in this game, e.g. "streak". Used in score UI copy. */
   scoreNoun: string;
+  /** Short pill on the start screen, e.g. "QUICK THINKING". */
+  badge: string;
   /**
-   * Which way is better. WordCrush scores a streak (higher wins); Clueless
+   * Second-person description for the start screen. Longer than `tagline`,
+   * which has to fit one line on a hub card.
+   */
+  blurb: string;
+  /**
+   * Which way is better. WordKrush scores a streak (higher wins); Clueless
    * scores guesses used (lower wins). Score UI and leaderboard sorting must
    * read this rather than assuming, or one game's board is upside down.
    */
@@ -32,9 +39,12 @@ export type GameDefinition = {
 export const GAMES: GameDefinition[] = [
   {
     id: 'more-or-less',
-    name: 'WordCrush',
-    tagline: 'Guess correctly, keep the streak alive, and beat your best score.',
-    accent: '#4ADE80',
+    name: 'More or Less',
+    tagline: 'Which one is bigger? Trust your instinct and build a streak.',
+    badge: 'QUICK THINKING',
+    blurb:
+      'Decide which one is bigger. Every correct answer keeps your streak alive.',
+    accent: '#32E487',
     emoji: '⚖️',
     status: 'available',
     scoreNoun: 'streak',
@@ -43,8 +53,11 @@ export const GAMES: GameDefinition[] = [
   {
     id: 'clueless',
     name: 'Clueless',
-    tagline: 'Guess the secret word by meaning',
-    accent: '#A78BFA',
+    tagline: 'Follow the meaning trail to uncover today’s secret word.',
+    badge: 'DAILY PUZZLE',
+    blurb:
+      'One secret word a day. Every guess is ranked by meaning, not spelling — start broad, then follow the heat.',
+    accent: '#9B78FF',
     emoji: '❓',
     status: 'available',
     scoreNoun: 'guesses',
@@ -53,8 +66,11 @@ export const GAMES: GameDefinition[] = [
   {
     id: 'wordfall',
     name: 'Wordfall',
-    tagline: 'Spell words, set off chain reactions',
-    accent: '#F0A742',
+    tagline: 'New levels every Monday. Trace words and set off cascades.',
+    badge: 'WEEKLY LEVELS',
+    blurb:
+      'Trace words across the grid to clear tiles and set off cascades. A new level drops every Monday.',
+    accent: '#FFB020',
     emoji: '🔡',
     status: 'available',
     // A run is one level, so the board records the best single-level score.

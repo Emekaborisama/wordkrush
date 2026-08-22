@@ -10,6 +10,11 @@
  * clock, and a move budget set beyond reach so it never quietly ends a run.
  * A level is one or the other by design — see `Level.timeLimitMs`.
  *
+ * After the launch curriculum, new levels drop every Monday. Author them in
+ * this file with `availableFrom: 'YYYY-MM-DD'` set to that Monday. They stay
+ * bundled (D-004) and the picker reveals them on that local calendar day
+ * (D-027). Do not time-gate levels 1–11 — those teach the game on day one.
+ *
  * TWO KINDS OF NUMBER LIVE HERE, and they carry very different confidence.
  *
  *   Score targets are CALIBRATED. They were sized by simulating a perfect
@@ -40,6 +45,7 @@ export const LEVELS: Level[] = [
   {
     number: 1,
     name: 'First Words',
+    description: 'Find and play six words to learn the basics.',
     moves: 12,
     crates: 0,
     // Nothing but "play the game". A first level that also asks for a score is
@@ -49,6 +55,7 @@ export const LEVELS: Level[] = [
   {
     number: 2,
     name: 'Stretch',
+    description: 'Make four words with 5 or more letters to create powerful specials.',
     moves: 14,
     crates: 0,
     // Forces the player past three-letter words, which is where beams — and
@@ -58,6 +65,7 @@ export const LEVELS: Level[] = [
   {
     number: 3,
     name: 'Boxed In',
+    description: 'Spell beside the crates to break all eight.',
     moves: 16,
     crates: 8,
     // First crates. Where you play now matters as much as what you spell.
@@ -66,6 +74,7 @@ export const LEVELS: Level[] = [
   {
     number: 4,
     name: 'High Score',
+    description: 'Build longer, rarer words and reach 2,800 points.',
     moves: 14,
     crates: 0,
     // Roughly half what an exhaustive solver scores in the same budget. A
@@ -76,6 +85,7 @@ export const LEVELS: Level[] = [
   {
     number: 5,
     name: 'Vowel Play',
+    description: 'Clear 16 E tiles and break all four crates.',
     moves: 16,
     crates: 4,
     // A letter target cannot be met by spelling carefully alone — it wants
@@ -92,6 +102,7 @@ export const LEVELS: Level[] = [
   {
     number: 6,
     name: 'Deep Cuts',
+    description: 'Make three words with 6 or more letters and score at least 4,000.',
     moves: 18,
     crates: 0,
     // Seven letters is a nova. Two of them in a run is a real ask.
@@ -103,6 +114,7 @@ export const LEVELS: Level[] = [
   {
     number: 7,
     name: 'Demolition',
+    description: 'Break 14 crates while building a 3,500-point score.',
     moves: 18,
     crates: 14,
     objectives: [
@@ -113,6 +125,7 @@ export const LEVELS: Level[] = [
   {
     number: 8,
     name: 'Everything',
+    description: 'Master score, crate, and long-word goals in one run.',
     moves: 20,
     crates: 10,
     objectives: [
@@ -132,6 +145,7 @@ export const LEVELS: Level[] = [
   {
     number: 9,
     name: 'Sixty Seconds',
+    description: 'Play six words before the 60-second clock runs out.',
     moves: UNLIMITED_MOVES,
     timeLimitMs: seconds(60),
     crates: 0,
@@ -144,6 +158,7 @@ export const LEVELS: Level[] = [
   {
     number: 10,
     name: 'Quickfire',
+    description: 'Break six crates in 75 seconds—choose where you play.',
     moves: UNLIMITED_MOVES,
     timeLimitMs: seconds(75),
     crates: 8,
@@ -155,6 +170,7 @@ export const LEVELS: Level[] = [
   {
     number: 11,
     name: 'Final Countdown',
+    description: 'Score 2,000 and make three long words in 90 seconds.',
     moves: UNLIMITED_MOVES,
     timeLimitMs: seconds(90),
     crates: 0,

@@ -60,6 +60,7 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 - [ ] Count-up reveal — animate the hidden value after the answer
 - [ ] Game over screen — final streak, best streak, replay/share
 - [ ] **Show data provenance** — "Source: X, month year" on the reveal; the claim on screen must match the snapshot
+- [ ] **Lottie celebration kit** (ST-72) — remaining deer poses, streak flame, result bursts; owner shares lottie.host *file* URLs. Hub idle deer + player already exist locally (`src/ui/lottie/`, D-032). Not on Wordfall tiles or text pills.
 
 ## Track: native / App Store readiness
 
@@ -67,7 +68,11 @@ Guideline 4.2 rejects apps that are too thin. These are the mitigation:
 
 - [ ] Haptics (`src/native/haptics.native.ts` + `.web.ts` no-op twin) — tap feedback only; web stays a no-op
 - [ ] Game Center leaderboard for best streak — native 4.2 evidence and score persistence
-- [ ] App icon, splash, store assets — submission-ready branding
+- [x] App icon + splash from the brand kit (`assets/logo/`, `docs/branding/`) — store screenshots still outstanding
+
+## Track: accounts
+
+- [ ] **Supabase magic-link + SMS sign-in** (ST-73) — **Doing**; replaces the ST-61 password form. Email magic link (D-033) and phone SMS OTP (D-034) on the same optional Supabase Auth project. Owner still needs the Auth redirect allow-list and an SMS provider under Phone settings.
 
 ## Track: infra
 

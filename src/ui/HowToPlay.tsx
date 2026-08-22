@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { proximityColor, radius, shadow, space, theme, type } from './theme';
+import { Button } from './components';
+import { elevation, font, motion, proximityColor, radius, shadow, space, theme, type } from './theme';
 
 export type HowToStep = { n: number; title: string; body: string };
 
@@ -36,9 +37,7 @@ export function HowToPlay({
   useEffect(() => {
     Animated.spring(slide, {
       toValue: visible ? 0 : 1,
-      damping: 20,
-      stiffness: 180,
-      mass: 0.9,
+      ...motion.gentle,
       useNativeDriver: true,
     }).start();
   }, [visible, slide]);
@@ -85,12 +84,7 @@ export function HowToPlay({
             {example && <View style={styles.example}>{example}</View>}
           </ScrollView>
 
-          <Pressable
-            style={({ pressed }) => [styles.cta, { backgroundColor: accent }, pressed && styles.pressed]}
-            onPress={onClose}
-          >
-            <Text style={styles.ctaText}>Got it</Text>
-          </Pressable>
+          <Button title="Got it, let’s play" color={accent} size="lg" onPress={onClose} />
         </Animated.View>
       </View>
     </Modal>
@@ -126,13 +120,12 @@ export function ExampleRow({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: 'rgba(0,0,0,0.62)', justifyContent: 'flex-end' },
+  root: { flex: 1, backgroundColor: theme.overlay, justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: theme.bgElevated,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    ...elevation(1),
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     borderTopWidth: 1,
-    borderColor: theme.edge,
     paddingHorizontal: space.xl,
     paddingBottom: space.xl,
     maxHeight: '86%',
@@ -148,20 +141,20 @@ const styles = StyleSheet.create({
     marginBottom: space.lg,
   },
   content: { paddingBottom: space.lg },
-  title: { ...type.display, color: theme.text, fontSize: 28 },
+  title: { ...type.display, color: theme.text },
   intro: { ...type.body, color: theme.textMuted, marginTop: space.sm },
 
   steps: { marginTop: space.xl, gap: space.lg },
   step: { flexDirection: 'row', gap: space.md },
   stepBadge: {
-    width: 24,
-    height: 24,
+    width: 30,
+    height: 30,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 1,
   },
-  stepNum: { color: theme.bg, fontSize: 12, fontWeight: '800' },
+  stepNum: { color: theme.bg, fontFamily: font.bold, fontSize: 13, fontWeight: '700' },
   stepBody: { flex: 1, gap: 2 },
   stepTitle: { ...type.bodyStrong, color: theme.text },
   stepText: { ...type.caption, color: theme.textMuted },
@@ -178,7 +171,8 @@ const styles = StyleSheet.create({
   exRow: {
     height: 34,
     borderRadius: radius.sm,
-    backgroundColor: theme.card,
+    // Same depth as the real GuessRow this miniature stands in for.
+    backgroundColor: elevation(2).backgroundColor,
     justifyContent: 'center',
     overflow: 'hidden',
   },
@@ -190,14 +184,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
   },
   exWord: { ...type.bodyStrong, color: theme.text, fontSize: 14 },
-  exRank: { ...type.caption, color: theme.text, fontWeight: '700', fontVariant: ['tabular-nums'] },
-
-  cta: {
-    borderRadius: radius.md,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: space.sm,
-  },
-  ctaText: { color: theme.bg, fontSize: 15, fontWeight: '800', letterSpacing: 0.2 },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
+  exRank: { ...type.caption, color: theme.text, fontFamily: font.bold, fontWeight: '700', fontVariant: ['tabular-nums'] },
 });

@@ -3,7 +3,7 @@
  *
  * Metro requires static imports, so every puzzle is listed explicitly. That
  * also means all of it ships with the app and the game works with no network —
- * the same offline guarantee as WordCrush comparison (docs/STACK.md D-004).
+ * the same offline guarantee as WordKrush comparison (docs/STACK.md D-004).
  *
  * Regenerate with:
  *   cd validator && uv run python -m app.clueless.build --words <list> --puzzles N

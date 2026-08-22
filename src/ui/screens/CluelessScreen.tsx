@@ -2,11 +2,9 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
@@ -16,21 +14,38 @@ import { bestRank, closeness, indexPuzzle, newPuzzle, reducer, type Action } fro
 import { isCluelessState, rehydrate } from '../../games/clueless/persistence';
 import type { CluelessState } from '../../games/clueless/types';
 import { loadProgress, saveProgress } from '../../games/progress';
+import { getGame } from '../../games/registry';
 import { tapCorrect, tapWrong } from '../../native/haptics';
 import { GuessRow } from '../GuessRow';
 import { ExampleRow, HowToPlay } from '../HowToPlay';
-import { proximityColor, radius, shadow, space, theme, type } from '../theme';
+import {
+  Button,
+  EmptyState,
+  FeedbackBanner,
+  GameHeader,
+  ProgressPill,
+  Surface,
+  TextField,
+} from '../components';
+import { Mascot } from '../lottie/Mascot';
+import { elevation, font, proximityColor, radius, space, theme, type, withAlpha } from '../theme';
 
 const GAME_ID = 'clueless';
 
 type Props = {
   puzzleNumber: number;
   onWin: (guessesUsed: number) => void;
+  onExit: () => void;
   /** Opened automatically the first time someone plays. */
   showHelpInitially?: boolean;
 };
 
-export function CluelessScreen({ puzzleNumber, onWin, showHelpInitially = false }: Props) {
+export function CluelessScreen({
+  puzzleNumber,
+  onWin,
+  onExit,
+  showHelpInitially = false,
+}: Props) {
   const puzzle = puzzleByNumber(puzzleNumber)!;
   // Indexing builds a 5k-entry Map; it must not rerun on every keystroke.
   const index = useMemo(() => indexPuzzle(puzzle, VOCABULARY), [puzzle]);
@@ -41,7 +56,6 @@ export function CluelessScreen({ puzzleNumber, onWin, showHelpInitially = false 
     newPuzzle,
   );
   const [input, setInput] = useState('');
-  const [focused, setFocused] = useState(false);
   const [help, setHelp] = useState(showHelpInitially);
   const reported = useRef(false);
   // Nothing may be written until the restore attempt finishes, or the empty
@@ -116,33 +130,44 @@ export function CluelessScreen({ puzzleNumber, onWin, showHelpInitially = false 
   const won = state.status === 'won';
   const best = bestRank(state);
   const warmth = closeness(best, puzzle.rankedCount);
+  const accent = getGame(GAME_ID)?.accent ?? theme.violet;
 
   return (
     <KeyboardAvoidingView
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text style={styles.title}>Clueless</Text>
-          {/* Guess count lives in the input now, so the header does not
-              repeat it — one home per piece of information. */}
-          <Text style={styles.meta}>Puzzle #{puzzle.number}</Text>
-        </View>
-        <Pressable
-          onPress={() => setHelp(true)}
-          style={({ pressed }) => [styles.helpBtn, pressed && styles.pressed]}
-          hitSlop={10}
-          accessibilityLabel="How to play"
-        >
-          <Text style={styles.helpMark}>?</Text>
-        </Pressable>
+      <GameHeader
+        title="Clueless"
+        subtitle={`DAILY #${puzzle.number}`}
+        accent={accent}
+        onExit={onExit}
+        onHelp={() => setHelp(true)}
+      />
+
+      <View style={styles.statsRow}>
+        <ProgressPill
+          label={state.guesses.length === 1 ? 'GUESS' : 'GUESSES'}
+          value={state.guesses.length}
+          color={accent}
+        />
       </View>
 
       {/* Warmth meter: turns the abstract best-rank number into something you
           can read at a glance, and gives the screen a focal point. */}
-      {!won && state.guesses.length > 0 && (
-        <View style={styles.meter}>
+      {!won && state.guesses.length > 0 ? (
+        <Surface
+          level={1}
+          borderColor={withAlpha(proximityColor(warmth), 0.35)}
+          radius={radius.md}
+          style={styles.meter}
+        >
+          <View style={styles.meterCopy}>
+            <Text style={styles.meterTitle}>SEMANTIC HEAT</Text>
+            <Text style={styles.meterLabel}>
+              Closest <Text style={styles.meterValue}>#{best?.toLocaleString() ?? '—'}</Text>
+            </Text>
+          </View>
           <View style={styles.meterTrack}>
             <View
               style={[
@@ -151,72 +176,66 @@ export function CluelessScreen({ puzzleNumber, onWin, showHelpInitially = false 
               ]}
             />
           </View>
-          <Text style={styles.meterLabel}>
-            closest <Text style={styles.meterValue}>{best?.toLocaleString() ?? '—'}</Text>
-          </Text>
-        </View>
-      )}
+        </Surface>
+      ) : null}
 
       {won ? (
-        <View style={styles.wonCard}>
-          <Text style={styles.wonEyebrow}>SOLVED</Text>
-          <Text style={styles.wonWord}>{puzzle.secret}</Text>
-          <Text style={styles.wonMeta}>
-            {state.guesses.length} {state.guesses.length === 1 ? 'guess' : 'guesses'}
-          </Text>
-        </View>
+        <Surface
+          level={3}
+          raised
+          borderColor={theme.success}
+          radius={radius.lg}
+          style={styles.wonCard}
+        >
+          <Mascot size={52} pose="celebrate" />
+          <View style={styles.wonCopy}>
+            <Text style={styles.wonEyebrow}>PUZZLE SOLVED</Text>
+            <Text style={styles.wonWord}>{puzzle.secret}</Text>
+            <Text style={styles.wonMeta}>
+              Found in {state.guesses.length} {state.guesses.length === 1 ? 'guess' : 'guesses'}
+            </Text>
+          </View>
+        </Surface>
       ) : (
-        <View style={[styles.inputRow, focused && styles.inputRowFocused]}>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            onSubmitEditing={submit}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            placeholder="Type a word"
-            placeholderTextColor={theme.textDim}
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="off"
-            returnKeyType="go"
-            // Keeps focus so guesses can be typed back to back.
-            blurOnSubmit={false}
-          />
-
-          {/* Guess counter, in the field where the player's attention already
-              is. Hidden at zero: a "0" before the first guess is clutter, not
-              information. */}
-          {state.guesses.length > 0 && (
-            <View style={styles.counter}>
-              <Text
-                style={styles.counterText}
-                accessibilityLabel={`${state.guesses.length} guesses so far`}
-              >
-                {state.guesses.length}
-              </Text>
-            </View>
-          )}
-
-          <Pressable
-            style={({ pressed }) => [styles.go, pressed && styles.goPressed]}
-            onPress={submit}
-            accessibilityLabel="Submit guess"
-          >
-            <Text style={styles.goText}>Guess</Text>
-          </Pressable>
-        </View>
+        <TextField
+          accent={accent}
+          value={input}
+          onChangeText={setInput}
+          onSubmitEditing={submit}
+          placeholder="Type any word"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="off"
+          returnKeyType="go"
+          // Keeps focus so guesses can be typed back to back.
+          blurOnSubmit={false}
+          trailing={
+            <Button
+              title="Guess"
+              onPress={submit}
+              color={accent}
+              size="sm"
+              fullWidth={false}
+              disabled={!input.trim()}
+              accessibilityLabel="Submit guess"
+            />
+          }
+        />
       )}
 
-      {state.rejection && (
-        <Text style={styles.rejection}>
-          {state.rejection.kind === 'not-a-word'
-            ? `“${state.rejection.word}” isn’t in the word list`
-            : state.rejection.kind === 'already-guessed'
-              ? `You’ve already tried “${state.rejection.word}”`
-              : 'Type a word first'}
-        </Text>
-      )}
+      {state.rejection ? (
+        <FeedbackBanner
+          tone={state.rejection.kind === 'already-guessed' ? 'warning' : 'danger'}
+          title={state.rejection.kind === 'already-guessed' ? 'Already on your board' : 'Try another word'}
+          body={
+            state.rejection.kind === 'not-a-word'
+              ? `“${state.rejection.word}” isn’t in this word list.`
+              : state.rejection.kind === 'already-guessed'
+                ? `You already tried “${state.rejection.word}”.`
+                : 'Type a word first.'
+          }
+        />
+      ) : null}
 
       <ScrollView
         style={styles.list}
@@ -225,7 +244,14 @@ export function CluelessScreen({ puzzleNumber, onWin, showHelpInitially = false 
         showsVerticalScrollIndicator={false}
       >
         {state.guesses.length === 0 ? (
-          <EmptyState onHelp={() => setHelp(true)} />
+          <EmptyState
+            title="Find the secret word"
+            body="Every guess is ranked by meaning, not spelling. Start broad, then follow the heat."
+            accent={accent}
+            art={<Text style={[styles.emptyGlyphText, { color: accent }]}>?</Text>}
+            actionLabel="See how it works"
+            onAction={() => setHelp(true)}
+          />
         ) : (
           state.guesses.map((g) => (
             <GuessRow
@@ -243,7 +269,7 @@ export function CluelessScreen({ puzzleNumber, onWin, showHelpInitially = false 
         onClose={() => setHelp(false)}
         title="How to play Clueless"
         intro="There’s a secret word. Every guess is scored by how close it is in meaning — not spelling."
-        accent={theme.violet}
+        accent={accent}
         steps={[
           { n: 1, title: 'Guess any word', body: 'Anything at all. Start broad and follow the heat.' },
           { n: 2, title: 'Read the number', body: 'It’s the rank by closeness in meaning. Lower is warmer.' },
@@ -264,145 +290,41 @@ export function CluelessScreen({ puzzleNumber, onWin, showHelpInitially = false 
   );
 }
 
-/**
- * Empty state.
- *
- * A blank list is the worst first impression an app can make. This one teaches
- * the mechanic in one line and gives a concrete starting move, because "type a
- * word" is paralysing when any word is legal.
- */
-function EmptyState({ onHelp }: { onHelp: () => void }) {
-  return (
-    <View style={styles.empty}>
-      <View style={styles.emptyGlyph}>
-        <Text style={styles.emptyGlyphText}>?</Text>
-      </View>
-      <Text style={styles.emptyTitle}>Find the secret word</Text>
-      <Text style={styles.emptyBody}>
-        Every guess is ranked by how close it is in meaning. Rank 1 wins.
-      </Text>
-      <Text style={styles.emptyHint}>Try something broad to start — “time”, “water”, “music”.</Text>
-      <Pressable onPress={onHelp} style={({ pressed }) => [styles.emptyLink, pressed && styles.pressed]}>
-        <Text style={styles.emptyLinkText}>See how it works</Text>
-      </Pressable>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg, paddingHorizontal: space.lg, gap: space.md },
-
-  header: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  headerText: { flex: 1 },
-  title: { ...type.display, color: theme.text, fontSize: 30 },
-  meta: { ...type.caption, color: theme.textDim, marginTop: 1 },
-  helpBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  helpMark: { color: theme.textMuted, fontSize: 15, fontWeight: '800' },
-
-  meter: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  meterTrack: {
+  root: {
     flex: 1,
-    height: 6,
+    backgroundColor: theme.bg,
+    paddingHorizontal: space.lg,
+    paddingBottom: space.sm,
+    gap: space.sm,
+  },
+  statsRow: { flexDirection: 'row', justifyContent: 'center', gap: space.sm },
+  meter: { gap: space.sm },
+  meterCopy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  meterTitle: { ...type.overline, color: theme.textDim },
+  meterTrack: {
+    width: '100%',
+    height: 10,
     borderRadius: radius.pill,
-    backgroundColor: theme.card,
+    backgroundColor: elevation(1).backgroundColor,
     overflow: 'hidden',
   },
   meterFill: { height: '100%', borderRadius: radius.pill },
-  meterLabel: { ...type.caption, color: theme.textDim, fontSize: 11 },
-  meterValue: { color: theme.textMuted, fontWeight: '700', fontVariant: ['tabular-nums'] },
-
-  inputRow: {
-    flexDirection: 'row',
-    gap: space.sm,
-    backgroundColor: theme.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.border,
-    padding: 5,
-    ...shadow.card,
-  },
-  // Focus ring rather than a colour swap: it signals state without the field
-  // appearing to change identity.
-  inputRowFocused: { borderColor: theme.violet },
-  input: {
-    flex: 1,
-    paddingHorizontal: space.md,
-    paddingVertical: 12,
-    color: theme.text,
-    ...type.body,
-    fontSize: 16,
-  },
-  counter: {
-    justifyContent: 'center',
-    paddingRight: space.sm,
-    // Hairline rule separates the count from the button so it reads as field
-    // content rather than part of the control.
-    borderRightWidth: 1,
-    borderRightColor: theme.border,
-    marginRight: space.sm,
-    minWidth: 26,
-    alignItems: 'flex-end',
-  },
-  counterText: {
-    ...type.caption,
-    color: theme.textDim,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-  },
-  go: {
-    backgroundColor: theme.violet,
-    borderRadius: radius.sm + 2,
-    paddingHorizontal: space.lg,
-    justifyContent: 'center',
-  },
-  goPressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
-  goText: { color: theme.bg, fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
-
-  rejection: { ...type.caption, color: theme.danger, textAlign: 'center' },
+  meterLabel: { ...type.caption, color: theme.textMuted },
+  meterValue: { color: theme.text, fontFamily: font.bold, fontWeight: '700', fontVariant: ['tabular-nums'] },
 
   wonCard: {
-    backgroundColor: theme.accentSoft,
-    borderWidth: 1,
-    borderColor: theme.accent,
-    borderRadius: radius.md,
-    paddingVertical: space.lg,
+    flexDirection: 'row',
     alignItems: 'center',
-    ...shadow.card,
+    gap: space.md,
   },
-  wonEyebrow: { ...type.overline, color: theme.accent },
-  wonWord: { ...type.display, color: theme.text, marginTop: 4 },
-  wonMeta: { ...type.caption, color: theme.textMuted, marginTop: 2 },
+  wonCopy: { flex: 1 },
+  wonEyebrow: { ...type.overline, color: theme.success },
+  wonWord: { ...type.title, color: theme.text, marginTop: 1 },
+  wonMeta: { ...type.caption, color: theme.textMuted, marginTop: 1 },
 
   list: { flex: 1 },
   listContent: { gap: 6, paddingBottom: space.lg },
-
-  empty: { alignItems: 'center', paddingTop: space.xxl, paddingHorizontal: space.lg },
-  emptyGlyph: {
-    width: 58,
-    height: 58,
-    borderRadius: radius.pill,
-    backgroundColor: theme.violetSoft,
-    borderWidth: 1,
-    borderColor: theme.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyGlyphText: { color: theme.violet, fontSize: 26, fontWeight: '800' },
-  emptyTitle: { ...type.title, color: theme.text, marginTop: space.lg },
-  emptyBody: { ...type.body, color: theme.textMuted, textAlign: 'center', marginTop: 6 },
-  emptyHint: { ...type.caption, color: theme.textDim, textAlign: 'center', marginTop: space.md },
-  emptyLink: { marginTop: space.lg, paddingVertical: 8, paddingHorizontal: space.md },
-  emptyLinkText: { ...type.caption, color: theme.violet, fontWeight: '700' },
-
+  emptyGlyphText: { ...type.display },
   exampleCaption: { ...type.caption, color: theme.textDim, marginBottom: 4 },
-  pressed: { opacity: 0.7 },
 });

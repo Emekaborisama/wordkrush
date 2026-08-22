@@ -1,4 +1,4 @@
-# WordCrush — Design Brainstorm
+# WordKrush — Design Brainstorm
 
 **Last updated:** 2026-08-22
 **Status:** Design exploration. Nothing implemented yet.
@@ -197,8 +197,10 @@ Guideline 4.2 (minimum functionality) is the live risk for a simple casual game.
 
 - **Offline play** — falls out of bundled data for free.
 - **Haptics** — a tap on correct/incorrect. Genuinely improves feel *and* is native integration.
-- **Game Center leaderboard** — best streak. Strong 4.2 evidence.
+- **Local scores + global leaderboard** — device history is always available; signed-in players also post a per-game best to Supabase (D-025). This is the shipped rank surface.
+- **Game Center leaderboard** — still the native 4.2 extra, not a substitute for the local/global tabs. **[PLANNED]**
 - **Daily challenge + notification** — later, but the seeded RNG already supports it.
+- **Wordfall weekly levels** — owner: new Wordfall levels release each week. **[GIVEN]** Launch curriculum (1–11) stays playable on day one. Later rows set `availableFrom` to that Monday; they ship in the bundle and unlock on the player's local calendar (D-027). Not a remote download. Operating spec and automation contract: [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md).
 
 ## 10. Risks
 
@@ -301,3 +303,4 @@ Append here whenever an assumption is confirmed or overturned. Never delete an e
 | 2026-08-16 | §8 first category | **Owner overrode the low-risk recommendation**: first category is Google search volume, not countries/animals. §8's licensing warning stands and became STACK O-2; mitigated by the source-adapter design (§11) so plumbing isn't blocked on the choice. |
 | 2026-08-16 | §7 architecture | Implemented as designed: `src/game/` is pure TS with tests; pipeline added under `pipeline/` with Supabase as content factory (STACK D-007/D-008). |
 | 2026-08-22 | §7 architecture | The owner consolidated game code under one root: each title uses `src/games/<game-id>/`. More or Less moved from `src/game/` to `src/games/more-or-less/`; shared RNG and registry modules remain directly under `src/games/`. |
+| 2026-08-22 | Wordfall cadence | Owner: Wordfall gets a new level each week. Implemented as bundled rows with a Monday `availableFrom`, not a live content server. |

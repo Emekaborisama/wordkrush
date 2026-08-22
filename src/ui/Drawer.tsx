@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { AnalyticsConsent } from '../analytics/events';
 import { GAMES } from '../games/registry';
-import { radius, theme } from './theme';
+import { BrandArtwork, GameArtwork, IconButton } from './components';
+import { font, radius, space, theme, type, withAlpha } from './theme';
 
 export type DrawerDestination =
   | { kind: 'hub' }
@@ -22,7 +23,7 @@ type Props = {
   onAnalyticsPress: () => void;
 };
 
-const WIDTH = 268;
+const WIDTH = 304;
 const DURATION = 220;
 
 /**
@@ -79,18 +80,25 @@ export function Drawer({
 
       <Animated.View style={[styles.panel, { transform: [{ translateX: slide }] }]}>
         <View style={styles.panelHeader}>
-          <Text style={styles.brand}>WordCrush</Text>
-          {signedInAs ? (
-            <Text style={styles.account}>{signedInAs}</Text>
-          ) : (
-            <Text style={styles.account}>Playing as guest</Text>
-          )}
+          <View style={styles.brandRow}>
+            <BrandArtwork size={46} />
+            <View style={styles.brandCopy}>
+              <Text style={styles.brand}>WordKrush</Text>
+              <Text style={styles.account}>{signedInAs ?? 'Playing as guest'}</Text>
+            </View>
+            <IconButton
+              icon={<Text style={styles.closeMark}>×</Text>}
+              accessibilityLabel="Close menu"
+              onPress={onClose}
+            />
+          </View>
         </View>
 
         <Item
           label="All games"
-          icon="◧"
+          icon={<Text style={styles.itemGlyph}>▦</Text>}
           active={activeKind === 'hub'}
+          accent={theme.accent}
           onPress={() => go({ kind: 'hub' })}
         />
 
@@ -101,9 +109,10 @@ export function Drawer({
             <Item
               key={game.id}
               label={game.name}
-              icon={game.emoji}
+              icon={<GameArtwork gameId={game.id} accent={game.accent} size={34} />}
               active={activeKind === 'game' && activeGameId === game.id}
               disabled={locked}
+              accent={game.accent}
               trailing={locked ? 'SOON' : undefined}
               onPress={() => go({ kind: 'game', gameId: game.id })}
             />
@@ -113,14 +122,16 @@ export function Drawer({
         <Text style={styles.sectionLabel}>YOU</Text>
         <Item
           label="Scores"
-          icon="🏆"
+          icon={<Text style={styles.itemGlyph}>★</Text>}
           active={activeKind === 'scores'}
+          accent={theme.warning}
           onPress={() => go({ kind: 'scores', gameId: activeGameId ?? GAMES[0].id })}
         />
         <Item
           label={signedInAs ? 'Account' : 'Sign in'}
-          icon="👤"
+          icon={<Text style={styles.itemGlyph}>●</Text>}
           active={activeKind === 'account'}
+          accent={theme.accentSecondary}
           onPress={() => go({ kind: 'account' })}
         />
 
@@ -133,7 +144,8 @@ export function Drawer({
                 ? 'Anonymous analytics off'
                 : 'Review analytics choice'
           }
-          icon="◉"
+          icon={<Text style={styles.itemGlyph}>◉</Text>}
+          accent={theme.success}
           trailing={analyticsConsent === 'granted' ? 'ON' : analyticsConsent === 'denied' ? 'OFF' : undefined}
           onPress={() => {
             onAnalyticsPress();
@@ -153,13 +165,15 @@ function Item({
   icon,
   active,
   disabled,
+  accent = theme.accent,
   trailing,
   onPress,
 }: {
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   active?: boolean;
   disabled?: boolean;
+  accent?: string;
   trailing?: string;
   onPress: () => void;
 }) {
@@ -167,7 +181,10 @@ function Item({
     <Pressable
       style={({ pressed }) => [
         styles.item,
-        active && styles.itemActive,
+        active && {
+          backgroundColor: withAlpha(accent, 0.13),
+          borderColor: withAlpha(accent, 0.38),
+        },
         pressed && !disabled && styles.pressed,
       ]}
       onPress={disabled ? undefined : onPress}
@@ -175,8 +192,14 @@ function Item({
       accessibilityRole="button"
       accessibilityState={{ selected: active, disabled }}
     >
-      <Text style={styles.itemIcon}>{icon}</Text>
-      <Text style={[styles.itemLabel, active && styles.itemLabelActive, disabled && styles.itemDim]}>
+      <View style={styles.itemIcon}>{icon}</View>
+      <Text
+        style={[
+          styles.itemLabel,
+          active && [styles.itemLabelActive, { color: accent }],
+          disabled && styles.itemDim,
+        ]}
+      >
         {label}
       </Text>
       {trailing ? <Text style={styles.trailing}>{trailing}</Text> : null}
@@ -186,7 +209,7 @@ function Item({
 
 const styles = StyleSheet.create({
   host: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 },
-  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' },
+  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlay },
   panel: {
     position: 'absolute',
     top: 0,
@@ -196,18 +219,26 @@ const styles = StyleSheet.create({
     backgroundColor: theme.bgElevated,
     borderRightWidth: 1,
     borderRightColor: theme.border,
-    paddingTop: 44,
-    paddingHorizontal: 12,
+    paddingTop: 32,
+    paddingHorizontal: space.md,
   },
-  panelHeader: { paddingHorizontal: 10, paddingBottom: 18 },
-  brand: { color: theme.text, fontSize: 20, fontWeight: '900' },
-  account: { color: theme.textDim, fontSize: 11, marginTop: 3 },
+  panelHeader: { paddingHorizontal: space.xs, paddingBottom: space.lg },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  brandCopy: { flex: 1 },
+  brand: {
+    color: theme.text,
+    fontFamily: font.bold,
+    fontSize: 23,
+    fontWeight: '700',
+    letterSpacing: -0.55,
+  },
+  account: { ...type.caption, color: theme.textMuted, fontSize: 11, marginTop: 1 },
+  closeMark: { color: theme.textMuted, fontFamily: font.semibold, fontSize: 24, lineHeight: 25 },
 
   sectionLabel: {
     color: theme.textDim,
+    ...type.overline,
     fontSize: 9,
-    letterSpacing: 1.5,
-    fontWeight: '700',
     paddingHorizontal: 10,
     marginTop: 16,
     marginBottom: 6,
@@ -220,14 +251,23 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
-  itemActive: { backgroundColor: theme.card },
-  itemIcon: { fontSize: 16, width: 22, textAlign: 'center' },
-  itemLabel: { color: theme.textDim, fontSize: 15, fontWeight: '600', flex: 1 },
-  itemLabelActive: { color: theme.text, fontWeight: '800' },
+  itemIcon: { width: 36, alignItems: 'center', justifyContent: 'center' },
+  itemGlyph: { color: theme.textMuted, fontFamily: font.semibold, fontSize: 17, fontWeight: '600' },
+  itemLabel: {
+    color: theme.textMuted,
+    fontFamily: font.medium,
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
+  },
+  itemLabelActive: { fontFamily: font.semibold, fontWeight: '600' },
   itemDim: { opacity: 0.5 },
   trailing: {
     color: theme.textDim,
+    fontFamily: font.semibold,
     fontSize: 8,
     fontWeight: '800',
     letterSpacing: 1,
@@ -239,6 +279,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   spacer: { flex: 1 },
-  footer: { color: theme.textDim, fontSize: 10, opacity: 0.5, padding: 10 },
+  footer: { color: theme.textDim, fontFamily: font.medium, fontSize: 10, opacity: 0.5, padding: 10 },
   pressed: { opacity: 0.7 },
 });

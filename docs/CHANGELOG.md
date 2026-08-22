@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to WordCrush. Format follows [Keep a Changelog](https://keepachangelog.com); versions follow semver and match `version` in `package.json` / `app.json`.
+All notable changes to WordKrush. Format follows [Keep a Changelog](https://keepachangelog.com); versions follow semver and match `version` in `package.json` / `app.json`.
 
 Rules:
 - Every PR that changes behavior adds a line under **[Unreleased]** in the same PR.
@@ -9,6 +9,7 @@ Rules:
 ## [Unreleased]
 
 ### Added
+- **Deer mascot** — hub hero plus outcome screens (More or Less game over, Wordfall level complete/fail, Clueless solved) play the little deer via Lottie. Clip CDN URLs live in `LOTTIE_CLIPS` (`src/ui/lottie/sources.ts`); deer poses share the hosted file until distinct poses are pasted. Flame and burst slots stay empty. Bundled `assets/lottie/deer.lottie` is the offline fallback. Reduce-motion holds the first frame. Play and game data stay offline (D-004).
 - Documentation drift guard: one changed-file audit shared by local checks, CI, and a Cursor completion hook, with explicit document-impact guidance
 - Expo SDK 57 + TypeScript scaffold (iOS + web from one codebase)
 - Pure More-or-Less logic in `src/games/more-or-less/` with ratio-based pairing fairness guard and streak difficulty bands, unit-tested (Vitest, 9 tests)
@@ -38,7 +39,7 @@ Rules:
   - Level 9 asks for the same six words as level 1, with the clock as the only change — introducing a mechanic alongside a new objective makes it impossible to tell which one is beating you
   - The clock pauses while the how-to-play or level sheet is open, stops on the winning move, and survives leaving the screen without charging for the gap
   - Time limits are estimates, not calibration: a solver finds words instantly and cannot measure a human scanning a grid. The suite pins the assumption they were sized from (~7s per move) so tightening one past winnability fails loudly
-- **Completion time is recorded and shown** — `ScoreEntry.durationMs` (optional; WordCrush comparison has nothing meaningful to report), rendered on the level-complete card and in the scores list
+- **Completion time is recorded and shown** — `ScoreEntry.durationMs` (optional; WordKrush comparison has nothing meaningful to report), rendered on the level-complete card and in the scores list
   - Scores rows now label the unit from the registry instead of hardcoding "rounds", which read as "8,436 rounds" for Wordfall and "5 rounds" for Clueless
 - **Wordfall dictionary** (`npm run pipeline:wordfall` → `src/data/wordfall/dictionary.json`, 550 KB) — Webster's 1913 (public domain) plus a curated core-English and modern-word supplement, intersected with the existing Clueless frequency vocab to produce a rarity ranking and measured per-letter spawn weights
   - Inflections are derived at lookup by suffix-stripping rather than stored: 40% smaller than generating them (995 KB → 550 KB) and better recall, since it covers words the generator never would
@@ -49,12 +50,32 @@ Rules:
   - `npm run serve:web` runs the same server locally, so a production build can be checked before it ships
   - CI deploys on green `master` only (`.github/workflows/ci.yml`); the job skips with a warning when `RAILWAY_TOKEN` is absent rather than failing the build
 - **Consent-gated PostHog analytics** — typed product, game-balance, auth-status, persistence, and reliability events; anonymous opt-in prompt plus a persistent drawer control; no PII, account identification, autocapture, person profiles, exception capture, feature flags, or session replay
+- **Local scores plus a global leaderboard** — Scores has Global and On this device tabs. Finished runs still write to AsyncStorage first; signed-in players upsert pending rows to `global_scores`, and `global_leaderboard` shows each player's best per game (Clueless ranks lower-is-better). A missing or failed backend leaves the device board unchanged.
+- Bundled **Fredoka** display faces (`expo-font`, `@expo-google-fonts/fredoka`) and WordKrush splash/icon chrome (`#0A0817`)
+- **WordKrush brand kit** — lockup (black + clear + SVG) and W mark in `assets/logo/`, identity/usage/colour in `docs/branding/`. Splash uses the black lockup; auth and Android foreground use the clear lockup; app icon stays the W. Umbrella accent is lockup gold (`brand.krush`).
+- Wordfall level cards now carry a short player-facing `description` so the picker states the objective before play
+- **Wordfall weekly drops** — new levels ship in the bundle with a Monday `availableFrom`; the picker shows “this week” / “drops …” and still requires beating the previous level. The launch set (1–11) stays available on day one
+- **Local AI test player** — `npm run auth:ensure-test-player` creates a confirmed Auth user and writes `TEST_PLAYER_EMAIL` / `TEST_PLAYER_PASSWORD` / `TEST_PLAYER_USERNAME` to `.env`. Not a service-role account; never `EXPO_PUBLIC_*` (D-035).
 
 ### Changed
+- **Optional accounts now sign in with a Supabase magic link or SMS code**, not a password. Email sends a link (and accepts the 6-digit code from that message). Phone sends an SMS code to an E.164 number. Sessions restore from the web redirect or the native `wordkrush://` / Expo Go deep link. Guest skip and offline play are unchanged (D-033, D-034).
+- **Every game now starts the same way.** Clueless and Wordfall dropped the player straight into a live board while More or Less had a start screen first; all three now open the shared `GameStartScreen` — key art, badge, name, blurb, the player's own numbers, then Play. Game-specific content arrives through a `detail` slot rather than by forking the layout — and that slot sits directly under the blurb on every game, since what is on today or this week is the reason to tap Play, not a footnote under it — and the badge/blurb live in `src/games/registry.ts`, so a new game inherits the screen. Routing follows: `home` is the start screen for every game and `game` is the live board, so leaving a run returns to that game's start screen instead of jumping to the hub. `HomeScreen.tsx` was More-or-Less-only and is superseded.
+- Added `wordkrush-lockup-tight.png` — the lockup cropped to its content box — because the square masters carry ~35% transparent padding, which collapsed the logo in any header-height slot. `BrandArtwork` no longer forces the lockup into a square: `size` is its height and the width follows the artwork, so the auth hero renders it at its true proportions. App chrome (hub header, top bar) keeps the mark plus a text wordmark: the ornate lockup does not hold up at header scale.
+- **Fredoka now sets every text tier**, so all three games read as one typeface instead of Fredoka headings over system-face body copy. `type.body`, `type.bodyStrong`, and `type.caption` name a Fredoka face, and the ad-hoc styles that set `fontSize`/`fontWeight` without a `fontFamily` were given the matching face. Symbol glyphs (✓ ✎ ◎ ⟷ ▤ ★ ≡) deliberately keep the system face — Fredoka does not contain them. Supersedes D-026 with D-030.
+- CI requires a successful Expo web export (`npm run build:web`) in parallel with `check`; Railway deploy waits for both jobs
+- In-play chrome now uses the design-system primitives: More or Less cards and the VS badge are `Surface`s, Clueless shares `GameHeader`/`ProgressPill`, Wordfall HUD/picker/outcome pull accent from the registry, and shared tints go through `gameAccentTokens` rather than per-screen alphas. Wordfall board gestures and tile animation are unchanged.
+- Refined the shared UI controls and WordKrush artwork: buttons now support compact, ghost, leading-content, and accessibility-hint variants; headers support eyebrow labels; stats expose accessible value labels and custom icons; and app, splash, and game artwork use the new branded assets.
+- Renamed the product to **WordKrush** (wordKrush.com). App display name, Expo slug, npm package, iOS/Android identifiers, analytics consent key, and Wikimedia User-Agent now use wordkrush. Game ids and local score keys are unchanged.
 - Consolidated game-specific logic under `src/games/<game-id>/`; More or Less
   now lives beside Clueless and Wordfall, with shared RNG utilities directly
   under `src/games/`.
 - Renamed the product to **WordCrush** and aligned the app, game registry, and current documentation around the promise: "Guess correctly, keep the streak alive, and beat your best score." The broader goal is engaging repeated play that strengthens cognitive skills and pattern recognition.
+
+### Fixed
+- **The mascot was standing in the logo's place, and rendering on a white plate.** The hub header now carries `BrandArtwork` again; the deer moved to a decorative slot above the scores button. The animation's `Shape Layer 1` — a 1700×1288 pure-white rect covering the whole 1600×1200 canvas — was stripped from `deer.lottie`, so the deer now sits on the dark chrome instead of a white box. `Mascot` prefers the bundled file over the lottie.host copy, which still serves the white layer.
+- **The app mark is no longer the old pink W.** `wordkrush-mark.png` still held the pre-rebrand icon, so the top bar, drawer, app icon, and favicon shipped the retired `#FF5D8F` palette next to the new gold/purple lockup. The mark is now the lockup's purple W tile, masked to its own silhouette and composed on `brand.ink`; `icon.png` and `favicon.png` are regenerated from it with the alpha channel stripped (iOS rejects app icons carrying alpha).
+- `Mascot` called `Image.resolveAssetSource`, which react-native-web does not implement — it threw during render and took the whole hub down, leaving a blank page on web. The call is now guarded, falling back to the bundler's asset URL.
+- `withAlpha()` now returns `hsla()` for the `hsl()` colours `proximityColor()` produces, instead of concatenating a hex alpha suffix onto them. The old result (`hsl(...)29`) was an invalid colour that renders fully opaque rather than failing loudly, which made every Clueless guess-row rank badge draw its text in the same colour as the pill behind it — the rank and `COLD` labels were invisible. Covered by new `withAlpha` tests; the hex path is unchanged.
 
 ### Security
 - Untracked `.env` from git before Supabase keys could be pushed; added `.gitignore` + `.env.example`

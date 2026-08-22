@@ -30,7 +30,7 @@ const LEGACY_KEY = 'bestgames.scores.v1';
 const LEGACY_GAME_ID = 'more-or-less';
 
 /**
- * Moves scores saved before games were namespaced into the WordCrush comparison
+ * Moves scores saved before games were namespaced into the WordKrush comparison
  * bucket. Runs at most once — players should not lose history to a refactor.
  */
 export async function migrateLegacyScores(): Promise<void> {

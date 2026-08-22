@@ -26,16 +26,18 @@ export const SPECIAL_VISUALS: Record<SpecialKind, SpecialVisual> = {
   ember: { color: '#FB923C', glyph: '◆', shape: 'every matching letter' },
   // The biggest blast gets the app's existing violet, so the rarest reward
   // reads as the most valuable without inventing a new colour.
-  nova: { color: '#A78BFA', glyph: '■', shape: '3×3 block' },
-  beam: { color: '#38BDF8', glyph: '+', shape: 'row and column' },
-  flare: { color: '#FBBF24', glyph: '✕', shape: 'both diagonals' },
+  nova: { color: '#9B78FF', glyph: '■', shape: '3×3 block' },
+  beam: { color: '#43D8FF', glyph: '+', shape: 'row and column' },
+  flare: { color: '#FFD05A', glyph: '✕', shape: 'both diagonals' },
 };
 
 /** Tile face colour, tuned so letters stay legible on a dark board. */
 export const TILE = {
-  face: '#1E2634',
-  faceEdge: 'rgba(255,255,255,0.10)',
-  crate: '#2A2118',
-  crateEdge: '#4A3A28',
-  crateMark: '#8A6B45',
+  face: '#29244A',
+  faceEdge: '#504777',
+  faceDepth: '#17132D',
+  crate: '#362717',
+  crateEdge: '#72512A',
+  crateDepth: '#1D140B',
+  crateMark: '#D6A85E',
 } as const;

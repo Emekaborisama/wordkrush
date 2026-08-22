@@ -61,8 +61,8 @@ The reducer compares the two bundled values. Note what "correct" means here: **B
 **6. The answer travels back up: reveal.** [PLANNED]
 The hidden value counts up to its real number — the emotional beat of the whole game — then a haptic tap fires (`src/native/haptics.native.ts`; no-op on web via the `.web.ts` twin). Correct → streak++, winning card slides left, new challenger enters (carry-over chain — genre standard, still [OPEN] vs the reference game). Wrong → run over.
 
-**7. Back to the player: game over.** [PLANNED]
-Final streak, best streak (persisted locally; Game Center leaderboard later — also 4.2 evidence), the pair that ended the run, Play Again + Share. Loop closes: the share link is how the game markets itself.
+**7. Back to the player: game over.** [BUILT]
+The run is written to the local board first (`src/scores/storage.ts`). Game over shows the streak, the pair that ended it, and Play Again / scores / all-games. Scores open a two-tab surface: **On this device** is the offline history; **Global** is each signed-in player's best run for that game (Journey 5). Game Center remains a later native 4.2 extra, not this board.
 
 ---
 
@@ -81,7 +81,7 @@ The player asked "does *sushi* have more searches than *pizza*?" — this is how
     │ review flags ─────────────────────────────► │ mark validated       │                   │
     │                    │ export ───────────────►│ mark published       │                   │
     │                    │      └──► src/data/categories/*.json          │                   │
-    │ commit + PR ──────────────────────────────────────────────────────►│ CI: types+tests   │
+    │ commit + PR ──────────────────────────────────────────────────────►│ CI: check+export  │
     │                    │                        │                      │ EAS build →       │
     │                    │                        │                      │ TestFlight →      │
     │                    │                        │                      │ App Store ───────►│ plays it
@@ -110,7 +110,7 @@ Every fetched value passes sanity checks *at write time*: missing/zero/non-finit
 `npm run pipeline:export` ([export-snapshot.ts](../pipeline/export-snapshot.ts)) takes the newest validated/published snapshot per category, **excludes flagged rows**, and writes `src/data/categories/<id>.json` with per-item `source` + `updatedAt`. The snapshot is marked `published`.
 
 **5. The data ships like code.** [BUILT: CI · blocked on owner accounts: EAS]
-The JSON diff goes up in a PR — **the diff is the content review**. CI (documentation impact + typecheck + tests) must pass ([ci.yml](../.github/workflows/ci.yml)). Merge → release ritual (WORKFLOW): changelog rollover, version bump, tag, `eas build` → `eas submit` → TestFlight → App Store. Web ships the same commit to Railway after CI passes (D-020).
+The JSON diff goes up in a PR — **the diff is the content review**. CI must pass documentation impact, typecheck, tests, and `npm run build:web` ([ci.yml](../.github/workflows/ci.yml)). Merge → release ritual (WORKFLOW): changelog rollover, version bump, tag, `eas build` → `eas submit` → TestFlight → App Store. Web ships the same commit to Railway after both `check` and `web` pass (D-020, D-029).
 
 **6. The player sees the number** — with its provenance ("Source: monthly Wikipedia pageviews, <month year>") [PLANNED], so the claim on screen is exactly the claim the data supports.
 
@@ -138,6 +138,9 @@ CI compares the complete pull-request diff to its base branch; the local check
 also includes untracked files. A missing document fails with the exact file and
 reason. Semantic changes such as a design decision or task-status update still
 require human or agent judgement because file paths cannot prove intent.
+CI also runs `npm run build:web` in a sibling job; merge and Railway deploy
+wait for both `check` and `web` (D-029). The export is not part of the local
+`npm run check` loop.
 
 ---
 
@@ -169,27 +172,167 @@ Operational deployment and content gates remain in Railway and GitHub Actions.
 
 ---
 
+## Journey 5 — A finished run becomes a local score and, optionally, a global rank
+
+Local history and the global board are two surfaces over the same finished run.
+They are never mixed into one list: game units differ, guests must keep a
+score without an account, and a network failure must not erase a run that
+already happened.
+
+```
+ PLAYER                 APP                         LOCAL STORE              SUPABASE
+   │                      │                              │                      │
+   │ run ends             │                              │                      │
+   ├─────────────────────►│ recordScore(gameId, entry)   │                      │
+   │                      ├─────────────────────────────►│ AsyncStorage board   │
+   │ sees game-over       │◄─────────────────────────────┤ authoritative        │
+   │ opens Scores         │                              │                      │
+   ├─────────────────────►│ tab: On this device          │                      │
+   │ local top 10         │◄─────────────────────────────┤ topScores()          │
+   │                      │                              │                      │
+   │ tab: Global          │ loadGlobalLeaderboard()      │                      │
+   │                      ├────────────────────────────────────────────────────►│ view global_leaderboard
+   │                      │                              │                      │
+   │ signed in + pending  │ syncPendingScores()          │                      │
+   │                      ├─────────────────────────────►│ mark synced          │
+   │                      ├────────────────────────────────────────────────────►│ upsert global_scores
+```
+
+### Step by step
+
+**1. The device is the source of truth.** [BUILT]
+`recordScore` in [storage.ts](../src/scores/storage.ts) appends the run to a
+per-game AsyncStorage board (`bestgames.scores.<gameId>.v1`). The write is
+offline, needs no account, and is what the hub, home, and game-over screens
+read. A global upload copies FROM this board; it never overwrites it (D-016,
+D-025).
+
+**2. Scores has two tabs.** [BUILT]
+[ScoresScreen.tsx](../src/ui/screens/ScoresScreen.tsx) defaults to **Global**
+when the publishable Supabase client is configured, otherwise **On this
+device**. Local shows this device's top runs with the just-finished row
+highlighted. Global shows each player's single best for that `game_id`, ranked
+in SQL so Clueless (fewer guesses wins) does not share a sort with streak or
+points games.
+
+**3. Guests keep playing; sign-in unlocks posting.** [BUILT]
+Without an account the local tab still works. The global tab is readable by
+anyone when the backend is configured; posting requires a session. Opening
+Scores while signed in is the retry boundary: `syncPendingScores` upserts
+unsynced rows to `global_scores` keyed by `(player_id, client_entry_id)` so a
+flaky retry cannot double-post, then marks only confirmed rows `synced`.
+Optional accounts use **Supabase Auth** (D-033, D-034): email magic link or
+SMS one-time code. Email: the player enters an address, Supabase sends the
+link, and the session lands when they open it (web URL parse, or native PKCE
+exchange from `wordkrush://` / Expo Go) or type the 6-digit code from the
+same email. Phone: E.164 number, SMS code, `verifyOtp` type `sms`. There is
+no password. Phone numbers are not sent to PostHog. Skip remains a guest
+path; a missing backend still plays offline.
+
+**4. The public board is a view, not a client-ranked dump.** [BUILT]
+[0003_global_scores.sql](../supabase/migrations/0003_global_scores.sql) stores
+immutable submissions (RLS: read non-rejected, insert only `auth.uid() =
+player_id`, no client update/delete). `global_leaderboard` returns one best
+row per player per game plus `global_rank`. [global.ts](../src/scores/global.ts)
+parses that shape and drops anything malformed. If the client is unconfigured
+or the request fails, the empty/error state says so and the local tab is
+unchanged.
+
+**5. Fonts and chrome load before the hub.** [BUILT]
+`App.tsx` waits on bundled Fredoka faces (`@expo-google-fonts/fredoka` via the
+`expo-font` plugin in `app.json`) so WordKrush type is available offline
+(D-030). Symbol glyphs stay on the system face. Game data remains bundled
+JSON; missing Supabase keys still leave every title playable. Splash uses the
+black lockup in `assets/logo/`; auth uses the clear lockup; drawer and top bar
+use the W mark via `BrandArtwork`. The hub hero is the little-deer mascot
+(`src/ui/lottie/Mascot.tsx`, pose `idle`). Outcome screens reuse the same
+component with `celebrate` or `wince` (More or Less game over, Wordfall
+level result, Clueless solved). Clip URLs live in `LOTTIE_CLIPS`; deer poses
+currently share one lottie.host file and fall back to bundled
+`assets/lottie/deer.lottie` (D-032). Reduce-motion skips playback.
+
+---
+
+## Journey 6 — A Wordfall level goes live on Monday
+
+The player-facing promise is one new Wordfall level each week. Nothing is
+downloaded on Monday. The row has to already be in the installed bundle
+(D-004, D-027). Full contract: [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md).
+
+```
+ AUTHOR                 GIT / CI                    PLAYER DEVICE
+   │                       │                              │
+   │ append LEVELS row     │                              │
+   │ availableFrom=Monday  │                              │
+   ├──────────────────────►│ PR → check + web             │
+   │                       │ merge master                 │
+   │                       ├─ Railway deploy (web)        │
+   │                       ├─ later: EAS / App Store      │
+   │                       │                              │
+   │                       │         Monday local 00:00   │
+   │                       │         isLevelReleased true │
+   │                       │                              │
+   │                       │                              │ picker: “this week”
+   │                       │                              │ playable if unlocked
+```
+
+**1. We author into the catalog, not a CMS.** [BUILT: file · PLANNED: weekly job]
+A new object is appended to [levels.ts](../src/data/wordfall/levels.ts). Levels
+1–11 omit `availableFrom` so the tutorial is live on day one. Weekly rows start
+at 12 and set `availableFrom` to that Monday. The file *is* the schedule;
+automation must read it rather than keep a second calendar.
+
+**2. The row ships like code.** [BUILT: web · blocked on owner: iOS]
+Merge to `master` deploys web (D-020, D-029). iOS only sees the row after a
+store build that contains it is installed. That is why the weekly spec keeps a
+buffer of unpublished Mondays in the same catalog.
+
+**3. Monday unlocks locally.** [BUILT]
+[schedule.ts](../src/games/wordfall/schedule.ts) compares the player's local
+calendar day to `availableFrom`. The picker shows “this week” / “drops …” /
+locked. Playable still requires beating the previous level. Winning level N
+unlocks N+1 even if that row has not shipped yet, so a later drop does not
+force a replay.
+
+**4. A stale app has no next week.** [BUILT]
+A client missing the row cannot fetch it. Copy falls back to “come back next
+week” when this build has no future `availableFrom`. That is the accepted
+D-004 trade: content updates are releases.
+
+---
+
 ## System reference
 
 Quick map of where each journey step lives:
 
 | Piece | Where | Status |
 |---|---|---|
-| App shell (iOS + web) | `App.tsx`, `index.ts`, `app.json` | [BUILT: placeholder] |
+| App shell (iOS + web) | `App.tsx`, `index.ts`, `app.json` | [BUILT] — WordKrush hub, lockup splash `#0A0817`, `expo-font`; web at wordKrush.com |
+| Brand kit | `assets/logo/`, `docs/branding/`, `BrandArtwork` | [BUILT] — black lockup on splash; clear lockup on auth/Android; W mark on icon, drawer, top bar |
+| Mascot (deer) | `src/ui/lottie/`, `LOTTIE_CLIPS`, `assets/lottie/deer.lottie` | [BUILT] — hub + outcome poses; flame/burst CDN rows empty (D-032) |
+| Display type | `@expo-google-fonts/fredoka`, `src/ui/theme.ts` | [BUILT] — every text tier, all three games; symbol glyphs stay on the system face (D-030) |
 | Fairness guard + difficulty bands | `src/games/more-or-less/pairing.ts` (+ 9 tests) | [BUILT] |
-| Engine reducer, pair selector, scoring | `src/games/more-or-less/engine.ts` *(to create)* | [PLANNED] |
+| Engine reducer, pair selector, scoring | `src/games/more-or-less/engine.ts` | [BUILT] |
 | Bundled game data | `src/data/categories/*.json` | [BUILT: dir, populated on first export] |
 | Keyword lists | `pipeline/keywords/` | [BUILT] |
 | Ingest + validation | `pipeline/ingest.ts` | [BUILT] |
+| Local AI test player | `pipeline/ensure-test-player.ts` | [BUILT] — `TEST_PLAYER_*` in `.env` only; `npm run auth:ensure-test-player` (D-035) |
 | Source adapters | `pipeline/sources/` (Wikipedia active; mock available for deterministic checks) | [BUILT] |
 | Export | `pipeline/export-snapshot.ts` | [BUILT] |
 | LLM validator (schema/API/CLI) | `validator/` (+ 18 tests) | [BUILT] |
-| DB schema | `supabase/migrations/0001_init.sql` | [BUILT: not yet applied — owner checklist] |
-| CI | `.github/workflows/ci.yml` | [BUILT] |
+| Content DB schema | `supabase/migrations/0001_init.sql` | [BUILT: apply on the owner project] |
+| Accounts + first leaderboard tables | `supabase/migrations/0002_leaderboard.sql` | [BUILT: apply on the owner project] |
+| Optional auth (magic link + SMS) | `src/auth/`, `src/ui/screens/AuthScreen.tsx` | [BUILT] — Supabase email magic link and phone OTP; web + native deep-link restore (D-033, D-034) |
+| Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
+| Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
+| Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |
+| CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both |
 | Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] |
 | Consent and product analytics | `src/analytics/`, `src/ui/AnalyticsConsentPrompt.tsx` | [BUILT] |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |
-| Haptics / Game Center | `src/native/` | [PLANNED] |
+| Haptics | `src/native/haptics.ts` | [BUILT] |
+| Wordfall weekly drops | `src/games/wordfall/schedule.ts`, `src/data/wordfall/levels.ts`, [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) | [BUILT] gate; [PLANNED] scheduled authoring — Monday `availableFrom`; launch set has no date |
+| Game Center | `src/native/` | [PLANNED] |
 
 ## Security model
 
@@ -197,15 +340,17 @@ Quick map of where each journey step lives:
 - `SUPABASE_SECRET_KEY`: pipeline-only, loaded via `tsx --env-file=.env`. Never `EXPO_PUBLIC_`-prefixed — Expo embeds those in the shipped bundle.
 - Client bundles contain only publishable Supabase and PostHog project
   configuration under `EXPO_PUBLIC_*`; neither grants privileged server access.
-- Supabase access is constrained by Row Level Security. PostHog remains opted
-  out until explicit consent and never receives account identity.
+- Supabase access is constrained by Row Level Security (`players`,
+  `leaderboard_entries`, `global_scores`). Clients insert only their own rows
+  and cannot update or delete a submitted score. PostHog remains opted out
+  until explicit consent and never receives account identity.
 
 ## Risk register (live)
 
 | Risk | Severity | Mitigation | Status |
 |---|---|---|---|
 | Metric source confusion | Low | Wikimedia pageviews is v1; future keyword APIs remain optional later upgrades | Closed |
-| Guideline 4.2 rejection (app too thin) | Medium | Haptics + Game Center + offline before submission | Planned |
+| Guideline 4.2 rejection (app too thin) | Medium | Offline play and haptics ship; Game Center still planned. Supabase global ranks are web+iOS, not a native Game Center substitute | Open |
 | Difficulty bands feel wrong | Medium | Constants isolated in `pairing.ts`; tune via playtest | Open |
 | Stale bundled data | Medium | Per-item `updatedAt`; swing check on refresh; revisit D-004 if painful | Accepted |
 | Core mechanic unverified vs reference game | Medium | BRAINSTORM [OPEN] items; engine takes them as config | Open |

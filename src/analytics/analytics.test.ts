@@ -65,6 +65,7 @@ describe('analytics property buckets', () => {
     expect(authErrorCategory('Too many requests')).toBe('rate_limit');
     expect(authErrorCategory('Email not confirmed')).toBe('unconfirmed');
     expect(authErrorCategory('Invalid password')).toBe('credentials');
+    expect(authErrorCategory('Invalid phone number')).toBe('credentials');
     expect(authErrorCategory('Unexpected response')).toBe('other');
   });
 });

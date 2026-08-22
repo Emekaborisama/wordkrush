@@ -13,7 +13,7 @@
  */
 
 const API = 'https://en.wikipedia.org/w/api.php';
-const USER_AGENT = 'wordcrush/0.1 (https://github.com/Emekaborisama/more-or-less-game)';
+const USER_AGENT = 'wordkrush/0.1 (https://wordkrush.com)';
 
 const CONCURRENCY = 4;
 
