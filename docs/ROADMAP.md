@@ -74,6 +74,7 @@ Guideline 4.2 rejects apps that are too thin. These are the mitigation:
 ## Track: accounts
 
 - [ ] **Supabase magic-link + SMS sign-in** (ST-73) — **Doing**; replaces the ST-61 password form. Email magic link (D-033) and phone SMS OTP (D-034) on the same optional Supabase Auth project. Owner still needs Site URL `https://wordkrush.com`, the redirect allow-list, custom SMTP (to unlock the WordKrush template), and an SMS provider under Phone settings.
+- [ ] **Magic-link redirect, WordKrush email, and tab icon** (ST-76) — **Doing**; absolute `emailRedirectTo`, branded Magic Link HTML, cache-busted favicon PNG.
 
 ## Track: infra
 
