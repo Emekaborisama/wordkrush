@@ -136,5 +136,7 @@ analytics still starts opted out and requires the player's explicit consent.
 - [ ] `npx expo login` (Expo account, for EAS builds)
 - [ ] Apple Developer Program ($99/yr) + `eas credentials` once
 - [ ] Apply `supabase/migrations/0001_init.sql`, `0002_leaderboard.sql`, and `0003_global_scores.sql` in the Supabase SQL editor
+- [ ] **Supabase Auth magic link (D-033):** Authentication → URL Configuration. Site URL `https://wordkrush.com`. Redirect allow-list must include `https://wordkrush.com/**`, `http://localhost:8081/**`, `http://localhost:8080/**`, and `wordkrush://**`. Email templates should keep both the confirmation URL and the OTP token — the app uses the link first and the 6-digit code as fallback. Existing password users can sign in with a magic link to the same email.
+- [ ] **Supabase Auth phone SMS (D-034):** Phone provider is enabled. Confirm an SMS provider is configured on that Phone settings page (Twilio or equivalent) or texts will not send. Test with an E.164 number (`+` and country code).
 
 Web hosting and the v1 data source are resolved by STACK D-020 and D-012.

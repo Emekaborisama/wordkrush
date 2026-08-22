@@ -20,7 +20,14 @@ import {
   streakBucket,
   type AnalyticsConsent,
 } from './src/analytics/events';
-import { currentProfile, signOut, type Profile } from './src/auth/auth';
+import * as Linking from 'expo-linking';
+import {
+  completeSessionFromUrl,
+  currentProfile,
+  signOut,
+  subscribeToAuth,
+  type Profile,
+} from './src/auth/auth';
 import { isBackendConfigured } from './src/auth/client';
 import categoryData from './src/data/categories/wikipedia-popularity.json';
 import { todaysPuzzleNumber } from './src/data/clueless';
@@ -148,11 +155,20 @@ export default function App() {
       }
     })();
     // Restoring a session must never block play: failures resolve to null.
-    void currentProfile().then((restoredProfile) => {
-      hadRestoredSession.current = restoredProfile !== null;
-      setProfile(restoredProfile);
-      setProfileReady(true);
-    });
+    void (async () => {
+      try {
+        const initialUrl = await Linking.getInitialURL();
+        if (initialUrl) await completeSessionFromUrl(initialUrl);
+        const restoredProfile = await currentProfile();
+        hadRestoredSession.current = restoredProfile !== null;
+        setProfile(restoredProfile);
+      } catch {
+        hadRestoredSession.current = false;
+        setProfile(null);
+      } finally {
+        setProfileReady(true);
+      }
+    })();
     // Display only — a visit alone does not extend the streak, finishing a
     // run does (see recordFinish below).
     void loadStreak().then((loadedStreak) => {
@@ -163,6 +179,19 @@ export default function App() {
       setAnalyticsConsent(storedConsent);
       setShowAnalyticsPrompt(storedConsent === 'unknown' && isAnalyticsConfigured);
     });
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAuth((next) => {
+      setProfile(next);
+    });
+    const links = Linking.addEventListener('url', ({ url }) => {
+      void completeSessionFromUrl(url);
+    });
+    return () => {
+      unsubscribe();
+      links.remove();
+    };
   }, []);
 
   const boardFor = (gameId: string) => boards[gameId] ?? EMPTY_BOARD;
@@ -497,6 +526,7 @@ export default function App() {
 
         {screen.name === 'auth' && (
           <AuthScreen
+            profile={profile}
             onAuthed={(p) => {
               identifyAnalytics(p);
               identifiedProfileId.current = p.id;

@@ -17,7 +17,7 @@ declined, PostHog is unavailable, or the device is offline.
 
 - Do not identify signed-in players in PostHog.
 - Do not enable autocapture or session replay.
-- Do not capture email, username, profile id, guessed words, item labels,
+- Do not capture email, phone number, username, profile id, guessed words, item labels,
   image URLs, raw error messages, stack traces, or persisted game state.
 - Use bounded enums and numeric aggregates. Do not create event names or
   property keys dynamically.
@@ -105,8 +105,8 @@ expose a typed event map so names and property shapes cannot drift.
 | `game_over_action` | P1 | WordKrush comparison result-screen action | `action: play_again \| scores \| home`, `streak_bucket`, `is_new_best` | Replay and post-run intent |
 | `scores_viewed` | P2 | Scores screen mount | `game_id`, `run_count_bucket`, `has_highlight`, `auth_status` | Score-surface value |
 | `auth_prompt_viewed` | P1 | Scores screen shows eligible account prompt | `game_id`, `run_count_bucket` | Account CTA reach |
-| `auth_submitted` | P1 | Auth form after local validation | `mode: sign_in \| sign_up`, `validation_result`, `error_category?` | Form friction |
-| `auth_succeeded` | P1 | Auth operation succeeds | `mode` | Account conversion |
+| `auth_submitted` | P1 | Auth form after local validation (magic-link send, SMS send, or OTP code) | `mode: sign_in \| sign_up`, `validation_result`, `error_category?` | Form friction |
+| `auth_succeeded` | P1 | Session established (magic-link click or OTP verify) | `mode` | Account conversion |
 | `auth_failed` | P1 | Auth operation fails | `mode`, `error_category: credentials \| network \| rate_limit \| unconfirmed \| other` | Actionable auth failure mix |
 | `auth_skipped` | P2 | Auth skip action | none | Prompt abandonment |
 | `auth_session_restored` | P1 | Startup session restore succeeds | `result: signed_in` | Signed-in startup reliability without exposing account identity |

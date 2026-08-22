@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   friendlyAuthError,
+  normalizePhone,
   normalizeUsername,
   validateEmail,
-  validatePassword,
+  validateOtpCode,
+  validatePhone,
   validateUsername,
 } from './validation';
 
@@ -55,17 +57,37 @@ describe('validateEmail', () => {
   });
 });
 
-describe('validatePassword', () => {
-  it('requires a minimum length', () => {
-    expect(validatePassword('short')).toMatch(/at least/i);
-    expect(validatePassword('')).toMatch(/enter a password/i);
-    expect(validatePassword('longenough1')).toBeNull();
+describe('validateOtpCode', () => {
+  it('accepts 6 to 8 digit codes', () => {
+    expect(validateOtpCode('123456')).toBeNull();
+    expect(validateOtpCode('12345678')).toBeNull();
   });
 
-  it('does not impose composition rules', () => {
-    // Length beats forced symbols; arbitrary composition rules push people
-    // toward weaker, more predictable passwords.
-    expect(validatePassword('correct horse battery staple')).toBeNull();
+  it('rejects empty, short, long, and non-numeric values', () => {
+    expect(validateOtpCode('')).toMatch(/enter the code/i);
+    expect(validateOtpCode('12345')).toMatch(/6 to 8/i);
+    expect(validateOtpCode('123456789')).toMatch(/6 to 8/i);
+    expect(validateOtpCode('12ab56')).toMatch(/number code/i);
+  });
+});
+
+describe('validatePhone', () => {
+  it('accepts E.164 numbers, including spaced input', () => {
+    expect(validatePhone('+447700900123')).toBeNull();
+    expect(validatePhone('+1 555 123 4567')).toBeNull();
+  });
+
+  it('requires a country code and rejects obvious non-numbers', () => {
+    expect(validatePhone('')).toMatch(/enter your phone/i);
+    expect(validatePhone('07700900123')).toMatch(/country code/i);
+    expect(validatePhone('+12')).toMatch(/phone number/i);
+    expect(validatePhone('+0447700900123')).toMatch(/phone number/i);
+  });
+});
+
+describe('normalizePhone', () => {
+  it('keeps a leading plus and strips separators', () => {
+    expect(normalizePhone('+44 7700-900123')).toBe('+447700900123');
   });
 });
 
@@ -77,9 +99,11 @@ describe('normalizeUsername', () => {
 
 describe('friendlyAuthError', () => {
   it('translates known Supabase errors', () => {
-    expect(friendlyAuthError('Invalid login credentials')).toMatch(/wrong email or password/i);
+    expect(friendlyAuthError('Signups not allowed for otp')).toMatch(/create one first/i);
     expect(friendlyAuthError('User already registered')).toMatch(/already has an account/i);
-    expect(friendlyAuthError('Email not confirmed')).toMatch(/confirm your email/i);
+    expect(friendlyAuthError('Invalid phone number format')).toMatch(/phone number is not accepted/i);
+    expect(friendlyAuthError('Token has expired or is invalid')).toMatch(/expired/i);
+    expect(friendlyAuthError('Email not confirmed')).toMatch(/tap the link/i);
     expect(friendlyAuthError('Request rate limit reached')).toMatch(/too many attempts/i);
   });
 

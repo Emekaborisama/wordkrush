@@ -221,6 +221,13 @@ anyone when the backend is configured; posting requires a session. Opening
 Scores while signed in is the retry boundary: `syncPendingScores` upserts
 unsynced rows to `global_scores` keyed by `(player_id, client_entry_id)` so a
 flaky retry cannot double-post, then marks only confirmed rows `synced`.
+Optional accounts use **Supabase Auth** (D-033, D-034): email magic link or
+SMS one-time code. Email: the player enters an address, Supabase sends the
+link, and the session lands when they open it (web URL parse, or native PKCE
+exchange from `wordkrush://` / Expo Go) or type the 6-digit code from the
+same email. Phone: E.164 number, SMS code, `verifyOtp` type `sms`. There is
+no password. Phone numbers are not sent to PostHog. Skip remains a guest
+path; a missing backend still plays offline.
 
 **4. The public board is a view, not a client-ranked dump.** [BUILT]
 [0003_global_scores.sql](../supabase/migrations/0003_global_scores.sql) stores
@@ -314,6 +321,7 @@ Quick map of where each journey step lives:
 | LLM validator (schema/API/CLI) | `validator/` (+ 18 tests) | [BUILT] |
 | Content DB schema | `supabase/migrations/0001_init.sql` | [BUILT: apply on the owner project] |
 | Accounts + first leaderboard tables | `supabase/migrations/0002_leaderboard.sql` | [BUILT: apply on the owner project] |
+| Optional auth (magic link + SMS) | `src/auth/`, `src/ui/screens/AuthScreen.tsx` | [BUILT] — Supabase email magic link and phone OTP; web + native deep-link restore (D-033, D-034) |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |

@@ -70,6 +70,10 @@ Guideline 4.2 rejects apps that are too thin. These are the mitigation:
 - [ ] Game Center leaderboard for best streak — native 4.2 evidence and score persistence
 - [x] App icon + splash from the brand kit (`assets/logo/`, `docs/branding/`) — store screenshots still outstanding
 
+## Track: accounts
+
+- [ ] **Supabase magic-link + SMS sign-in** (ST-73) — **Doing**; replaces the ST-61 password form. Email magic link (D-033) and phone SMS OTP (D-034) on the same optional Supabase Auth project. Owner still needs the Auth redirect allow-list and an SMS provider under Phone settings.
+
 ## Track: infra
 
 - [x] GitHub Actions CI (typecheck + TS tests)
