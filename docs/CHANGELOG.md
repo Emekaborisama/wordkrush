@@ -8,6 +8,8 @@ Rules:
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-22
+
 ### Fixed
 - **Game start screens read as one card instead of two.** The `detail` block (today’s category / puzzle / week) and the player’s stats now share a single status card, and the stats stay hidden until a run has actually been finished — a first-time player was shown a full-width accent card whose whole content was “—” and “0”. Two layout bugs went with it: `hero` added its own horizontal inset on top of the root gutter, so the detail card and the stats card sat at different widths, and the fixed column let the bottom block ride up over the detail card whenever the blurb wrapped to three lines (Clueless, and every game on a short phone). The screen is now a ScrollView with `flexGrow: 1`.
 
