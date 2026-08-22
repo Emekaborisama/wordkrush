@@ -94,7 +94,7 @@ The app only ever reads the bundled JSON. Changing game data = run pipeline, com
 
 **Weekly Wikipedia popularity** is automated: `.github/workflows/wikipedia-popularity-weekly.yml` runs Mondays at 09:00 UTC (and on `workflow_dispatch`). It calls `pipeline:rotate`, runs `npm run check` on a material change, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. That branch is an automation exception to the Superthread-name rule (D-036); do not merge it without reading the JSON diff. The job never pushes to `master`. Until the factory path is live (ST-35), the file stays `provisional: true`.
 
-Wordfall weekly levels are a different path: append a row to `src/data/wordfall/levels.ts` with a Monday `availableFrom`, then follow [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md). Do not run the Wikipedia ingest for a Wordfall drop. Monday does not fetch content; the catalog in git is the schedule.
+Wordfall weekly levels are a different path: append a row to `src/data/wordfall/levels.ts` with a Monday `availableFrom`, then follow [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) Job B and the Cursor skill `.cursor/skills/wordfall-weekly-gauntlet/`. Unique `taskFingerprint`, seven-day featured window, then **local** `npm run check` → `build:web` → `serve:web` (port 8080) and a picker playtest **before** `git push` (D-038). Do not run the Wikipedia ingest for a Wordfall drop. Monday does not fetch content; the catalog in git is the schedule.
 
 ## Release process
 

@@ -97,3 +97,30 @@ export function nextDropDate(
 export function formatDropDay(date: Date): string {
   return date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 }
+
+/**
+ * What a level asks — puzzle vs race plus objective kinds — not how hard the
+ * numbers are. Weekly drops must not reuse a fingerprint already in LEVELS,
+ * including last week's row.
+ */
+export function taskFingerprint(
+  level: Pick<Level, 'objectives' | 'timeLimitMs'>,
+): string {
+  const clock = level.timeLimitMs != null ? 'race' : 'puzzle';
+  const parts = level.objectives.map((objective) => {
+    switch (objective.kind) {
+      case 'words':
+        return 'words';
+      case 'score':
+        return 'score';
+      case 'crates':
+        return 'crates';
+      case 'letter':
+        return `letter:${objective.letter.toLowerCase()}`;
+      case 'length':
+        return `length:${objective.minLength}`;
+    }
+  });
+  parts.sort();
+  return `${clock}|${parts.join('+')}`;
+}

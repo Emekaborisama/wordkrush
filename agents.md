@@ -26,7 +26,7 @@ Read the documents relevant to your change before editing:
 | Visual identity, logo, and brand colour | `docs/branding/` |
 | Technology choices, constraints, and test strategy | `docs/STACK.md` |
 | Collaboration workflow and definition of done | `docs/WORKFLOW.md` |
-| Wordfall Monday drops and weekly automation | `docs/WORDFALL-WEEKLY.md` |
+| Wordfall Monday drops and weekly automation | `docs/WORDFALL-WEEKLY.md` and `.cursor/skills/wordfall-weekly-gauntlet/` |
 | Local commands and dependency versions | `package.json` |
 | Secrets and environment-variable boundaries | `.env.example` and `.gitignore` |
 | Cross-agent working agreement | This file |

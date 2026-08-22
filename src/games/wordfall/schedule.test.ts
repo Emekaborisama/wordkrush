@@ -9,6 +9,7 @@ import {
   nextDropDate,
   parseAvailableFrom,
   startOfLocalWeek,
+  taskFingerprint,
   unlockAfterWin,
 } from './schedule';
 
@@ -69,10 +70,53 @@ describe('weekly release gate', () => {
   });
 });
 
+describe('taskFingerprint', () => {
+  it('ignores numeric targets and sorts kinds', () => {
+    expect(
+      taskFingerprint({
+        objectives: [
+          { kind: 'score', target: 9000 },
+          { kind: 'crates', target: 4 },
+        ],
+      }),
+    ).toBe('puzzle|crates+score');
+    expect(
+      taskFingerprint({
+        objectives: [
+          { kind: 'crates', target: 14 },
+          { kind: 'score', target: 100 },
+        ],
+      }),
+    ).toBe('puzzle|crates+score');
+  });
+
+  it('treats puzzle vs race and letter/length details as the task', () => {
+    expect(taskFingerprint({ objectives: [{ kind: 'words', target: 6 }] })).toBe('puzzle|words');
+    expect(
+      taskFingerprint({
+        objectives: [{ kind: 'words', target: 6 }],
+        timeLimitMs: 60_000,
+      }),
+    ).toBe('race|words');
+    expect(
+      taskFingerprint({
+        objectives: [{ kind: 'letter', letter: 'E', target: 16 }],
+      }),
+    ).toBe('puzzle|letter:e');
+    expect(
+      taskFingerprint({
+        objectives: [{ kind: 'length', minLength: 5, target: 4 }],
+      }),
+    ).toBe('puzzle|length:5');
+  });
+});
+
 describe('shipped Wordfall catalog', () => {
   it('keeps the launch curriculum undated so it is playable on day one', () => {
-    expect(LEVELS.every((level) => level.availableFrom === undefined)).toBe(true);
-    expect(lastReleasedNumber(LEVELS, at('2026-08-22'))).toBe(LEVELS[LEVELS.length - 1].number);
+    const launch = LEVELS.filter((level) => level.number <= 11);
+    expect(launch).toHaveLength(11);
+    expect(launch.every((level) => level.availableFrom === undefined)).toBe(true);
+    expect(lastReleasedNumber(launch, at('2026-08-22'))).toBe(11);
   });
 
   it('uses valid Mondays when a weekly date is present', () => {
@@ -81,6 +125,23 @@ describe('shipped Wordfall catalog', () => {
       const opens = parseAvailableFrom(level.availableFrom);
       expect(opens, `level ${level.number}`).not.toBeNull();
       expect(opens!.getDay(), `level ${level.number} should drop Monday`).toBe(1);
+    }
+  });
+
+  it('gives every shipped level a unique task fingerprint', () => {
+    const seen = new Map<string, number>();
+    for (const level of LEVELS) {
+      const print = taskFingerprint(level);
+      const previous = seen.get(print);
+      expect(previous, `level ${level.number} repeats level ${previous} (${print})`).toBeUndefined();
+      seen.set(print, level.number);
+    }
+  });
+
+  it('does not let two consecutive dated drops share a fingerprint', () => {
+    const weekly = LEVELS.filter((level) => level.availableFrom);
+    for (let i = 1; i < weekly.length; i++) {
+      expect(taskFingerprint(weekly[i])).not.toBe(taskFingerprint(weekly[i - 1]));
     }
   });
 });

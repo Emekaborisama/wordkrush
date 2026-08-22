@@ -38,6 +38,8 @@ Do not weaken these to make a week ship.
 6. A level is a **puzzle** (move budget, no `timeLimitMs`) or a **race** (`timeLimitMs` set, `moves` high enough that the clock is the only way to lose). Never both.
 7. Playable = released **and** `number <= unlocked`. Beating level N writes `unlocked = N+1` even if N+1 has not shipped yet, so a later drop does not force a campaign replay.
 8. Game reducers stay pure. Schedule math lives in `schedule.ts` and takes `now: Date`. Do not call `Math.random()` or read the clock inside `engine.ts`.
+9. Every row has a unique `taskFingerprint` (puzzle vs race plus objective kinds). A weekly drop must not reuse last week's fingerprint, or any other row's. Numeric targets may change; the *question* may not. Do not invent a sixth `Objective` kind.
+10. Featured TTL is seven days (`isNewestRelease`). After Sunday the row stays in the catalog so numbering has no holes. Do not delete last week's level to "expire" it.
 
 ---
 
@@ -118,9 +120,11 @@ From the repo root:
 ```bash
 npx vitest run src/games/wordfall/schedule.test.ts src/games/wordfall/engine.test.ts
 npm run check
+npm run build:web
+npm run serve:web
 ```
 
-`npm run check` is required: a new row is game data. `npm run build:web` is required before merge (CI `web` job); run it locally when the level file or Wordfall UI changed.
+`npm run check` is required: a new row is game data. `npm run build:web` then `npm run serve:web` is the local production deploy of `dist/` on port 8080. Playtest that export before `git push` (hub, Wordfall picker, launch 1–11). `npm run web` is the authoring loop, not this gate. Job B will not push a drop that only passed CI in the author's head.
 
 The suite already encodes the contract. A drop that fails any of these is not done:
 
@@ -135,6 +139,8 @@ The suite already encodes the contract. A drop that fails any of these is not do
 | Timed: `moves > timeLimitMs/1000` | shipped timed levels |
 | Dated rows are real Mondays | `schedule.test.ts` |
 | Launch 1–11 stay undated | `schedule.test.ts` |
+| Unique `taskFingerprint` across `LEVELS`; consecutive dated weeks differ | `schedule.test.ts` |
+| Local `serve:web` picker playtest | Job B / Gauntlet skill — before GitHub |
 
 Add a [CHANGELOG.md](CHANGELOG.md) `[Unreleased]` line: which number, which Monday, one-line idea. That is the player-visible record.
 
@@ -185,18 +191,25 @@ This job can land as a GitHub Actions `schedule` workflow that runs the existing
 
 **When:** Job A fails, or the owner asks for the next week.
 
-**Steps (in order):**
+Follow the Cursor skill [wordfall-weekly-gauntlet](../.cursor/skills/wordfall-weekly-gauntlet/SKILL.md). Working title **Gauntlet**. Steps (in order):
 
 1. Read this file, `src/data/wordfall/levels.ts`, and the last 3 weekly rows (or 9–11 if none exist).
 2. Compute `nextNumber` and `nextMonday` from §4.
 3. Open the Superthread card for this drop and checkout its `suggested_branch_name` ([WORKFLOW.md](WORKFLOW.md)). Do not invent a `feat/` branch (D-021). Recurring cadence may use one standing card per drop or a card-per-week; if the board has no card, **stop and ask** rather than pushing to `master`.
-4. Append the row. Hand-author (or LLM-author) name, description, objectives. Do not copy level 8 with a new date.
-5. Run the verification in §5. If the solver cannot win any seed, loosen the target; if it wins on the first move, tighten it.
-6. Changelog line. Do not bump `package.json` / `app.json` for a web-only drop. Bump versions only when this drop rides a store release.
-7. Open a PR. CI must be green (`check` + `web`). Merge is a human.
+4. Pick a **hard**, **unique** task. `taskFingerprint` (`src/games/wordfall/schedule.ts`) of the new row must not match any existing `LEVELS` row and must not match last week. Fingerprint is puzzle vs race plus kind (`letter` includes the letter, `length` includes `minLength`) — not the numeric targets. Do not invent a sixth objective kind.
+5. Clock from the week's **sentiment**: urgent/chase → race (`timeLimitMs`); precise/surgical → puzzle (move budget). Never both.
+6. Append the row. Hand-author (or LLM-author) name, description, objectives. Do not copy level 8 with a new date. Featured TTL is seven days (`isNewestRelease`); the row stays in the catalog after Sunday so numbering has no holes. Do not delete last week.
+7. Changelog line. Do not bump `package.json` / `app.json` for a web-only drop.
+8. **Local verify before GitHub** (mandatory, in order). Stop on the first red:
+   - `npx vitest run src/games/wordfall/schedule.test.ts src/games/wordfall/engine.test.ts`
+   - `npm run check`
+   - `npm run build:web`
+   - `npm run serve:web` (local production deploy of `dist/` on port 8080 — not `npm run web`)
+   - Playtest that export: hub loads, Wordfall start screen loads, picker shows the new row as **drops {Monday}**, launch 1–11 still play. Future rows are not playable today; the solver test is the winnability proof. Do not undate the row to sneak a playtest.
+9. Only then commit, push, and open a PR. CI must be green (`check` + `web`). Merge is a human.
 
 **PR title:** `ST-<id> Wordfall level <n> — <Monday>`
-**PR body must state:** number, `availableFrom`, puzzle vs race, solver seeds that won.
+**PR body must state:** number, `availableFrom`, puzzle vs race, fingerprint, solver seeds that won.
 
 ### What Monday cron must not do
 
@@ -246,7 +259,8 @@ Job B stays an agent/human loop against this doc. Generating a playable level is
 
 | Need | Where |
 |---|---|
-| Why bundled, why Monday | STACK D-004, D-027 |
+| Why bundled, why Monday, local-before-GitHub | STACK D-004, D-027, D-038 |
+| Agent loop | `.cursor/skills/wordfall-weekly-gauntlet/SKILL.md` |
 | Player-facing design | BRAINSTORM §9 |
 | Ship / PR / Railway | [WORKFLOW.md](WORKFLOW.md) |
 | Runtime path | [HOW-IT-WORKS.md](HOW-IT-WORKS.md) Journey 6 |

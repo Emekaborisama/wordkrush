@@ -297,16 +297,23 @@ downloaded on Monday. The row has to already be in the installed bundle
    │                       │                              │ playable if unlocked
 ```
 
-**1. We author into the catalog, not a CMS.** [BUILT: file · PLANNED: weekly job]
+**1. We author into the catalog, not a CMS.** [BUILT: file + agent loop · PLANNED: Job A cron]
 A new object is appended to [levels.ts](../src/data/wordfall/levels.ts). Levels
 1–11 omit `availableFrom` so the tutorial is live on day one. Weekly rows start
 at 12 and set `availableFrom` to that Monday. The file *is* the schedule;
-automation must read it rather than keep a second calendar.
+automation must read it rather than keep a second calendar. Working title
+**Gauntlet**. Each drop's `taskFingerprint` (puzzle vs race plus objective
+kinds) must be unique, including vs last week. Featured TTL is seven days
+(`isNewestRelease`); the row stays after Sunday so campaign numbering has no
+holes. Job B is the Cursor skill
+[wordfall-weekly-gauntlet](../.cursor/skills/wordfall-weekly-gauntlet/SKILL.md).
 
-**2. The row ships like code.** [BUILT: web · blocked on owner: iOS]
-Merge to `master` deploys web (D-020, D-029). iOS only sees the row after a
-store build that contains it is installed. That is why the weekly spec keeps a
-buffer of unpublished Mondays in the same catalog.
+**2. Local production check, then the row ships like code.** [BUILT: web · blocked on owner: iOS]
+Before GitHub, Job B runs `npm run check`, `npm run build:web`, and
+`npm run serve:web` (port 8080) and playtests that export (D-038). Merge to
+`master` deploys web (D-020, D-029). iOS only sees the row after a store build
+that contains it is installed. That is why the weekly spec keeps a buffer of
+unpublished Mondays in the same catalog.
 
 **3. Monday unlocks locally.** [BUILT]
 [schedule.ts](../src/games/wordfall/schedule.ts) compares the player's local
@@ -357,7 +364,7 @@ Quick map of where each journey step lives:
 | Consent and product analytics | `src/analytics/`, `src/ui/AnalyticsConsentPrompt.tsx` | [BUILT] |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |
 | Haptics | `src/native/haptics.ts` | [BUILT] |
-| Wordfall weekly drops | `src/games/wordfall/schedule.ts`, `src/data/wordfall/levels.ts`, [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) | [BUILT] gate; [PLANNED] scheduled authoring — Monday `availableFrom`; launch set has no date |
+| Wordfall weekly drops | `src/games/wordfall/schedule.ts` (`taskFingerprint`), `src/data/wordfall/levels.ts`, [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md), `.cursor/skills/wordfall-weekly-gauntlet/` | [BUILT] gate + unique-task + local `serve:web` before GitHub (D-038); [PLANNED] Job A cron — Monday `availableFrom`; launch set has no date |
 | Game Center | `src/native/` | [PLANNED] |
 
 ## Security model
