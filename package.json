@@ -1,5 +1,5 @@
 {
-  "name": "bestgames",
+  "name": "wordcrush",
   "version": "0.1.0",
   "main": "index.ts",
   "scripts": {
@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run test",
+    "check:docs": "node scripts/check-docs.mjs",
+    "check": "npm run check:docs && npm run typecheck && npm run test",
     "test:validator": "cd validator && uv run pytest -q",
     "smoke": "cd validator && uv run python -m smoke.run_smoke",
     "check:all": "npm run check && npm run test:validator",
@@ -21,11 +22,14 @@
     "serve:web": "node server/serve.mjs"
   },
   "dependencies": {
+    "@expo-google-fonts/fredoka": "^0.4.1",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.112.3",
     "expo": "~57.0.13",
+    "expo-font": "~57.0.1",
     "expo-haptics": "~57.0.1",
     "expo-status-bar": "~57.0.1",
+    "posthog-react-native": "^4.63.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.2",

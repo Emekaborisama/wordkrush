@@ -7,13 +7,14 @@ export default defineConfig({
     // for their pure helpers (easing, formatting); component rendering is
     // covered by the browser, not here.
     include: [
-      'src/game/**/*.test.ts',
       'src/data/**/*.test.ts',
       'src/ui/**/*.test.ts',
       'src/scores/**/*.test.ts',
       'src/auth/**/*.test.ts',
+      'src/analytics/**/*.test.ts',
       'src/games/**/*.test.ts',
       'pipeline/**/*.test.ts',
+      'scripts/**/*.test.mjs',
     ],
   },
 });

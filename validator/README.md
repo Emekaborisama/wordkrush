@@ -1,6 +1,6 @@
 # Validator
 
-Offline LLM adjudication for More or Less content. **Pipeline-time only — the game never calls this at runtime.**
+Offline LLM adjudication for WordCrush comparison content. **Pipeline-time only — the game never calls this at runtime.**
 
 ## What it does
 

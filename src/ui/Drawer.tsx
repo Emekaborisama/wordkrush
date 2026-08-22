@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import type { AnalyticsConsent } from '../analytics/events';
 import { GAMES } from '../games/registry';
 import { radius, theme } from './theme';
 
@@ -17,6 +18,8 @@ type Props = {
   activeGameId?: string;
   activeKind?: DrawerDestination['kind'];
   signedInAs?: string | null;
+  analyticsConsent: AnalyticsConsent;
+  onAnalyticsPress: () => void;
 };
 
 const WIDTH = 268;
@@ -39,6 +42,8 @@ export function Drawer({
   activeGameId,
   activeKind,
   signedInAs,
+  analyticsConsent,
+  onAnalyticsPress,
 }: Props) {
   const slide = useRef(new Animated.Value(open ? 0 : -WIDTH)).current;
   const fade = useRef(new Animated.Value(open ? 1 : 0)).current;
@@ -74,7 +79,7 @@ export function Drawer({
 
       <Animated.View style={[styles.panel, { transform: [{ translateX: slide }] }]}>
         <View style={styles.panelHeader}>
-          <Text style={styles.brand}>Best Games</Text>
+          <Text style={styles.brand}>WordCrush</Text>
           {signedInAs ? (
             <Text style={styles.account}>{signedInAs}</Text>
           ) : (
@@ -117,6 +122,23 @@ export function Drawer({
           icon="👤"
           active={activeKind === 'account'}
           onPress={() => go({ kind: 'account' })}
+        />
+
+        <Text style={styles.sectionLabel}>PRIVACY</Text>
+        <Item
+          label={
+            analyticsConsent === 'granted'
+              ? 'Anonymous analytics on'
+              : analyticsConsent === 'denied'
+                ? 'Anonymous analytics off'
+                : 'Review analytics choice'
+          }
+          icon="◉"
+          trailing={analyticsConsent === 'granted' ? 'ON' : analyticsConsent === 'denied' ? 'OFF' : undefined}
+          onPress={() => {
+            onAnalyticsPress();
+            onClose();
+          }}
         />
 
         <View style={styles.spacer} />

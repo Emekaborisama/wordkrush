@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { GameState } from '../../game/engine';
-import type { Category } from '../../game/types';
+import type { GameState } from '../../games/more-or-less/engine';
+import type { Category } from '../../games/more-or-less/types';
 import { rankOf, type ScoreBoard } from '../../scores/types';
 import { formatValue, radius, theme } from '../theme';
 

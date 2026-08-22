@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { captureAnalytics } from '../../analytics/client';
+import {
+  chainLengthBucket,
+  scoreDeltaBucket,
+  wordLengthBucket,
+} from '../../analytics/events';
 import { DICTIONARY, LAST_LEVEL, LEVELS, levelByNumber } from '../../data/wordfall';
-import { randomSeed } from '../../game/rng';
 import { loadProgress, saveProgress } from '../../games/progress';
+import { randomSeed } from '../../games/rng';
 import {
   createContext,
   lostToClock,
@@ -231,6 +237,14 @@ function LevelPlay({
   );
   const reported = useRef(false);
 
+  useEffect(() => {
+    captureAnalytics('run_started', {
+      game_id: 'wordfall',
+      is_resume: resume !== null,
+      level_number: level.number,
+    });
+  }, [level.number]);
+
   // The clock. The engine never reads it — the wall clock is anchored to the
   // time already banked in state, so pausing, leaving the screen, or resuming
   // a saved level all continue from where they stopped rather than charging
@@ -265,9 +279,46 @@ function LevelPlay({
     if (state.status === 'won' && !reported.current) {
       reported.current = true;
       void tapCorrect();
+      captureAnalytics('level_completed', {
+        game_id: 'wordfall',
+        level_number: level.number,
+        score: state.score,
+        duration_ms: state.elapsedMs,
+        words_played: state.played.length,
+        moves_left_bucket:
+          state.movesLeft >= 5 ? '5_plus' : state.movesLeft >= 1 ? '1_4' : '0',
+      });
       onWin(state.score, state.elapsedMs);
+    } else if (state.status === 'lost' && !reported.current) {
+      reported.current = true;
+      const failureMode = lostToClock(state, ctx) ? 'time' : 'moves';
+      captureAnalytics('level_failed', {
+        game_id: 'wordfall',
+        level_number: level.number,
+        score: state.score,
+        duration_ms: state.elapsedMs,
+        failure_mode: failureMode,
+      });
+      captureAnalytics('run_completed', {
+        game_id: 'wordfall',
+        outcome: 'loss',
+        score: state.score,
+        score_kind: 'points',
+        duration_ms: state.elapsedMs,
+        is_new_best: false,
+        level_number: level.number,
+      });
     }
-  }, [state.status, state.score, state.elapsedMs, onWin]);
+  }, [
+    state.status,
+    state.score,
+    state.elapsedMs,
+    state.played.length,
+    state.movesLeft,
+    level.number,
+    onWin,
+    ctx,
+  ]);
 
   /**
    * What the traced word is worth, recomputed as the finger moves.
@@ -326,6 +377,25 @@ function LevelPlay({
 
     dispatch({ type: 'tick', elapsedMs: now });
     dispatch({ type: 'submit' });
+
+    const rejectionKind =
+      after.rejection?.kind === 'too-short'
+        ? 'too_short'
+        : after.rejection?.kind === 'not-a-word'
+          ? 'not_a_word'
+          : after.rejection?.kind === 'already-played'
+            ? 'already_played'
+            : undefined;
+    const play = after.lastPlay;
+    captureAnalytics('word_submitted', {
+      game_id: 'wordfall',
+      level_number: level.number,
+      word_length_bucket: wordLengthBucket(preview.word.length),
+      valid: Boolean(play),
+      rejection_kind: rejectionKind,
+      score_delta_bucket: scoreDeltaBucket(play?.points ?? 0),
+      chain_length_bucket: chainLengthBucket(play?.chain ?? 0),
+    });
 
     if (after.rejection) void tapWrong();
     else if (after.lastPlay) void tapCorrect();

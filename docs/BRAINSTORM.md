@@ -1,6 +1,6 @@
-# More or Less — Design Brainstorm
+# WordCrush — Design Brainstorm
 
-**Last updated:** 2026-08-16
+**Last updated:** 2026-08-22
 **Status:** Design exploration. Nothing implemented yet.
 **Audience:** Whoever (human or LLM) picks this up next. Read this before writing code.
 
@@ -30,6 +30,11 @@ If you can view the reference site, verify the **[ASSUMED]** items and log what 
 ## 1. The game in one sentence
 
 Two items from the same category are shown; the player picks the one with the greater value of some "popularity" metric, and keeps going until they get one wrong. **[GIVEN]**
+
+The player-facing promise is: **guess correctly, keep the streak alive, and
+beat your best score.** The broader product goal is to create engaging word and
+comparison games that strengthen cognitive skills and pattern recognition
+through repeated play. **[GIVEN]**
 
 ## 2. Core loop
 
@@ -136,15 +141,23 @@ Deliberately no settings, no accounts, no onboarding in v1.
 
 ## 7. Architecture
 
-The critical constraint: **`src/game/` must never import React or React Native.** Pure TypeScript, testable in plain Node, portable if the UI layer ever changes.
+The critical constraint: **game reducers under `src/games/<game-id>/` must
+never import React or React Native.** They stay pure TypeScript, testable in
+plain Node, and portable if the UI layer ever changes. Cross-game utilities
+live directly under `src/games/` instead of creating a second game root.
 
 ```
 src/
-  game/                 # pure logic — 100% unit tested
-    types.ts
-    pairing.ts          # selectNextPair(pool, streak, seen, rng)
-    scoring.ts          # streak, lives, best
-    engine.ts           # (state, action) => state   -- pure reducer
+  games/
+    more-or-less/       # comparison-game logic
+      types.ts
+      pairing.ts        # selectNextPair(pool, streak, seen, rng)
+      scoring.ts        # streak, lives, best
+      engine.ts         # (state, action) => state   -- pure reducer
+    clueless/           # Clueless logic
+    wordfall/           # Wordfall logic
+    rng.ts              # shared seeded RNG
+    registry.ts         # shared game metadata
   data/
     categories/*.json   # bundled dataset
     loadCategories.ts   # validates JSON against the schema at startup
@@ -272,7 +285,7 @@ Recommendation: **ship v1 on Wikipedia pageviews** (free, real, honest, unblocks
 1. ~~Scaffold Expo + TypeScript + Vitest~~ — done 2026-08-16, with EAS profiles, CI, and the content pipeline (mock source).
 2. Owner: complete the one-time setup checklist in [WORKFLOW.md](WORKFLOW.md) (Expo login, Apple Developer, apply Supabase migration, pick data source O-2, pick web host O-6).
 3. **Confirm the [OPEN] items** — especially the MORE/LESS framing and carry-over mechanic.
-4. Build the rest of `src/game/` (engine reducer, pair selection with seeded RNG, scoring) with tests.
+4. Build the rest of `src/games/more-or-less/` (engine reducer, pair selection with seeded RNG, scoring) with tests.
 5. Run `pipeline:ingest` + `pipeline:export` against Supabase with the mock source to prove the chain; swap in the real source when O-2 is decided.
 6. Wire the minimal UI; playtest and tune the difficulty bands.
 
@@ -287,3 +300,4 @@ Append here whenever an assumption is confirmed or overturned. Never delete an e
 | 2026-08-16 | — | Document created. Reference site could not be read (SPA returned no content, search declined); all mechanics are **[ASSUMED]** from genre convention pending owner confirmation. |
 | 2026-08-16 | §8 first category | **Owner overrode the low-risk recommendation**: first category is Google search volume, not countries/animals. §8's licensing warning stands and became STACK O-2; mitigated by the source-adapter design (§11) so plumbing isn't blocked on the choice. |
 | 2026-08-16 | §7 architecture | Implemented as designed: `src/game/` is pure TS with tests; pipeline added under `pipeline/` with Supabase as content factory (STACK D-007/D-008). |
+| 2026-08-22 | §7 architecture | The owner consolidated game code under one root: each title uses `src/games/<game-id>/`. More or Less moved from `src/game/` to `src/games/more-or-less/`; shared RNG and registry modules remain directly under `src/games/`. |

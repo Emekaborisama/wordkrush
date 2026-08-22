@@ -1,16 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import {
+  captureAnalytics,
+  initializeAnalytics,
+  isAnalyticsConfigured,
+  registerAnalyticsContext,
+  setAnalyticsConsent as persistAnalyticsConsent,
+} from './src/analytics/client';
+import {
+  runCountBucket,
+  streakBucket,
+  type AnalyticsConsent,
+} from './src/analytics/events';
 import { currentProfile, signOut, type Profile } from './src/auth/auth';
 import { isBackendConfigured } from './src/auth/client';
 import categoryData from './src/data/categories/wikipedia-popularity.json';
-import type { GameState } from './src/game/engine';
-import { randomSeed } from './src/game/rng';
-import type { Category } from './src/game/types';
 import { todaysPuzzleNumber } from './src/data/clueless';
+import type { GameState } from './src/games/more-or-less/engine';
+import type { Category } from './src/games/more-or-less/types';
+import { randomSeed } from './src/games/rng';
 import { GAMES, getGame } from './src/games/registry';
 import { loadBoards, makeEntryId, migrateLegacyScores, recordScore } from './src/scores/storage';
 import { EMPTY_BOARD, type ScoreBoard } from './src/scores/types';
+import { loadStreak, markPlayedToday } from './src/streak/storage';
+import { dayKey, EMPTY_STREAK, type DailyStreak } from './src/streak/types';
 import { Drawer, type DrawerDestination } from './src/ui/Drawer';
+import { AnalyticsConsentPrompt } from './src/ui/AnalyticsConsentPrompt';
 import { TopBar } from './src/ui/TopBar';
 import { AuthScreen } from './src/ui/screens/AuthScreen';
 import { CluelessScreen } from './src/ui/screens/CluelessScreen';
@@ -38,20 +53,132 @@ export default function App() {
   const [boards, setBoards] = useState<Record<string, ScoreBoard>>({});
   const [profile, setProfile] = useState<Profile | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [streak, setStreak] = useState<DailyStreak>(EMPTY_STREAK);
+  const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent>('unknown');
+  const [showAnalyticsPrompt, setShowAnalyticsPrompt] = useState(false);
+  const [boardsReady, setBoardsReady] = useState(false);
+  const [profileReady, setProfileReady] = useState(false);
+  const [streakReady, setStreakReady] = useState(false);
+  const [boardsResult, setBoardsResult] = useState<'loaded' | 'fallback'>('loaded');
+  const startupAt = useRef(Date.now());
+  const openedReported = useRef(false);
+  const readyReported = useRef(false);
+  const restoredSessionReported = useRef(false);
+  const hadRestoredSession = useRef(false);
 
   useEffect(() => {
     void (async () => {
-      // Carry pre-namespacing scores into the More or Less bucket before any
-      // read, so a returning player never sees an empty history.
-      await migrateLegacyScores();
-      setBoards(await loadBoards(GAMES));
+      try {
+        // Carry pre-namespacing scores into the WordCrush comparison bucket before any
+        // read, so a returning player never sees an empty history.
+        await migrateLegacyScores();
+        setBoards(await loadBoards(GAMES));
+      } catch {
+        setBoardsResult('fallback');
+      } finally {
+        setBoardsReady(true);
+      }
     })();
     // Restoring a session must never block play: failures resolve to null.
-    void currentProfile().then(setProfile);
+    void currentProfile().then((restoredProfile) => {
+      hadRestoredSession.current = restoredProfile !== null;
+      setProfile(restoredProfile);
+      setProfileReady(true);
+    });
+    // Display only — a visit alone does not extend the streak, finishing a
+    // run does (see recordFinish below).
+    void loadStreak().then((loadedStreak) => {
+      setStreak(loadedStreak);
+      setStreakReady(true);
+    });
+    void initializeAnalytics().then((storedConsent) => {
+      setAnalyticsConsent(storedConsent);
+      setShowAnalyticsPrompt(storedConsent === 'unknown' && isAnalyticsConfigured);
+    });
   }, []);
 
   const boardFor = (gameId: string) => boards[gameId] ?? EMPTY_BOARD;
   const startGame = (gameId: string) => setScreen({ name: 'game', gameId, seed: randomSeed() });
+
+  useEffect(() => {
+    if (analyticsConsent !== 'granted') return;
+    const authStatus = profile ? 'signed_in' : 'guest';
+    registerAnalyticsContext(authStatus);
+    if (!openedReported.current) {
+      openedReported.current = true;
+      captureAnalytics('app_opened', {
+        backend_configured: isBackendConfigured,
+        auth_status: authStatus,
+      });
+    }
+  }, [analyticsConsent, profile]);
+
+  useEffect(() => {
+    if (
+      analyticsConsent === 'granted' &&
+      profileReady &&
+      hadRestoredSession.current &&
+      !restoredSessionReported.current
+    ) {
+      restoredSessionReported.current = true;
+      captureAnalytics('auth_session_restored', { result: 'signed_in' });
+    }
+  }, [analyticsConsent, profileReady]);
+
+  useEffect(() => {
+    if (
+      analyticsConsent !== 'granted' ||
+      readyReported.current ||
+      !boardsReady ||
+      !profileReady ||
+      !streakReady
+    ) {
+      return;
+    }
+    readyReported.current = true;
+    captureAnalytics('app_ready', {
+      duration_ms: Date.now() - startupAt.current,
+      boards_result: boardsResult,
+      session_result: profile ? 'signed_in' : 'guest',
+    });
+  }, [
+    analyticsConsent,
+    boardsReady,
+    profileReady,
+    streakReady,
+    boardsResult,
+    profile,
+  ]);
+
+  useEffect(() => {
+    if (analyticsConsent !== 'granted') return;
+    const gameId = 'gameId' in screen ? screen.gameId : undefined;
+    captureAnalytics('screen_viewed', { screen_name: screen.name, game_id: gameId });
+
+    if (screen.name === 'scores') {
+      const board = boardFor(screen.gameId);
+      captureAnalytics('scores_viewed', {
+        game_id: screen.gameId,
+        run_count_bucket: runCountBucket(board.totalRuns),
+        has_highlight: Boolean(screen.highlightId),
+        auth_status: profile ? 'signed_in' : 'guest',
+      });
+      if (!profile && isBackendConfigured) {
+        captureAnalytics('auth_prompt_viewed', {
+          game_id: screen.gameId,
+          run_count_bucket: runCountBucket(board.totalRuns),
+        });
+      }
+    }
+  }, [analyticsConsent, screen, profile]);
+
+  // Every place a run ends and its score is recorded also counts today
+  // towards the cross-game daily streak — finishing a run in any game
+  // counts, not just opening the app.
+  const recordFinish = async <T,>(save: () => Promise<T>): Promise<T> => {
+    const [result] = await Promise.all([save(), markPlayedToday(dayKey(new Date())).then(setStreak)]);
+    return result;
+  };
 
   // The game screen owns the whole viewport during play, so the chrome is
   // hidden there — a menu bar over a live round is a mis-tap waiting to happen.
@@ -68,7 +195,10 @@ export default function App() {
 
   const navigate = (to: DrawerDestination) => {
     if (to.kind === 'hub') setScreen({ name: 'hub' });
-    else if (to.kind === 'game') setScreen({ name: 'home', gameId: to.gameId });
+    else if (to.kind === 'game') {
+      captureAnalytics('game_selected', { game_id: to.gameId, source: 'drawer' });
+      setScreen({ name: 'home', gameId: to.gameId });
+    }
     else if (to.kind === 'scores') setScreen({ name: 'scores', gameId: to.gameId });
     else setScreen({ name: 'auth' });
   };
@@ -82,7 +212,11 @@ export default function App() {
         {screen.name === 'hub' && (
           <HubScreen
             boards={boards}
-            onPlay={(gameId) => setScreen({ name: 'home', gameId })}
+            streak={streak}
+            onPlay={(gameId) => {
+              captureAnalytics('game_selected', { game_id: gameId, source: 'hub' });
+              setScreen({ name: 'home', gameId });
+            }}
             onScores={() => setScreen({ name: 'scores', gameId: MORE_OR_LESS })}
           />
         )}
@@ -91,18 +225,29 @@ export default function App() {
           <CluelessScreen
             puzzleNumber={todaysPuzzleNumber()}
             onWin={async (guessesUsed) => {
-              const next = await recordScore(
-                'clueless',
-                {
-                  id: makeEntryId(),
-                  streak: guessesUsed,
-                  categoryId: 'clueless',
-                  playedAt: new Date().toISOString(),
-                  seed: todaysPuzzleNumber(),
-                },
-                'lower',
+              const previous = boardFor('clueless');
+              const next = await recordFinish(() =>
+                recordScore(
+                  'clueless',
+                  {
+                    id: makeEntryId(),
+                    streak: guessesUsed,
+                    categoryId: 'clueless',
+                    playedAt: new Date().toISOString(),
+                    seed: todaysPuzzleNumber(),
+                  },
+                  'lower',
+                ),
               );
               setBoards((prev) => ({ ...prev, clueless: next }));
+              captureAnalytics('run_completed', {
+                game_id: 'clueless',
+                outcome: 'win',
+                score: guessesUsed,
+                score_kind: 'guesses_used',
+                is_new_best: previous.totalRuns === 0 || guessesUsed < previous.bestStreak,
+                puzzle_number: todaysPuzzleNumber(),
+              });
             }}
           />
         )}
@@ -110,19 +255,31 @@ export default function App() {
         {screen.name === 'home' && screen.gameId === 'wordfall' && (
           <WordfallScreen
             onLevelWon={async (score, levelNumber, elapsedMs) => {
-              const next = await recordScore(
-                'wordfall',
-                {
-                  id: makeEntryId(),
-                  streak: score,
-                  categoryId: `level-${levelNumber}`,
-                  playedAt: new Date().toISOString(),
-                  seed: levelNumber,
-                  durationMs: elapsedMs,
-                },
-                'higher',
+              const previous = boardFor('wordfall');
+              const next = await recordFinish(() =>
+                recordScore(
+                  'wordfall',
+                  {
+                    id: makeEntryId(),
+                    streak: score,
+                    categoryId: `level-${levelNumber}`,
+                    playedAt: new Date().toISOString(),
+                    seed: levelNumber,
+                    durationMs: elapsedMs,
+                  },
+                  'higher',
+                ),
               );
               setBoards((prev) => ({ ...prev, wordfall: next }));
+              captureAnalytics('run_completed', {
+                game_id: 'wordfall',
+                outcome: 'win',
+                score,
+                score_kind: 'points',
+                duration_ms: elapsedMs,
+                is_new_best: previous.totalRuns === 0 || score > previous.bestStreak,
+                level_number: levelNumber,
+              });
             }}
           />
         )}
@@ -146,16 +303,28 @@ export default function App() {
             bestStreak={boardFor(screen.gameId).bestStreak}
             onGameOver={async (state) => {
               const entryId = makeEntryId();
+              const previous = boardFor(screen.gameId);
               // Persist before navigating so a reload mid-transition cannot
               // lose the run that just finished.
-              const next = await recordScore(screen.gameId, {
-                id: entryId,
-                streak: state.streak,
-                categoryId: category.id,
-                playedAt: new Date().toISOString(),
-                seed: screen.seed,
-              });
+              const next = await recordFinish(() =>
+                recordScore(screen.gameId, {
+                  id: entryId,
+                  streak: state.streak,
+                  categoryId: category.id,
+                  playedAt: new Date().toISOString(),
+                  seed: screen.seed,
+                }),
+              );
               setBoards((prev) => ({ ...prev, [screen.gameId]: next }));
+              captureAnalytics('run_completed', {
+                game_id: 'more-or-less',
+                outcome: 'loss',
+                score: state.streak,
+                score_kind: 'streak',
+                is_new_best: previous.totalRuns === 0 || state.streak > previous.bestStreak,
+                category_id: category.id,
+                relaxed_rounds: state.relaxedRounds,
+              });
               setScreen({ name: 'over', gameId: screen.gameId, state, entryId });
             }}
           />
@@ -166,11 +335,33 @@ export default function App() {
             state={screen.state}
             category={category}
             board={boardFor(screen.gameId)}
-            onPlayAgain={() => startGame(screen.gameId)}
-            onHome={() => setScreen({ name: 'hub' })}
-            onScores={() =>
-              setScreen({ name: 'scores', gameId: screen.gameId, highlightId: screen.entryId })
-            }
+            onPlayAgain={() => {
+              captureAnalytics('game_over_action', {
+                game_id: 'more-or-less',
+                action: 'play_again',
+                streak_bucket: streakBucket(screen.state.streak),
+                is_new_best: screen.state.streak >= boardFor(screen.gameId).bestStreak,
+              });
+              startGame(screen.gameId);
+            }}
+            onHome={() => {
+              captureAnalytics('game_over_action', {
+                game_id: 'more-or-less',
+                action: 'home',
+                streak_bucket: streakBucket(screen.state.streak),
+                is_new_best: screen.state.streak >= boardFor(screen.gameId).bestStreak,
+              });
+              setScreen({ name: 'hub' });
+            }}
+            onScores={() => {
+              captureAnalytics('game_over_action', {
+                game_id: 'more-or-less',
+                action: 'scores',
+                streak_bucket: streakBucket(screen.state.streak),
+                is_new_best: screen.state.streak >= boardFor(screen.gameId).bestStreak,
+              });
+              setScreen({ name: 'scores', gameId: screen.gameId, highlightId: screen.entryId });
+            }}
           />
         )}
 
@@ -186,6 +377,8 @@ export default function App() {
             onSignOut={async () => {
               await signOut();
               setProfile(null);
+              registerAnalyticsContext('guest');
+              captureAnalytics('signed_out', {});
             }}
           />
         )}
@@ -196,7 +389,10 @@ export default function App() {
               setProfile(p);
               setScreen({ name: 'scores', gameId: MORE_OR_LESS });
             }}
-            onSkip={() => setScreen({ name: 'hub' })}
+            onSkip={() => {
+              captureAnalytics('auth_skipped', {});
+              setScreen({ name: 'hub' });
+            }}
           />
         )}
 
@@ -207,6 +403,32 @@ export default function App() {
           activeGameId={activeGameId}
           activeKind={activeKind}
           signedInAs={profile?.username ?? null}
+          analyticsConsent={analyticsConsent}
+          onAnalyticsPress={() => {
+            if (!isAnalyticsConfigured) return;
+            if (analyticsConsent === 'granted') {
+              void persistAnalyticsConsent('denied', 'settings').then(() =>
+                setAnalyticsConsent('denied'),
+              );
+            } else {
+              setShowAnalyticsPrompt(true);
+            }
+          }}
+        />
+        <AnalyticsConsentPrompt
+          visible={showAnalyticsPrompt}
+          onAllow={() => {
+            setShowAnalyticsPrompt(false);
+            void persistAnalyticsConsent('granted', 'prompt').then(() =>
+              setAnalyticsConsent('granted'),
+            );
+          }}
+          onDecline={() => {
+            setShowAnalyticsPrompt(false);
+            void persistAnalyticsConsent('denied', 'prompt').then(() =>
+              setAnalyticsConsent('denied'),
+            );
+          }}
         />
       </View>
     </SafeAreaView>

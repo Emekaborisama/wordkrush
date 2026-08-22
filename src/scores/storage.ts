@@ -6,6 +6,7 @@
  * round (docs/STACK.md D-016).
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { captureRuntimeAnalytics } from '../analytics/runtime';
 import {
   addScore,
   EMPTY_BOARD,
@@ -29,7 +30,7 @@ const LEGACY_KEY = 'bestgames.scores.v1';
 const LEGACY_GAME_ID = 'more-or-less';
 
 /**
- * Moves scores saved before games were namespaced into the More or Less
+ * Moves scores saved before games were namespaced into the WordCrush comparison
  * bucket. Runs at most once — players should not lose history to a refactor.
  */
 export async function migrateLegacyScores(): Promise<void> {
@@ -42,6 +43,11 @@ export async function migrateLegacyScores(): Promise<void> {
     if (!existing) await AsyncStorage.setItem(target, legacy);
     await AsyncStorage.removeItem(LEGACY_KEY);
   } catch {
+    captureRuntimeAnalytics('score_persist_failed', {
+      game_id: LEGACY_GAME_ID,
+      operation: 'migration',
+      error_category: 'storage',
+    });
     /* non-fatal: worst case the old scores are simply not carried over */
   }
 }
@@ -53,6 +59,11 @@ export async function loadBoard(
   try {
     return parseBoard(await AsyncStorage.getItem(storageKey(gameId)), direction);
   } catch {
+    captureRuntimeAnalytics('score_persist_failed', {
+      game_id: gameId,
+      operation: 'load',
+      error_category: 'storage',
+    });
     // Storage can fail (private browsing, quota, corrupted profile). A player
     // losing their history is bad; the game refusing to start is worse.
     return EMPTY_BOARD;
@@ -63,6 +74,11 @@ export async function saveBoard(gameId: string, board: ScoreBoard): Promise<void
   try {
     await AsyncStorage.setItem(storageKey(gameId), JSON.stringify(board));
   } catch {
+    captureRuntimeAnalytics('score_persist_failed', {
+      game_id: gameId,
+      operation: 'save',
+      error_category: 'storage',
+    });
     /* non-fatal by design — the run already happened */
   }
 }

@@ -1,6 +1,6 @@
 # Way of Working
 
-**Last updated:** 2026-08-16
+**Last updated:** 2026-08-22
 For every collaborator on this repo — human or LLM. Read this before touching code.
 
 ## The docs are the shared brain
@@ -16,15 +16,41 @@ For every collaborator on this repo — human or LLM. Read this before touching 
 
 Decisions get **logged, never silently rewritten** — supersede old entries so the reasoning trail survives. If you're an LLM picking this repo up cold: read HOW-IT-WORKS → STACK → BRAINSTORM → CHANGELOG [Unreleased], in that order, before writing code.
 
+Documentation is updated in the same change while its context is fresh. The
+project stop hook checks once when an agent finishes, and `npm run check:docs`
+runs locally and in CI. These checks detect a path-based minimum; they never
+generate prose and do not replace judgement about design decisions or task
+status.
+
+Documentation impact:
+- Player-visible or runtime behavior → `CHANGELOG.md`.
+- Built-system, pipeline, infrastructure, or workflow behavior → `HOW-IT-WORKS.md`.
+- Stack, dependency, build, deployment, or CI decisions → `STACK.md`.
+- Game-design decisions or resolved assumptions → `BRAINSTORM.md`.
+- Task status or blockers → `ROADMAP.md` and the matching Superthread card.
+- Collaboration or release process → `WORKFLOW.md`.
+
+## Branches and pull requests (non-negotiable)
+
+Every feature and every fix ships as a pull request. Never commit or push a feature or fix straight to `master`. Docs-only work still prefers a PR.
+
+**Branch name comes from Superthread.** Before writing code, open the task card and use its git branch name — the card's `suggested_branch_name` / **Copy git branch name** value. Push that same name. Do not invent a `feat/<slug>` that is not the card's branch. The card ID in that name is what links the branch and PR back to the board.
+
+If the card has no suggested name yet, still include the card ID in the branch (e.g. `ST-123-short-title`) so Superthread can link it. Include the card ID in the PR title as well.
+
+**Stacked PRs are allowed.** A follow-on task may branch from an unmerged parent and open a PR against that parent instead of `master`. Each stacked PR still uses its own Superthread card's branch name and states the parent PR in the description.
+
 ## Development loop
 
-1. Branch off `master`: `feat/<slug>`, `fix/<slug>`, `data/<slug>`, `docs/<slug>`.
-2. Make the change. Game logic goes in `src/game/` — **pure TS, no React/RN/Supabase imports**, with tests.
+1. Read the Superthread card. Create or checkout its exact git branch name (`suggested_branch_name`).
+2. Make the change. Put each game's logic in `src/games/<game-id>/` — **pure
+   TS, no React/RN/Supabase imports**, with tests. Shared game infrastructure
+   can live directly under `src/games/`.
 3. `npm run check` (typecheck + tests) must pass locally.
 4. Update CHANGELOG [Unreleased]; update STACK/BRAINSTORM if a decision changed; keep the matching Superthread card and ROADMAP in sync.
-5. PR to `master`. CI must be green. Merge.
+5. Open a PR from that Superthread branch (to `master`, or to the parent branch if stacked). Include the card ID in the PR title. CI must be green. Merge.
 
-Definition of done: code + tests + `npm run check` green + changelog line + docs updated.
+Definition of done: PR opened + code + tests + `npm run check` green + changelog line + docs updated.
 
 ## Task card contract
 
@@ -46,7 +72,8 @@ ceremony unless the owner asks for it.
 npm run web          # instant browser loop — fastest way to see UI
 npm start            # Expo dev server → scan QR with iPhone (Expo Go)
 npm run test:watch   # logic TDD loop
-npm run check        # what CI runs
+npm run check:docs   # documentation impact for changed files
+npm run check        # documentation + typecheck + tests; what CI runs
 ```
 
 ## Content pipeline (offline, never at app runtime)
@@ -82,9 +109,15 @@ Build-time configuration lives in Railway, not in the repo. Only `EXPO_PUBLIC_*`
 ```bash
 railway variable set --service web EXPO_PUBLIC_SUPABASE_URL=...
 railway variable set --service web EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+railway variable set --service web EXPO_PUBLIC_POSTHOG_KEY=...
+railway variable set --service web EXPO_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
 ```
 
 Without them the site still works — `isBackendConfigured` is false, and the game runs offline as guest. **Never set `SUPABASE_SECRET_KEY` on this service**: it is a client bundle, and anything there is public.
+
+The PostHog project token is also public client configuration, not a secret.
+Without it analytics is a no-op and no consent prompt appears. With it,
+analytics still starts opted out and requires the player's explicit consent.
 
 ## Security rules (non-negotiable)
 
@@ -97,5 +130,5 @@ Without them the site still works — `isBackendConfigured` is false, and the ga
 - [ ] `npx expo login` (Expo account, for EAS builds)
 - [ ] Apple Developer Program ($99/yr) + `eas credentials` once
 - [ ] Apply `supabase/migrations/0001_init.sql` in the Supabase SQL editor
-- [ ] Choose web host (STACK O-6) and connect repo
-- [ ] Pick the real data source (STACK O-2) and fund it if paid
+
+Web hosting and the v1 data source are resolved by STACK D-020 and D-012.

@@ -10,6 +10,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { captureAnalytics } from '../../analytics/client';
+import { authErrorCategory } from '../../analytics/events';
 import { signIn, signUp, type Profile } from '../../auth/auth';
 import { validateEmail, validatePassword, validateUsername } from '../../auth/validation';
 import { radius, theme } from '../theme';
@@ -40,7 +42,19 @@ export function AuthScreen({ onAuthed, onSkip }: Props) {
     };
     setErrors(next);
     setFormError(null);
-    if (Object.values(next).some(Boolean)) return;
+    const analyticsMode = isSignup ? 'sign_up' : 'sign_in';
+    if (Object.values(next).some(Boolean)) {
+      captureAnalytics('auth_submitted', {
+        mode: analyticsMode,
+        validation_result: 'invalid',
+      });
+      return;
+    }
+
+    captureAnalytics('auth_submitted', {
+      mode: analyticsMode,
+      validation_result: 'valid',
+    });
 
     setBusy(true);
     const result = isSignup
@@ -48,8 +62,16 @@ export function AuthScreen({ onAuthed, onSkip }: Props) {
       : await signIn(email, password);
     setBusy(false);
 
-    if (result.ok) onAuthed(result.profile);
-    else setFormError(result.error);
+    if (result.ok) {
+      captureAnalytics('auth_succeeded', { mode: analyticsMode });
+      onAuthed(result.profile);
+    } else {
+      captureAnalytics('auth_failed', {
+        mode: analyticsMode,
+        error_category: authErrorCategory(result.error),
+      });
+      setFormError(result.error);
+    }
   }
 
   return (

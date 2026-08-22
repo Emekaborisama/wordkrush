@@ -6,7 +6,7 @@
  * is what makes the chain-reaction logic testable at all: "this board, this
  * word, these tiles cleared" is a fact, not a coin flip.
  */
-import { nextInt, nextRandom } from '../../game/rng';
+import { nextInt, nextRandom } from '../rng';
 import type { Dictionary } from './dictionary';
 import type { Board, Level, SpecialKind, Tile } from './types';
 

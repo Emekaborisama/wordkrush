@@ -8,8 +8,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { isFairPair, ratio } from '../game/pairing';
-import type { Category, Item } from '../game/types';
+import { isFairPair, ratio } from '../games/more-or-less/pairing';
+import type { Category, Item } from '../games/more-or-less/types';
 
 const DIR = fileURLToPath(new URL('./categories/', import.meta.url));
 const files = readdirSync(DIR).filter((f) => f.endsWith('.json'));

@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { Category } from '../../game/types';
+import { StyleSheet, Text, View } from 'react-native';
+import type { Category } from '../../games/more-or-less/types';
 import type { ScoreBoard } from '../../scores/types';
+import { Button, ScreenHeader, Stat, Surface } from '../components';
 import { radius, theme } from '../theme';
 
 type Props = {
@@ -14,42 +15,31 @@ export function HomeScreen({ category, board, onPlay, onScores }: Props) {
   const { bestStreak, totalRuns } = board;
   return (
     <View style={styles.root}>
-      <View style={styles.hero}>
-        <Text style={styles.title}>More{' '}or{' '}Less</Text>
-        <Text style={styles.subtitle}>Which one is more popular?</Text>
-      </View>
+      <ScreenHeader
+        title="WordCrush"
+        subtitle="Guess correctly, keep the streak alive, and beat your best score"
+        align="center"
+      />
 
       <View style={styles.middle}>
         {bestStreak > 0 && (
           <View style={styles.bestBox}>
-            <Text style={styles.bestValue}>{bestStreak}</Text>
-            <Text style={styles.bestLabel}>BEST STREAK</Text>
+            <Stat value={bestStreak} label="BEST STREAK" size="lg" color={theme.accent} />
             <Text style={styles.runsLabel}>
               {totalRuns} {totalRuns === 1 ? 'run' : 'runs'} played
             </Text>
           </View>
         )}
 
-        <Pressable
-          style={({ pressed }) => [styles.play, pressed && styles.pressed]}
-          onPress={onPlay}
-        >
-          <Text style={styles.playText}>PLAY</Text>
-        </Pressable>
+        <Button title="PLAY" size="lg" onPress={onPlay} fullWidth={false} />
+        <Button title="SCORES" variant="outline" size="md" onPress={onScores} fullWidth={false} />
 
-        <Pressable
-          style={({ pressed }) => [styles.scores, pressed && styles.pressed]}
-          onPress={onScores}
-        >
-          <Text style={styles.scoresText}>SCORES</Text>
-        </Pressable>
-
-        <View style={styles.categoryBox}>
+        <Surface level={1} radius={radius.md} style={styles.categoryBox}>
           <Text style={styles.categoryName}>{category.name}</Text>
           <Text style={styles.categoryMeta}>
             {category.items.length} items · {category.metricLabel}
           </Text>
-        </View>
+        </Surface>
       </View>
 
       <Text style={styles.footer}>
@@ -61,44 +51,11 @@ export function HomeScreen({ category, board, onPlay, onScores }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.bg, padding: 24, justifyContent: 'space-between' },
-  hero: { alignItems: 'center', paddingTop: 12 },
-  title: { color: theme.text, fontSize: 42, fontWeight: '900', letterSpacing: -1 },
-  subtitle: { color: theme.textDim, fontSize: 15, marginTop: 8 },
-
   middle: { alignItems: 'center', gap: 28 },
   bestBox: { alignItems: 'center' },
-  bestValue: { color: theme.accent, fontSize: 40, fontWeight: '800' },
-  bestLabel: { color: theme.textDim, fontSize: 11, letterSpacing: 2, fontWeight: '700' },
-
-  play: {
-    backgroundColor: theme.accent,
-    paddingVertical: 20,
-    paddingHorizontal: 72,
-    borderRadius: radius.lg,
-  },
-  playText: { color: theme.bg, fontSize: 20, fontWeight: '900', letterSpacing: 3 },
-  scores: {
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.border,
-  },
-  scoresText: { color: theme.textDim, fontSize: 13, fontWeight: '700', letterSpacing: 2 },
   runsLabel: { color: theme.textDim, fontSize: 11, marginTop: 6 },
-  pressed: { opacity: 0.75 },
-
-  categoryBox: {
-    alignItems: 'center',
-    backgroundColor: theme.bgElevated,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.border,
-    paddingVertical: 14,
-    paddingHorizontal: 22,
-  },
+  categoryBox: { alignItems: 'center' },
   categoryName: { color: theme.text, fontSize: 15, fontWeight: '700' },
   categoryMeta: { color: theme.textDim, fontSize: 11, marginTop: 3 },
-
   footer: { color: theme.textDim, fontSize: 10, textAlign: 'center', opacity: 0.6 },
 });
