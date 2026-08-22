@@ -109,8 +109,8 @@ Every fetched value passes sanity checks *at write time*: missing/zero/non-finit
 **4. Export produces what the app actually reads.** [BUILT]
 `npm run pipeline:export` ([export-snapshot.ts](../pipeline/export-snapshot.ts)) takes the newest validated/published snapshot per category, **excludes flagged rows**, and writes `src/data/categories/<id>.json` with per-item `source` + `updatedAt`. The snapshot is marked `published`.
 
-**5. The data ships like code.** [BUILT: CI · blocked on owner accounts: EAS]
-The JSON diff goes up in a PR — **the diff is the content review**. CI must pass documentation impact, typecheck, tests, and `npm run build:web` ([ci.yml](../.github/workflows/ci.yml)). Merge → release ritual (WORKFLOW): changelog rollover, version bump, tag, `eas build` → `eas submit` → TestFlight → App Store. Web ships the same commit to Railway after both `check` and `web` pass (D-020, D-029).
+**5. The data ships like code.** [BUILT: CI + GitHub Release · blocked on owner accounts: EAS]
+The JSON diff goes up in a PR — **the diff is the content review**. CI must pass documentation impact, typecheck, tests, and `npm run build:web` ([ci.yml](../.github/workflows/ci.yml)). Merge of a rolled changelog to `master` publishes GitHub Release `vX.Y.Z` from that section ([release.yml](../.github/workflows/release.yml), D-039). Native still needs the owner: `eas build` → `eas submit` → TestFlight → App Store. Web ships the same commit to Railway after both `check` and `web` pass (D-020, D-029).
 
 **6. The player sees the number** — with its provenance ("Source: monthly Wikipedia pageviews, <month year>") [PLANNED], so the claim on screen is exactly the claim the data supports.
 
@@ -358,6 +358,7 @@ Quick map of where each journey step lives:
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both |
 | Wikipedia popularity weekly | `.github/workflows/wikipedia-popularity-weekly.yml`, `pipeline/rotate-wikipedia-popularity.ts` | [BUILT] — Monday 09:00 UTC + `workflow_dispatch`; PR on `content/wikipedia-popularity-weekly`, never `master` (D-036) |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both, then `railway up --service wordcrush` |
+| GitHub Release | `.github/workflows/release.yml`, `scripts/changelog-notes.mjs` | [BUILT] — first version `0.1.0`; publish `vX.Y.Z` from the changelog section on master merge or tag (D-039) |
 | Web host | `railway.json`, `server/serve.mjs` | [BUILT] — Nixpacks runs `CI=true npm run build:web` on service `wordcrush`; `serve.mjs` listens on `$PORT` |
 | Web favicon + share preview | `assets/favicon.png`, `assets/apple-touch-icon.png`, `assets/logo/wordkrush-lockup.png`, `scripts/patch-web-head.mjs` | [BUILT] — cache-busted tab icons in `dist/`; Open Graph / Twitter tags with the lockup at `/og-image.png` (not the favicon crop) |
 | Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] |

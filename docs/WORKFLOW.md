@@ -98,9 +98,9 @@ Wordfall weekly levels are a different path: append a row to `src/data/wordfall/
 
 ## Release process
 
-1. Move CHANGELOG [Unreleased] → `[x.y.z] - date`; bump `package.json` + `app.json` versions.
-2. Tag `vx.y.z`, push.
-3. `eas build --platform ios --profile production` → `eas submit --platform ios` → TestFlight → App Store.
+1. Move CHANGELOG [Unreleased] → `[x.y.z] - date`; bump `package.json` + `app.json` when the number changes. `package.json` / `app.json` are already `0.1.0` for the first GitHub Release.
+2. Merge that PR to `master`. [release.yml](../.github/workflows/release.yml) publishes GitHub Release `vX.Y.Z` from the matching changelog section (`scripts/changelog-notes.mjs`). Pushing tag `vX.Y.Z` does the same. The job is idempotent: an existing tag/release is left alone. A master push whose changelog is still `[Unreleased]` is a no-op.
+3. `eas build --platform ios --profile production` → `eas submit --platform ios` → TestFlight → App Store. Still a human step; blocked on Expo login and Apple Developer.
 4. Web: nothing to do — merging to `master` deploys to Railway automatically once `check` and `web` are green (D-020, D-029). Public site: [wordKrush.com](https://wordkrush.com).
 
 ## Web deploys

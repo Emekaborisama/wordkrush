@@ -4,9 +4,11 @@ All notable changes to WordKrush. Format follows [Keep a Changelog](https://keep
 
 Rules:
 - Every PR that changes behavior adds a line under **[Unreleased]** in the same PR.
-- On release: rename [Unreleased] to the version + date, create a fresh empty [Unreleased], bump `package.json` + `app.json`, tag `v<version>`, then `eas build --platform ios` → TestFlight.
+- On release: rename [Unreleased] to the version + date, create a fresh empty [Unreleased], bump `package.json` + `app.json` when the number changes. Merging that to `master` (or pushing tag `v<version>`) publishes the GitHub Release. Then `eas build --platform ios` → TestFlight when native is in play.
 
 ## [Unreleased]
+
+## [0.1.0] - 2026-08-22
 
 ### Fixed
 - **Shared links preview the WordKrush lockup, not a generic globe.** Expo’s web export still emits no Open Graph tags. `scripts/patch-web-head.mjs` copies `assets/logo/wordkrush-lockup.png` to `dist/og-image.png` and injects `og:*` / Twitter card meta after `<title>` (absolute `https://wordkrush.com/og-image.png`). The tab favicon stays the tight W crop; that crop is too small for a large preview, so `og:image` is the full lockup.
@@ -14,6 +16,7 @@ Rules:
 - **Magic-link click no longer targets a path on the Supabase API host.** `webAuthRedirectUrl` (`src/auth/redirect-url.ts`) sends web `emailRedirectTo` as the page origin with a scheme (`https://wordkrush.com`), not `/auth/callback` and not a bare host. GoTrue treats `wordkrush.com` as the path `/wordkrush.com` on `https://<project>.supabase.co` and returns `requested path is invalid`. Dashboard Site URL must be `https://wordkrush.com`.
 
 ### Added
+- **GitHub Releases** — rolling CHANGELOG `[Unreleased]` to `[x.y.z]` and merging to `master` publishes `vX.Y.Z` (notes from that section). Tag `vX.Y.Z` does the same. Native EAS/TestFlight stays a human step (D-039).
 - **Wordfall weekly Gauntlet agent loop** — Cursor skill plus `taskFingerprint` so each Monday drop is a unique hard task (puzzle vs race + objective kinds), featured for seven days, and never a copy of last week. Job B must run `check`, `build:web`, local `serve:web` (port 8080), and a picker playtest before GitHub (D-038). Catalog remains bundled (D-027).
 - **WordKrush magic-link email** at `supabase/templates/magic-link.html`. The button is `{{ .ConfirmationURL }}` (the one-time link); the 6-digit `{{ .Token }}` stays as the in-app fallback. `{{ .SiteURL }}` is the dashboard Site URL, not the sign-in link, and must not be the button href. Free-tier Auth cannot save custom templates until custom SMTP is configured in the dashboard (typically Resend: `smtp.resend.com`, port 465). Paste the HTML after SMTP is live. SMTP secrets stay out of the app.
 - **Weekly Wikipedia popularity cron** — Monday 09:00 UTC (and `workflow_dispatch`) re-measures the curated Popularity keyword list via `npm run pipeline:rotate` and opens a review PR when values, images, or the pageview window changed. No play-time fetch (D-004, D-036).
