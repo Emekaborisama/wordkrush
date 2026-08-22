@@ -359,7 +359,7 @@ Quick map of where each journey step lives:
 | Wikipedia popularity weekly | `.github/workflows/wikipedia-popularity-weekly.yml`, `pipeline/rotate-wikipedia-popularity.ts` | [BUILT] — Monday 09:00 UTC + `workflow_dispatch`; PR on `content/wikipedia-popularity-weekly`, never `master` (D-036) |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both, then `railway up --service wordcrush` |
 | Web host | `railway.json`, `server/serve.mjs` | [BUILT] — Nixpacks runs `CI=true npm run build:web` on service `wordcrush`; `serve.mjs` listens on `$PORT` |
-| Web favicon | `assets/favicon.png`, `assets/apple-touch-icon.png`, `scripts/patch-web-head.mjs` | [BUILT] — tight crop of the W tile; PNG + apple-touch-icon copied into `dist/` with a cache-busted `<link rel="icon">` |
+| Web favicon + share preview | `assets/favicon.png`, `assets/apple-touch-icon.png`, `assets/logo/wordkrush-lockup.png`, `scripts/patch-web-head.mjs` | [BUILT] — cache-busted tab icons in `dist/`; Open Graph / Twitter tags with the lockup at `/og-image.png` (not the favicon crop) |
 | Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] |
 | Consent and product analytics | `src/analytics/`, `src/ui/AnalyticsConsentPrompt.tsx` | [BUILT] |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |
