@@ -114,8 +114,11 @@ The JSON diff goes up in a PR — **the diff is the content review**. CI must pa
 
 **6. The player sees the number** — with its provenance ("Source: monthly Wikipedia pageviews, <month year>") [PLANNED], so the claim on screen is exactly the claim the data supports.
 
-**7. And back: the correction loop.** [BUILT: pipeline side · ongoing]
-Data ages (bundled = frozen until next release, accepted trade-off D-004). Refresh = re-run ingest (swing detection compares against the last published snapshot automatically) → export → PR → release. A wrong-feeling answer in playtesting starts at `item_values.raw` in Supabase and ends in either a corrected snapshot or a removed item. App Store review latency (days) is why validation happens *before* shipping, not after.
+**7. Weekly rotation keeps the snapshot from freezing.** [BUILT]
+Monday 09:00 UTC (and `workflow_dispatch`) GitHub Action [wikipedia-popularity-weekly.yml](../.github/workflows/wikipedia-popularity-weekly.yml) runs `npm run pipeline:rotate`. That job uses the same builder as `pipeline:preview` — Wikimedia pageviews plus freely-licensed images — because the factory ingest→export path is still blocked on the 0001 migration. It compares the new file to the bundled JSON and **skips the PR** when only `updatedAt` would change (most weeks of a month share one complete-month window). A material change writes the JSON, appends a changelog line, runs `npm run check`, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. Swings >10x vs the currently shipped values are listed on the PR; a human merges. The job never pushes to `master` and never fetches at play time (D-004, D-036). Output stays `provisional: true` until ST-35 lands.
+
+**8. And back: the correction loop.** [BUILT: pipeline side · ongoing]
+Data ages (bundled = frozen until next release, accepted trade-off D-004). Refresh = weekly rotate, or a manual `pipeline:preview` / ingest→export. A wrong-feeling answer in playtesting starts at the JSON diff (or `item_values.raw` once the factory path is live) and ends in either a corrected snapshot or a removed item. App Store review latency (days) is why validation happens *before* shipping, not after.
 
 ---
 
@@ -225,9 +228,14 @@ Optional accounts use **Supabase Auth** (D-033, D-034): email magic link or
 SMS one-time code. Email: the player enters an address, Supabase sends the
 link, and the session lands when they open it (web URL parse, or native PKCE
 exchange from `wordkrush://` / Expo Go) or type the 6-digit code from the
-same email. Phone: E.164 number, SMS code, `verifyOtp` type `sms`. There is
-no password. Phone numbers are not sent to PostHog. Skip remains a guest
-path; a missing backend still plays offline.
+same email. Web `emailRedirectTo` is the current origin. Hosted **Site URL**
+must include the scheme (`https://wordkrush.com`); a bare host is treated as a
+path on the Auth API. The WordKrush Magic Link HTML is
+[magic-link.html](../supabase/templates/magic-link.html). This free project
+cannot save that template until custom SMTP is configured (dashboard only;
+credentials never enter the app). Phone: E.164 number, SMS code, `verifyOtp`
+type `sms`. There is no password. Phone numbers are not sent to PostHog. Skip
+remains a guest path; a missing backend still plays offline.
 
 **4. The public board is a view, not a client-ranked dump.** [BUILT]
 [0003_global_scores.sql](../supabase/migrations/0003_global_scores.sql) stores
@@ -322,10 +330,12 @@ Quick map of where each journey step lives:
 | LLM validator (schema/API/CLI) | `validator/` (+ 18 tests) | [BUILT] |
 | Content DB schema | `supabase/migrations/0001_init.sql` | [BUILT: apply on the owner project] |
 | Accounts + first leaderboard tables | `supabase/migrations/0002_leaderboard.sql` | [BUILT: apply on the owner project] |
-| Optional auth (magic link + SMS) | `src/auth/`, `src/ui/screens/AuthScreen.tsx` | [BUILT] — Supabase email magic link and phone OTP; web + native deep-link restore (D-033, D-034) |
+| Optional auth (magic link + SMS) | `src/auth/`, `src/ui/screens/AuthScreen.tsx`, `supabase/templates/magic-link.html` | [BUILT] — magic link + SMS OTP; web origin / native deep-link restore. Custom SMTP required to save the email template on this free project (D-033, D-034) |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |
+| CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both |
+| Wikipedia popularity weekly | `.github/workflows/wikipedia-popularity-weekly.yml`, `pipeline/rotate-wikipedia-popularity.ts` | [BUILT] — Monday 09:00 UTC + `workflow_dispatch`; PR on `content/wikipedia-popularity-weekly`, never `master` (D-036) |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both, then `railway up --service wordcrush` |
 | Web host | `railway.json`, `server/serve.mjs` | [BUILT] — Nixpacks runs `CI=true npm run build:web` on service `wordcrush`; `serve.mjs` listens on `$PORT` |
 | Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] |
@@ -353,7 +363,7 @@ Quick map of where each journey step lives:
 | Metric source confusion | Low | Wikimedia pageviews is v1; future keyword APIs remain optional later upgrades | Closed |
 | Guideline 4.2 rejection (app too thin) | Medium | Offline play and haptics ship; Game Center still planned. Supabase global ranks are web+iOS, not a native Game Center substitute | Open |
 | Difficulty bands feel wrong | Medium | Constants isolated in `pairing.ts`; tune via playtest | Open |
-| Stale bundled data | Medium | Per-item `updatedAt`; swing check on refresh; revisit D-004 if painful | Accepted |
+| Stale bundled data | Medium | Per-item `updatedAt`; weekly rotate PR; swing check on refresh; revisit D-004 if painful | Accepted |
 | Core mechanic unverified vs reference game | Medium | BRAINSTORM [OPEN] items; engine takes them as config | Open |
 | Secret leakage | High | Security model above; rotate keys if in doubt | Mitigated |
 

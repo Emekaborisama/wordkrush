@@ -84,11 +84,15 @@ npm run auth:ensure-test-player  # create/refresh local TEST_PLAYER_* in .env (v
 ## Content pipeline (offline, never at app runtime)
 
 ```bash
-npm run pipeline:ingest   # keywords → source (mock for now) → validate → Supabase
+npm run pipeline:ingest   # keywords → source → validate → Supabase (needs .env)
 npm run pipeline:export   # latest good snapshot → src/data/categories/*.json
+npm run pipeline:preview  # Wikipedia pageviews + free-licence images → bundled JSON (no Supabase)
+npm run pipeline:rotate   # same builder as preview; write only on a material change
 ```
 
 The app only ever reads the bundled JSON. Changing game data = run pipeline, commit the JSON diff, release. The JSON diff in the PR *is* the content review.
+
+**Weekly Wikipedia popularity** is automated: `.github/workflows/wikipedia-popularity-weekly.yml` runs Mondays at 09:00 UTC (and on `workflow_dispatch`). It calls `pipeline:rotate`, runs `npm run check` on a material change, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. That branch is an automation exception to the Superthread-name rule (D-036); do not merge it without reading the JSON diff. The job never pushes to `master`. Until the factory path is live (ST-35), the file stays `provisional: true`.
 
 Wordfall weekly levels are a different path: append a row to `src/data/wordfall/levels.ts` with a Monday `availableFrom`, then follow [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md). Do not run the Wikipedia ingest for a Wordfall drop. Monday does not fetch content; the catalog in git is the schedule.
 
@@ -138,7 +142,7 @@ analytics still starts opted out and requires the player's explicit consent.
 - [ ] `npx expo login` (Expo account, for EAS builds)
 - [ ] Apple Developer Program ($99/yr) + `eas credentials` once
 - [ ] Apply `supabase/migrations/0001_init.sql`, `0002_leaderboard.sql`, and `0003_global_scores.sql` in the Supabase SQL editor
-- [ ] **Supabase Auth magic link (D-033):** Authentication → URL Configuration. Site URL `https://wordkrush.com`. Redirect allow-list must include `https://wordkrush.com/**`, `http://localhost:8081/**`, `http://localhost:8080/**`, and `wordkrush://**`. Email templates should keep both the confirmation URL and the OTP token — the app uses the link first and the 6-digit code as fallback. Existing password users can sign in with a magic link to the same email.
+- [ ] **Supabase Auth magic link (D-033):** Authentication → URL Configuration. Site URL must be exactly `https://wordkrush.com` (include `https://`; a bare `wordkrush.com` becomes the path `/wordkrush.com` on the API host). Redirect allow-list: `https://wordkrush.com/**`, `http://localhost:8081/**`, `http://localhost:8080/**`, `wordkrush://**`, `exp://**`. This free project cannot edit Auth email templates on the default mailer (June 2026). Enable custom SMTP only after a provider is ready — an empty host/user/pass breaks sending. Typical path is [Resend](https://resend.com/docs/send-with-supabase-smtp): verify `wordkrush.com`, then Host `smtp.resend.com`, Port `465`, Username `resend`, Password = Resend API key. Sender `noreply@wordkrush.com`, name `WordKrush`. Then Authentication → Email Templates → Magic Link: subject `Sign in to WordKrush`, body from `supabase/templates/magic-link.html` (keep `{{ .ConfirmationURL }}` and `{{ .Token }}`). SMTP credentials stay in the dashboard, never in `.env` or `EXPO_PUBLIC_*`.
 - [ ] **Supabase Auth phone SMS (D-034):** Phone provider is enabled. Confirm an SMS provider is configured on that Phone settings page (Twilio or equivalent) or texts will not send. Test with an E.164 number (`+` and country code).
 
 Web hosting and the v1 data source are resolved by STACK D-020 and D-012.

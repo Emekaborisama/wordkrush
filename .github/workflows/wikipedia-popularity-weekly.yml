@@ -1,0 +1,54 @@
+name: Wikipedia popularity weekly
+
+# Re-measures the curated wikipedia-popularity keyword list. Does not fetch at
+# play time (STACK D-004). Does not merge — the JSON diff is the content review.
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Monday 09:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: wikipedia-popularity-weekly
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  rotate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Refresh the bundled Wikipedia popularity snapshot
+        id: rotate
+        run: npm run pipeline:rotate
+
+      - name: Prove the new snapshot is playable
+        if: steps.rotate.outputs.changed == 'true'
+        run: npm run check
+
+      - name: Open a review PR
+        if: steps.rotate.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: content/wikipedia-popularity-weekly
+          delete-branch: false
+          title: Wikipedia popularity snapshot (${{ steps.rotate.outputs.window }})
+          body-path: pr-body.md
+          commit-message: |
+            Refresh Wikipedia popularity snapshot.
+
+            Weekly Wikimedia pageviews plus freely-licensed images. Review the JSON diff before merge.
+          add-paths: |
+            src/data/categories/wikipedia-popularity.json
+            docs/CHANGELOG.md

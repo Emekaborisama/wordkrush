@@ -36,6 +36,13 @@ describe('documentation impact rules', () => {
     expect(requiredFor(['agents.md'])).toEqual(['docs/WORKFLOW.md']);
   });
 
+  it('requires system and stack docs for a scheduled GitHub Actions workflow', () => {
+    expect(requiredFor(['.github/workflows/wikipedia-popularity-weekly.yml'])).toEqual([
+      'docs/HOW-IT-WORKS.md',
+      'docs/STACK.md',
+    ]);
+  });
+
   it('accepts the required document in the same change', () => {
     expect(
       requiredFor(['pipeline/ingest.ts', 'docs/CHANGELOG.md', 'docs/HOW-IT-WORKS.md']),
