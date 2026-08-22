@@ -16,73 +16,33 @@
  * Output is therefore marked `"provisional": true`. Running the real pipeline
  * (pipeline:ingest + pipeline:export) overwrites it with a validated snapshot.
  * Do not ship a provisional file to the App Store.
+ *
+ * Weekly refresh uses the same builder (`npm run pipeline:rotate`) and still
+ * writes a provisional file until the factory path is live.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { createWikipediaSource } from './sources/wikipedia';
-import { fetchImages } from './sources/wikipedia-images';
-
-const OUT_DIR = fileURLToPath(new URL('../src/data/categories/', import.meta.url));
-
-type KeywordFile = {
-  category: { id: string; name: string; metricLabel: string; unit: string };
-  items: { label: string; term: string }[];
-};
+import {
+  buildWikipediaPopularitySnapshot,
+  DEFAULT_CATEGORY_ID,
+  writeBundledCategory,
+} from './wikipedia-snapshot';
 
 async function main() {
-  const categoryId = process.env.CATEGORY ?? 'wikipedia-popularity';
-  const file: KeywordFile = JSON.parse(
-    readFileSync(new URL(`./keywords/${categoryId}.json`, import.meta.url), 'utf8'),
-  );
+  const categoryId = process.env.CATEGORY ?? DEFAULT_CATEGORY_ID;
+  console.log(`fetching ${categoryId} from Wikimedia ...`);
 
-  const source = createWikipediaSource();
-  console.log(`fetching ${file.items.length} articles from ${source.name} ...`);
+  const { snapshot, keywordCount } = await buildWikipediaPopularitySnapshot(categoryId);
+  const dest = writeBundledCategory(snapshot);
 
-  const volumes = await source.fetchVolumes(file.items.map((i) => i.term));
-
-  console.log('fetching images (free licences only) ...');
-  // 800px: cards are full-bleed, so 400 looks soft on a retina screen.
-  const images = await fetchImages(file.items.map((i) => i.term), 800);
-
-  const items = file.items
-    .map((it) => {
-      const value = volumes.get(it.term);
-      if (value === undefined) return null;
-      const image = images.get(it.term);
-      return {
-        id: `${file.category.id}.${it.term.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-        categoryId: file.category.id,
-        label: it.label,
-        value,
-        ...(image
-          ? {
-              imageUrl: image.url,
-              imageAttribution: image.attribution,
-              imageLicense: image.license,
-            }
-          : {}),
-        source: source.name,
-        updatedAt: new Date().toISOString().slice(0, 10),
-      };
-    })
-    .filter((x): x is NonNullable<typeof x> => x !== null)
-    .sort((a, b) => b.value - a.value);
-
-  const out = {
-    ...file.category,
-    provisional: true,
-    items,
-  };
-
-  mkdirSync(OUT_DIR, { recursive: true });
-  writeFileSync(`${OUT_DIR}${file.category.id}.json`, JSON.stringify(out, null, 2) + '\n');
-
-  const missing = file.items.length - items.length;
-  const withImages = items.filter((i) => 'imageUrl' in i).length;
-  console.log(`wrote ${items.length} items -> src/data/categories/${file.category.id}.json`);
-  console.log(`  ${withImages}/${items.length} have a freely-licensed image`);
+  const missing = keywordCount - snapshot.items.length;
+  const withImages = snapshot.items.filter((item) => item.imageUrl).length;
+  console.log(`wrote ${snapshot.items.length} items -> ${dest}`);
+  console.log(`  ${withImages}/${snapshot.items.length} have a freely-licensed image`);
   if (missing > 0) console.log(`  ${missing} item(s) had no data and were omitted`);
-  console.log(`  range: ${items.at(-1)!.value.toLocaleString()} .. ${items[0].value.toLocaleString()}`);
+  const last = snapshot.items.at(-1);
+  const first = snapshot.items[0];
+  if (last && first) {
+    console.log(`  range: ${last.value.toLocaleString()} .. ${first.value.toLocaleString()}`);
+  }
   console.log('  NOTE: provisional (no Supabase provenance). Not for release.');
 }
 

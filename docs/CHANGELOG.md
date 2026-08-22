@@ -8,7 +8,12 @@ Rules:
 
 ## [Unreleased]
 
+### Fixed
+- **Magic-link click no longer targets a path on the Supabase API host.** Web `emailRedirectTo` is the page origin (`https://wordkrush.com`), not `/auth/callback`. A Site URL of `wordkrush.com` (no `https://`) is treated by GoTrue as a relative path.
+
 ### Added
+- **WordKrush magic-link email** at `supabase/templates/magic-link.html`. Free-tier Auth cannot save custom templates until custom SMTP is configured in the dashboard (typically Resend: `smtp.resend.com`, port 465). Paste the HTML after SMTP is live. SMTP secrets stay out of the app.
+- **Weekly Wikipedia popularity cron** — Monday 09:00 UTC (and `workflow_dispatch`) re-measures the curated Popularity keyword list via `npm run pipeline:rotate` and opens a review PR when values, images, or the pageview window changed. No play-time fetch (D-004, D-036).
 - **Deer mascot** — hub hero plus outcome screens (More or Less game over, Wordfall level complete/fail, Clueless solved) play the little deer via Lottie. Clip CDN URLs live in `LOTTIE_CLIPS` (`src/ui/lottie/sources.ts`); deer poses share the hosted file until distinct poses are pasted. Flame and burst slots stay empty. Bundled `assets/lottie/deer.lottie` is the offline fallback. Reduce-motion holds the first frame. Play and game data stay offline (D-004).
 - Documentation drift guard: one changed-file audit shared by local checks, CI, and a Cursor completion hook, with explicit document-impact guidance
 - Expo SDK 57 + TypeScript scaffold (iOS + web from one codebase)

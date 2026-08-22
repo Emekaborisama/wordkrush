@@ -8,6 +8,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { pipelineDb } from './db';
+import { MAX_SWING_VS_PREVIOUS } from './sanity';
 import { mockSource } from './sources/mock';
 import { createWikipediaSource } from './sources/wikipedia';
 import type { VolumeSource } from './sources/types';
@@ -18,10 +19,6 @@ const SOURCES: Record<string, VolumeSource> = {
 };
 
 const DEFAULT_CATEGORY = 'wikipedia-popularity';
-
-// If a value moved more than 10x since the last snapshot, a human looks at it
-// before it can ship. Real popularity rarely moves that fast; API glitches do.
-const MAX_SWING_VS_PREVIOUS = 10;
 
 async function main() {
   const sourceName = process.env.SOURCE ?? 'wikipedia';

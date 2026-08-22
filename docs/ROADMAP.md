@@ -49,6 +49,7 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 - [x] Supabase schema, ingest with sanity checks, snapshot export, Wikipedia pageviews source
 - [x] LLM validator service (`validator/`, 18 tests) — schema, consistency check, flagging, playability checks
 - [x] First shipped category: `wikipedia-popularity` — monthly Wikipedia pageviews
+- [ ] **Weekly Wikipedia popularity snapshot cron** (ST-75) — **Doing**; Monday GitHub Action re-measures the curated list and opens a review PR (D-036)
 - [ ] Wire validator into `pipeline/ingest.ts` (`POST /validate/batch`) — batch-validate incoming rows and quarantine flagged pairs
 - [ ] Run ingest → export end-to-end against live Supabase ← blocked on migration — prove the factory path after the SQL schema lands
 - [ ] Human review queue for flagged pairs (v1: a CLI that prints them) — owner can approve or reject, not silently auto-fix
@@ -72,7 +73,7 @@ Guideline 4.2 rejects apps that are too thin. These are the mitigation:
 
 ## Track: accounts
 
-- [ ] **Supabase magic-link + SMS sign-in** (ST-73) — **Doing**; replaces the ST-61 password form. Email magic link (D-033) and phone SMS OTP (D-034) on the same optional Supabase Auth project. Owner still needs the Auth redirect allow-list and an SMS provider under Phone settings.
+- [ ] **Supabase magic-link + SMS sign-in** (ST-73) — **Doing**; replaces the ST-61 password form. Email magic link (D-033) and phone SMS OTP (D-034) on the same optional Supabase Auth project. Owner still needs Site URL `https://wordkrush.com`, the redirect allow-list, custom SMTP (to unlock the WordKrush template), and an SMS provider under Phone settings.
 
 ## Track: infra
 
