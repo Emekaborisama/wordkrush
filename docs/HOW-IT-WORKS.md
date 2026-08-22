@@ -316,6 +316,7 @@ Quick map of where each journey step lives:
 | Bundled game data | `src/data/categories/*.json` | [BUILT: dir, populated on first export] |
 | Keyword lists | `pipeline/keywords/` | [BUILT] |
 | Ingest + validation | `pipeline/ingest.ts` | [BUILT] |
+| Local AI test player | `pipeline/ensure-test-player.ts` | [BUILT] — `TEST_PLAYER_*` in `.env` only; `npm run auth:ensure-test-player` (D-035) |
 | Source adapters | `pipeline/sources/` (Wikipedia active; mock available for deterministic checks) | [BUILT] |
 | Export | `pipeline/export-snapshot.ts` | [BUILT] |
 | LLM validator (schema/API/CLI) | `validator/` (+ 18 tests) | [BUILT] |

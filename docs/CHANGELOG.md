@@ -55,6 +55,7 @@ Rules:
 - **WordKrush brand kit** — lockup (black + clear + SVG) and W mark in `assets/logo/`, identity/usage/colour in `docs/branding/`. Splash uses the black lockup; auth and Android foreground use the clear lockup; app icon stays the W. Umbrella accent is lockup gold (`brand.krush`).
 - Wordfall level cards now carry a short player-facing `description` so the picker states the objective before play
 - **Wordfall weekly drops** — new levels ship in the bundle with a Monday `availableFrom`; the picker shows “this week” / “drops …” and still requires beating the previous level. The launch set (1–11) stays available on day one
+- **Local AI test player** — `npm run auth:ensure-test-player` creates a confirmed Auth user and writes `TEST_PLAYER_EMAIL` / `TEST_PLAYER_PASSWORD` / `TEST_PLAYER_USERNAME` to `.env`. Not a service-role account; never `EXPO_PUBLIC_*` (D-035).
 
 ### Changed
 - **Optional accounts now sign in with a Supabase magic link or SMS code**, not a password. Email sends a link (and accepts the 6-digit code from that message). Phone sends an SMS code to an E.164 number. Sessions restore from the web redirect or the native `wordkrush://` / Expo Go deep link. Guest skip and offline play are unchanged (D-033, D-034).

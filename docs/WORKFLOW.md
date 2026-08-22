@@ -78,6 +78,7 @@ npm start            # Expo dev server → scan QR with iPhone (Expo Go)
 npm run test:watch   # logic TDD loop
 npm run check:docs   # documentation impact for changed files
 npm run check        # documentation + typecheck + tests; CI runs this plus `build:web`
+npm run auth:ensure-test-player  # create/refresh local TEST_PLAYER_* in .env (values not printed)
 ```
 
 ## Content pipeline (offline, never at app runtime)
@@ -128,6 +129,7 @@ analytics still starts opted out and requires the player's explicit consent.
 ## Security rules (non-negotiable)
 
 - `.env` is gitignored and must stay untracked. New secrets → add the *name* to `.env.example`, never the value.
+- `TEST_PLAYER_*` is a confirmed local Auth user for agent API tests (`npm run auth:ensure-test-player`). It is not a service-role superuser. Agents may read those names from `.env` locally; they must not print the values, commit them, or put them on Railway/EAS/`EXPO_PUBLIC_*`.
 - `SUPABASE_SECRET_KEY` is pipeline/server-side only. **Never** give a secret an `EXPO_PUBLIC_` prefix — Expo embeds those in the shipped client bundle.
 - CI/EAS secrets go in GitHub/EAS secret stores, not in files.
 

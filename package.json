@@ -19,6 +19,7 @@
     "pipeline:preview": "tsx pipeline/preview-category.ts",
     "pipeline:export": "tsx --env-file=.env pipeline/export-snapshot.ts",
     "pipeline:wordfall": "tsx pipeline/build-wordfall-dictionary.ts",
+    "auth:ensure-test-player": "tsx --env-file=.env pipeline/ensure-test-player.ts",
     "serve:web": "node server/serve.mjs"
   },
   "dependencies": {

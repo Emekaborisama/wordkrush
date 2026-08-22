@@ -161,7 +161,10 @@ substituting an untested implementation.
 ## Security and repository hygiene
 
 - Never read, print, commit, or copy values from `.env`. Use `.env.example` to
-  understand required names.
+  understand required names. Exception: locally, agents may read
+  `TEST_PLAYER_EMAIL` / `TEST_PLAYER_PASSWORD` / `TEST_PLAYER_USERNAME` to sign
+  in for API tests. Still never print those values, commit `.env`, or expose
+  them as `EXPO_PUBLIC_*`.
 - Never expose secrets through `EXPO_PUBLIC_*`; Expo embeds those values in the
   client bundle. Server/pipeline secrets stay out of app code.
 - Do not commit generated build output, credentials, signing files, or
