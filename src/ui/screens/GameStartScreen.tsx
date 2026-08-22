@@ -52,6 +52,10 @@ export function GameStartScreen({
         {game?.badge ? <Badge label={game.badge} color={accent} /> : null}
         <Text style={styles.title}>{game?.name ?? 'Play'}</Text>
         <Text style={styles.subtitle}>{game?.blurb ?? game?.tagline ?? ''}</Text>
+
+        {/* What is on today/this week sits with the pitch, not under the CTA:
+            it is the reason to tap Play, so it has to be read first. */}
+        {detail ? <View style={styles.detailSlot}>{detail}</View> : null}
       </View>
 
       <View style={styles.bottom}>
@@ -75,8 +79,6 @@ export function GameStartScreen({
           <Button title={playLabel} size="lg" onPress={onPlay} color={accent} />
           <Button title="View scores" variant="tonal" size="md" onPress={onScores} color={accent} />
         </View>
-
-        {detail}
       </View>
 
       {footer ? <Text style={styles.footer}>{footer}</Text> : null}
@@ -124,6 +126,7 @@ const styles = StyleSheet.create({
     maxWidth: 340,
     marginTop: space.xxs,
   },
+  detailSlot: { alignSelf: 'stretch', marginTop: space.md },
   bottom: { flex: 1, justifyContent: 'flex-end', gap: space.md, paddingTop: space.lg },
   stats: {
     flexDirection: 'row',
