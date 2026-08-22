@@ -21,7 +21,8 @@
     "pipeline:export": "tsx --env-file=.env pipeline/export-snapshot.ts",
     "pipeline:wordfall": "tsx pipeline/build-wordfall-dictionary.ts",
     "auth:ensure-test-player": "tsx --env-file=.env pipeline/ensure-test-player.ts",
-    "serve:web": "node server/serve.mjs"
+    "serve:web": "node server/serve.mjs",
+    "release:notes": "node scripts/changelog-notes.mjs --from-package"
   },
   "dependencies": {
     "@expo-google-fonts/fredoka": "^0.4.1",
