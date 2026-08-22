@@ -46,7 +46,7 @@ import { AuthScreen } from './src/ui/screens/AuthScreen';
 import { CluelessScreen } from './src/ui/screens/CluelessScreen';
 import { GameOverScreen } from './src/ui/screens/GameOverScreen';
 import { GameScreen } from './src/ui/screens/GameScreen';
-import { HomeScreen } from './src/ui/screens/HomeScreen';
+import { GameStartScreen, StartDetail } from './src/ui/screens/GameStartScreen';
 import { HubScreen } from './src/ui/screens/HubScreen';
 import { ScoresScreen } from './src/ui/screens/ScoresScreen';
 import { WordfallScreen } from './src/ui/screens/WordfallScreen';
@@ -62,6 +62,53 @@ type Screen =
   | { name: 'over'; gameId: string; state: GameState; entryId: string }
   | { name: 'scores'; gameId: string; highlightId?: string }
   | { name: 'auth'; returnGameId?: string };
+
+/**
+ * The game-specific block on a start screen. Everything else about the screen
+ * is shared; this is the one slot that differs, so a new game adds a case here
+ * rather than forking the layout.
+ */
+function startDetailFor(gameId: string, category: Category & { provisional?: boolean }) {
+  const accent = getGame(gameId)?.accent ?? theme.accent;
+  if (gameId === MORE_OR_LESS) {
+    return (
+      <StartDetail
+        label="TODAY’S CATEGORY"
+        title={category.name}
+        meta={`${category.items.length} matchups · ${category.metricLabel}`}
+        accent={accent}
+      />
+    );
+  }
+  if (gameId === 'clueless') {
+    return (
+      <StartDetail
+        label="TODAY’S PUZZLE"
+        title={`Daily #${todaysPuzzleNumber()}`}
+        meta="One word a day · unlimited guesses"
+        accent={accent}
+      />
+    );
+  }
+  if (gameId === 'wordfall') {
+    return (
+      <StartDetail
+        label="THIS WEEK"
+        title="Campaign levels"
+        meta="A new level drops every Monday"
+        accent={accent}
+      />
+    );
+  }
+  return null;
+}
+
+function startFooterFor(gameId: string, category: Category & { provisional?: boolean }) {
+  if (gameId === MORE_OR_LESS) {
+    return `Wikipedia pageviews${category.provisional ? ' · preview data' : ''} · Works offline`;
+  }
+  return 'Works offline';
+}
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
@@ -228,9 +275,8 @@ export default function App() {
 
   // The game screen owns the whole viewport during play, so the chrome is
   // hidden there — a menu bar over a live round is a mis-tap waiting to happen.
-  const immersiveGame =
-    screen.name === 'home' && (screen.gameId === 'clueless' || screen.gameId === 'wordfall');
-  const showChrome = screen.name !== 'game' && !immersiveGame;
+  // Every game now plays under `game`, so the one check covers all three.
+  const showChrome = screen.name !== 'game';
   const activeGameId = 'gameId' in screen ? screen.gameId : undefined;
   const activeKind: DrawerDestination['kind'] =
     screen.name === 'hub'
@@ -280,10 +326,10 @@ export default function App() {
           />
         )}
 
-        {screen.name === 'home' && screen.gameId === 'clueless' && (
+        {screen.name === 'game' && screen.gameId === 'clueless' && (
           <CluelessScreen
             puzzleNumber={todaysPuzzleNumber()}
-            onExit={() => setScreen({ name: 'hub' })}
+            onExit={() => setScreen({ name: 'home', gameId: 'clueless' })}
             onWin={async (guessesUsed) => {
               const previous = boardFor('clueless');
               const next = await recordFinish(() =>
@@ -312,9 +358,9 @@ export default function App() {
           />
         )}
 
-        {screen.name === 'home' && screen.gameId === 'wordfall' && (
+        {screen.name === 'game' && screen.gameId === 'wordfall' && (
           <WordfallScreen
-            onExit={() => setScreen({ name: 'hub' })}
+            onExit={() => setScreen({ name: 'home', gameId: 'wordfall' })}
             onLevelWon={async (score, levelNumber, elapsedMs) => {
               const previous = boardFor('wordfall');
               const next = await recordFinish(() =>
@@ -345,16 +391,18 @@ export default function App() {
           />
         )}
 
-        {screen.name === 'home' && screen.gameId === MORE_OR_LESS && (
-          <HomeScreen
-            category={category}
+        {screen.name === 'home' && (
+          <GameStartScreen
+            gameId={screen.gameId}
             board={boardFor(screen.gameId)}
             onPlay={() => startGame(screen.gameId)}
             onScores={() => setScreen({ name: 'scores', gameId: screen.gameId })}
+            detail={startDetailFor(screen.gameId, category)}
+            footer={startFooterFor(screen.gameId, category)}
           />
         )}
 
-        {screen.name === 'game' && (
+        {screen.name === 'game' && screen.gameId === MORE_OR_LESS && (
           <GameScreen
             // Remounting per seed guarantees a clean run rather than relying on
             // the reducer's initializer, which React only calls on first mount.

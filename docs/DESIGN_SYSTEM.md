@@ -143,6 +143,7 @@ Located in `src/ui/components/`.
 | `BrandArtwork` | Hub/drawer/top-bar W mark; auth clear lockup | ✅ built |
 | `IconButton` | 44pt icon hits on game headers | ✅ built |
 | `TextField` | Clueless guess input | ✅ built |
+| `GameStartScreen` | per-game pre-run screens (was More-or-Less-only `HomeScreen`) | ✅ built |
 
 ## Rollout plan
 
