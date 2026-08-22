@@ -233,10 +233,14 @@ collects a leaderboard username. That name is public identity, not a login:
 [0004_unique_username.sql](../supabase/migrations/0004_unique_username.sql)
 adds `username_key()` (trim, collapse spaces, lower-case — same as the
 client `normalizeUsername` then `.toLowerCase()`) and a unique index on
-`players.display_name`, so two accounts cannot post as the same name. A
-duplicate is mapped to "That username is taken. Try another." on the username
-field, not a generic form error. Web `emailRedirectTo` is the current origin,
-produced by
+`players.display_name`, so two accounts cannot post as the same name.
+Create-account calls `username_taken(raw)` before `signInWithOtp`, so a
+taken name fails on the username field without minting an Auth user. If that
+RPC is missing (migration not applied), the client falls back to a
+case-insensitive `players.display_name` read; a two-signup race still dies on
+the unique index at persist. A duplicate is mapped to "That username is
+taken. Try another." on the username field, not a generic form error. Web
+`emailRedirectTo` is the current origin, produced by
 `webAuthRedirectUrl` in [redirect-url.ts](../src/auth/redirect-url.ts). That
 helper prefixes `https://` when the value has no scheme — GoTrue treats a
 bare `wordkrush.com` as the path `/wordkrush.com` on the Auth API host and
@@ -344,7 +348,7 @@ Quick map of where each journey step lives:
 | Content DB schema | `supabase/migrations/0001_init.sql` | [BUILT: apply on the owner project] |
 | Accounts + first leaderboard tables | `supabase/migrations/0002_leaderboard.sql` | [BUILT: apply on the owner project] |
 | Optional auth (email magic link) | `src/auth/` (`redirect-url.ts` `webAuthRedirectUrl`), `src/ui/screens/AuthScreen.tsx`, `supabase/templates/magic-link.html` | [BUILT] — email-only magic link; unique username; web origin (scheme required) / native deep-link restore. Template keeps `{{ .ConfirmationURL }}` + `{{ .Token }}`. Custom SMTP required to save it on this free project (D-033, D-037) |
-| Unique leaderboard username | `supabase/migrations/0004_unique_username.sql`, `src/auth/validation.ts` `usernameKey` | [BUILT: apply on the owner project] — unique index on `username_key(display_name)`; duplicate maps to "That username is taken." |
+| Unique leaderboard username | `supabase/migrations/0004_unique_username.sql`, `src/auth/validation.ts` `usernameKey`, `username_taken` RPC | [BUILT: apply on the owner project] — unique index on `username_key(display_name)`; create-account checks `username_taken` before the magic link; duplicate maps to "That username is taken." |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |

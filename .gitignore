@@ -28,3 +28,7 @@ __pycache__/
 
 # OS / editor
 .DS_Store
+
+# Accidental macOS Finder duplicates ("file 2.ext") and Supabase CLI scratch
+* 2.*
+supabase/.temp/
