@@ -200,7 +200,7 @@ Guideline 4.2 (minimum functionality) is the live risk for a simple casual game.
 - **Local scores + global leaderboard** — device history is always available; signed-in players also post a per-game best to Supabase (D-025). This is the shipped rank surface.
 - **Game Center leaderboard** — still the native 4.2 extra, not a substitute for the local/global tabs. **[PLANNED]**
 - **Daily challenge + notification** — later, but the seeded RNG already supports it.
-- **Wordfall weekly levels** — owner: new Wordfall levels release each week. **[GIVEN]** Launch curriculum (1–11) stays playable on day one. Later rows set `availableFrom` to that Monday; they ship in the bundle and unlock on the player's local calendar (D-027). Not a remote download. Operating spec and automation contract: [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md).
+- **Wordfall weekly levels** — owner: new Wordfall levels release each week. **[GIVEN]** Launch curriculum (1–11) stays playable on day one. Later rows set `availableFrom` to that Monday; they ship in the bundle and unlock on the player's local calendar (D-027). Each weekly drop is a **hard unique task** (`taskFingerprint`: puzzle vs race plus objective kinds, not numeric targets) and is **featured for seven days**; the row stays in the catalog after Sunday so unlock numbering has no holes. Not a remote download. Do not invent a sixth objective kind. Agent authoring must test, locally serve the web export, and playtest before GitHub (D-038). Operating spec: [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md); loop: `.cursor/skills/wordfall-weekly-gauntlet/`.
 
 ## 10. Risks
 
@@ -304,3 +304,4 @@ Append here whenever an assumption is confirmed or overturned. Never delete an e
 | 2026-08-16 | §7 architecture | Implemented as designed: `src/game/` is pure TS with tests; pipeline added under `pipeline/` with Supabase as content factory (STACK D-007/D-008). |
 | 2026-08-22 | §7 architecture | The owner consolidated game code under one root: each title uses `src/games/<game-id>/`. More or Less moved from `src/game/` to `src/games/more-or-less/`; shared RNG and registry modules remain directly under `src/games/`. |
 | 2026-08-22 | Wordfall cadence | Owner: Wordfall gets a new level each week. Implemented as bundled rows with a Monday `availableFrom`, not a live content server. |
+| 2026-08-22 | Wordfall weekly uniqueness + TTL | Weekly drop is a unique hard task vs the catalog (especially last week). Featured window is seven days; expired rows stay playable so campaign unlocks do not hole. Agent must locally test and `serve:web` before GitHub. |
