@@ -14,5 +14,5 @@ recolor these files in place — add a new named variant instead.
 | `source/wordkrush-lockup.jpg` | Earlier raster delivery | Archive only |
 
 Expo still reads the platform copies in `assets/` (`icon.png`, `splash.png`,
-`favicon.png`, `android-icon-foreground.png`). Those are generated from this
-directory; edit here first, then copy out.
+`favicon.png`, `apple-touch-icon.png`, `android-icon-foreground.png`). Those
+are generated from this directory; edit here first, then copy out.

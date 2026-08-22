@@ -228,14 +228,21 @@ Optional accounts use **Supabase Auth** (D-033, D-034): email magic link or
 SMS one-time code. Email: the player enters an address, Supabase sends the
 link, and the session lands when they open it (web URL parse, or native PKCE
 exchange from `wordkrush://` / Expo Go) or type the 6-digit code from the
-same email. Web `emailRedirectTo` is the current origin. Hosted **Site URL**
-must include the scheme (`https://wordkrush.com`); a bare host is treated as a
-path on the Auth API. The WordKrush Magic Link HTML is
-[magic-link.html](../supabase/templates/magic-link.html). This free project
-cannot save that template until custom SMTP is configured (dashboard only;
-credentials never enter the app). Phone: E.164 number, SMS code, `verifyOtp`
-type `sms`. There is no password. Phone numbers are not sent to PostHog. Skip
-remains a guest path; a missing backend still plays offline.
+same email. Web `emailRedirectTo` is the current origin, produced by
+`webAuthRedirectUrl` in [redirect-url.ts](../src/auth/redirect-url.ts). That
+helper prefixes `https://` when the value has no scheme — GoTrue treats a
+bare `wordkrush.com` as the path `/wordkrush.com` on the Auth API host and
+returns `requested path is invalid`. The origin has no `/auth/callback`
+suffix so it matches Site URL even when the dashboard allow-list is exact.
+Hosted **Site URL** must be `https://wordkrush.com`. The player-facing Magic
+Link HTML is [magic-link.html](../supabase/templates/magic-link.html): the
+button is `{{ .ConfirmationURL }}` (never `{{ .SiteURL }}`, which is the
+dashboard Site URL, not the one-time link) and the 6-digit `{{ .Token }}`
+stays as the in-app fallback. This free project cannot save that template
+until custom SMTP is configured (dashboard only; credentials never enter the
+app). Phone: E.164 number, SMS code, `verifyOtp` type `sms`. There is no
+password. Phone numbers are not sent to PostHog. Skip remains a guest path;
+a missing backend still plays offline.
 
 **4. The public board is a view, not a client-ranked dump.** [BUILT]
 [0003_global_scores.sql](../supabase/migrations/0003_global_scores.sql) stores
@@ -330,7 +337,7 @@ Quick map of where each journey step lives:
 | LLM validator (schema/API/CLI) | `validator/` (+ 18 tests) | [BUILT] |
 | Content DB schema | `supabase/migrations/0001_init.sql` | [BUILT: apply on the owner project] |
 | Accounts + first leaderboard tables | `supabase/migrations/0002_leaderboard.sql` | [BUILT: apply on the owner project] |
-| Optional auth (magic link + SMS) | `src/auth/`, `src/ui/screens/AuthScreen.tsx`, `supabase/templates/magic-link.html` | [BUILT] — magic link + SMS OTP; web origin / native deep-link restore. Custom SMTP required to save the email template on this free project (D-033, D-034) |
+| Optional auth (magic link + SMS) | `src/auth/` (`redirect-url.ts` `webAuthRedirectUrl`), `src/ui/screens/AuthScreen.tsx`, `supabase/templates/magic-link.html` | [BUILT] — magic link + SMS OTP; web origin (scheme required) / native deep-link restore. Template keeps `{{ .ConfirmationURL }}` + `{{ .Token }}`. Custom SMTP required to save it on this free project (D-033, D-034) |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |
@@ -338,6 +345,7 @@ Quick map of where each journey step lives:
 | Wikipedia popularity weekly | `.github/workflows/wikipedia-popularity-weekly.yml`, `pipeline/rotate-wikipedia-popularity.ts` | [BUILT] — Monday 09:00 UTC + `workflow_dispatch`; PR on `content/wikipedia-popularity-weekly`, never `master` (D-036) |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both, then `railway up --service wordcrush` |
 | Web host | `railway.json`, `server/serve.mjs` | [BUILT] — Nixpacks runs `CI=true npm run build:web` on service `wordcrush`; `serve.mjs` listens on `$PORT` |
+| Web favicon | `assets/favicon.png`, `assets/apple-touch-icon.png`, `scripts/patch-web-head.mjs` | [BUILT] — tight crop of the W tile; PNG + apple-touch-icon copied into `dist/` with a cache-busted `<link rel="icon">` |
 | Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] |
 | Consent and product analytics | `src/analytics/`, `src/ui/AnalyticsConsentPrompt.tsx` | [BUILT] |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |

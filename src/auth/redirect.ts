@@ -7,10 +7,11 @@
  */
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
+import { webAuthRedirectUrl } from './redirect-url';
 
 export function authRedirectUrl(): string {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    return `${window.location.origin}/auth/callback`;
+    return webAuthRedirectUrl(window.location.origin);
   }
   return Linking.createURL('auth/callback');
 }

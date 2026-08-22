@@ -81,5 +81,6 @@ These are what Expo reads. Keep them in sync with `assets/logo/`.
 |---|---|
 | `assets/icon.png` | mark, 1024px, **no alpha channel** (iOS rejects icons with alpha) |
 | `assets/splash.png` | lockup (black) |
-| `assets/favicon.png` | mark, 192px |
+| `assets/favicon.png` | mark, 192px, **tight crop** of the W tile (tab icons are 16px; the square master’s padding made the W unreadable) |
+| `assets/apple-touch-icon.png` | same crop, 180px, no alpha |
 | `assets/android-icon-foreground.png` | lockup clear, 1024px |
