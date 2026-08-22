@@ -11,6 +11,7 @@ Rules:
 ## [0.1.0] - 2026-08-22
 
 ### Fixed
+- **Shared links preview the WordKrush lockup, not a generic globe.** Expo’s web export still emits no Open Graph tags. `scripts/patch-web-head.mjs` copies `assets/logo/wordkrush-lockup.png` to `dist/og-image.png` and injects `og:*` / Twitter card meta after `<title>` (absolute `https://wordkrush.com/og-image.png`). The tab favicon stays the tight W crop; that crop is too small for a large preview, so `og:image` is the full lockup.
 - **The browser tab icon is the WordKrush W, not a leftover generic mark.** `assets/favicon.png` is a tight crop of the purple W tile (the 1024 master’s padding collapsed to a dark blob at 16px). `expo export` only linked `/favicon.ico`, which browsers cache for months; `scripts/patch-web-head.mjs` copies the PNG and apple-touch icon into `dist/` and cache-busts the `<link rel="icon">` href.
 - **Magic-link click no longer targets a path on the Supabase API host.** `webAuthRedirectUrl` (`src/auth/redirect-url.ts`) sends web `emailRedirectTo` as the page origin with a scheme (`https://wordkrush.com`), not `/auth/callback` and not a bare host. GoTrue treats `wordkrush.com` as the path `/wordkrush.com` on `https://<project>.supabase.co` and returns `requested path is invalid`. Dashboard Site URL must be `https://wordkrush.com`.
 
