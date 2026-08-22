@@ -10,7 +10,7 @@ import {
 import { allowlistedCapture, parseAnalyticsConsent, shouldCapture } from './privacy';
 import { configureAnalyticsSink } from './runtime';
 
-const CONSENT_KEY = 'wordcrush.analytics-consent.v1';
+const CONSENT_KEY = 'wordkrush.analytics-consent.v1';
 const apiKey = process.env.EXPO_PUBLIC_POSTHOG_KEY;
 const host = process.env.EXPO_PUBLIC_POSTHOG_HOST;
 
@@ -23,7 +23,7 @@ const posthog =
     ? new PostHog(apiKey, {
         host,
         defaultOptIn: false,
-        personProfiles: 'never',
+        personProfiles: 'identified_only',
         captureAppLifecycleEvents: false,
         enableSessionReplay: false,
         disableRemoteFeatureFlags: true,
@@ -31,6 +31,13 @@ const posthog =
         setDefaultPersonProperties: false,
         capturePushNotificationSubscriptions: false,
         capturePushNotificationOpened: false,
+        errorTracking: {
+          autocapture: {
+            uncaughtExceptions: true,
+            unhandledRejections: true,
+            console: false,
+          },
+        },
         before_send: allowlistedCapture,
         customStorage: {
           getItem: (key) => AsyncStorage.getItem(key),
@@ -106,6 +113,25 @@ export function captureAnalytics<K extends AnalyticsEventName>(
 export function registerAnalyticsContext(authStatus: AuthStatus): void {
   if (!posthog || !shouldCapture(consent, isAnalyticsConfigured)) return;
   void posthog.register({ auth_status: authStatus, platform: Platform.OS });
+}
+
+type IdentifiedUser = {
+  id: string;
+  username: string;
+  email: string | null;
+};
+
+export function identifyAnalytics(user: IdentifiedUser): void {
+  if (!posthog || !shouldCapture(consent, isAnalyticsConfigured)) return;
+  void posthog.identify(user.id, {
+    username: user.username,
+    ...(user.email ? { email: user.email } : {}),
+  });
+}
+
+export function resetAnalytics(): void {
+  if (!posthog) return;
+  void posthog.reset();
 }
 
 export async function flushAnalytics(): Promise<void> {

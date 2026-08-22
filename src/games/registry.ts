@@ -22,7 +22,7 @@ export type GameDefinition = {
   /** What a score means in this game, e.g. "streak". Used in score UI copy. */
   scoreNoun: string;
   /**
-   * Which way is better. WordCrush scores a streak (higher wins); Clueless
+   * Which way is better. WordKrush scores a streak (higher wins); Clueless
    * scores guesses used (lower wins). Score UI and leaderboard sorting must
    * read this rather than assuming, or one game's board is upside down.
    */
@@ -32,9 +32,9 @@ export type GameDefinition = {
 export const GAMES: GameDefinition[] = [
   {
     id: 'more-or-less',
-    name: 'WordCrush',
-    tagline: 'Guess correctly, keep the streak alive, and beat your best score.',
-    accent: '#4ADE80',
+    name: 'More or Less',
+    tagline: 'Which one is bigger? Trust your instinct and build a streak.',
+    accent: '#32E487',
     emoji: '⚖️',
     status: 'available',
     scoreNoun: 'streak',
@@ -43,8 +43,8 @@ export const GAMES: GameDefinition[] = [
   {
     id: 'clueless',
     name: 'Clueless',
-    tagline: 'Guess the secret word by meaning',
-    accent: '#A78BFA',
+    tagline: 'Follow the meaning trail to uncover today’s secret word.',
+    accent: '#9B78FF',
     emoji: '❓',
     status: 'available',
     scoreNoun: 'guesses',
@@ -53,8 +53,8 @@ export const GAMES: GameDefinition[] = [
   {
     id: 'wordfall',
     name: 'Wordfall',
-    tagline: 'Spell words, set off chain reactions',
-    accent: '#F0A742',
+    tagline: 'New levels every Monday. Trace words and set off cascades.',
+    accent: '#FFB020',
     emoji: '🔡',
     status: 'available',
     // A run is one level, so the board records the best single-level score.

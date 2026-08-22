@@ -1,8 +1,11 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { GameState } from '../../games/more-or-less/engine';
 import type { Category } from '../../games/more-or-less/types';
+import { getGame } from '../../games/registry';
 import { rankOf, type ScoreBoard } from '../../scores/types';
-import { formatValue, radius, theme } from '../theme';
+import { Badge, ResultPanel, Stat, Surface } from '../components';
+import { Mascot } from '../lottie/Mascot';
+import { font, formatValue, gameAccentTokens, radius, space, theme, type } from '../theme';
 
 type Props = {
   state: GameState;
@@ -22,110 +25,93 @@ export function GameOverScreen({
   onScores,
 }: Props) {
   const isBest = state.streak > 0 && state.streak >= board.bestStreak;
+  const accent = getGame('more-or-less')?.accent ?? theme.success;
+  const tokens = gameAccentTokens(accent);
   // rankOf counts strictly-better runs, and this run is already saved, so its
   // own entry never inflates the rank.
   const rank = rankOf(board, state.streak);
 
   return (
     <View style={styles.root}>
-      <View style={styles.top}>
-        <Text style={styles.over}>Game Over</Text>
-        <Text style={styles.streak}>{state.streak}</Text>
-        <Text style={styles.streakLabel}>{state.streak === 1 ? 'ROUND' : 'ROUNDS'}</Text>
-        {isBest ? (
-          <Text style={styles.newBest}>NEW BEST</Text>
-        ) : (
-          <Text style={styles.best}>
-            best {board.bestStreak} · #{rank} of your runs
-          </Text>
-        )}
-      </View>
-
-      {/* Show the pair that ended the run — players want to know what beat them. */}
-      <View style={styles.pairBox}>
-        <Text style={styles.pairTitle}>The one that got you</Text>
-        <View style={styles.pairRow}>
-          <View style={styles.pairItem}>
-            <Text style={styles.pairLabel} numberOfLines={2}>
-              {state.left.label}
-            </Text>
-            <Text style={styles.pairValue}>{formatValue(state.left.value)}</Text>
+      <ResultPanel
+        eyebrow={isBest ? 'NEW PERSONAL BEST' : 'RUN COMPLETE'}
+        title={isBest ? 'You crushed it!' : 'Good instincts.'}
+        value={state.streak}
+        valueLabel={state.streak === 1 ? 'ROUND' : 'ROUNDS'}
+        accent={accent}
+        art={
+          <View style={styles.art}>
+            <Mascot size={64} pose={isBest ? 'celebrate' : 'wince'} />
+            {isBest ? (
+              <View style={styles.badge}>
+                <Badge label="NEW BEST" tone="success" />
+              </View>
+            ) : null}
           </View>
-          <Text style={styles.pairVs}>vs</Text>
-          <View style={styles.pairItem}>
-            <Text style={styles.pairLabel} numberOfLines={2}>
-              {state.right.label}
-            </Text>
-            <Text style={[styles.pairValue, { color: theme.danger }]}>
-              {formatValue(state.right.value)}
-            </Text>
-          </View>
+        }
+        primary={{ label: 'Play again', onPress: onPlayAgain }}
+        secondary={{ label: 'View scores', onPress: onScores }}
+        tertiary={{ label: 'All games', onPress: onHome }}
+      >
+        <View style={styles.summary}>
+          <Stat value={`#${rank}`} label="LOCAL RANK" />
+          <View style={styles.summaryRule} />
+          <Stat value={board.bestStreak} label="BEST" color={accent} />
         </View>
-        <Text style={styles.pairMetric}>{category.metricLabel}</Text>
-      </View>
 
-      <View style={styles.actions}>
-        <Pressable
-          style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
-          onPress={onPlayAgain}
-        >
-          <Text style={styles.primaryText}>PLAY AGAIN</Text>
-        </Pressable>
-        <View style={styles.secondaryRow}>
-          <Pressable
-            style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
-            onPress={onScores}
-          >
-            <Text style={styles.secondaryText}>Scores</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
-            onPress={onHome}
-          >
-            <Text style={styles.secondaryText}>Home</Text>
-          </Pressable>
-        </View>
-      </View>
+        {/* Keep the losing pair visible: the reveal explains the result and
+            gives the player one useful fact to take into the next run. */}
+        <Surface level={1} radius={radius.md} borderColor={tokens.glow} style={styles.pairBox}>
+          <Text style={styles.pairTitle}>THE MATCHUP THAT ENDED THE RUN</Text>
+          <View style={styles.pairRow}>
+            <Pair item={state.left} color={accent} />
+            <Text style={styles.pairVs}>VS</Text>
+            <Pair item={state.right} color={theme.danger} />
+          </View>
+          <Text style={styles.pairMetric}>{category.metricLabel}</Text>
+        </Surface>
+      </ResultPanel>
+    </View>
+  );
+}
+
+function Pair({ item, color }: { item: GameState['left']; color: string }) {
+  return (
+    <View style={styles.pairItem}>
+      <Text style={styles.pairLabel} numberOfLines={2}>
+        {item.label}
+      </Text>
+      <Text style={[styles.pairValue, { color }]}>{formatValue(item.value)}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg, padding: 24, justifyContent: 'space-between' },
-  top: { alignItems: 'center', paddingTop: 56 },
-  over: { color: theme.textDim, fontSize: 15, letterSpacing: 3, fontWeight: '700' },
-  streak: { color: theme.text, fontSize: 76, fontWeight: '900', lineHeight: 84, marginTop: 8 },
-  streakLabel: { color: theme.textDim, fontSize: 11, letterSpacing: 2, fontWeight: '700' },
-  newBest: { color: theme.accent, fontSize: 13, fontWeight: '800', letterSpacing: 2, marginTop: 12 },
-  best: { color: theme.textDim, fontSize: 13, marginTop: 12 },
-
-  pairBox: {
-    backgroundColor: theme.bgElevated,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.border,
-    padding: 18,
-  },
-  pairTitle: { color: theme.textDim, fontSize: 11, letterSpacing: 1.5, fontWeight: '700', textAlign: 'center' },
-  pairRow: { flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 10 },
-  pairItem: { flex: 1, alignItems: 'center' },
-  pairLabel: { color: theme.text, fontSize: 15, fontWeight: '700', textAlign: 'center' },
-  pairValue: { color: theme.accent, fontSize: 18, fontWeight: '800', marginTop: 4 },
-  pairVs: { color: theme.textDim, fontSize: 12, fontWeight: '700' },
-  pairMetric: { color: theme.textDim, fontSize: 10, textAlign: 'center', marginTop: 12 },
-
-  actions: { gap: 12 },
-  primary: { backgroundColor: theme.accent, paddingVertical: 18, borderRadius: radius.md, alignItems: 'center' },
-  primaryText: { color: theme.bg, fontSize: 16, fontWeight: '900', letterSpacing: 2 },
-  secondaryRow: { flexDirection: 'row', gap: 12 },
-  secondary: {
+  root: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.border,
+    backgroundColor: theme.bg,
+    padding: space.lg,
+    justifyContent: 'center',
   },
-  secondaryText: { color: theme.textDim, fontSize: 14, fontWeight: '600' },
-  pressed: { opacity: 0.75 },
+  art: { position: 'relative' },
+  badge: { position: 'absolute', right: -34, top: -8 },
+  summary: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginTop: space.lg,
+  },
+  summaryRule: { width: 1, height: 44, backgroundColor: theme.border },
+  pairBox: {
+    width: '100%',
+    marginTop: space.lg,
+  },
+  pairTitle: { ...type.overline, color: theme.textDim, textAlign: 'center' },
+  pairRow: { flexDirection: 'row', alignItems: 'center', marginTop: space.sm, gap: space.sm },
+  pairItem: { flex: 1, alignItems: 'center' },
+  pairLabel: { ...type.caption, color: theme.text, fontFamily: font.bold, fontWeight: '700', textAlign: 'center' },
+  pairValue: { ...type.bodyStrong, marginTop: 2 },
+  pairVs: { ...type.overline, color: theme.textDim },
+  pairMetric: { ...type.caption, color: theme.textDim, textAlign: 'center', marginTop: space.sm },
 });

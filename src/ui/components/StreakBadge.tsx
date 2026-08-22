@@ -18,7 +18,14 @@ export function StreakBadge({ streak, today }: Props) {
 
   return (
     <View style={[styles.pill, atRisk && styles.atRisk]}>
-      <Stat value={streak.current} label="DAY STREAK" variant="streak" size="md" align="center" />
+      <Stat
+        value={streak.current}
+        label={atRisk ? 'PLAY TODAY' : 'DAY STREAK'}
+        variant="streak"
+        size="md"
+        align="center"
+        color={atRisk ? theme.textMuted : theme.warning}
+      />
     </View>
   );
 }
@@ -26,11 +33,15 @@ export function StreakBadge({ streak, today }: Props) {
 const styles = StyleSheet.create({
   pill: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
+    paddingVertical: 7,
+    borderRadius: 18,
     borderWidth: 1,
+    borderColor: theme.warningSoft,
+    backgroundColor: theme.warningSoft,
+  },
+  atRisk: {
     borderColor: theme.border,
     backgroundColor: theme.bgElevated,
+    opacity: 0.76,
   },
-  atRisk: { opacity: 0.55 },
 });

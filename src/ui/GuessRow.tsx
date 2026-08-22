@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { closeness } from '../games/clueless/engine';
 import type { Guess } from '../games/clueless/types';
-import { motion, proximityColor, radius, space, theme, type } from './theme';
+import { elevation, font, motion, proximityColor, radius, space, theme, type, withAlpha } from './theme';
 
 /**
  * One guess in the list.
@@ -22,7 +22,7 @@ export function GuessRow({
 }) {
   const fraction = closeness(guess.rank, rankedCount);
   const isWin = guess.rank === 1;
-  const color = isWin ? theme.accent : proximityColor(fraction);
+  const color = isWin ? theme.success : proximityColor(fraction);
 
   // `width` cannot use the native driver, so this stays on the JS thread —
   // acceptable because only one row animates at a time.
@@ -72,6 +72,7 @@ export function GuessRow({
           styles.bar,
           {
             backgroundColor: color,
+            opacity: 0.18,
             width: grow.interpolate({
               inputRange: [0, 1],
               // Never fully empty: a very cold guess should still read as a
@@ -89,21 +90,31 @@ export function GuessRow({
         <Text style={[styles.word, isWin && styles.wordWin]} numberOfLines={1}>
           {guess.word}
         </Text>
-        <Text style={[styles.rank, isWin && styles.rankWin]}>
-          {guess.rank === null ? 'cold' : isWin ? '★' : shown.toLocaleString()}
-        </Text>
+        <View
+          style={[
+            styles.rankBadge,
+            { backgroundColor: withAlpha(color, 0.16), borderColor: withAlpha(color, 0.44) },
+          ]}
+        >
+          <Text style={[styles.rank, { color }, isWin && styles.rankWin]}>
+            {guess.rank === null ? 'COLD' : isWin ? '✓' : `#${shown.toLocaleString()}`}
+          </Text>
+        </View>
       </View>
     </Animated.View>
   );
 }
 
+const depth = elevation(2);
+
 const styles = StyleSheet.create({
   row: {
-    height: 44,
-    borderRadius: radius.sm,
-    backgroundColor: theme.card,
+    height: 52,
+    borderRadius: radius.md,
+    backgroundColor: depth.backgroundColor,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: depth.borderColor,
+    borderTopColor: depth.borderTopColor,
     justifyContent: 'center',
     overflow: 'hidden',
   },
@@ -114,7 +125,7 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     height: 1,
-    backgroundColor: theme.edge,
+    backgroundColor: depth.borderTopColor,
   },
   content: {
     flexDirection: 'row',
@@ -133,15 +144,21 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
-  wordWin: { fontSize: 16 },
+  wordWin: { ...type.subtitle, color: theme.text },
+  rankBadge: {
+    minWidth: 58,
+    minHeight: 30,
+    paddingHorizontal: space.sm,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   rank: {
     ...type.caption,
-    color: theme.text,
-    fontWeight: '700',
+    fontFamily: font.semibold,
+    fontWeight: '600',
     fontVariant: ['tabular-nums'],
-    textShadowColor: 'rgba(0,0,0,0.55)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
-  rankWin: { fontSize: 15 },
+  rankWin: { ...type.subtitle },
 });

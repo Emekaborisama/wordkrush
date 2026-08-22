@@ -1,4 +1,4 @@
-# Agent Guide — WordCrush
+# Agent Guide — WordKrush
 
 This is the operating guide for every human or LLM working in this repository.
 Read it before making changes. It exists to keep the project coherent while the
@@ -6,7 +6,7 @@ app, data, and release process are still taking shape.
 
 ## Project at a glance
 
-**WordCrush** is a collection of casual games for iOS and web designed to
+**WordKrush** is a collection of casual games for iOS and web designed to
 strengthen cognitive skills and pattern recognition through repeated play. Its
 core comparison mode asks a player whether a hidden item has a greater or
 lesser value than a revealed item: guess correctly, keep the streak alive, and
@@ -23,8 +23,10 @@ Read the documents relevant to your change before editing:
 | Need | Source of truth |
 |---|---|
 | Product mechanics, unknowns, and data rules | `docs/BRAINSTORM.md` |
+| Visual identity, logo, and brand colour | `docs/branding/` |
 | Technology choices, constraints, and test strategy | `docs/STACK.md` |
 | Collaboration workflow and definition of done | `docs/WORKFLOW.md` |
+| Wordfall Monday drops and weekly automation | `docs/WORDFALL-WEEKLY.md` |
 | Local commands and dependency versions | `package.json` |
 | Secrets and environment-variable boundaries | `.env.example` and `.gitignore` |
 | Cross-agent working agreement | This file |
@@ -127,8 +129,9 @@ These rules protect the fairness of the game:
 3. Classify documentation impact while the implementation context is fresh:
    behavior → `CHANGELOG.md`; built-system/workflow behavior →
    `HOW-IT-WORKS.md`; stack/tooling decisions → `STACK.md`; game-design
-   decisions → `BRAINSTORM.md`; task status/blockers → `ROADMAP.md` and
-   Superthread; process changes → `WORKFLOW.md`.
+   decisions → `BRAINSTORM.md`; visual identity → `docs/branding/`; task
+   status/blockers → `ROADMAP.md` and Superthread; process changes →
+   `WORKFLOW.md`.
 4. Follow `docs/WORKFLOW.md` for branch, changelog, CI, content-pipeline, and
    release requirements.
 

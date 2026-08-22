@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
-import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ImageBackground, StyleSheet, Text, View } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import { streakBucket } from '../../analytics/events';
 import {
@@ -12,21 +12,35 @@ import {
 import { isGameState, isResumable, matchesDataset } from '../../games/more-or-less/persistence';
 import type { Category, Item } from '../../games/more-or-less/types';
 import { clearProgress, loadProgress, saveProgress } from '../../games/progress';
+import { getGame } from '../../games/registry';
 import { tapCorrect, tapWrong } from '../../native/haptics';
 import { HowToPlay } from '../HowToPlay';
 import { Sparkle } from '../Sparkle';
-import { formatValue, radius, space, theme, type } from '../theme';
+import { Button, FeedbackBanner, GameHeader, ProgressPill, Surface } from '../components';
+import {
+  font,
+  formatValue,
+  gameAccentTokens,
+  interaction,
+  motion,
+  radius,
+  space,
+  theme,
+  type,
+} from '../theme';
 import { useCountUp } from '../useCountUp';
 
 type Props = {
   category: Category & { provisional?: boolean };
   seed: number;
   bestStreak: number;
+  onExit: () => void;
   onGameOver: (state: GameState) => void;
 };
 
-export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
+export function GameScreen({ category, seed, bestStreak, onExit, onGameOver }: Props) {
   const pool: Item[] = category.items;
+  const accent = getGame('more-or-less')?.accent ?? theme.success;
   const [help, setHelp] = useState(false);
   const [state, dispatch] = useReducer(
     (s: GameState, a: Parameters<typeof reducer>[1]) => reducer(s, a, pool),
@@ -68,7 +82,7 @@ export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
   }, [state, category.id]);
 
   const revealed = state.status !== 'playing';
-  const counted = useCountUp(state.right.value, 900, revealed);
+  const counted = useCountUp(state.right.value, motion.countMs, revealed);
   // Sparkle only on a correct answer. Firing a celebratory burst over the
   // number that just ended the run would read as mocking the player.
   const sparkling = counted.done && state.lastGuessCorrect === true;
@@ -94,6 +108,9 @@ export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
   const correct = state.lastGuessCorrect;
 
   const submitGuess = (choice: Guess) => {
+    // A double tap can arrive in the same frame before React replaces the
+    // controls. Ignore it here as well as visually removing the buttons.
+    if (state.status !== 'playing') return;
     const guessedCorrectly = isCorrect(state.left, state.right, choice);
     captureAnalytics('guess_submitted', {
       game_id: 'more-or-less',
@@ -112,27 +129,32 @@ export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.streak}>{state.streak}</Text>
-        <Text style={styles.streakLabel}>STREAK</Text>
-        <Text style={styles.best}>best {state.bestStreak}</Text>
-        <Pressable
-          onPress={() => setHelp(true)}
-          style={({ pressed }) => [styles.helpBtn, pressed && styles.helpPressed]}
-          hitSlop={10}
-          accessibilityLabel="How to play"
-        >
-          <Text style={styles.helpMark}>?</Text>
-        </Pressable>
+      <GameHeader
+        title="More or Less"
+        subtitle={category.name}
+        accent={accent}
+        onExit={onExit}
+        onHelp={() => setHelp(true)}
+      />
+
+      <View style={styles.statsRow}>
+        <ProgressPill label="STREAK" value={state.streak} color={accent} />
+        <ProgressPill label="BEST" value={state.bestStreak} color={theme.accentSecondary} />
       </View>
 
       <View style={styles.arena}>
-        <Card item={state.left} metricLabel={category.metricLabel} value={state.left.value} />
+        <Card
+          item={state.left}
+          metricLabel={category.metricLabel}
+          value={state.left.value}
+          accent={accent}
+        />
         <Card
           item={state.right}
           metricLabel={category.metricLabel}
           value={revealed ? counted.value : null}
           highlight={correct === null ? undefined : correct}
+          accent={accent}
           sparkling={sparkling}
           onImageError={() =>
             captureAnalytics('card_image_load_failed', {
@@ -143,9 +165,16 @@ export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
         />
         {/* Floating badge rather than its own row — every pixel it doesn't
             take is a pixel the images get. */}
-        <View style={styles.vsBadge} pointerEvents="none">
+        <Surface
+          level={0}
+          padded={false}
+          radius={radius.pill}
+          style={styles.vsBadge}
+          accessibilityRole="text"
+          accessibilityLabel="versus"
+        >
           <Text style={styles.vsText}>VS</Text>
-        </View>
+        </Surface>
       </View>
 
       {state.status === 'playing' ? (
@@ -155,25 +184,34 @@ export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
             <Text style={styles.promptStrong}>{state.left.label}</Text>?
           </Text>
           <View style={styles.buttonRow}>
-            <Pressable
-              style={({ pressed }) => [styles.button, styles.more, pressed && styles.pressed]}
+            <Button
+              title="More"
+              size="lg"
+              color={accent}
               onPress={() => submitGuess('more')}
-            >
-              <Text style={styles.buttonText}>▲  MORE</Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [styles.button, styles.less, pressed && styles.pressed]}
+              accessibilityHint={`${state.right.label} has more ${category.metricLabel}`}
+              leading={<Text style={[styles.choiceArrow, { color: theme.bg }]}>↑</Text>}
+              style={styles.choiceButton}
+            />
+            <Button
+              title="Less"
+              size="lg"
+              variant="tonal"
+              color={theme.accentSecondary}
               onPress={() => submitGuess('less')}
-            >
-              <Text style={styles.buttonText}>▼  LESS</Text>
-            </Pressable>
+              accessibilityHint={`${state.right.label} has fewer ${category.metricLabel}`}
+              leading={<Text style={styles.choiceArrow}>↓</Text>}
+              style={styles.choiceButton}
+            />
           </View>
         </View>
       ) : (
         <View style={styles.actions}>
-          <Text style={[styles.verdict, { color: correct ? theme.accent : theme.danger }]}>
-            {correct ? 'Correct' : 'Wrong'}
-          </Text>
+          <FeedbackBanner
+            tone={correct ? 'success' : 'danger'}
+            title={correct ? 'Nice call!' : 'Not this time'}
+            body={correct ? 'Streak saved. Next matchup incoming…' : 'The final values are revealed above.'}
+          />
         </View>
       )}
 
@@ -194,7 +232,8 @@ export function GameScreen({ category, seed, bestStreak, onGameOver }: Props) {
       <HowToPlay
         visible={help}
         onClose={() => setHelp(false)}
-        title="How to play WordCrush"
+        title="How to play More or Less"
+        accent={accent}
         intro="Two things, one revealed number. Guess whether the hidden one is bigger or smaller."
         steps={[
           {
@@ -231,6 +270,7 @@ function Card({
   metricLabel,
   value,
   highlight,
+  accent,
   sparkling = false,
   onImageError,
 }: {
@@ -238,11 +278,12 @@ function Card({
   metricLabel: string;
   value: number | null;
   highlight?: boolean;
+  accent: string;
   sparkling?: boolean;
   onImageError?: () => void;
 }) {
-  const borderColor =
-    highlight === undefined ? theme.border : highlight ? theme.accent : theme.danger;
+  const tokens = gameAccentTokens(accent);
+  const borderColor = highlight === undefined ? undefined : highlight ? accent : theme.danger;
 
   // Images are a bonus, never a requirement: 3 of 50 items have no freely
   // licensed image, and a remote fetch can fail offline. Either way the card
@@ -262,7 +303,7 @@ function Card({
           {/* Wrapper is the anchor the burst radiates from, so particles
               originate at the number rather than the card centre. */}
           <View style={styles.valueWrap}>
-            <Text style={styles.value}>{formatValue(value)}</Text>
+            <Text style={[styles.value, { color: accent }]}>{formatValue(value)}</Text>
             <Sparkle active={sparkling} />
           </View>
           <Text style={styles.metric}>{metricLabel}</Text>
@@ -271,73 +312,69 @@ function Card({
     </View>
   );
 
-  if (!showImage) {
-    return <View style={[styles.card, styles.cardPlain, { borderColor }]}>{content}</View>;
-  }
-
   return (
-    <ImageBackground
-      source={{ uri: item.imageUrl }}
-      style={[styles.card, { borderColor }]}
-      imageStyle={styles.cardImage}
-      resizeMode="cover"
-      onError={() => {
-        setImageFailed(true);
-        onImageError?.();
-      }}
+    <Surface
+      level={2}
+      padded={false}
+      raised
+      radius={radius.xl}
+      borderColor={borderColor}
+      style={styles.card}
       accessibilityLabel={item.label}
     >
-      {/* Scrim: photos vary wildly in brightness, and white text on a pale
-          image is unreadable. A flat dark wash plus a heavier band behind the
-          text keeps every card legible without hiding the picture. */}
-      <View style={styles.scrim} pointerEvents="none" />
-      <View style={styles.scrimBottom} pointerEvents="none" />
-      {content}
-    </ImageBackground>
+      {showImage ? (
+        <ImageBackground
+          source={{ uri: item.imageUrl }}
+          style={styles.cardFill}
+          imageStyle={styles.cardImage}
+          resizeMode="cover"
+          onError={() => {
+            setImageFailed(true);
+            onImageError?.();
+          }}
+        >
+          {/* Scrim: photos vary wildly in brightness, and white text on a pale
+              image is unreadable. A flat dark wash plus a heavier band behind the
+              text keeps every card legible without hiding the picture. */}
+          <View style={styles.scrim} pointerEvents="none" />
+          <View style={styles.scrimBottom} pointerEvents="none" />
+          {content}
+        </ImageBackground>
+      ) : (
+        <View style={[styles.cardFill, styles.cardPlain, { backgroundColor: tokens.soft }]}>
+          {content}
+        </View>
+      )}
+    </Surface>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg, paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
-  header: { alignItems: 'center' },
-  helpBtn: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    width: 32,
-    height: 32,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.card,
-    alignItems: 'center',
-    justifyContent: 'center',
+  root: {
+    flex: 1,
+    backgroundColor: theme.bg,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    gap: space.sm,
   },
-  helpMark: { color: theme.textMuted, fontSize: 15, fontWeight: '800' },
-  helpPressed: { opacity: 0.7 },
-  streak: { color: theme.text, fontSize: 34, fontWeight: '800', lineHeight: 38 },
-  streakLabel: { color: theme.textDim, fontSize: 10, letterSpacing: 2, fontWeight: '700' },
-  best: { color: theme.textDim, fontSize: 11, marginTop: 3 },
+  statsRow: { flexDirection: 'row', justifyContent: 'center', gap: space.sm },
 
-  arena: { flex: 1, gap: 12, justifyContent: 'center', position: 'relative' },
+  arena: { flex: 1, gap: space.sm, justifyContent: 'center', position: 'relative' },
   card: {
     flex: 1,
-    borderRadius: radius.lg,
-    borderWidth: 2,
     overflow: 'hidden',
-    justifyContent: 'flex-end',
-    minHeight: 170,
-    backgroundColor: theme.card,
+    minHeight: 145,
   },
-  cardImage: { borderRadius: radius.lg - 2 },
-  cardPlain: { justifyContent: 'center', backgroundColor: theme.card },
+  cardFill: { flex: 1, justifyContent: 'flex-end' },
+  cardImage: { borderRadius: radius.xl - 1 },
+  cardPlain: { justifyContent: 'center' },
   scrim: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(11,14,20,0.42)',
+    backgroundColor: 'rgba(8,6,20,0.34)',
   },
   scrimBottom: {
     position: 'absolute',
@@ -345,59 +382,61 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: '62%',
-    backgroundColor: 'rgba(11,14,20,0.68)',
+    backgroundColor: 'rgba(8,6,20,0.76)',
   },
-  cardBody: { paddingHorizontal: 18, paddingVertical: 18, alignItems: 'center' },
+  cardBody: { paddingHorizontal: space.lg, paddingVertical: space.lg, alignItems: 'center' },
   valueWrap: { alignItems: 'center', justifyContent: 'center' },
   cardLabel: {
+    ...type.title,
     color: theme.text,
-    fontSize: 26,
-    fontWeight: '800',
     textAlign: 'center',
     textShadowColor: 'rgba(0,0,0,0.85)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 6,
   },
   value: {
-    color: theme.accent,
-    fontSize: 34,
-    fontWeight: '900',
-    marginTop: 6,
+    ...type.display,
+    fontVariant: ['tabular-nums'],
+    marginTop: space.xs,
     textShadowColor: 'rgba(0,0,0,0.85)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 6,
   },
-  metric: { color: theme.textDim, fontSize: 11, marginTop: 3, textAlign: 'center' },
-  hidden: { color: theme.text, fontSize: 34, fontWeight: '900', marginTop: 6, letterSpacing: 6 },
+  metric: { ...type.caption, color: theme.textMuted, marginTop: 1, textAlign: 'center' },
+  hidden: {
+    ...type.display,
+    color: theme.text,
+    marginTop: space.xs,
+    letterSpacing: 5,
+  },
 
   vsBadge: {
     position: 'absolute',
     alignSelf: 'center',
     top: '50%',
-    marginTop: -20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.bg,
-    borderWidth: 2,
-    borderColor: theme.border,
+    marginTop: -interaction.minTouch / 2,
+    width: interaction.minTouch,
+    height: interaction.minTouch,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
+    pointerEvents: 'none',
   },
-  vsText: { color: theme.textDim, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
+  vsText: { ...type.overline, color: theme.textMuted },
 
-  actions: { gap: 10, minHeight: 110, justifyContent: 'flex-end' },
-  prompt: { color: theme.textDim, fontSize: 13, textAlign: 'center', lineHeight: 18 },
-  promptStrong: { color: theme.text, fontWeight: '700' },
-  buttonRow: { flexDirection: 'row', gap: 12 },
-  button: { flex: 1, paddingVertical: 18, borderRadius: radius.md, alignItems: 'center' },
-  more: { backgroundColor: theme.accentDim, borderWidth: 1, borderColor: theme.accent },
-  less: { backgroundColor: theme.dangerDim, borderWidth: 1, borderColor: theme.danger },
-  pressed: { opacity: 0.7 },
-  buttonText: { color: theme.text, fontSize: 16, fontWeight: '800', letterSpacing: 1 },
-  verdict: { fontSize: 26, fontWeight: '800', textAlign: 'center', paddingVertical: 24 },
+  actions: { gap: space.sm, minHeight: 112, justifyContent: 'flex-end' },
+  prompt: { ...type.caption, color: theme.textMuted, textAlign: 'center', lineHeight: 18 },
+  promptStrong: { color: theme.text, fontFamily: font.bold, fontWeight: '700' },
+  buttonRow: { flexDirection: 'row', gap: space.sm },
+  choiceButton: { flex: 1 },
+  choiceArrow: {
+    color: theme.text,
+    fontFamily: font.bold,
+    fontSize: 21,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
 
-  provenance: { color: theme.textDim, fontSize: 10, textAlign: 'center', opacity: 0.7 },
-  credits: { color: theme.textDim, fontSize: 8, textAlign: 'center', opacity: 0.5, marginTop: 2 },
+  provenance: { ...type.overline, color: theme.textDim, textAlign: 'center' },
+  credits: { ...type.overline, color: theme.textDim, textAlign: 'center', marginTop: 2 },
 });

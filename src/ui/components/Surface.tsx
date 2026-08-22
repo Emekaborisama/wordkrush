@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  type AccessibilityRole,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { elevation, radius, shadow, space } from '../theme';
 import { PressableScale } from './PressableScale';
 
@@ -15,6 +21,7 @@ type Props = {
   onPress?: () => void;
   disabled?: boolean;
   accessibilityLabel?: string;
+  accessibilityRole?: AccessibilityRole;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -33,6 +40,7 @@ export function Surface({
   onPress,
   disabled,
   accessibilityLabel,
+  accessibilityRole,
   style,
 }: Props) {
   const depth = elevation(level);
@@ -49,13 +57,19 @@ export function Surface({
     style,
   ];
 
-  if (!onPress) return <View style={box}>{children}</View>;
+  if (!onPress) {
+    return (
+      <View style={box} accessibilityRole={accessibilityRole} accessibilityLabel={accessibilityLabel}>
+        {children}
+      </View>
+    );
+  }
 
   return (
     <PressableScale
       onPress={onPress}
       disabled={disabled}
-      accessibilityRole="button"
+      accessibilityRole={accessibilityRole ?? 'button'}
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
       style={[box, disabled && styles.disabled]}

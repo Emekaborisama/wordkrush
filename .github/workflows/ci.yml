@@ -5,6 +5,13 @@ on:
     branches: [master]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -19,14 +26,29 @@ jobs:
       - run: npm ci
       - run: npm run check
 
-  # Deploys the web build to Railway (docs/STACK.md D-020).
+  # Proves the Expo web export on every PR and master push. Railway also runs
+  # `npm run build:web` at deploy time; catching a broken export here means a
+  # bad bundle cannot merge. Local `npm run check` stays fast and does not
+  # include this step.
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build:web
+
+  # Deploys the web build to Railway (docs/STACK.md D-020, D-029).
   #
-  # Gated on `check` rather than running beside it: the repo's definition of
-  # done is "npm run check green", and a host that deploys a red build turns
-  # that from a rule into a suggestion. Pull requests never reach this job, so
-  # a fork cannot deploy.
+  # Gated on `check` and `web` rather than running beside them: the repo's
+  # definition of done is a green check plus a successful Expo web export, and
+  # a host that deploys a red build turns that from a rule into a suggestion.
+  # Pull requests never reach this job, so a fork cannot deploy.
   deploy:
-    needs: check
+    needs: [check, web]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     # Railway builds the bundle itself (railway.json -> npm run build:web), so

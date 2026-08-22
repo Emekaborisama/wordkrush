@@ -80,6 +80,8 @@ export type Objective =
 export type Level = {
   number: number;
   name: string;
+  /** Short player-facing brief shown before the level starts. */
+  description: string;
   /** Moves are the currency; every submitted word spends one. */
   moves: number;
   /**
@@ -98,6 +100,16 @@ export type Level = {
   objectives: Objective[];
   /** How many crates to seed on the starting board. */
   crates: number;
+  /**
+   * Local calendar day the level becomes playable (`YYYY-MM-DD`).
+   *
+   * Omitted on the launch curriculum, which is available immediately and
+   * unlocks by beating the previous level. Weekly drops set this to the Monday
+   * they go live. The date is compared in the player's local timezone so a
+   * drop does not appear Sunday evening in one country and Monday morning in
+   * another. Still bundled — no network fetch (D-004, D-027).
+   */
+  availableFrom?: string;
 };
 
 /** Why a traced selection could not be played. */

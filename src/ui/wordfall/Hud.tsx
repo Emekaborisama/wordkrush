@@ -1,7 +1,17 @@
 import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import type { Objective, SpecialKind } from '../../games/wordfall/types';
-import { formatDuration, radius, space, theme, type } from '../theme';
+import { Surface } from '../components';
+import {
+  elevation,
+  font,
+  formatDuration,
+  gameAccentTokens,
+  radius,
+  space,
+  theme,
+  type,
+} from '../theme';
 import { SPECIAL_VISUALS } from './visuals';
 
 /** One line of player-facing copy per objective kind. */
@@ -21,8 +31,7 @@ export function describeObjective(objective: Objective): { icon: string; label: 
 }
 
 export function Hud({
-  levelNumber,
-  levelName,
+  levelDescription,
   movesLeft,
   timeLeftMs,
   timeLimitMs,
@@ -31,8 +40,7 @@ export function Hud({
   progress,
   accent,
 }: {
-  levelNumber: number;
-  levelName: string;
+  levelDescription: string;
   movesLeft: number;
   /** Null on an untimed level, which shows its move budget instead. */
   timeLeftMs: number | null;
@@ -48,6 +56,8 @@ export function Hud({
   // every player can see.
   const urgent = timed ? timeLeftMs <= 10_000 : movesLeft <= 3;
   const remaining = timed ? Math.max(0, timeLeftMs / (timeLimitMs || 1)) : 1;
+  const tokens = gameAccentTokens(accent);
+  const danger = gameAccentTokens(theme.danger);
 
   return (
     <View style={styles.hud}>
@@ -55,26 +65,29 @@ export function Hud({
         {/* One slot, two meanings. A timed level is a race and an untimed one
             is a puzzle; showing both counters would leave one of them as
             decoration the player has to learn to ignore. */}
-        <View style={styles.stat}>
+        <Surface
+          level={2}
+          radius={radius.md}
+          borderColor={urgent ? danger.border : undefined}
+          style={[styles.stat, urgent && { backgroundColor: danger.soft }]}
+        >
           <Text style={styles.statLabel}>
             {timed ? (urgent ? 'HURRY' : 'TIME') : urgent ? 'MOVES LEFT' : 'MOVES'}
           </Text>
           <Text style={[styles.statValue, urgent && { color: theme.danger }]}>
             {timed ? formatDuration(timeLeftMs) : movesLeft}
           </Text>
-        </View>
+        </Surface>
 
-        <View style={styles.levelChip}>
-          <Text style={[styles.levelNumber, { color: accent }]}>LEVEL {levelNumber}</Text>
-          <Text style={styles.levelName} numberOfLines={1}>
-            {levelName}
-          </Text>
-        </View>
-
-        <View style={[styles.stat, styles.statRight]}>
+        <Surface
+          level={2}
+          radius={radius.md}
+          borderColor={tokens.glow}
+          style={[styles.stat, styles.statRight]}
+        >
           <Text style={styles.statLabel}>SCORE</Text>
-          <Text style={styles.statValue}>{score.toLocaleString('en-US')}</Text>
-        </View>
+          <Text style={[styles.statValue, { color: accent }]}>{score.toLocaleString('en-US')}</Text>
+        </Surface>
       </View>
 
       {/* A draining bar reads faster than a number under pressure — you can see
@@ -92,6 +105,10 @@ export function Hud({
           />
         </View>
       )}
+
+      <Text style={styles.brief} numberOfLines={2}>
+        {levelDescription}
+      </Text>
 
       <View style={styles.goals}>
         {objectives.map((objective, i) => (
@@ -119,9 +136,16 @@ function GoalChip({
   const { icon, label } = describeObjective(objective);
   const done = progress >= objective.target;
   const fraction = Math.min(1, progress / objective.target);
+  const tokens = gameAccentTokens(accent);
 
   return (
-    <View style={[styles.goal, done && { borderColor: accent }]}>
+    <Surface
+      level={1}
+      padded={false}
+      radius={radius.md}
+      borderColor={done ? tokens.border : undefined}
+      style={styles.goal}
+    >
       <Text style={[styles.goalIcon, done && { color: accent }]}>{done ? '✓' : icon}</Text>
       <View style={styles.goalBody}>
         <Text style={styles.goalLabel} numberOfLines={1}>
@@ -138,7 +162,7 @@ function GoalChip({
           style={[styles.goalFill, { width: `${fraction * 100}%`, backgroundColor: accent }]}
         />
       </View>
-    </View>
+    </Surface>
   );
 }
 
@@ -167,6 +191,7 @@ export function TracePreview({
   accent: string;
 }) {
   const pulse = useRef(new Animated.Value(0)).current;
+  const tokens = gameAccentTokens(accent);
 
   useEffect(() => {
     Animated.spring(pulse, {
@@ -181,7 +206,7 @@ export function TracePreview({
   if (word.length === 0) {
     const tone =
       message?.tone === 'good'
-        ? theme.accent
+        ? accent
         : message?.tone === 'bad'
           ? theme.danger
           : theme.textDim;
@@ -200,7 +225,7 @@ export function TracePreview({
     <Animated.View
       style={[
         styles.preview,
-        valid && { borderColor: accent },
+        valid && { borderColor: tokens.border },
         { transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.03] }) }] },
       ]}
     >
@@ -227,35 +252,36 @@ export function TracePreview({
   );
 }
 
+const raised = elevation(3);
+
 const styles = StyleSheet.create({
   hud: { gap: space.sm },
 
   topRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  stat: { minWidth: 62 },
+  stat: {
+    flex: 1,
+    minHeight: 54,
+    justifyContent: 'center',
+    paddingVertical: space.xs,
+  },
   statRight: { alignItems: 'flex-end' },
-  statLabel: { ...type.overline, color: theme.textDim, fontSize: 9 },
+  statLabel: { ...type.overline, color: theme.textDim },
   statValue: { ...type.title, color: theme.text, fontVariant: ['tabular-nums'], marginTop: 1 },
 
-  levelChip: { flex: 1, alignItems: 'center' },
-  levelNumber: { ...type.overline, fontSize: 9 },
-  levelName: { ...type.bodyStrong, color: theme.textMuted, marginTop: 1 },
-
   timeTrack: {
-    height: 3,
+    height: 5,
     borderRadius: 2,
-    backgroundColor: theme.bgElevated,
+    backgroundColor: elevation(2).backgroundColor,
     overflow: 'hidden',
-    marginTop: -2,
+    marginTop: -3,
   },
   timeFill: { height: '100%', borderRadius: 2 },
+  brief: { ...type.caption, color: theme.textMuted, textAlign: 'center', paddingHorizontal: space.sm },
 
   goals: { flexDirection: 'row', gap: space.sm },
   goal: {
     flex: 1,
-    backgroundColor: theme.card,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: theme.border,
+    position: 'relative',
     paddingHorizontal: space.sm,
     paddingTop: 6,
     paddingBottom: 5,
@@ -270,22 +296,28 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   goalBody: { gap: 1 },
-  goalLabel: { ...type.overline, color: theme.textDim, fontSize: 8.5 },
-  goalCount: { ...type.bodyStrong, color: theme.text, fontSize: 13, fontVariant: ['tabular-nums'] },
-  goalTarget: { color: theme.textDim, fontWeight: '600' },
-  goalTrack: { height: 3, borderRadius: 2, backgroundColor: theme.bgElevated, overflow: 'hidden' },
+  goalLabel: { ...type.overline, color: theme.textDim },
+  goalCount: { ...type.bodyStrong, color: theme.text, fontVariant: ['tabular-nums'] },
+  goalTarget: { color: theme.textDim, fontFamily: font.semibold, fontWeight: '600' },
+  goalTrack: {
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: elevation(1).backgroundColor,
+    overflow: 'hidden',
+  },
   goalFill: { height: '100%', borderRadius: 2 },
 
   preview: {
-    minHeight: 46,
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.md,
-    backgroundColor: theme.card,
-    borderRadius: radius.md,
+    backgroundColor: raised.backgroundColor,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: raised.borderColor,
+    borderTopColor: raised.borderTopColor,
     paddingHorizontal: space.md,
   },
   previewIdle: { ...type.caption, textAlign: 'center' },
@@ -301,6 +333,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  previewGlyph: { fontSize: 11, fontWeight: '900' },
-  previewBadgeText: { ...type.overline, fontSize: 8.5 },
+  previewGlyph: { ...type.caption, fontWeight: '900' },
+  previewBadgeText: { ...type.overline },
 });

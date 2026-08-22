@@ -1,8 +1,8 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { Animated, PanResponder, StyleSheet, Text, View } from 'react-native';
 import { colOf, rowOf } from '../../games/wordfall/board';
 import type { Board, SpecialKind } from '../../games/wordfall/types';
-import { radius, theme, type } from '../theme';
+import { font, radius, theme, type } from '../theme';
 import { SPECIAL_VISUALS, TILE } from './visuals';
 
 const GAP = 6;
@@ -18,6 +18,9 @@ type Props = {
   onRelease: () => void;
   /** Gesture interrupted; drop the trace without spending a move. */
   onCancel: () => void;
+  /** Space offered by the parent after HUD and controls take their share. */
+  maxWidth: number;
+  maxHeight: number;
   disabled?: boolean;
 };
 
@@ -28,9 +31,10 @@ export function BoardView({
   onTrace,
   onRelease,
   onCancel,
+  maxWidth,
+  maxHeight,
   disabled = false,
 }: Props) {
-  const [width, setWidth] = useState(0);
   const containerRef = useRef<View>(null);
   /**
    * The board's position in the window.
@@ -42,8 +46,13 @@ export function BoardView({
    */
   const origin = useRef({ x: 0, y: 0 });
 
-  const tileSize = width > 0 ? (width - GAP * (board.width - 1)) / board.width : 0;
-  const height = tileSize > 0 ? tileSize * board.height + GAP * (board.height - 1) : 0;
+  const horizontalGaps = GAP * (board.width - 1);
+  const verticalGaps = GAP * (board.height - 1);
+  const tileFromWidth = (maxWidth - horizontalGaps) / board.width;
+  const tileFromHeight = (maxHeight - verticalGaps) / board.height;
+  const tileSize = Math.max(0, Math.min(tileFromWidth, tileFromHeight));
+  const width = tileSize > 0 ? tileSize * board.width + horizontalGaps : 0;
+  const height = tileSize > 0 ? tileSize * board.height + verticalGaps : 0;
 
   // PanResponder is created once, but its handlers must see the CURRENT props.
   // Without this indirection the responder closes over the first render's
@@ -107,9 +116,8 @@ export function BoardView({
   return (
     <View
       ref={containerRef}
-      style={[styles.board, height > 0 && { height }]}
-      onLayout={(e) => {
-        setWidth(e.nativeEvent.layout.width);
+      style={[styles.board, width > 0 && { width, height }]}
+      onLayout={() => {
         measure();
       }}
       {...responder.panHandlers}
@@ -315,17 +323,27 @@ const TileView = memo(function TileView({
 });
 
 const styles = StyleSheet.create({
-  board: { width: '100%', position: 'relative' },
+  board: { width: '100%', position: 'relative', alignSelf: 'center' },
   tile: {
     position: 'absolute',
     backgroundColor: TILE.face,
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: TILE.faceEdge,
+    borderBottomWidth: 4,
+    borderBottomColor: TILE.faceDepth,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  letter: { ...type.title, color: theme.text, fontWeight: '800' },
+  letter: {
+    ...type.title,
+    color: theme.text,
+    fontFamily: font.bold,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
   // The selected tile is filled with the accent, so its letter flips to the
   // dark background colour to stay readable.
   letterSelected: { color: theme.bg },
@@ -335,6 +353,10 @@ const styles = StyleSheet.create({
     right: 4,
     fontWeight: '900',
   },
-  crate: { backgroundColor: TILE.crate, borderColor: TILE.crateEdge },
+  crate: {
+    backgroundColor: TILE.crate,
+    borderColor: TILE.crateEdge,
+    borderBottomColor: TILE.crateDepth,
+  },
   crateMark: { color: TILE.crateMark },
 });

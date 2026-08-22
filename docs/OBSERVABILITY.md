@@ -4,7 +4,7 @@
 **Last updated:** 2026-08-22
 **Owner:** Product and engineering
 
-This document is the source of truth for how WordCrush measures product
+This document is the source of truth for how WordKrush measures product
 improvement, game balance, reliability, content quality, and delivery health.
 It defines signals before tools are installed so dashboards answer explicit
 questions instead of collecting data without an action.
@@ -71,7 +71,7 @@ regression. Do not page on an invented number.
 | Which game earns play? | Game mix | Completed runs by `game_id` / all completed runs | Weekly |
 | Do players finish what they start? | Completion rate | `run_completed` / `run_started`, segmented by game and resume status | Daily/weekly |
 | Do players return? | D1 and D7 retention | Players completing any run 1 or 7 days after first completed run | Weekly |
-| Is the loop replayable? | Replay rate | WordCrush comparison-mode `game_over_action=play_again` / completed runs | Weekly |
+| Is the loop replayable? | Replay rate | WordKrush comparison-mode `game_over_action=play_again` / completed runs | Weekly |
 | Do players explore the collection? | Multi-game rate | Sessions with completed runs in at least two games / active sessions | Weekly |
 | Does optional account value convert? | Auth conversion | `auth_succeeded` / `auth_prompt_viewed` | Weekly |
 
@@ -94,15 +94,15 @@ expose a typed event map so names and property shapes cannot drift.
 | `app_ready` | P1 | `App.tsx` after boards and session restore settle | Above plus `duration_ms`, `boards_result`, `session_result` as bounded enums | Startup success and latency |
 | `screen_viewed` | P1 | Observe the `Screen` union in `App.tsx` | `screen_name`, optional `game_id`, `source` | Navigation and funnel entry |
 | `game_selected` | P1 | Hub card or drawer navigation | `game_id`, `source: hub \| drawer` | Demand by title and discovery source |
-| `run_started` | P1 | WordCrush comparison-mode `startGame`; Clueless/Wordfall after restore resolves | `game_id`, `is_resume`, optional `category_id`, `puzzle_number`, `level_number` | Start rate and resume behavior |
+| `run_started` | P1 | WordKrush comparison-mode `startGame`; Clueless/Wordfall after restore resolves | `game_id`, `is_resume`, optional `category_id`, `puzzle_number`, `level_number` | Start rate and resume behavior |
 | `run_completed` | P1 | Existing completion callbacks in `App.tsx` | `game_id`, `outcome`, `score`, `score_kind`, `duration_ms?`, `is_new_best`, game context | Completion, retention, and balance |
-| `guess_submitted` | P1 | WordCrush comparison mode and Clueless submit handlers | `game_id`, `guess_index`, optional `choice`, `result_kind`, `rank_bucket` | Core-loop depth and input friction |
-| `round_resolved` | P1 | WordCrush comparison UI observes reducer result | `correct`, `round_index`, `streak_bucket`, `pair_relaxed` | Difficulty curve and fairness |
+| `guess_submitted` | P1 | WordKrush comparison mode and Clueless submit handlers | `game_id`, `guess_index`, optional `choice`, `result_kind`, `rank_bucket` | Core-loop depth and input friction |
+| `round_resolved` | P1 | WordKrush comparison UI observes reducer result | `correct`, `round_index`, `streak_bucket`, `pair_relaxed` | Difficulty curve and fairness |
 | `word_submitted` | P1 | Wordfall submit result | `level_number`, `word_length_bucket`, `valid`, `rejection_kind`, `score_delta_bucket`, `chain_length_bucket` | Input quality and mechanic engagement |
 | `level_completed` | P1 | Wordfall won transition | `level_number`, `score`, `duration_ms`, `words_played`, `moves_left_bucket` | Level pass rate and tuning |
 | `level_failed` | P1 | Wordfall lost transition | `level_number`, `score`, `duration_ms`, `failure_mode: time \| moves` | Difficulty cliffs |
 | `daily_puzzle_viewed` | P1 | Clueless after puzzle restore resolves | `puzzle_number`, `already_completed` | Daily participation |
-| `game_over_action` | P1 | WordCrush comparison result-screen action | `action: play_again \| scores \| home`, `streak_bucket`, `is_new_best` | Replay and post-run intent |
+| `game_over_action` | P1 | WordKrush comparison result-screen action | `action: play_again \| scores \| home`, `streak_bucket`, `is_new_best` | Replay and post-run intent |
 | `scores_viewed` | P2 | Scores screen mount | `game_id`, `run_count_bucket`, `has_highlight`, `auth_status` | Score-surface value |
 | `auth_prompt_viewed` | P1 | Scores screen shows eligible account prompt | `game_id`, `run_count_bucket` | Account CTA reach |
 | `auth_submitted` | P1 | Auth form after local validation | `mode: sign_in \| sign_up`, `validation_result`, `error_category?` | Form friction |
@@ -113,7 +113,7 @@ expose a typed event map so names and property shapes cannot drift.
 | `signed_out` | P2 | Sign-out operation succeeds | none | Account disengagement and session lifecycle |
 
 `score` has different semantics across games, so every completed run includes
-`score_kind`: `streak` for WordCrush comparison mode, `guesses_used` for Clueless, and
+`score_kind`: `streak` for WordKrush comparison mode, `guesses_used` for Clueless, and
 `points` for Wordfall. Cross-game charts must not sum or average raw scores.
 
 ### Later diagnostic events
@@ -134,7 +134,7 @@ mutation, or automatic DOM/native interactions.
 
 ## Game-balance scorecards
 
-### WordCrush comparison mode
+### WordKrush comparison mode
 
 - Median and p90 final streak.
 - Percentage of runs reaching streak 5, 10, and 20.
@@ -180,7 +180,7 @@ are primarily weekly design-review signals, not operational pages.
 | Auth operation result | P1 | `src/auth/auth.ts` result boundaries | PostHog + Supabase logs | Target successful sign-in above 95% when configured and online; use bounded errors only. |
 | Backend configuration | P1 | `src/auth/client.ts` exposed as startup boolean | PostHog + deploy checklist | Alert if production unexpectedly reports `backend_configured=false`. |
 | Core Web Vitals | P1 | Web-only performance observer | PostHog | LCP p75 below 2.5s and INP p75 below 200ms are initial web targets; segment by release. |
-| Image fallback | P2 | WordCrush comparison card `onError` | Sampled PostHog | Review weekly; a broad spike suggests an upstream image outage. |
+| Image fallback | P2 | WordKrush comparison card `onError` | Sampled PostHog | Review weekly; a broad spike suggests an upstream image outage. |
 | Offline play | P2 | Session/network boundary | PostHog when delivery resumes | Compare completion and persistence outcomes for offline-capable sessions. |
 
 Exceptions sent to PostHog must be categorized locally. Raw `Error.message`,
@@ -221,7 +221,7 @@ TLS, content type, and the app asset contract.
 | Wordfall dictionary age | P2 | Generated metadata | Review after 180 days or a vocabulary-quality issue |
 | Native release | P1 | EAS/App Store Connect | Production build and submission status linked to the release version |
 
-The current bundled WordCrush comparison category is provisional and lacks a
+The current bundled WordKrush comparison category is provisional and lacks a
 `snapshotId`. That is a release-quality blind spot to resolve in the
 implementation phase; this blueprint does not alter content.
 
@@ -240,7 +240,7 @@ implementation phase; this blueprint does not alter content.
 
 ### 2. Game Balance — PostHog
 
-- WordCrush comparison streak distribution, loss curve, and relaxed pairing.
+- WordKrush comparison streak distribution, loss curve, and relaxed pairing.
 - Clueless completion and guesses-used distribution by puzzle.
 - Wordfall pass/fail, duration, score, and progression by level.
 - Release comparison for every balance chart.

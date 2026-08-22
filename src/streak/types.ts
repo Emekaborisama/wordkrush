@@ -1,6 +1,6 @@
 /**
  * Daily play streak — cross-game, unlike a single run's in-game streak
- * (WordCrush comparison already has one of those; this is "did you play something
+ * (WordKrush comparison already has one of those; this is "did you play something
  * today", Duolingo-style). Pure data + pure logic — no storage, no React.
  */
 

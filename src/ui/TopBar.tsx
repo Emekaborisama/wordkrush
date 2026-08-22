@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { theme } from './theme';
+import { StyleSheet, Text, View } from 'react-native';
+import { BrandArtwork, IconButton } from './components';
+import { font, space, theme } from './theme';
 
 /**
  * Slim header with the hamburger. Replaces the per-screen "back" links, which
@@ -17,28 +18,19 @@ export function TopBar({
 }) {
   return (
     <View style={styles.bar}>
-      <Pressable
-        onPress={onMenu}
-        style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-        // 44pt is the minimum comfortable touch target; the glyph alone is far
-        // smaller than that, so the hit area is padded out to reach it.
-        hitSlop={10}
-        accessibilityRole="button"
-        accessibilityLabel="Open menu"
-      >
-        <View style={styles.burger}>
-          <View style={styles.line} />
-          <View style={styles.line} />
-          <View style={styles.line} />
-        </View>
-      </Pressable>
+      <IconButton icon={<MenuMark />} accessibilityLabel="Open menu" onPress={onMenu} />
 
       {title ? (
         <Text style={styles.title} numberOfLines={1}>
           {title}
         </Text>
       ) : (
-        <View style={styles.flex} />
+        <View style={styles.lockup}>
+          {/* Mark + wordmark, not the lockup: the bar is too short to render
+              the lockup above its ~120px legibility floor (logos.md). */}
+          <BrandArtwork size={28} />
+          <Text style={styles.wordmark}>WordKrush</Text>
+        </View>
       )}
 
       <View style={styles.right}>{right}</View>
@@ -46,20 +38,46 @@ export function TopBar({
   );
 }
 
+function MenuMark() {
+  return (
+    <View style={styles.burger}>
+      <View style={styles.line} />
+      <View style={[styles.line, styles.lineShort]} />
+      <View style={styles.line} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   bar: {
+    minHeight: 58,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 6,
-    gap: 10,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    gap: space.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+    backgroundColor: theme.bgElevated,
   },
-  button: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  burger: { width: 20, gap: 4 },
-  line: { height: 2, borderRadius: 1, backgroundColor: theme.textDim },
-  title: { flex: 1, color: theme.text, fontSize: 15, fontWeight: '700' },
-  flex: { flex: 1 },
+  burger: { width: 18, height: 16, justifyContent: 'space-between', alignItems: 'flex-start' },
+  line: { width: 18, height: 2, borderRadius: 2, backgroundColor: theme.text },
+  lineShort: { width: 12 },
+  title: {
+    flex: 1,
+    color: theme.text,
+    fontFamily: font.semibold,
+    fontSize: 17,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  lockup: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  wordmark: {
+    color: theme.text,
+    fontFamily: font.bold,
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.4,
+  },
   right: { minWidth: 44, alignItems: 'flex-end' },
-  pressed: { opacity: 0.6 },
 });

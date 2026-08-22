@@ -11,7 +11,9 @@ For every collaborator on this repo — human or LLM. Read this before touching 
 | [ROADMAP.md](ROADMAP.md) | Task breakdown, blockers, ordering, and the card contract (mirrors the Superthread *BestGame* board) | When work is planned, started, or finished |
 | [STACK.md](STACK.md) | Tech choices + decision log | Any stack/tooling change |
 | [BRAINSTORM.md](BRAINSTORM.md) | Game design, assumptions, corrections | Any design change or confirmed assumption |
+| [branding/](branding/README.md) | Name, logo use, brand colour | Identity, lockup, or palette changes |
 | [CHANGELOG.md](CHANGELOG.md) | What shipped, per version | Every behavior-changing PR |
+| [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) | Monday Wordfall drops: catalog, buffer, authoring, automation contract | Cadence, schedule gate, or weekly-release automation |
 | WORKFLOW.md (this) | How we collaborate | Process changes |
 
 Decisions get **logged, never silently rewritten** — supersede old entries so the reasoning trail survives. If you're an LLM picking this repo up cold: read HOW-IT-WORKS → STACK → BRAINSTORM → CHANGELOG [Unreleased], in that order, before writing code.
@@ -27,8 +29,10 @@ Documentation impact:
 - Built-system, pipeline, infrastructure, or workflow behavior → `HOW-IT-WORKS.md`.
 - Stack, dependency, build, deployment, or CI decisions → `STACK.md`.
 - Game-design decisions or resolved assumptions → `BRAINSTORM.md`.
+- Visual identity, logo, or brand colour → `docs/branding/`.
 - Task status or blockers → `ROADMAP.md` and the matching Superthread card.
 - Collaboration or release process → `WORKFLOW.md`.
+- Wordfall Monday drops or their automation → `WORDFALL-WEEKLY.md`.
 
 ## Branches and pull requests (non-negotiable)
 
@@ -48,9 +52,9 @@ If the card has no suggested name yet, still include the card ID in the branch (
    can live directly under `src/games/`.
 3. `npm run check` (typecheck + tests) must pass locally.
 4. Update CHANGELOG [Unreleased]; update STACK/BRAINSTORM if a decision changed; keep the matching Superthread card and ROADMAP in sync.
-5. Open a PR from that Superthread branch (to `master`, or to the parent branch if stacked). Include the card ID in the PR title. CI must be green. Merge.
+5. Open a PR from that Superthread branch (to `master`, or to the parent branch if stacked). Include the card ID in the PR title. CI must be green (`check` + `web`). Merge.
 
-Definition of done: PR opened + code + tests + `npm run check` green + changelog line + docs updated.
+Definition of done: PR opened + code + tests + `npm run check` green + changelog line + docs updated. CI also requires `npm run build:web`; that export stays off the local check so the daily loop stays fast.
 
 ## Task card contract
 
@@ -73,7 +77,7 @@ npm run web          # instant browser loop — fastest way to see UI
 npm start            # Expo dev server → scan QR with iPhone (Expo Go)
 npm run test:watch   # logic TDD loop
 npm run check:docs   # documentation impact for changed files
-npm run check        # documentation + typecheck + tests; what CI runs
+npm run check        # documentation + typecheck + tests; CI runs this plus `build:web`
 ```
 
 ## Content pipeline (offline, never at app runtime)
@@ -85,16 +89,18 @@ npm run pipeline:export   # latest good snapshot → src/data/categories/*.json
 
 The app only ever reads the bundled JSON. Changing game data = run pipeline, commit the JSON diff, release. The JSON diff in the PR *is* the content review.
 
+Wordfall weekly levels are a different path: append a row to `src/data/wordfall/levels.ts` with a Monday `availableFrom`, then follow [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md). Do not run the Wikipedia ingest for a Wordfall drop. Monday does not fetch content; the catalog in git is the schedule.
+
 ## Release process
 
 1. Move CHANGELOG [Unreleased] → `[x.y.z] - date`; bump `package.json` + `app.json` versions.
 2. Tag `vx.y.z`, push.
 3. `eas build --platform ios --profile production` → `eas submit --platform ios` → TestFlight → App Store.
-4. Web: nothing to do — merging to `master` deploys to Railway automatically once CI is green (D-020).
+4. Web: nothing to do — merging to `master` deploys to Railway automatically once `check` and `web` are green (D-020, D-029). Public site: [wordKrush.com](https://wordkrush.com).
 
 ## Web deploys
 
-Every push to `master` that passes `check` deploys to Railway. There is no manual step in the normal path.
+Every push to `master` that passes `check` and the Expo web export deploys to Railway. There is no manual step in the normal path. Players reach the site at [wordKrush.com](https://wordkrush.com).
 
 | Need | Command |
 |---|---|
@@ -129,6 +135,6 @@ analytics still starts opted out and requires the player's explicit consent.
 
 - [ ] `npx expo login` (Expo account, for EAS builds)
 - [ ] Apple Developer Program ($99/yr) + `eas credentials` once
-- [ ] Apply `supabase/migrations/0001_init.sql` in the Supabase SQL editor
+- [ ] Apply `supabase/migrations/0001_init.sql`, `0002_leaderboard.sql`, and `0003_global_scores.sql` in the Supabase SQL editor
 
 Web hosting and the v1 data source are resolved by STACK D-020 and D-012.

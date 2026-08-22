@@ -8,7 +8,7 @@ export function parseAnalyticsConsent(value: string | null): AnalyticsConsent {
 export const allowlistedCapture: BeforeSendFn = (capture) =>
   capture &&
   typeof capture.event === 'string' &&
-  ANALYTICS_EVENT_NAMES.has(capture.event)
+  (ANALYTICS_EVENT_NAMES.has(capture.event) || capture.event === '$exception')
     ? capture
     : null;
 

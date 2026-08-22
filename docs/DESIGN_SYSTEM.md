@@ -1,4 +1,4 @@
-# Design System — WordCrush
+# Design System — WordKrush
 
 **Last updated:** 2026-08-22
 
@@ -7,12 +7,15 @@ hub and every game. Read it before adding a screen or component. It exists so
 "redesign the app" turns into "extend one system" instead of "restyle seven
 screens by hand."
 
+Product name, logo use, and brand colour live in
+[`docs/branding/`](branding/README.md). This file does not restyle the lockup.
+
 ## Where this came from
 
 Four references, one lesson each, applied to a dark-first casual game hub:
 
 - **Candy Crush** — a game needs a *felt* identity, not a label. Each title in
-  the hub (WordCrush comparison, Clueless, Wordfall) gets a full accent ramp (soft /
+  the hub (WordKrush comparison, Clueless, Wordfall) gets a full accent ramp (soft /
   base / dim), not one hex value reused inconsistently. Feedback is springy
   and celebratory by default; nothing acknowledges a tap with just a colour
   change.
@@ -33,7 +36,7 @@ Four references, one lesson each, applied to a dark-first casual game hub:
   neutral count, and a distinct at-risk state (played yesterday, not yet
   today) instead of silently ticking to zero at midnight. This is why the app
   now has a cross-game **daily streak** (`src/streak/`) alongside each game's
-  own in-run streak — WordCrush comparison's run streak resets on the first wrong
+  own in-run streak — WordKrush comparison's run streak resets on the first wrong
   guess; the daily streak is the thing that keeps a player coming back
   tomorrow.
 
@@ -57,7 +60,7 @@ failure). It is deliberately a separate concept from any one game's score:
 ## Token architecture
 
 ```
-primitives (theme.ts: bg, card, accent, radius, space, type, shadow, motion)
+primitives (theme.ts: brand, bg, card, accent, radius, space, type, shadow, motion)
       ↓
 semantic helpers (theme.ts: elevation(), withAlpha(), gameAccentTokens())
       ↓
@@ -68,7 +71,7 @@ screens (src/ui/screens/*): compose components, own layout and copy only
 
 Screens must not:
 - invent a new pressed-opacity or scale value — use `PressableScale` or the
-  `motion` tokens it wraps;
+  `interaction` tokens it wraps;
 - hand-pick a card border/background combination — use `Surface` with an
   elevation level;
 - compute a game's soft/dim tint inline (`accent + '22'`) — use
@@ -89,23 +92,34 @@ feel. Depth order, back to front:
 | 2 | `card` | Default card / list item |
 | 3 | `cardHigh` | Highlighted / selected card |
 
+### Tinting a colour
+
+`withAlpha(colour, alpha)` is the only place alpha is applied. It handles both
+colour formats the app produces — hex (`#rrggbb` → `#rrggbbaa`) and the `hsl()`
+strings from `proximityColor()` (→ `hsla()`). Do not build a tint by string
+concatenation: a hex suffix appended to `hsl(...)` is an invalid colour that
+renders **fully opaque** instead of throwing, which is how Clueless guess-row
+ranks were once drawn in the same colour as the pill behind them.
+
 ### Per-game accent
 
-`gameAccentTokens(accent)` derives `{ accent, soft, dim, border }` from a
-single base hex so every game's identity (hub card art tile, active nav item,
-CTA) is consistent without each screen re-deriving alpha variants. Games keep
-one accent hex in `registry.ts`; everything else follows.
+`gameAccentTokens(accent)` derives `{ accent, soft, dim, border, glow, ink }`
+from a single base hex so every game's identity (hub card art tile, in-play
+CTA, result panel) is consistent without each screen re-deriving alpha
+variants. Games keep one accent hex in `registry.ts`; everything else follows.
 
 ### Interaction
 
-- Touch target minimum: 44×44 (`hitSlop` makes up the difference on smaller
-  glyphs — see `TopBar`).
-- Pressed state: `PressableScale` — opacity 0.85 + scale 0.985 on native
-  (spring, `motion.snappy`), opacity-only on web where scale-on-press reads as
-  janky with a mouse cursor still present.
+Values live in `theme.ts` `interaction` — do not restyle them per screen.
+
+- Touch target minimum: 44×44 (`interaction.minTouch`). `hitSlop` makes up the
+  difference on smaller glyphs — see `TopBar` and `IconButton`.
+- Pressed state: `PressableScale` — opacity `0.9`, native transform
+  `translateY: 3` + `scale: 0.97` (respects reduce-motion). Opacity-only on
+  web, where scale-on-press reads as janky with a mouse cursor still present.
 - Disabled state: opacity 0.5, `accessibilityState.disabled`, and the control
-  must still explain *why* (a `SOON` badge, not a card that silently does
-  nothing).
+  must still explain *why* (a `SOON` / `DROPS` badge, not a card that silently
+  does nothing).
 
 ## Component inventory
 
@@ -118,36 +132,49 @@ Located in `src/ui/components/`.
 | `Surface` | ad hoc `theme.card`/`bgElevated` + border blocks | ✅ built |
 | `Stat` | Home's `bestBox`, Scores' `Stat()`, Game's streak header | ✅ built |
 | `ScreenHeader` | Hub/Home/Scores title+subtitle blocks | ✅ built |
+| `GameHeader` | in-play back / title / help chrome | ✅ built |
 | `Badge` | `SOON`, `THIS RUN` pills | ✅ built |
-| `IconTile` | Hub's emoji art tile, Drawer's `Item` icon slot | ⏳ next |
-| `EmptyState` | Scores' empty block, future no-connection states | ⏳ next |
+| `ProgressPill` | in-play streak / guess / budget chips | ✅ built |
+| `FeedbackBanner` | correct/wrong/rejection copy under the board | ✅ built |
+| `ResultPanel` | Game Over / Wordfall level-outcome summaries | ✅ built |
+| `EmptyState` | Scores' empty block, Clueless first-guess prompt | ✅ built |
+| `GameArtwork` | Hub's emoji art tile (`IconTile` was not built) | ✅ built |
+| `Mascot` | Hub deer + outcome poses (`src/ui/lottie/`, `LOTTIE_CLIPS`) | ✅ built |
+| `BrandArtwork` | Hub/drawer/top-bar W mark; auth clear lockup | ✅ built |
+| `IconButton` | 44pt icon hits on game headers | ✅ built |
+| `TextField` | Clueless guess input | ✅ built |
 
 ## Rollout plan
 
-1. ✅ Foundation: `theme.ts` semantic helpers + component primitives (this
-   change).
+1. ✅ Foundation: `theme.ts` semantic helpers + component primitives.
 2. ✅ Proof screens: `HubScreen`, `HomeScreen`, `ScoresScreen` — one list
    screen, one hero/CTA screen, one data-table screen, migrated to prove the
    primitives cover the real range of layouts.
 3. ⏳ `Drawer`, `TopBar`, `AuthScreen` — same primitives, no visual change
    expected, just de-duplication.
-4. ⏳ `GameOverScreen`, `CluelessScreen` — verify `Stat`/`Button` cover the
-   remaining result/summary layouts.
-5. ⏳ `GameScreen` / `BoardView` / wordfall UI — deliberately last. These carry
-   the highest-risk, most-tested animation logic (drag hit-testing, spring
-   drops, count-up reveals). Migrate surface/button chrome only; do not touch
-   gesture or animation code in the same change.
-6. ⏳ `IconTile` + `EmptyState` components, once a second consumer of each
-   exists beyond the hub.
+4. ✅ `GameOverScreen`, `CluelessScreen` — `GameHeader`, `Surface`, `Stat`,
+   `ResultPanel`, `ProgressPill`. Guess-row animation kept; chrome uses
+   `elevation(2)`.
+5. ✅ In-play chrome: `GameScreen` cards/VS badge, Wordfall HUD / picker /
+   outcome. `BoardView` gesture and tile animation were left untouched on
+   purpose — migrate surface/button chrome only.
+6. ✅ `EmptyState` + `GameArtwork`. An emoji-to-icon-font `IconTile` is not
+   planned; key art is bundled PNGs.
+
+## Motion
+
+Layout, presses, drawers, Wordfall tiles, and the More or Less count-up stay
+on React Native `Animated`. Lottie (`lottie-react-native`, D-032) is for the
+deer mascot and later celebration clips — not for board physics or text pills.
+Reduce-motion skips playback (`AccessibilityInfo.isReduceMotionEnabled`).
 
 ## Non-goals for this pass
 
-- No new dependency. `PressableScale` uses `Animated` from `react-native`
-  core, matching the existing pattern in `BoardView`/`Drawer` — not React
-  Native Reanimated.
+- No Reanimated. `PressableScale` uses React Native `Pressable` transforms.
+  BoardView/Drawer keep their existing `Animated` springs.
 - No new theme (still one dark theme). A light theme or per-game background
   swap is a product decision, not implied by this change — flag it as an
   `[OPEN]` design question if it comes up.
-- No emoji-to-icon-font migration. `IconTile` will still render `game.emoji`
-  today; swapping to a real icon/mark system is tracked as its own decision
+- No emoji-to-icon-font migration. Player-facing marks are `GameArtwork`
+  bundles. Swapping to a real icon/mark system is tracked as its own decision
   because it touches every game's key art, not just layout.

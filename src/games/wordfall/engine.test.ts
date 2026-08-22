@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DICTIONARY, LAST_LEVEL, LEVELS, levelByNumber } from '../../data/wordfall';
+import { DICTIONARY, LEVELS, levelByNumber } from '../../data/wordfall';
 import { indexAt, neighbors as neighborsOf } from './board';
 import { analyze, scoreWord, specialFor } from './linguistics';
 import {
@@ -19,6 +19,7 @@ import type { Board, Level, SpecialKind, Tile, WordfallState } from './types';
 const level = (over: Partial<Level> = {}): Level => ({
   number: 1,
   name: 'Test',
+  description: 'Test level',
   moves: 10,
   crates: 0,
   objectives: [{ kind: 'words', target: 3 }],
@@ -708,10 +709,16 @@ describe('shipped timed levels', () => {
     expect(Math.min(...timedLevels.map((l) => l.number))).toBeGreaterThan(1);
   });
 
-  it('runs the timed levels consecutively at the end', () => {
-    const numbers = timedLevels.map((l) => l.number);
+  it('runs the timed launch levels consecutively at the end of the curriculum', () => {
+    // Weekly drops after 11 may be puzzles or races; the launch set still
+    // teaches the clock as one block so the first race is not isolated.
+    const launchTimed = timedLevels.filter((l) => l.availableFrom === undefined);
+    const numbers = launchTimed.map((l) => l.number);
     expect(numbers).toEqual(numbers.map((_, i) => numbers[0] + i));
-    expect(numbers.at(-1)).toBe(LAST_LEVEL);
+    const lastLaunch = Math.max(
+      ...LEVELS.filter((l) => l.availableFrom === undefined).map((l) => l.number),
+    );
+    expect(numbers.at(-1)).toBe(lastLaunch);
   });
 
   it('gives timed levels a move budget no player can exhaust', () => {

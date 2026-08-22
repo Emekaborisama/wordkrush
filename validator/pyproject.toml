@@ -1,7 +1,7 @@
 [project]
 name = "moreless-validator"
 version = "0.1.0"
-description = "Offline LLM adjudication service for WordCrush comparison content. Pipeline-time only; never called by the game at runtime."
+description = "Offline LLM adjudication service for WordKrush comparison content. Pipeline-time only; never called by the game at runtime."
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.9",

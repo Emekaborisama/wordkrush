@@ -1,5 +1,6 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { theme, type } from '../theme';
+import { font, theme, type } from '../theme';
 
 type Props = {
   value: number | string;
@@ -10,6 +11,7 @@ type Props = {
   size?: 'md' | 'lg';
   color?: string;
   align?: 'left' | 'center';
+  icon?: ReactNode;
 };
 
 /**
@@ -17,11 +19,22 @@ type Props = {
  * font sizes: Home's best-streak box, Scores' rank stat row, Game's header
  * streak counter. One component, one hierarchy.
  */
-export function Stat({ value, label, variant = 'default', size = 'md', color, align = 'center' }: Props) {
+export function Stat({
+  value,
+  label,
+  variant = 'default',
+  size = 'md',
+  color,
+  align = 'center',
+  icon,
+}: Props) {
   return (
-    <View style={[styles.root, align === 'left' && styles.left]}>
+    <View
+      style={[styles.root, align === 'left' && styles.left]}
+      accessibilityLabel={`${label}: ${value}`}
+    >
       <View style={styles.valueRow}>
-        {variant === 'streak' && <Text style={styles.flame}>🔥</Text>}
+        {icon ?? (variant === 'streak' ? <FlameMark /> : null)}
         <Text
           style={[
             size === 'lg' ? type.display : styles.valueMd,
@@ -37,12 +50,39 @@ export function Stat({ value, label, variant = 'default', size = 'md', color, al
   );
 }
 
+function FlameMark() {
+  return (
+    <View style={styles.flame} accessibilityElementsHidden importantForAccessibility="no">
+      <View style={styles.flameCore} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { alignItems: 'center' },
   left: { alignItems: 'flex-start' },
   valueRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  valueMd: { fontSize: 30, fontWeight: '800', letterSpacing: -0.5 },
+  valueMd: { fontFamily: font.bold, fontSize: 30, fontWeight: '700', letterSpacing: -0.5 },
   tabular: { fontVariant: ['tabular-nums'] },
-  flame: { fontSize: 20 },
   label: { color: theme.textDim, marginTop: 2 },
+  flame: {
+    width: 18,
+    height: 22,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 4,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 12,
+    backgroundColor: theme.warning,
+    transform: [{ rotate: '18deg' }],
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 3,
+    marginRight: 2,
+  },
+  flameCore: {
+    width: 7,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#FFF1A8',
+  },
 });

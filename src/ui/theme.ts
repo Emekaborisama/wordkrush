@@ -12,10 +12,23 @@
  *    different rather than identical.
  */
 
+/**
+ * Lockup colours from docs/branding/color.md. theme.bg / text / accent below
+ * alias these so a screen never has to choose between "brand gold" and "accent".
+ */
+export const brand = {
+  ink: '#0A0817',
+  word: '#FFF9F6',
+  krush: '#FFB020',
+  krushHot: '#FF8C00',
+  purple: '#8B6BFF',
+  purpleDeep: '#2E0854',
+} as const;
+
 export const theme = {
   // Deep indigo rather than neutral black: playful colour can glow against it
   // without the app turning into a wall of disconnected neon outlines.
-  bg: '#0A0817',
+  bg: brand.ink,
   bgElevated: '#121025',
   card: '#1A1732',
   cardHigh: '#241F43',
@@ -24,15 +37,15 @@ export const theme = {
   border: '#332D55',
   borderStrong: '#4B4171',
 
-  text: '#FFF9F6',
+  text: brand.word,
   textMuted: '#C5BED8',
   textDim: '#87809E',
 
-  // WordCrush umbrella brand. Individual games use registry accents.
-  accent: '#FF5D8F',
-  accentSoft: 'rgba(255,93,143,0.16)',
-  accentDim: '#3B152B',
-  accentSecondary: '#8B6BFF',
+  // WordKrush umbrella brand. Individual games use registry accents.
+  accent: brand.krush,
+  accentSoft: 'rgba(255,176,32,0.16)',
+  accentDim: '#3B2A10',
+  accentSecondary: brand.purple,
   accentSecondarySoft: 'rgba(139,107,255,0.16)',
   success: '#32E487',
   successSoft: 'rgba(50,228,135,0.16)',
@@ -51,8 +64,15 @@ export const radius = { sm: 12, md: 18, lg: 28, xl: 36, pill: 999 } as const;
 
 export const space = { xxs: 2, xs: 5, sm: 9, md: 14, lg: 20, xl: 28, xxl: 40, hero: 56 } as const;
 
-/** Bundled, offline display faces. Body copy deliberately stays on the
- * platform system face for Apple-grade legibility at small sizes. */
+/**
+ * Bundled, offline faces. Every text tier in the scale below uses one of these,
+ * so the app reads as one typeface across all three games (D-027, superseding
+ * D-026's display-only split).
+ *
+ * Symbol glyphs (✓ ✎ ◎ ⟷ ▤ ★ ≡) are deliberately NOT given a `fontFamily` —
+ * Fredoka is a Latin display face and does not contain them, so naming it would
+ * force a silent per-platform fallback at best and tofu at worst.
+ */
 export const font = {
   medium: 'Fredoka_500Medium',
   semibold: 'Fredoka_600SemiBold',
@@ -87,12 +107,26 @@ export function elevation(level: 0 | 1 | 2 | 3) {
   return ELEVATION[level];
 }
 
-/** Hex (`#rrggbb`) + 0–1 alpha -> `#rrggbbaa`. Keeps tint math in one place. */
-export function withAlpha(hex: string, alpha: number): string {
-  const a = Math.round(Math.max(0, Math.min(1, alpha)) * 255)
+/**
+ * Colour + 0–1 alpha -> the same colour, translucent. Keeps tint math in one
+ * place.
+ *
+ * Handles both colour formats the app actually produces: hex (`#rrggbb` ->
+ * `#rrggbbaa`) and the `hsl()` strings from `proximityColor` (-> `hsla()`).
+ * The hsl branch is not decoration: a hex alpha suffix cannot be concatenated
+ * onto `hsl(...)`, and the invalid result renders FULLY OPAQUE rather than
+ * failing loudly — which is how a guess row's rank text once ended up the exact
+ * colour of the pill behind it.
+ */
+export function withAlpha(color: string, alpha: number): string {
+  const clamped = Math.max(0, Math.min(1, alpha));
+  if (color.startsWith('hsl(')) {
+    return `hsla(${color.slice(4, -1)}, ${clamped})`;
+  }
+  const a = Math.round(clamped * 255)
     .toString(16)
     .padStart(2, '0');
-  return `${hex}${a}`;
+  return `${color}${a}`;
 }
 
 /**
@@ -138,9 +172,9 @@ export const type = {
   display: { fontFamily: font.bold, fontSize: 36, fontWeight: '700', letterSpacing: -0.9, lineHeight: 41 },
   title: { fontFamily: font.semibold, fontSize: 23, fontWeight: '600', letterSpacing: -0.45, lineHeight: 28 },
   subtitle: { fontFamily: font.semibold, fontSize: 18, fontWeight: '600', letterSpacing: -0.2, lineHeight: 23 },
-  body: { fontSize: 15, fontWeight: '500', letterSpacing: -0.1, lineHeight: 22 },
-  bodyStrong: { fontSize: 15, fontWeight: '700', letterSpacing: -0.1, lineHeight: 22 },
-  caption: { fontSize: 13, fontWeight: '500', letterSpacing: 0, lineHeight: 18 },
+  body: { fontFamily: font.medium, fontSize: 15, fontWeight: '500', letterSpacing: -0.1, lineHeight: 22 },
+  bodyStrong: { fontFamily: font.bold, fontSize: 15, fontWeight: '700', letterSpacing: -0.1, lineHeight: 22 },
+  caption: { fontFamily: font.medium, fontSize: 13, fontWeight: '500', letterSpacing: 0, lineHeight: 18 },
   /** Small-caps section labels. */
   overline: { fontFamily: font.semibold, fontSize: 10.5, fontWeight: '600', letterSpacing: 1.45, lineHeight: 14 },
 } as const;
