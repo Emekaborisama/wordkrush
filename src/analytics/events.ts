@@ -1,19 +1,27 @@
+import type { ArrivalAttribution, EntrySource, UtmMedium, UtmSource } from './attribution';
+
 export type AnalyticsConsent = 'unknown' | 'granted' | 'denied';
 export type AuthStatus = 'guest' | 'signed_in';
 export type GameId = 'more-or-less' | 'clueless' | 'wordfall';
+export type { ArrivalAttribution, EntrySource, UtmMedium, UtmSource };
 
 type CommonGameProperties = {
   game_id: string;
 };
+
+type ArrivalProperties = ArrivalAttribution;
 
 export type AnalyticsEvents = {
   analytics_consent_changed: {
     choice: 'opted_in';
     surface: 'prompt' | 'settings';
   };
-  app_opened: {
+  app_opened: ArrivalProperties & {
     backend_configured: boolean;
     auth_status: AuthStatus;
+  };
+  landing_viewed: ArrivalProperties & {
+    surface: 'web' | 'native';
   };
   app_ready: {
     duration_ms: number;
@@ -130,6 +138,7 @@ export type AnalyticsEventName = keyof AnalyticsEvents;
 export const ANALYTICS_EVENT_NAMES: ReadonlySet<string> = new Set<AnalyticsEventName>([
   'analytics_consent_changed',
   'app_opened',
+  'landing_viewed',
   'app_ready',
   'screen_viewed',
   'game_selected',

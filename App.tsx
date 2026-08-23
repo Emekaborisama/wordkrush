@@ -6,6 +6,8 @@ import {
 } from '@expo-google-fonts/fredoka';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import { readArrivalContext, type ArrivalContext } from './src/analytics/arrival';
+import { isLandingArrival } from './src/analytics/attribution';
 import {
   captureAnalytics,
   identifyAnalytics,
@@ -131,11 +133,18 @@ export default function App() {
   const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent>('unknown');
   const [showAnalyticsPrompt, setShowAnalyticsPrompt] = useState(false);
   const [boardsReady, setBoardsReady] = useState(false);
+  const [arrivalReady, setArrivalReady] = useState(false);
   const [profileReady, setProfileReady] = useState(false);
   const [streakReady, setStreakReady] = useState(false);
   const [boardsResult, setBoardsResult] = useState<'loaded' | 'fallback'>('loaded');
   const startupAt = useRef(Date.now());
   const openedReported = useRef(false);
+  const landingReported = useRef(false);
+  const arrivalRef = useRef<ArrivalContext>({
+    attribution: { entry_source: 'direct', has_utm_campaign: false },
+    isWeb: false,
+    hasHref: false,
+  });
   const readyReported = useRef(false);
   const restoredSessionReported = useRef(false);
   const hadRestoredSession = useRef(false);
@@ -155,6 +164,19 @@ export default function App() {
       }
     })();
     // Restoring a session must never block play: failures resolve to null.
+    void (async () => {
+      try {
+        arrivalRef.current = await readArrivalContext();
+      } catch {
+        arrivalRef.current = {
+          attribution: { entry_source: 'direct', has_utm_campaign: false },
+          isWeb: false,
+          hasHref: false,
+        };
+      } finally {
+        setArrivalReady(true);
+      }
+    })();
     void (async () => {
       try {
         const initialUrl = await Linking.getInitialURL();
@@ -198,7 +220,7 @@ export default function App() {
   const startGame = (gameId: string) => setScreen({ name: 'game', gameId, seed: randomSeed() });
 
   useEffect(() => {
-    if (analyticsConsent !== 'granted') return;
+    if (analyticsConsent !== 'granted' || !arrivalReady) return;
     const authStatus = profile ? 'signed_in' : 'guest';
     if (profile && identifiedProfileId.current !== profile.id) {
       identifyAnalytics(profile);
@@ -207,12 +229,28 @@ export default function App() {
     registerAnalyticsContext(authStatus);
     if (!openedReported.current) {
       openedReported.current = true;
+      const arrival = arrivalRef.current;
       captureAnalytics('app_opened', {
         backend_configured: isBackendConfigured,
         auth_status: authStatus,
+        ...arrival.attribution,
       });
+      if (
+        !landingReported.current &&
+        isLandingArrival({
+          isWeb: arrival.isWeb,
+          hasHref: arrival.hasHref,
+          entry_source: arrival.attribution.entry_source,
+        })
+      ) {
+        landingReported.current = true;
+        captureAnalytics('landing_viewed', {
+          ...arrival.attribution,
+          surface: arrival.isWeb ? 'web' : 'native',
+        });
+      }
     }
-  }, [analyticsConsent, profile]);
+  }, [analyticsConsent, arrivalReady, profile]);
 
   useEffect(() => {
     if (

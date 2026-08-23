@@ -4,9 +4,10 @@ import { changelogNotes, packageVersion } from './changelog-notes.mjs';
 
 const SAMPLE = `# Changelog
 
-## [Unreleased]
+## [0.1.1] - 2026-08-23
 
-- not this
+### Changed
+- Later ship.
 
 ## [0.1.0] - 2026-08-22
 

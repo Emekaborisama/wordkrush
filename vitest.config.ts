@@ -1,6 +1,18 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      // The Reddit app's server routes are tested from here, so the Devvit
+      // runtime is swapped for an in-memory stand-in. Without this, `npm test`
+      // would need `reddit/node_modules` installed — which CI does not do.
+      // Nothing else in the repo imports this specifier.
+      '@devvit/web/server': new URL(
+        './reddit/src/server/testing/devvit-fake.ts',
+        import.meta.url,
+      ).pathname,
+    },
+  },
   test: {
     environment: 'node',
     // Node-environment suites only — no DOM rendering. UI files are included
@@ -15,6 +27,11 @@ export default defineConfig({
       'src/games/**/*.test.ts',
       'pipeline/**/*.test.ts',
       'scripts/**/*.test.mjs',
+      // The Reddit app is its own npm project, but its pure layer wraps this
+      // repo's engine and data. Running it here keeps `npm test` the single
+      // answer to "did I break More or Less?" on either surface.
+      'reddit/src/shared/**/*.test.ts',
+      'reddit/src/server/**/*.test.ts',
     ],
   },
 });

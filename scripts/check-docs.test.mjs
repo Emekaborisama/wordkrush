@@ -43,6 +43,25 @@ describe('documentation impact rules', () => {
     ]);
   });
 
+  it('requires system documentation for the Reddit app’s server', () => {
+    expect(requiredFor(['reddit/src/server/routes/api.ts'])).toEqual([
+      'docs/CHANGELOG.md',
+      'docs/HOW-IT-WORKS.md',
+    ]);
+  });
+
+  it('treats the Reddit app’s client as player-facing behavior only', () => {
+    expect(requiredFor(['reddit/src/client/game.tsx'])).toEqual(['docs/CHANGELOG.md']);
+  });
+
+  it('requires stack documentation for the Reddit app’s Devvit config', () => {
+    expect(requiredFor(['reddit/devvit.json'])).toEqual([
+      'docs/CHANGELOG.md',
+      'docs/HOW-IT-WORKS.md',
+      'docs/STACK.md',
+    ]);
+  });
+
   it('accepts the required document in the same change', () => {
     expect(
       requiredFor(['pipeline/ingest.ts', 'docs/CHANGELOG.md', 'docs/HOW-IT-WORKS.md']),

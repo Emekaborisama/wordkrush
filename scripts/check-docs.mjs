@@ -7,7 +7,7 @@ const DOCUMENT_RULES = [
     document: 'docs/CHANGELOG.md',
     reason: 'behavior, runtime, data, or configuration changed',
     matches: (path) =>
-      /^(App\.tsx|index\.ts|src\/|pipeline\/|validator\/|server\/|supabase\/|config\/)/.test(
+      /^(App\.tsx|index\.ts|src\/|pipeline\/|validator\/|server\/|supabase\/|config\/|reddit\/)/.test(
         path,
       ) ||
       /^(app\.json|eas\.json|railway\.json|package(?:-lock)?\.json)$/.test(path),
@@ -20,6 +20,9 @@ const DOCUMENT_RULES = [
       /^(\.cursor\/hooks\/|\.github\/|pipeline\/|validator\/|server\/|supabase\/|scripts\/)/.test(
         path,
       ) ||
+      // The Reddit app's server, scheduled post and shared-engine boundary are
+      // all built-system behaviour; its client is not.
+      /^reddit\/(src\/(server|shared)\/|devvit\.json$)/.test(path) ||
       /^(app\.json|eas\.json|railway\.json|package(?:-lock)?\.json)$/.test(path),
   },
   {
@@ -27,6 +30,11 @@ const DOCUMENT_RULES = [
     reason: 'stack, build, dependency, deployment, or CI configuration changed',
     matches: (path) =>
       /^\.github\//.test(path) ||
+      // The Reddit app pins its own toolchain and Devvit config; those are
+      // stack decisions in the same way the Expo app's manifests are.
+      /^reddit\/(package(?:-lock)?\.json|devvit\.json|vite\.config\.ts|tsconfig\.json|tools\/)/.test(
+        path,
+      ) ||
       /^(app\.json|eas\.json|railway\.json|package(?:-lock)?\.json|tsconfig\.json|vitest\.config\.ts)$/.test(
         path,
       ),

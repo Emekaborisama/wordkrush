@@ -1,0 +1,53 @@
+{
+  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+  "name": "wordkrush-more-or-less",
+  "post": {
+    "dir": "dist/client",
+    "entrypoints": {
+      "default": {
+        "entry": "splash.html",
+        "height": "regular"
+      },
+      "game": {
+        "entry": "game.html"
+      }
+    }
+  },
+  "server": {
+    "dir": "dist/server",
+    "entry": "index.cjs"
+  },
+  "permissions": {
+    "redis": true
+  },
+  "menu": {
+    "items": [
+      {
+        "label": "Post today's More or Less",
+        "description": "Create the day's WordKrush challenge if it isn't up yet",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/post-create"
+      }
+    ]
+  },
+  "scheduler": {
+    "tasks": {
+      "daily-post": {
+        "endpoint": "/internal/cron/daily-post",
+        "cron": "0 13 * * *"
+      }
+    }
+  },
+  "triggers": {
+    "onAppInstall": "/internal/triggers/on-app-install"
+  },
+  "marketingAssets": {
+    "icon": "assets/icon.png"
+  },
+  "additionalSourceRoots": ["../src/games", "../src/data/categories"],
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build"
+  }
+}

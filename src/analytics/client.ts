@@ -10,7 +10,7 @@ import {
 import { allowlistedCapture, parseAnalyticsConsent, shouldCapture } from './privacy';
 import { configureAnalyticsSink } from './runtime';
 
-const CONSENT_KEY = 'wordkrush.analytics-consent.v1';
+const CONSENT_KEY = 'wordkrush.analytics-consent.v2';
 const apiKey = process.env.EXPO_PUBLIC_POSTHOG_KEY;
 const host = process.env.EXPO_PUBLIC_POSTHOG_HOST;
 
@@ -124,6 +124,7 @@ type IdentifiedUser = {
 export function identifyAnalytics(user: IdentifiedUser): void {
   if (!posthog || !shouldCapture(consent, isAnalyticsConfigured)) return;
   void posthog.identify(user.id, {
+    name: user.username,
     username: user.username,
     ...(user.email ? { email: user.email } : {}),
   });

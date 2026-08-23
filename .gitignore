@@ -28,3 +28,11 @@ __pycache__/
 
 # OS / editor
 .DS_Store
+
+# Finder "duplicate" copies (`engine 2.ts`, `lockup 2.png`, …). They are not
+# product files; leaving them unignored makes the docs audit treat them as
+# source changes.
+* 2.*
+
+# Supabase CLI scratch (version cache, etc.)
+supabase/.temp/

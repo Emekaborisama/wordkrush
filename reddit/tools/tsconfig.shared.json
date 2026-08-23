@@ -1,0 +1,53 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["WebWorker", "ES2023"],
+    "outDir": "../dist/types/shared",
+    "tsBuildInfoFile": "../dist/types/shared/tsconfig.tsbuildinfo",
+
+    /*
+     * The repo root, not `reddit/src/shared`.
+     *
+     * This project deliberately reaches out of the Devvit project and into the
+     * Expo tree for `src/games/more-or-less/` and the category snapshot, which
+     * is the whole reason there is only one engine. `rootDir` has to contain
+     * every file a project compiles, so it has to be the root that contains
+     * both.
+     */
+    "rootDir": "../..",
+
+    /*
+     * Two of Devvit's stricter defaults are switched off *for this project
+     * only*, because this is the one project that compiles the Expo app's
+     * source, and that source is written against the Expo repo's tsconfig.
+     *
+     * `noUncheckedIndexedAccess` is the live one: the engine indexes into pools
+     * it has already length-checked (`pool[firstIndex]`), which this flag types
+     * as possibly-undefined. Turning it on here would mean editing the shared
+     * engine to satisfy a second consumer — exactly the drift this layout
+     * exists to prevent.
+     *
+     * `reddit/src/client` and `reddit/src/server` keep both flags.
+     */
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false
+  },
+  /*
+   * A composite project has to list every file it compiles, so the Expo files
+   * that cross the boundary are named one by one rather than globbed.
+   *
+   * That is deliberate: this list *is* the contract between the two surfaces.
+   * If the engine grows a new import, the build fails here with TS6307 naming
+   * the file, which is a much better outcome than a wildcard quietly dragging
+   * the Clueless and Wordfall trees into a Reddit bundle.
+   */
+  "include": [
+    "../src/shared/**/*",
+    "../../src/games/rng.ts",
+    "../../src/games/more-or-less/engine.ts",
+    "../../src/games/more-or-less/pairing.ts",
+    "../../src/games/more-or-less/types.ts",
+    "../../src/data/categories/wikipedia-popularity.json"
+  ],
+  "exclude": ["../src/shared/**/*.test.ts"]
+}

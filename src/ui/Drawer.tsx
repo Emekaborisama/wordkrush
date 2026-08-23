@@ -139,9 +139,9 @@ export function Drawer({
         <Item
           label={
             analyticsConsent === 'granted'
-              ? 'Anonymous analytics on'
+              ? 'Analytics on'
               : analyticsConsent === 'denied'
-                ? 'Anonymous analytics off'
+                ? 'Analytics off'
                 : 'Review analytics choice'
           }
           icon={<Text style={styles.itemGlyph}>◉</Text>}

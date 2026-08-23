@@ -1,9 +1,9 @@
 # How It Works
 
-**Last updated:** 2026-08-22
+**Last updated:** 2026-08-23
 **What this is:** the living explainer for the whole system, told as **end-to-end journeys** — from the user, down through every layer, and back to the user. Each step names the code that handles it, the logic behind it, and the risk it carries. When a workflow changes, this doc changes in the same PR.
 
-Doc boundaries: [STACK.md](STACK.md) = *what we chose* (decision log) · [BRAINSTORM.md](BRAINSTORM.md) = *what we're designing* · [WORKFLOW.md](WORKFLOW.md) = *how we collaborate* · this doc = *how the built system behaves*. Decisions are referenced by STACK id (D-00x), never re-argued here.
+Doc boundaries: [STACK.md](STACK.md) = *what we chose* (decision log) · [BRAINSTORM.md](BRAINSTORM.md) = *what we're designing* · [WORKFLOW.md](WORKFLOW.md) = *how we collaborate* · [marketing/](marketing/README.md) = *how we reach players* (GTM decision log, G-00x) · this doc = *how the built system behaves*. Decisions are referenced by STACK id (D-00x), never re-argued here.
 
 Honesty tags — this doc never claims more than the repo delivers:
 - **[BUILT]** — exists in the repo, tested where applicable.
@@ -110,12 +110,12 @@ Every fetched value passes sanity checks *at write time*: missing/zero/non-finit
 `npm run pipeline:export` ([export-snapshot.ts](../pipeline/export-snapshot.ts)) takes the newest validated/published snapshot per category, **excludes flagged rows**, and writes `src/data/categories/<id>.json` with per-item `source` + `updatedAt`. The snapshot is marked `published`.
 
 **5. The data ships like code.** [BUILT: CI + GitHub Release · blocked on owner accounts: EAS]
-The JSON diff goes up in a PR — **the diff is the content review**. CI must pass documentation impact, typecheck, tests, and `npm run build:web` ([ci.yml](../.github/workflows/ci.yml)). Merge of a rolled changelog to `master` publishes GitHub Release `vX.Y.Z` from that section ([release.yml](../.github/workflows/release.yml), D-039). Native still needs the owner: `eas build` → `eas submit` → TestFlight → App Store. Web ships the same commit to Railway after both `check` and `web` pass (D-020, D-029).
+The JSON diff goes up in a PR — **the diff is the content review**. CI must pass documentation impact, typecheck, tests, and `npm run build:web` ([ci.yml](../.github/workflows/ci.yml)). Every PR is a version bump; merge to `master` publishes GitHub Release `vX.Y.Z` from that section ([release.yml](../.github/workflows/release.yml), D-039, D-041). Native still needs the owner: `eas build` → `eas submit` → TestFlight → App Store. Web ships the same commit to Railway after both `check` and `web` pass (D-020, D-029).
 
 **6. The player sees the number** — with its provenance ("Source: monthly Wikipedia pageviews, <month year>") [PLANNED], so the claim on screen is exactly the claim the data supports.
 
 **7. Weekly rotation keeps the snapshot from freezing.** [BUILT]
-Monday 09:00 UTC (and `workflow_dispatch`) GitHub Action [wikipedia-popularity-weekly.yml](../.github/workflows/wikipedia-popularity-weekly.yml) runs `npm run pipeline:rotate`. That job uses the same builder as `pipeline:preview` — Wikimedia pageviews plus freely-licensed images — because the factory ingest→export path is still blocked on the 0001 migration. It compares the new file to the bundled JSON and **skips the PR** when only `updatedAt` would change (most weeks of a month share one complete-month window). A material change writes the JSON, appends a changelog line, runs `npm run check`, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. Swings >10x vs the currently shipped values are listed on the PR; a human merges. The job never pushes to `master` and never fetches at play time (D-004, D-036). Output stays `provisional: true` until ST-35 lands.
+Monday 09:00 UTC (and `workflow_dispatch`) GitHub Action [wikipedia-popularity-weekly.yml](../.github/workflows/wikipedia-popularity-weekly.yml) runs `npm run pipeline:rotate`. That job uses the same builder as `pipeline:preview` — Wikimedia pageviews plus freely-licensed images — because the factory ingest→export path is still blocked on the 0001 migration. It compares the new file to the bundled JSON and **skips the PR** when only `updatedAt` would change (most weeks of a month share one complete-month window). A material change writes the JSON, bumps the patch version, adds a new changelog section, runs `npm run check`, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. Swings >10x vs the currently shipped values are listed on the PR; a human merges. The job never pushes to `master` and never fetches at play time (D-004, D-036). Output stays `provisional: true` until ST-35 lands.
 
 **8. And back: the correction loop.** [BUILT: pipeline side · ongoing]
 Data ages (bundled = frozen until next release, accepted trade-off D-004). Refresh = weekly rotate, or a manual `pipeline:preview` / ingest→export. A wrong-feeling answer in playtesting starts at the JSON diff (or `item_values.raw` once the factory path is live) and ends in either a corrected snapshot or a removed item. App Store review latency (days) is why validation happens *before* shipping, not after.
@@ -151,27 +151,33 @@ wait for both `check` and `web` (D-029). The export is not part of the local
 
 **1. Analytics starts off.** [BUILT]
 `src/analytics/client.ts` creates the PostHog client only when both public
-client variables are present. The SDK defaults to opted out and disables person
-profiles, lifecycle autocapture, remote flags, push capture, exceptions, and
-session replay.
+client variables are present. The SDK defaults to opted out and disables
+lifecycle autocapture, remote flags, push capture, and session replay. Person
+profiles are `identified_only`.
 
 **2. The player decides.** [BUILT]
-`AnalyticsConsentPrompt` explains the bounded anonymous data before capture.
-The choice is stored in AsyncStorage and can be reviewed or revoked from the
-drawer. Declining does not change gameplay, persistence, accounts, or offline
-support.
+`AnalyticsConsentPrompt` explains that guests stay anonymous and that a
+consented account is linked by id, username, and email. The choice is stored in
+AsyncStorage (`wordkrush.analytics-consent.v2`) and can be reviewed or revoked
+from the drawer. Declining does not change gameplay, persistence, accounts, or
+offline support.
 
 **3. Typed boundaries observe behavior.** [BUILT]
 `App.tsx` captures startup, screen, selection, completion, score, and
-signed-in-status events. Game screens capture submit and outcome aggregates.
-Storage modules report bounded failure categories through a pure no-op sink.
-Reducers in `src/games/` remain deterministic and analytics-free.
+signed-in-status events, and calls `identify` after a consented sign-up or
+restored session. The first consented open also sends a bounded
+`entry_source` (and UTM buckets when present) on `app_opened`; web arrivals
+and non-auth deep links fire `landing_viewed`. Raw URLs stay out.
+Game screens capture submit and outcome aggregates. Sign-out
+resets the PostHog identity. Storage modules report bounded failure categories
+through a pure no-op sink. Reducers in `src/games/` remain deterministic and
+analytics-free.
 
 **4. PostHog answers product questions.** [BUILT: dashboard definitions]
 The event dictionary in `docs/OBSERVABILITY.md` feeds product-health,
-game-balance, and reliability dashboards. No email, username, account id,
-guessed word, item label, URL, raw error, or persisted state is sent.
-Operational deployment and content gates remain in Railway and GitHub Actions.
+game-balance, and reliability dashboards. Guessed words, item labels, URLs, raw
+errors, and persisted state are never sent. Operational deployment and content
+gates remain in Railway and GitHub Actions.
 
 ---
 
@@ -329,6 +335,89 @@ D-004 trade: content updates are releases.
 
 ---
 
+## Journey 7 — A Reddit post becomes a day of More or Less
+
+The second surface. More or Less runs inside a Reddit post via Devvit — no
+link-out, no install, no App Store. One post a day, the same questions for
+everyone on it, and a board that a client cannot lie to. Decision and stated
+costs: D-042. Local contract: [reddit/README.md](../reddit/README.md).
+
+```
+ DEVVIT CRON            DEVVIT SERVER                 WEB VIEW (iframe)
+   │                       │                              │
+   │ 13:00 UTC             │                              │
+   ├──────────────────────►│ seedFromDate(today)          │
+   │                       │ startRun(POOL, seed)         │
+   │                       │ submitCustomPost(postData:   │
+   │                       │   day + round 0's two labels)│
+   │                       │ pin seed → Redis             │
+   │                       │                              │
+   │                       │                  splash renders from postData
+   │                       │                  (0 network calls, 1.5 KB)
+   │                       │                              │
+   │                       │◄── GET /api/init ────────────┤ tap Play
+   │                       │ round: left+value, right LABEL ONLY
+   │                       │                              │
+   │                       │◄── POST /api/guess {choice} ─┤ tap More / Less
+   │                       │ reducer judges; streak++     │
+   │                       │ ──► verdict + revealed value + NEXT round
+   │                       │                              │
+   │                       │ run ends → zScore? → zAdd    │
+   │                       │ ──► rank + spoiler-free grid │
+```
+
+**1. The engine is imported, not reimplemented.** [BUILT]
+`reddit/src/shared/` imports
+[engine.ts](../src/games/more-or-less/engine.ts) and
+[wikipedia-popularity.json](../src/data/categories/wikipedia-popularity.json)
+straight out of the Expo tree, so a fairness or difficulty change lands on both
+surfaces. Three things hold that boundary: `additionalSourceRoots` in
+`devvit.json` ships the parent files to app review;
+`reddit/tools/tsconfig.shared.json` lists every crossing file so a new engine
+import fails with TS6307 instead of dragging Clueless and Wordfall into a Reddit
+bundle; and the root `vitest.config.ts` runs `reddit/src/shared/**/*.test.ts` so
+`npm test` still answers for both.
+
+**2. The server owns the run.** [BUILT]
+The client never receives the seed or a hidden value and is never asked what it
+scored — it posts `"more"` or `"less"` and the server judges it against state the
+browser has never seen. The build is the proof: neither client bundle contains
+the pool, the values, or the engine. This is the
+[SEC-01](security-and-anti-cheat/THREAT-MODEL.md#sec-01--the-global-leaderboard-accepts-any-number-a-client-sends--critical)
+problem, absent here — Devvit puts a server next to the game for free, which the
+Expo build does not have.
+
+**3. The round trip hides inside the reveal.** [BUILT]
+`/api/guess` returns the verdict, the revealed value **and** the next question in
+one response, so the next round is already in hand while the player is still
+reading the number. That is why one call per tap costs nothing perceptible.
+
+**4. Only the first run counts.** [BUILT]
+Everyone on a post gets the same sequence, so a replay is the same questions with
+the answers known. `recordRun` checks `zScore` before `zAdd`; the board itself is
+the "have they played" flag, so there is no second piece of state to fall out of
+sync. Logged-out readers can play the whole run — they simply cannot be ranked,
+which is a deliberately soft failure because a login wall would cost more plays
+than the board is worth.
+
+**5. The result is spoiler-free, and the player posts it.** [BUILT]
+`buildShareText` emits squares and a standing — no label, no value, no direction
+— so a comment cannot poison the post for later readers. "Copy result" puts it on
+the clipboard; nothing comments on a player's behalf.
+
+**6. The weekly snapshot became a daily calendar.** [BUILT]
+D-036's Monday refresh feeds seven posts. Each day's seed is
+`seedFromDate` (UTC), and `createDailyPost` is idempotent per calendar day, so
+the cron task, the moderator menu item and the install trigger cannot split a
+community's board across two posts.
+
+**Not on this surface:** Supabase accounts, the global leaderboard, the
+cross-game daily streak, and PostHog. Reddit identity and Devvit Redis replace
+the first two; the rest have no counterpart. There is also no CI job yet — the
+Reddit app is typechecked with `npm run reddit:types`, by hand.
+
+---
+
 ## System reference
 
 Quick map of where each journey step lives:
@@ -342,6 +431,9 @@ Quick map of where each journey step lives:
 | Fairness guard + difficulty bands | `src/games/more-or-less/pairing.ts` (+ 9 tests) | [BUILT] |
 | Engine reducer, pair selector, scoring | `src/games/more-or-less/engine.ts` | [BUILT] |
 | Bundled game data | `src/data/categories/*.json` | [BUILT: dir, populated on first export] |
+| Reddit app (Devvit) | `reddit/` — `devvit.json`, `src/{shared,server,client}` | [BUILT: builds + typechecks] — blocked on owner: `devvit login`, a launch subreddit, and app review (D-042) |
+| Reddit shared boundary | `reddit/src/shared/`, `reddit/tools/tsconfig.shared.json` | [BUILT] — imports the Expo engine + snapshot; crossing files listed explicitly |
+| Reddit run + board | `reddit/src/server/core/{run,board,post}.ts` (Devvit Redis) | [BUILT] — server judges every guess; first completed run only |
 | Keyword lists | `pipeline/keywords/` | [BUILT] |
 | Ingest + validation | `pipeline/ingest.ts` | [BUILT] |
 | Local AI test player | `pipeline/ensure-test-player.ts` | [BUILT] — `TEST_PLAYER_*` in `.env` only; `npm run auth:ensure-test-player` (D-035) |
@@ -358,10 +450,10 @@ Quick map of where each journey step lives:
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both |
 | Wikipedia popularity weekly | `.github/workflows/wikipedia-popularity-weekly.yml`, `pipeline/rotate-wikipedia-popularity.ts` | [BUILT] — Monday 09:00 UTC + `workflow_dispatch`; PR on `content/wikipedia-popularity-weekly`, never `master` (D-036) |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both, then `railway up --service wordcrush` |
-| GitHub Release | `.github/workflows/release.yml`, `scripts/changelog-notes.mjs` | [BUILT] — first version `0.1.0`; publish `vX.Y.Z` from the changelog section on master merge or tag (D-039) |
+| GitHub Release | `.github/workflows/release.yml`, `scripts/changelog-notes.mjs` | [BUILT] — every PR is a version; publish `vX.Y.Z` from that changelog section on master merge or tag (D-039, D-041) |
 | Web host | `railway.json`, `server/serve.mjs` | [BUILT] — Nixpacks runs `CI=true npm run build:web` on service `wordcrush`; `serve.mjs` listens on `$PORT` |
 | Web favicon + share preview | `assets/favicon.png`, `assets/apple-touch-icon.png`, `assets/logo/wordkrush-lockup.png`, `scripts/patch-web-head.mjs` | [BUILT] — cache-busted tab icons in `dist/`; Open Graph / Twitter tags with the lockup at `/og-image.png` (not the favicon crop) |
-| Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] |
+| Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] — audits git-visible changes; Finder `* 2.*` copies and `supabase/.temp/` are gitignored so they do not count as source |
 | Consent and product analytics | `src/analytics/`, `src/ui/AnalyticsConsentPrompt.tsx` | [BUILT] |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |
 | Haptics | `src/native/haptics.ts` | [BUILT] |
@@ -371,6 +463,7 @@ Quick map of where each journey step lives:
 ## Security model
 
 - `.env` gitignored + untracked; shape in `.env.example` (names only). History clean — the one committed `.env` was empty.
+- Finder duplicate names (`* 2.ts`, `* 2.png`, …) and `supabase/.temp/` are gitignored. They are local copies, not app source.
 - `SUPABASE_SECRET_KEY`: pipeline-only, loaded via `tsx --env-file=.env`. Never `EXPO_PUBLIC_`-prefixed — Expo embeds those in the shipped bundle.
 - Client bundles contain only publishable Supabase and PostHog project
   configuration under `EXPO_PUBLIC_*`; neither grants privileged server access.

@@ -1,6 +1,6 @@
 {
   "name": "wordkrush",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -22,6 +22,10 @@
     "pipeline:wordfall": "tsx pipeline/build-wordfall-dictionary.ts",
     "auth:ensure-test-player": "tsx --env-file=.env pipeline/ensure-test-player.ts",
     "serve:web": "node server/serve.mjs",
+    "reddit:install": "npm --prefix reddit install",
+    "reddit:types": "npm --prefix reddit run test:types",
+    "reddit:build": "npm --prefix reddit run build",
+    "reddit:dev": "npm --prefix reddit run dev",
     "release:notes": "node scripts/changelog-notes.mjs --from-package"
   },
   "dependencies": {

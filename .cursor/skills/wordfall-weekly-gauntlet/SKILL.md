@@ -48,7 +48,7 @@ Do not push to GitHub until the local loop in **Verify before GitHub** is green.
 4. Fingerprint every existing row. Design a task whose fingerprint is new.
 5. Append one object to `LEVELS`. Name, required `description`, objectives.
    `availableFrom` is that Monday. Do not copy level 8 with a new date.
-6. Changelog `[Unreleased]`: number, Monday, one-line idea.
+6. Changelog: new `[x.y.z]` section plus `package.json` / `app.json` bump — number, Monday, one-line idea.
 7. Run **Verify before GitHub**. Only then commit, push, and open the PR.
 
 ## Verify before GitHub

@@ -1,0 +1,35 @@
+{
+  "private": true,
+  "name": "wordkrush-more-or-less",
+  "version": "0.1.0",
+  "description": "More or Less as a Reddit Devvit app. Shares the Expo repo's engine and category snapshot.",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "devvit playtest",
+    "login": "devvit login",
+    "deploy": "npm run test:types && devvit upload",
+    "launch": "npm run deploy && devvit publish",
+    "test:types": "tsc --build --force"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "@devvit/start": "0.14.1",
+    "@devvit/web": "0.14.1",
+    "@hono/node-server": "2.0.12",
+    "devvit": "0.14.1",
+    "hono": "4.12.32",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.4",
+    "typescript": "6.0.3",
+    "vite": "8.1.5"
+  }
+}

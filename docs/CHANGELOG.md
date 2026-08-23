@@ -3,20 +3,37 @@
 All notable changes to WordKrush. Format follows [Keep a Changelog](https://keepachangelog.com); versions follow semver and match `version` in `package.json` / `app.json`.
 
 Rules:
-- Every PR that changes behavior adds a line under **[Unreleased]** in the same PR.
-- On release: rename [Unreleased] to the version + date, create a fresh empty [Unreleased], bump `package.json` + `app.json` when the number changes. Merging that to `master` (or pushing tag `v<version>`) publishes the GitHub Release. Then `eas build --platform ios` → TestFlight when native is in play.
+- Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
+- Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
-## [Unreleased]
+## [0.2.0] - 2026-08-23
 
-## [0.1.0] - 2026-08-22
+### Added
+- **More or Less now runs inside a Reddit post.** A new Devvit app in [`reddit/`](../reddit/README.md) posts one challenge a day; everyone on that post plays the same questions, the streak lands on the day's board, and the result is a spoiler-free grid built for the comments. No link-out, no install, and no Apple Developer Program — it plays in the Reddit app on every phone. The choice of game is deliberate: a daily *word* puzzle would have its answer posted in the comments within minutes, while More or Less has nothing to spoil and produces arguments instead (D-042).
+- **One engine, two surfaces.** The Reddit app imports `src/games/more-or-less/engine.ts` and `wikipedia-popularity.json` rather than copying them, so a fairness or difficulty change lands on both. `reddit/tools/tsconfig.shared.json` names every file that crosses the boundary and fails the build if a new one appears; the root `npm test` runs the Reddit app's tests alongside the Expo app's — its pure layer directly, and its server routes against an in-memory Devvit stand-in so CI needs no second dependency tree.
+- **A leaderboard that cannot be asserted.** The Reddit server never sends the seed or a hidden value and never asks the client what it scored — the browser posts one word per round and the server judges it. Verified by the build: neither client bundle contains the pool, the values, or the engine (the feed view is 1.5 KB). Only a player's first completed run is recorded, because everyone shares a sequence and a replay already knows the answers. This is the problem [SEC-01](security-and-anti-cheat/THREAT-MODEL.md#sec-01--the-global-leaderboard-accepts-any-number-a-client-sends--critical) records for the Expo global board, absent on this surface.
+- **The weekly snapshot is now a daily content calendar.** A Devvit cron task posts at 13:00 UTC using a date-derived seed, so D-036's Monday Wikipedia refresh feeds seven posts without anyone deciding what to post. Creating a post is idempotent per calendar day, so the cron task, the moderator menu item and the install trigger cannot split a community's board across two posts.
 
-### Fixed
+### Changed
+- **The documentation audit covers `reddit/`.** Server, shared-engine and `devvit.json` changes require `HOW-IT-WORKS.md`; toolchain and Devvit config changes require `STACK.md`; anything player-facing requires this file.
+- **`tsc --noEmit` no longer walks into `reddit/`.** That project needs the `browser` resolution condition for `@devvit/web/client`, which the Expo config resolves as `react-native`. Typecheck it with `npm run reddit:types`.
+
+## [0.1.1] - 2026-08-23
+
+### Added
+- **Arrival attribution on consented opens.** `app_opened` now carries a bounded `entry_source` plus optional `utm_source` / `utm_medium` buckets and `has_utm_campaign`. Web first-paint (and native deep links that are not auth callbacks) also fire `landing_viewed`. Raw URLs, referrers, and campaign copy are never sent; magic-link callbacks are classified as `auth` and stop there.
+- **Share-card Open Graph tags.** `build:web` copies `docs/marketing/reddits/assets/og-share.png` to `/og.png` and injects absolute `og:` / `twitter:` tags so a pasted wordkrush.com link shows the Wordfall still instead of a blank card.
+
+### Changed
+- **Changelog is one version per PR.** Each pull request adds a new `[x.y.z]` heading and bumps `package.json` / `app.json`. There is no `[Unreleased]` bucket, and shipped headings are not edited in place.
 - **Game start screens read as one card instead of two.** The `detail` block (today’s category / puzzle / week) and the player’s stats now share a single status card, and the stats stay hidden until a run has actually been finished — a first-time player was shown a full-width accent card whose whole content was “—” and “0”. Two layout bugs went with it: `hero` added its own horizontal inset on top of the root gutter, so the detail card and the stats card sat at different widths, and the fixed column let the bottom block ride up over the detail card whenever the blurb wrapped to three lines (Clueless, and every game on a short phone). The screen is now a ScrollView with `flexGrow: 1`.
+- **Consented sign-up now creates a PostHog person.** After opt-in, sign-up and sign-in identify the player with their account id, username, and email so they show up in PostHog. Guests stay anonymous. The consent prompt and menu copy say this, and the stored consent key is bumped so earlier anonymous grants are asked again.
 
 ## [0.1.0] - 2026-08-22
 
 ### Fixed
 - **Shared links preview the WordKrush lockup, not a generic globe.** Expo’s web export still emits no Open Graph tags. `scripts/patch-web-head.mjs` copies `assets/logo/wordkrush-lockup.png` to `dist/og-image.png` and injects `og:*` / Twitter card meta after `<title>` (absolute `https://wordkrush.com/og-image.png`). The tab favicon stays the tight W crop; that crop is too small for a large preview, so `og:image` is the full lockup.
+- **Finder duplicate files no longer look like product changes.** macOS "Name 2.ts" copies and `supabase/.temp/` are gitignored so they cannot be committed and cannot trip `check:docs` as if `src/` or `supabase/` had changed.
 - **The browser tab icon is the WordKrush W, not a leftover generic mark.** `assets/favicon.png` is a tight crop of the purple W tile (the 1024 master’s padding collapsed to a dark blob at 16px). `expo export` only linked `/favicon.ico`, which browsers cache for months; `scripts/patch-web-head.mjs` copies the PNG and apple-touch icon into `dist/` and cache-busts the `<link rel="icon">` href.
 - **Magic-link click no longer targets a path on the Supabase API host.** `webAuthRedirectUrl` (`src/auth/redirect-url.ts`) sends web `emailRedirectTo` as the page origin with a scheme (`https://wordkrush.com`), not `/auth/callback` and not a bare host. GoTrue treats `wordkrush.com` as the path `/wordkrush.com` on `https://<project>.supabase.co` and returns `requested path is invalid`. Dashboard Site URL must be `https://wordkrush.com`.
 

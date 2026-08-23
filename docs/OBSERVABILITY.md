@@ -1,7 +1,7 @@
 # Monitoring and observability
 
 **Status:** Initial PostHog instrumentation implemented; dashboards and operational monitors are managed in their named source systems.
-**Last updated:** 2026-08-22
+**Last updated:** 2026-08-23
 **Owner:** Product and engineering
 
 This document is the source of truth for how WordKrush measures product
@@ -11,14 +11,17 @@ questions instead of collecting data without an action.
 
 ## Decision and boundaries
 
-Analytics is anonymous and disabled until the player explicitly opts in.
-Consent must be revocable. The app must remain fully playable when consent is
-declined, PostHog is unavailable, or the device is offline.
+Analytics is disabled until the player explicitly opts in. Consent must be
+revocable. The app must remain fully playable when consent is declined, PostHog
+is unavailable, or the device is offline.
 
-- Do not identify signed-in players in PostHog.
+- Guests stay anonymous. After consent, signed-in players are identified in
+  PostHog with their Supabase user id plus username and email person properties
+  (D-040). Reset identity on sign-out.
 - Do not enable autocapture or session replay.
-- Do not capture email, phone number, username, profile id, guessed words, item labels,
-  image URLs, raw error messages, stack traces, or persisted game state.
+- Do not capture phone number, guessed words, item labels, image URLs, raw
+  page URLs, referrers, campaign copy, error messages, stack traces, or
+  persisted game state. Arrival is a bounded `entry_source` plus UTM buckets.
 - Use bounded enums and numeric aggregates. Do not create event names or
   property keys dynamically.
 - Keep analytics outside reducers under `src/games/<game-id>/`. UI and
@@ -36,7 +39,7 @@ not secrets. They will use `EXPO_PUBLIC_POSTHOG_KEY` and
 
 | System | Use it for | Do not use it for |
 |---|---|---|
-| PostHog | Consented product events, funnels, retention, game-balance aggregates, web vitals, coarse client failure counters | Raw exceptions, PII, guessed content, server uptime |
+| PostHog | Consented product events, identified sign-ups, funnels, retention, game-balance aggregates, web vitals, coarse client failure counters | Raw exceptions, guessed content, phone numbers, server uptime |
 | GitHub Actions | Type/tests, web export, bundle budget, content gates, validator tests, scheduled smoke tests | Player behavior or production latency |
 | Railway | Deploy health, process restarts, resource use, static-server logs, service health | Product funnels or native crashes |
 | External synthetic check | Public URL uptime and response-contract checks | In-app behavior |
@@ -75,12 +78,12 @@ regression. Do not page on an invented number.
 | Do players explore the collection? | Multi-game rate | Sessions with completed runs in at least two games / active sessions | Weekly |
 | Does optional account value convert? | Auth conversion | `auth_succeeded` / `auth_prompt_viewed` | Weekly |
 
-PostHog's anonymous device identifier may be used only after consent. It is not
-joined to Supabase identity. `auth_status` may be sent as the bounded value
-`guest` or `signed_in`, which supports cohort comparisons without identifying
-the account. This measures signed-in behavior on a device but does not claim
-cross-device retention; that would require a separate identity and consent
-decision.
+PostHog's anonymous device identifier may be used only after consent. Guests
+remain on that identifier. After a consented sign-up or sign-in, `identify`
+joins the device to the Supabase user id and sets `name`, `username`, and
+`email`. `auth_status` remains `guest` or `signed_in` on events. Cross-device
+retention is therefore available only for opted-in signed-in players. Account
+deletion must also delete the matching PostHog person.
 
 ### Launch event dictionary
 
@@ -90,7 +93,8 @@ expose a typed event map so names and property shapes cannot drift.
 | Event | Priority | Trigger and owner | Allowed properties | Answers |
 |---|---|---|---|---|
 | `analytics_consent_changed` | P0 | Consent control after local preference is written | `choice: opted_in \| opted_out`, `surface: prompt \| settings` | Is the measurement population understood? This event is sent only for opt-in; opt-out is retained locally, not transmitted. |
-| `app_opened` | P1 | `App.tsx` mount after telemetry is eligible | `platform`, `app_version`, `backend_configured`, `auth_status` | Active installs and sessions |
+| `app_opened` | P1 | `App.tsx` mount after telemetry is eligible | `platform`, `app_version`, `backend_configured`, `auth_status`, `entry_source`, optional `utm_source` / `utm_medium`, `has_utm_campaign` | Active installs, sessions, and how the session arrived |
+| `landing_viewed` | P1 | First web paint, or a native deep link that is not an auth callback | Same arrival buckets plus `surface: web \| native` | Paid / search / social / share arrivals vs direct. Never the URL |
 | `app_ready` | P1 | `App.tsx` after boards and session restore settle | Above plus `duration_ms`, `boards_result`, `session_result` as bounded enums | Startup success and latency |
 | `screen_viewed` | P1 | Observe the `Screen` union in `App.tsx` | `screen_name`, optional `game_id`, `source` | Navigation and funnel entry |
 | `game_selected` | P1 | Hub card or drawer navigation | `game_id`, `source: hub \| drawer` | Demand by title and discovery source |
@@ -229,7 +233,7 @@ implementation phase; this blueprint does not alter content.
 
 ### 1. Product Health — PostHog
 
-- Active anonymous players and completed runs.
+- Active players and completed runs, with signed-in opted-in players as people.
 - D0 activation and D1/D7 completed-run retention.
 - Starts, completions, completion rate, and replay rate by game.
 - Activation, completion, replay, and on-device retention segmented by
@@ -303,8 +307,9 @@ Implemented:
    client, and a pure no-op runtime sink for storage boundaries.
 2. Consent is stored locally, defaults to unknown/off, appears as a first-run
    prompt, and can be revoked or reviewed from the drawer.
-3. `App.tsx` owns startup, navigation, completion, score, auth-status, and
-   consent lifecycle events.
+3. `App.tsx` owns startup, navigation, completion, score, auth-status, consent
+   lifecycle events, bounded arrival attribution, and consented `identify` /
+   sign-out `reset`.
 4. Game screens own bounded submit and outcome events; guessed words, item
    labels, URLs, and reducer state are never sent.
 5. Score and progress persistence report only operation and bounded failure
@@ -312,7 +317,10 @@ Implemented:
 6. `.env.example` documents the public PostHog project token and EU ingestion
    host. Railway receives the same values during its Expo web build.
 7. Focused tests cover consent parsing, explicit opt-in, allowlisted event
-   names, no-op behavior, and property bucketing.
+   names including `$identify`, no-op behavior, property bucketing, and
+   arrival attribution (including auth-callback exclusion).
+8. After consent, sign-up and sign-in create a PostHog person (D-040). Account
+   deletion must also delete that person.
 
 Still separate:
 
@@ -322,16 +330,12 @@ Still separate:
   signals rather than PostHog events.
 - Native crash reporting requires its own stack and privacy decision.
 
-If cross-device funnels or retention become necessary, add a later decision
-covering explicit account linkage, identifier pseudonymization, deletion, and
-consent wording before calling PostHog `identify`. Signed-in status alone is
-enough for the first dashboard and avoids that data-governance expansion.
-
 ## Review checklist
 
 - Every event answers a named question and has an owner or dashboard.
 - Event and property names are static, typed, and documented.
-- Properties are bounded; free text and PII are absent.
+- Play properties are bounded; guessed content is absent. Consented account
+  identity is limited to id, username, and email.
 - Consent defaults to off and can be revoked.
 - Metrics preserve each game's score semantics.
 - Telemetry failures cannot affect gameplay.
