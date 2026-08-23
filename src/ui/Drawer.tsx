@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { AnalyticsConsent } from '../analytics/events';
+import { canVibrate } from '../native/haptics';
 import type { FeedbackChannel, FeedbackSettings } from '../settings/types';
 import { GAMES } from '../games/registry';
 import { BrandArtwork, GameArtwork, IconButton } from './components';
@@ -150,10 +151,11 @@ export function Drawer({
           trailing={feedbackSettings.sound ? 'ON' : 'OFF'}
           onPress={() => onToggleFeedback('sound')}
         />
-        {/* Native only. Haptics are a deliberate no-op on web (see
-            native/haptics.ts), and a switch that visibly does nothing is worse
-            than no switch. */}
-        {Platform.OS !== 'web' && (
+        {/* Shown only where a buzz can actually happen: always on native, and
+            on web only for a touch device whose browser has the Vibration API
+            (so Safari and laptops still get nothing). A switch that visibly
+            does nothing is worse than no switch. */}
+        {canVibrate() && (
           <Item
             label={feedbackSettings.vibration ? 'Vibration on' : 'Vibration off'}
             icon={<Text style={styles.itemGlyph}>≈</Text>}

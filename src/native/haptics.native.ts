@@ -12,6 +12,17 @@
 import * as Haptics from 'expo-haptics';
 
 /**
+ * Native always has a vibration motor worth offering — iOS may decline the
+ * request (Low Power Mode, Taptic Engine off, camera active) but that is a
+ * per-call refusal, not a reason to hide the switch. The web twin exports the
+ * same name and feature-detects instead; the drawer calls this to decide
+ * whether to show the vibration row.
+ */
+export function canVibrate(): boolean {
+  return true;
+}
+
+/**
  * Every call is wrapped: haptics are unavailable on some devices and in the
  * simulator, and a rejected promise here must never interrupt a run. The
  * feedback is a nicety; the game is the point.

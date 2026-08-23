@@ -10,7 +10,8 @@ Rules:
 
 ### Added
 - **The games have a voice.** Five game moments now fire a sound and a haptic together: a correct guess or valid word, a wrong guess or rejected word, each letter joining a Wordfall trace, a level cleared, and a run won. The four supplied clips live in `assets/sounds/` and are bundled, so audio never waits on the network (D-004 holds). Winning a level plays the level fanfare rather than the generic "correct" beat, and More or Less celebrates only a **personal best** — replaying a fanfare over an ordinary loss reads as sarcasm.
-- **Sound and vibration switches in the drawer.** Both default to on and persist per device. Flipping one on immediately plays what it just enabled, so the switch proves itself. The vibration row is hidden on web, where haptics are a deliberate no-op — a switch that visibly does nothing is worse than no switch.
+- **Sound and vibration switches in the drawer.** Both default to on and persist per device. Flipping one on immediately plays what it just enabled, so the switch proves itself. The vibration row appears only where a buzz can actually happen — always on native, and on web only for a touch device whose browser has the Vibration API — so it is never a switch that visibly does nothing.
+- **Vibration now works in the phone browser, not just the app.** The web build's haptics were five empty no-ops on the reasoning that the Vibration API is "unsupported in Safari and feels wrong on a laptop" — both true, but only of Safari and laptops. Android Chrome on a phone supports `navigator.vibrate`, so the capability is detected (`navigator.vibrate` plus `(pointer: coarse)`) instead of assumed. Safari, iOS browsers, and desktops still get nothing, deliberately.
 - **The iOS silent switch still works.** Audio mode is set to respect hardware mute and to mix with other audio, so a phone on silent stays silent and someone playing over their own music keeps their music.
 
 ### Changed

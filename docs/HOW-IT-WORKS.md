@@ -59,7 +59,7 @@ Left card: name + revealed value. Right card: name + hidden value. Every number 
 The reducer compares the two bundled values. Note what "correct" means here: **B > A per the shipped snapshot from source X on date D** — never absolute truth. The fairness guard is what makes this honest: measurement noise smaller than 15% *cannot flip the answer of any question the player was actually asked*. Full correctness model: BRAINSTORM §11.
 
 **6. The answer travels back up: reveal.** [PLANNED]
-The hidden value counts up to its real number — the emotional beat of the whole game — then the judgement's feedback fires: `feedback('correct')` or `feedback('wrong')`, which plays a clip and a haptic together (`src/native/feedback.ts`). The haptic half is a no-op on web via the `haptics.ts` / `haptics.native.ts` twins; the clip plays everywhere. Correct → streak++, winning card slides left, new challenger enters (carry-over chain — genre standard, still [OPEN] vs the reference game). Wrong → run over.
+The hidden value counts up to its real number — the emotional beat of the whole game — then the judgement's feedback fires: `feedback('correct')` or `feedback('wrong')`, which plays a clip and a haptic together (`src/native/feedback.ts`). The haptic half runs through the `haptics.ts` / `haptics.native.ts` twins — `expo-haptics` on native, the browser Vibration API on a touch web device, nothing on Safari or a laptop; the clip plays everywhere. Correct → streak++, winning card slides left, new challenger enters (carry-over chain — genre standard, still [OPEN] vs the reference game). Wrong → run over.
 
 **7. Back to the player: game over.** [BUILT]
 The run is written to the local board first (`src/scores/storage.ts`). Game over shows the streak, the pair that ended it, and Play Again / scores / all-games. Scores open a two-tab surface: **On this device** is the offline history; **Global** is each signed-in player's best run for that game (Journey 5). Game Center remains a later native 4.2 extra, not this board.
@@ -144,6 +144,13 @@ require human or agent judgement because file paths cannot prove intent.
 CI also runs `npm run build:web` in a sibling job; merge and Railway deploy
 wait for both `check` and `web` (D-029). The export is not part of the local
 `npm run check` loop.
+
+**4. `reddit/` is covered, with two carve-outs.** [BUILT]
+The Devvit app's server, shared layer and `devvit.json` require
+`HOW-IT-WORKS.md`; its toolchain and Devvit config require `STACK.md`; anything
+player-facing requires `CHANGELOG.md`. Test files are exempt, as everywhere
+else, and so is `reddit/**/*.md` — that project keeps its prose next to its
+code, and a README edit documents itself rather than earning a released version.
 
 ---
 
