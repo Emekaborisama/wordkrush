@@ -56,6 +56,13 @@ import {
   type FeedbackChannel,
   type FeedbackSettings,
 } from './src/settings/types';
+import { toUserbackIdentity } from './src/userback/identity';
+import {
+  isUserbackConfigured,
+  openUserback,
+  setUserbackLauncherVisible,
+  syncUserback,
+} from './src/userback/widget';
 import { Drawer, type DrawerDestination } from './src/ui/Drawer';
 import { AnalyticsConsentPrompt } from './src/ui/AnalyticsConsentPrompt';
 import { TopBar } from './src/ui/TopBar';
@@ -232,6 +239,16 @@ export default function App() {
     };
   }, []);
 
+  // The feedback widget waits for auth to resolve rather than loading on
+  // mount: a restored session is then attached to the very first report,
+  // instead of the widget being briefly anonymous and re-identifying a beat
+  // later. Guests get the widget too — anonymous feedback is still feedback,
+  // and inventing an id for them would turn a support tool into a tracker.
+  useEffect(() => {
+    if (!profileReady) return;
+    syncUserback(toUserbackIdentity(profile));
+  }, [profileReady, profile]);
+
   const boardFor = (gameId: string) => boards[gameId] ?? EMPTY_BOARD;
   const startGame = (gameId: string) => setScreen({ name: 'game', gameId, seed: randomSeed() });
 
@@ -360,6 +377,10 @@ export default function App() {
   // hidden there — a menu bar over a live round is a mis-tap waiting to happen.
   // Every game now plays under `game`, so the one check covers all three.
   const showChrome = screen.name !== 'game';
+  // Userback's floating launcher is chrome too, so it follows the same rule.
+  useEffect(() => {
+    setUserbackLauncherVisible(showChrome);
+  }, [showChrome]);
   const activeGameId = 'gameId' in screen ? screen.gameId : undefined;
   const activeKind: DrawerDestination['kind'] =
     screen.name === 'hub'
@@ -618,6 +639,8 @@ export default function App() {
           signedInAs={profile?.username ?? null}
           feedbackSettings={feedbackSettings}
           onToggleFeedback={toggleFeedback}
+          canSendFeedback={isUserbackConfigured}
+          onSendFeedback={openUserback}
           analyticsConsent={analyticsConsent}
           onAnalyticsPress={() => {
             if (!isAnalyticsConfigured) return;

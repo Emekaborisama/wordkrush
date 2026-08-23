@@ -455,6 +455,7 @@ Quick map of where each journey step lives:
 | Web favicon + share preview | `assets/favicon.png`, `assets/apple-touch-icon.png`, `assets/logo/wordkrush-lockup.png`, `scripts/patch-web-head.mjs` | [BUILT] — cache-busted tab icons in `dist/`; Open Graph / Twitter tags with the lockup at `/og-image.png` (not the favicon crop) |
 | Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] — audits git-visible changes; Finder `* 2.*` copies and `supabase/.temp/` are gitignored so they do not count as source |
 | Consent and product analytics | `src/analytics/`, `src/ui/AnalyticsConsentPrompt.tsx` | [BUILT] |
+| Player feedback (bugs + suggestions) | `src/userback/`, `@userback/widget`, drawer "Send feedback" | [BUILT: web] — launcher on every non-game screen, hidden during a run; signed-in players are identified, guests stay anonymous. Native is a documented no-op stub pending a Userback Mobile SDK key (D-046) |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |
 | Sound + haptics | `src/native/feedback.ts`, `src/native/sound.ts`, `src/native/haptics.ts`, `assets/sounds/`, `src/settings/` | [BUILT] — one `feedback(event)` table maps five game moments to a clip + haptic; both channels mutable from the drawer. See D-043 |
 | Wordfall match juice | `src/ui/wordfall/clearJuice.ts`, `src/ui/wordfall/BoardView.tsx` | [BUILT] — puff then fall on `lastPlay.cleared`; special-birth pop by tile id; Crush/Nova stamp on chain ≥ 2. RN `Animated`, not Lottie (ST-80, D-032) |
@@ -466,8 +467,10 @@ Quick map of where each journey step lives:
 - `.env` gitignored + untracked; shape in `.env.example` (names only). History clean — the one committed `.env` was empty.
 - Finder duplicate names (`* 2.ts`, `* 2.png`, …) and `supabase/.temp/` are gitignored. They are local copies, not app source.
 - `SUPABASE_SECRET_KEY`: pipeline-only, loaded via `tsx --env-file=.env`. Never `EXPO_PUBLIC_`-prefixed — Expo embeds those in the shipped bundle.
-- Client bundles contain only publishable Supabase and PostHog project
-  configuration under `EXPO_PUBLIC_*`; neither grants privileged server access.
+- Client bundles contain only publishable Supabase, PostHog and Userback project
+  configuration under `EXPO_PUBLIC_*`; none grants privileged server access.
+  `EXPO_PUBLIC_USERBACK_TOKEN` identifies the feedback project, not the
+  Userback account, and is unset in builds that ship without the widget.
 - Supabase access is constrained by Row Level Security (`players`,
   `leaderboard_entries`, `global_scores`). Clients insert only their own rows
   and cannot update or delete a submitted score. PostHog remains opted out

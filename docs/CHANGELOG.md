@@ -6,10 +6,20 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
-## [0.5.2] - 2026-08-23
+## [0.6.1] - 2026-08-23
 
 ### Added
 - **Wordfall match juice: puff, then fall.** A valid word used to blink tiles off and spring the rest down. Cleared tiles now scale-fade with a short burst in place, gravity waits ~140ms, and a new special pops on its tile. A 2× chain stamps CRUSH and 3×+ stamps NOVA — our words, not Candy Crush's. Timing is UI-only over `lastPlay`; the reducer is unchanged. Lottie `crush-hit` / `crush-best` stay empty (ST-72).
+
+## [0.6.0] - 2026-08-23
+
+### Added
+- **Players can send feedback from inside the game.** The web build now carries the Userback widget: a launcher on every non-game screen, plus a **Send feedback** entry in the drawer, opening a form that takes a bug report or a suggestion with an annotated screenshot. It disappears during a run — a floating button over a live board is a mis-tap waiting to happen — and comes back the moment the round ends.
+- **Signed-in reports arrive with a name on them.** A player who is signed in is identified to Userback with their account id, username and email, so a reply can actually reach them, and it happens before the first report rather than a beat later: the widget waits for the session to restore instead of loading anonymous and re-identifying. Guests get the widget too and stay anonymous — inventing a stable id for them would turn a support tool into a tracker, which is not what the analytics consent covers (D-022). Signing out tears the widget down and rebuilds it anonymously, so the next person on a shared browser never signs a report with someone else's name.
+- **Nothing is recorded.** The Userback SDK can start a session replay; this app never calls it. Nothing leaves the browser until a player types a report and presses send.
+
+### Changed
+- **The drawer's `FEEDBACK` heading now means the player's feedback.** The sound and vibration switches under it were never that — they are the game's *feel* — so they moved under `SOUND & VIBRATION`, which shortens to `SOUND` wherever `canVibrate()` says there is no vibration row to name.
 
 ## [0.5.1] - 2026-08-23
 
