@@ -48,6 +48,14 @@ import {
 import { EMPTY_BOARD, type ScoreBoard } from './src/scores/types';
 import { loadStreak, markPlayedToday } from './src/streak/storage';
 import { dayKey, EMPTY_STREAK, type DailyStreak } from './src/streak/types';
+import { applyFeedbackSettings, feedback } from './src/native/feedback';
+import { loadFeedbackSettings, saveFeedbackSettings } from './src/settings/storage';
+import {
+  DEFAULT_FEEDBACK_SETTINGS,
+  toggleChannel,
+  type FeedbackChannel,
+  type FeedbackSettings,
+} from './src/settings/types';
 import { Drawer, type DrawerDestination } from './src/ui/Drawer';
 import { AnalyticsConsentPrompt } from './src/ui/AnalyticsConsentPrompt';
 import { TopBar } from './src/ui/TopBar';
@@ -130,6 +138,8 @@ export default function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [streak, setStreak] = useState<DailyStreak>(EMPTY_STREAK);
+  const [feedbackSettings, setFeedbackSettings] =
+    useState<FeedbackSettings>(DEFAULT_FEEDBACK_SETTINGS);
   const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent>('unknown');
   const [showAnalyticsPrompt, setShowAnalyticsPrompt] = useState(false);
   const [boardsReady, setBoardsReady] = useState(false);
@@ -196,6 +206,12 @@ export default function App() {
     void loadStreak().then((loadedStreak) => {
       setStreak(loadedStreak);
       setStreakReady(true);
+    });
+    // Sound/vibration switches. Defaults are on, so a slow read just means the
+    // first moment of the session uses the defaults rather than nothing.
+    void loadFeedbackSettings().then((stored) => {
+      setFeedbackSettings(stored);
+      applyFeedbackSettings(stored);
     });
     void initializeAnalytics().then((storedConsent) => {
       setAnalyticsConsent(storedConsent);
@@ -353,6 +369,21 @@ export default function App() {
         : screen.name === 'auth'
           ? 'account'
           : 'game';
+
+  /**
+   * Flips one feedback channel. Applied to the effect layer immediately so the
+   * tap that turns sound back on is itself audible, then persisted; a failed
+   * write costs the preference next launch, not this session.
+   */
+  const toggleFeedback = (channel: FeedbackChannel) => {
+    const next = toggleChannel(feedbackSettings, channel);
+    setFeedbackSettings(next);
+    applyFeedbackSettings(next);
+    void saveFeedbackSettings(next);
+    // Demonstrate what was just switched on. Gating happens inside `feedback`,
+    // so enabling vibration buzzes without also making noise, and vice versa.
+    if (next[channel]) feedback('correct');
+  };
 
   const navigate = (to: DrawerDestination) => {
     if (to.kind === 'hub') setScreen({ name: 'hub' });
@@ -585,6 +616,8 @@ export default function App() {
           activeGameId={activeGameId}
           activeKind={activeKind}
           signedInAs={profile?.username ?? null}
+          feedbackSettings={feedbackSettings}
+          onToggleFeedback={toggleFeedback}
           analyticsConsent={analyticsConsent}
           onAnalyticsPress={() => {
             if (!isAnalyticsConfigured) return;

@@ -22,6 +22,10 @@ export default defineConfig({
       'src/data/**/*.test.ts',
       'src/ui/**/*.test.ts',
       'src/scores/**/*.test.ts',
+      'src/settings/**/*.test.ts',
+      // `src/streak/types.test.ts` predates this line and was never collected —
+      // the suite existed but had not run since it was written.
+      'src/streak/**/*.test.ts',
       'src/auth/**/*.test.ts',
       'src/analytics/**/*.test.ts',
       'src/games/**/*.test.ts',

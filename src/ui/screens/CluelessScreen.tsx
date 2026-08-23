@@ -15,7 +15,7 @@ import { isCluelessState, rehydrate } from '../../games/clueless/persistence';
 import type { CluelessState } from '../../games/clueless/types';
 import { loadProgress, saveProgress } from '../../games/progress';
 import { getGame } from '../../games/registry';
-import { tapCorrect, tapWrong } from '../../native/haptics';
+import { feedback } from '../../native/feedback';
 import { GuessRow } from '../GuessRow';
 import { ExampleRow, HowToPlay } from '../HowToPlay';
 import {
@@ -117,13 +117,15 @@ export function CluelessScreen({
     });
 
     if (next.status === 'won' && before !== 'won') {
-      void tapCorrect();
+      // Solving the word ends the run, so this is the celebration, not a
+      // routine 'correct'.
+      feedback('win');
       if (!reported.current) {
         reported.current = true;
         onWin(next.guesses.length);
       }
     } else if (next.rejection?.kind === 'not-a-word') {
-      void tapWrong();
+      feedback('wrong');
     }
   }
 

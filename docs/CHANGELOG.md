@@ -6,6 +6,20 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.4.0] - 2026-08-23
+
+### Added
+- **The games have a voice.** Five game moments now fire a sound and a haptic together: a correct guess or valid word, a wrong guess or rejected word, each letter joining a Wordfall trace, a level cleared, and a run won. The four supplied clips live in `assets/sounds/` and are bundled, so audio never waits on the network (D-004 holds). Winning a level plays the level fanfare rather than the generic "correct" beat, and More or Less celebrates only a **personal best** — replaying a fanfare over an ordinary loss reads as sarcasm.
+- **Sound and vibration switches in the drawer.** Both default to on and persist per device. Flipping one on immediately plays what it just enabled, so the switch proves itself. The vibration row is hidden on web, where haptics are a deliberate no-op — a switch that visibly does nothing is worse than no switch.
+- **The iOS silent switch still works.** Audio mode is set to respect hardware mute and to mix with other audio, so a phone on silent stays silent and someone playing over their own music keeps their music.
+
+### Changed
+- **Screens name the moment, not the effect.** `src/native/feedback.ts` maps `feedback('levelUp')` to a clip plus a haptic in one table; the three game screens no longer reach for `tapCorrect`/`tapWrong` directly. Retuning the game's feel is a one-line edit in that table instead of a hunt across screens, and the mute switches are enforced in one place instead of at every call site (D-043).
+- **Wordfall's per-letter tick is driven by the reducer, not the gesture.** The trace tick fires when the selection actually grows, rather than on `onTrace`, which fires on every pointer move that lands on a tile — including the one already under the finger.
+
+### Fixed
+- **The daily-streak test suite was never running.** `src/streak/types.test.ts` had existed since the streak shipped but matched no pattern in `vitest.config.ts`, so it was silently collected by nothing. It is now included, along with the new settings suite — `npm test` goes from 35 files to 37.
+
 ## [0.2.0] - 2026-08-23
 
 ### Added

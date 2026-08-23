@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { AnalyticsConsent } from '../analytics/events';
+import type { FeedbackChannel, FeedbackSettings } from '../settings/types';
 import { GAMES } from '../games/registry';
 import { BrandArtwork, GameArtwork, IconButton } from './components';
 import { font, radius, space, theme, type, withAlpha } from './theme';
@@ -21,6 +22,8 @@ type Props = {
   signedInAs?: string | null;
   analyticsConsent: AnalyticsConsent;
   onAnalyticsPress: () => void;
+  feedbackSettings: FeedbackSettings;
+  onToggleFeedback: (channel: FeedbackChannel) => void;
 };
 
 const WIDTH = 304;
@@ -45,6 +48,8 @@ export function Drawer({
   signedInAs,
   analyticsConsent,
   onAnalyticsPress,
+  feedbackSettings,
+  onToggleFeedback,
 }: Props) {
   const slide = useRef(new Animated.Value(open ? 0 : -WIDTH)).current;
   const fade = useRef(new Animated.Value(open ? 1 : 0)).current;
@@ -134,6 +139,29 @@ export function Drawer({
           accent={theme.accentSecondary}
           onPress={() => go({ kind: 'account' })}
         />
+
+        <Text style={styles.sectionLabel}>FEEDBACK</Text>
+        {/* Left open rather than closing the drawer: these are switches people
+            flip and immediately want to hear, not navigation. */}
+        <Item
+          label={feedbackSettings.sound ? 'Sound on' : 'Sound off'}
+          icon={<Text style={styles.itemGlyph}>{feedbackSettings.sound ? '♪' : '⃠'}</Text>}
+          accent={theme.accentSecondary}
+          trailing={feedbackSettings.sound ? 'ON' : 'OFF'}
+          onPress={() => onToggleFeedback('sound')}
+        />
+        {/* Native only. Haptics are a deliberate no-op on web (see
+            native/haptics.ts), and a switch that visibly does nothing is worse
+            than no switch. */}
+        {Platform.OS !== 'web' && (
+          <Item
+            label={feedbackSettings.vibration ? 'Vibration on' : 'Vibration off'}
+            icon={<Text style={styles.itemGlyph}>≈</Text>}
+            accent={theme.warning}
+            trailing={feedbackSettings.vibration ? 'ON' : 'OFF'}
+            onPress={() => onToggleFeedback('vibration')}
+          />
+        )}
 
         <Text style={styles.sectionLabel}>PRIVACY</Text>
         <Item

@@ -59,7 +59,7 @@ Left card: name + revealed value. Right card: name + hidden value. Every number 
 The reducer compares the two bundled values. Note what "correct" means here: **B > A per the shipped snapshot from source X on date D** — never absolute truth. The fairness guard is what makes this honest: measurement noise smaller than 15% *cannot flip the answer of any question the player was actually asked*. Full correctness model: BRAINSTORM §11.
 
 **6. The answer travels back up: reveal.** [PLANNED]
-The hidden value counts up to its real number — the emotional beat of the whole game — then a haptic tap fires (`src/native/haptics.native.ts`; no-op on web via the `.web.ts` twin). Correct → streak++, winning card slides left, new challenger enters (carry-over chain — genre standard, still [OPEN] vs the reference game). Wrong → run over.
+The hidden value counts up to its real number — the emotional beat of the whole game — then the judgement's feedback fires: `feedback('correct')` or `feedback('wrong')`, which plays a clip and a haptic together (`src/native/feedback.ts`). The haptic half is a no-op on web via the `haptics.ts` / `haptics.native.ts` twins; the clip plays everywhere. Correct → streak++, winning card slides left, new challenger enters (carry-over chain — genre standard, still [OPEN] vs the reference game). Wrong → run over.
 
 **7. Back to the player: game over.** [BUILT]
 The run is written to the local board first (`src/scores/storage.ts`). Game over shows the streak, the pair that ended it, and Play Again / scores / all-games. Scores open a two-tab surface: **On this device** is the offline history; **Global** is each signed-in player's best run for that game (Journey 5). Game Center remains a later native 4.2 extra, not this board.
@@ -456,7 +456,7 @@ Quick map of where each journey step lives:
 | Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] — audits git-visible changes; Finder `* 2.*` copies and `supabase/.temp/` are gitignored so they do not count as source |
 | Consent and product analytics | `src/analytics/`, `src/ui/AnalyticsConsentPrompt.tsx` | [BUILT] |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |
-| Haptics | `src/native/haptics.ts` | [BUILT] |
+| Sound + haptics | `src/native/feedback.ts`, `src/native/sound.ts`, `src/native/haptics.ts`, `assets/sounds/`, `src/settings/` | [BUILT] — one `feedback(event)` table maps five game moments to a clip + haptic; both channels mutable from the drawer. See D-043 |
 | Wordfall weekly drops | `src/games/wordfall/schedule.ts` (`taskFingerprint`), `src/data/wordfall/levels.ts`, [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md), `.cursor/skills/wordfall-weekly-gauntlet/` | [BUILT] gate + unique-task + local `serve:web` before GitHub (D-038); [PLANNED] Job A cron — Monday `availableFrom`; launch set has no date |
 | Game Center | `src/native/` | [PLANNED] |
 
