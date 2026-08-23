@@ -1,0 +1,8 @@
+# This project has its own dependency tree — Devvit needs React 19 / Vite 8 /
+# TS 6, which the Expo app does not.
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Devvit CLI scratch and auth state.
+.devvit/

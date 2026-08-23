@@ -13,7 +13,7 @@ import { isGameState, isResumable, matchesDataset } from '../../games/more-or-le
 import type { Category, Item } from '../../games/more-or-less/types';
 import { clearProgress, loadProgress, saveProgress } from '../../games/progress';
 import { getGame } from '../../games/registry';
-import { tapCorrect, tapWrong } from '../../native/haptics';
+import { feedback } from '../../native/feedback';
 import { HowToPlay } from '../HowToPlay';
 import { Sparkle } from '../Sparkle';
 import { Button, FeedbackBanner, GameHeader, ProgressPill, Surface } from '../components';
@@ -87,10 +87,11 @@ export function GameScreen({ category, seed, bestStreak, onExit, onGameOver }: P
   // number that just ended the run would read as mocking the player.
   const sparkling = counted.done && state.lastGuessCorrect === true;
 
-  // Haptics on judgement. No-op on web via the .web.ts twin.
+  // Sound + haptics on judgement, paired in native/feedback.ts. Haptics are a
+  // no-op on web via the .native twin; the clip still plays there.
   useEffect(() => {
-    if (state.lastGuessCorrect === true) void tapCorrect();
-    if (state.lastGuessCorrect === false) void tapWrong();
+    if (state.lastGuessCorrect === true) feedback('correct');
+    if (state.lastGuessCorrect === false) feedback('wrong');
   }, [state.lastGuessCorrect, state.right.id]);
 
   // Hold the reveal briefly, then either advance or end the run.

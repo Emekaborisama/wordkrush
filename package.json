@@ -1,6 +1,6 @@
 {
   "name": "wordkrush",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -22,6 +22,10 @@
     "pipeline:wordfall": "tsx pipeline/build-wordfall-dictionary.ts",
     "auth:ensure-test-player": "tsx --env-file=.env pipeline/ensure-test-player.ts",
     "serve:web": "node server/serve.mjs",
+    "reddit:install": "npm --prefix reddit install",
+    "reddit:types": "npm --prefix reddit run test:types",
+    "reddit:build": "npm --prefix reddit run build",
+    "reddit:dev": "npm --prefix reddit run dev",
     "release:notes": "node scripts/changelog-notes.mjs --from-package"
   },
   "dependencies": {
@@ -30,6 +34,7 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.112.3",
     "expo": "~57.0.13",
+    "expo-audio": "~57.0.4",
     "expo-font": "~57.0.1",
     "expo-haptics": "~57.0.1",
     "expo-linking": "~57.0.7",
@@ -44,6 +49,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "hono": "4.12.32",
     "tsx": "^4.23.12",
     "typescript": "~6.0.3",
     "vitest": "^4.1.10"

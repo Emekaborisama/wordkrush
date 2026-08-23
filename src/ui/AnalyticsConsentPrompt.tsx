@@ -19,16 +19,18 @@ export function AnalyticsConsentPrompt({ visible, onAllow, onDecline }: Props) {
           <Text style={styles.eyebrow}>PRIVATE BY DEFAULT</Text>
           <Text style={styles.title}>Help improve WordKrush?</Text>
           <Text style={styles.body}>
-            Share anonymous play and reliability events so we can tune game balance and fix
+            Share play and reliability events so we can tune game balance and fix
             problems faster.
           </Text>
           <Text style={styles.detail}>
-            We do not send your email, username, guesses, words, item names, or screen recordings.
-            You can change this choice from the menu at any time.
+            Guests stay anonymous. If you create an account, we attach your account
+            id, username, and email so we can see who signed up. We never send
+            guesses, words, item names, or screen recordings. You can change this
+            from the menu at any time.
           </Text>
 
           <Button
-            title="Allow anonymous analytics"
+            title="Allow analytics"
             onPress={onAllow}
             size="lg"
             style={styles.allow}

@@ -27,6 +27,8 @@ Read the documents relevant to your change before editing:
 | Technology choices, constraints, and test strategy | `docs/STACK.md` |
 | Collaboration workflow and definition of done | `docs/WORKFLOW.md` |
 | Wordfall Monday drops and weekly automation | `docs/WORDFALL-WEEKLY.md` and `.cursor/skills/wordfall-weekly-gauntlet/` |
+| The Reddit (Devvit) build of More or Less | `reddit/README.md` and STACK D-042 |
+| Reddit ads and GTM posting | `docs/marketing/reddits/` and `.cursor/skills/reddit-ad-posts/` |
 | Local commands and dependency versions | `package.json` |
 | Secrets and environment-variable boundaries | `.env.example` and `.gitignore` |
 | Cross-agent working agreement | This file |
@@ -91,6 +93,12 @@ allowed; see `docs/WORKFLOW.md`.
 - Keep each game's logic in `src/games/<game-id>/`. Reducers and deterministic
   logic there must never import React, React Native, Expo, storage, network
   clients, timers, or other platform APIs.
+- **`src/games/more-or-less/` now has two consumers.** The Reddit app
+  (`reddit/`) imports that engine and `src/data/categories/` directly rather
+  than copying them. Never fork it to satisfy one surface; if a change breaks
+  the other, fix the shared code or add a parameter. The crossing files are
+  listed in `reddit/tools/tsconfig.shared.json`, and adding an import to the
+  engine will fail that build until the list is updated (D-042).
 - Model game behaviour as deterministic, testable functions. The engine should
   remain a pure reducer: `(state, action) => state`.
 - Pass a seeded RNG into pairing/sequence logic; do not call `Math.random()`
@@ -132,8 +140,8 @@ These rules protect the fairness of the game:
    decisions → `BRAINSTORM.md`; visual identity → `docs/branding/`; task
    status/blockers → `ROADMAP.md` and Superthread; process changes →
    `WORKFLOW.md`.
-4. Follow `docs/WORKFLOW.md` for branch, changelog, CI, content-pipeline, and
-   release requirements.
+4. Follow `docs/WORKFLOW.md` for branch, changelog (new `x.y.z` per PR), CI,
+   content-pipeline, and release requirements.
 
 Preserve decision and correction history by appending or superseding prior
 rationale. `npm run check:docs` enforces the path-based minimum, but it cannot
@@ -152,7 +160,17 @@ npm test            # Vitest test suite
 npm run check:docs  # changed-file documentation impact
 npm run check       # documentation + typecheck + tests
 npm run build:web   # static web export
+
+npm run reddit:install  # install the Devvit app's own dependency tree
+npm run reddit:types    # typecheck reddit/ (NOT covered by `npm run typecheck`)
+npm run reddit:build    # vite build → reddit/dist
+npm run reddit:dev      # devvit playtest against a test subreddit
 ```
+
+`npm run check` does not typecheck `reddit/` — that project needs the `browser`
+resolution condition, which the Expo config resolves as `react-native`. Run
+`npm run reddit:types` after changing anything under `reddit/`, and after
+changing `src/games/more-or-less/` or `src/data/categories/`.
 
 The intended logic test runner is Vitest. If tests or test tooling are not yet
 present, add them as part of the first game-logic implementation rather than

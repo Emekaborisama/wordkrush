@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { GameState } from '../../games/more-or-less/engine';
 import type { Category } from '../../games/more-or-less/types';
 import { getGame } from '../../games/registry';
+import { feedback } from '../../native/feedback';
 import { rankOf, type ScoreBoard } from '../../scores/types';
 import { Badge, ResultPanel, Stat, Surface } from '../components';
 import { Mascot } from '../lottie/Mascot';
@@ -26,6 +28,13 @@ export function GameOverScreen({
 }: Props) {
   const isBest = state.streak > 0 && state.streak >= board.bestStreak;
   const accent = getGame('more-or-less')?.accent ?? theme.success;
+
+  // Celebrate a personal best, and only that. The run that merely ended already
+  // got its 'wrong' beat in GameScreen; replaying a fanfare over an ordinary
+  // loss would read as sarcasm.
+  useEffect(() => {
+    if (isBest) feedback('win');
+  }, [isBest]);
   const tokens = gameAccentTokens(accent);
   // rankOf counts strictly-better runs, and this run is already saved, so its
   // own entry never inflates the rank.

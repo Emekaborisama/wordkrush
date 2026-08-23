@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../dist/types/server",
+    "tsBuildInfoFile": "../dist/types/server/tsconfig.tsbuildinfo",
+    "customConditions": [],
+    "types": ["node"],
+    "exactOptionalPropertyTypes": false,
+    "rootDir": "../src/server"
+  },
+  "include": ["../src/server/**/*"],
+  /* Route tests run from the repo root's Vitest, against the in-memory Devvit
+     stand-in — `vitest` is not a dependency of this project. */
+  "exclude": ["../src/server/**/*.test.ts"],
+  "references": [{ "path": "./tsconfig.shared.json" }]
+}

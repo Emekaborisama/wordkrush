@@ -37,7 +37,7 @@ import {
 } from '../../games/wordfall/schedule';
 import type { Level, SpecialKind, WordfallState } from '../../games/wordfall/types';
 import { getGame } from '../../games/registry';
-import { tapCorrect, tapWrong } from '../../native/haptics';
+import { feedback } from '../../native/feedback';
 import { HowToPlay } from '../HowToPlay';
 import {
   Badge,
@@ -306,10 +306,20 @@ function LevelPlay({
     onStateChange(state);
   }, [state, onStateChange]);
 
+  // A tick per letter as the trace grows. Driven off the selection length
+  // rather than off `onTrace`, which fires on every pointer move that lands on
+  // a tile — including the one already under the finger. The reducer is what
+  // decides a letter was actually added, so it is the honest signal.
+  const tracedCount = useRef(0);
+  useEffect(() => {
+    if (state.selection.length > tracedCount.current) feedback('select');
+    tracedCount.current = state.selection.length;
+  }, [state.selection.length]);
+
   useEffect(() => {
     if (state.status === 'won' && !reported.current) {
       reported.current = true;
-      void tapCorrect();
+      feedback('levelUp');
       captureAnalytics('level_completed', {
         game_id: 'wordfall',
         level_number: level.number,
@@ -428,8 +438,8 @@ function LevelPlay({
       chain_length_bucket: chainLengthBucket(play?.chain ?? 0),
     });
 
-    if (after.rejection) void tapWrong();
-    else if (after.lastPlay) void tapCorrect();
+    if (after.rejection) feedback('wrong');
+    else if (after.lastPlay) feedback('correct');
   };
 
   const over = state.status !== 'playing';

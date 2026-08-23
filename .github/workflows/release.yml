@@ -1,9 +1,9 @@
 name: GitHub Release
 
-# First version is 0.1.0. After a human rolls CHANGELOG [Unreleased] to
-# [x.y.z] (and bumps package.json when needed), merge to master publishes
-# the GitHub Release. Pushing tag vX.Y.Z does the same. This does not run
-# EAS or App Store submit (owner accounts; see WORKFLOW.md).
+# Every PR is a version. Merge to master publishes the GitHub Release for
+# package.json's x.y.z from that CHANGELOG section. Pushing tag vX.Y.Z does
+# the same. This does not run EAS or App Store submit (owner accounts; see
+# WORKFLOW.md).
 on:
   push:
     branches: [master]
@@ -55,7 +55,7 @@ jobs:
             echo "Changelog has no [${{ steps.ver.outputs.version }}] section."
             exit 1
           fi
-          echo "Changelog still [Unreleased] for ${{ steps.ver.outputs.version }} — not a release commit."
+          echo "Changelog has no [${{ steps.ver.outputs.version }}] section — not a release commit."
           echo "ready=false" >> "$GITHUB_OUTPUT"
 
       - name: Publish GitHub Release

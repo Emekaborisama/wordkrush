@@ -6,6 +6,8 @@ import {
 } from '@expo-google-fonts/fredoka';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import { readArrivalContext, type ArrivalContext } from './src/analytics/arrival';
+import { isLandingArrival } from './src/analytics/attribution';
 import {
   captureAnalytics,
   identifyAnalytics,
@@ -46,6 +48,14 @@ import {
 import { EMPTY_BOARD, type ScoreBoard } from './src/scores/types';
 import { loadStreak, markPlayedToday } from './src/streak/storage';
 import { dayKey, EMPTY_STREAK, type DailyStreak } from './src/streak/types';
+import { applyFeedbackSettings, feedback } from './src/native/feedback';
+import { loadFeedbackSettings, saveFeedbackSettings } from './src/settings/storage';
+import {
+  DEFAULT_FEEDBACK_SETTINGS,
+  toggleChannel,
+  type FeedbackChannel,
+  type FeedbackSettings,
+} from './src/settings/types';
 import { Drawer, type DrawerDestination } from './src/ui/Drawer';
 import { AnalyticsConsentPrompt } from './src/ui/AnalyticsConsentPrompt';
 import { TopBar } from './src/ui/TopBar';
@@ -128,14 +138,23 @@ export default function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [streak, setStreak] = useState<DailyStreak>(EMPTY_STREAK);
+  const [feedbackSettings, setFeedbackSettings] =
+    useState<FeedbackSettings>(DEFAULT_FEEDBACK_SETTINGS);
   const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent>('unknown');
   const [showAnalyticsPrompt, setShowAnalyticsPrompt] = useState(false);
   const [boardsReady, setBoardsReady] = useState(false);
+  const [arrivalReady, setArrivalReady] = useState(false);
   const [profileReady, setProfileReady] = useState(false);
   const [streakReady, setStreakReady] = useState(false);
   const [boardsResult, setBoardsResult] = useState<'loaded' | 'fallback'>('loaded');
   const startupAt = useRef(Date.now());
   const openedReported = useRef(false);
+  const landingReported = useRef(false);
+  const arrivalRef = useRef<ArrivalContext>({
+    attribution: { entry_source: 'direct', has_utm_campaign: false },
+    isWeb: false,
+    hasHref: false,
+  });
   const readyReported = useRef(false);
   const restoredSessionReported = useRef(false);
   const hadRestoredSession = useRef(false);
@@ -157,6 +176,19 @@ export default function App() {
     // Restoring a session must never block play: failures resolve to null.
     void (async () => {
       try {
+        arrivalRef.current = await readArrivalContext();
+      } catch {
+        arrivalRef.current = {
+          attribution: { entry_source: 'direct', has_utm_campaign: false },
+          isWeb: false,
+          hasHref: false,
+        };
+      } finally {
+        setArrivalReady(true);
+      }
+    })();
+    void (async () => {
+      try {
         const initialUrl = await Linking.getInitialURL();
         if (initialUrl) await completeSessionFromUrl(initialUrl);
         const restoredProfile = await currentProfile();
@@ -174,6 +206,12 @@ export default function App() {
     void loadStreak().then((loadedStreak) => {
       setStreak(loadedStreak);
       setStreakReady(true);
+    });
+    // Sound/vibration switches. Defaults are on, so a slow read just means the
+    // first moment of the session uses the defaults rather than nothing.
+    void loadFeedbackSettings().then((stored) => {
+      setFeedbackSettings(stored);
+      applyFeedbackSettings(stored);
     });
     void initializeAnalytics().then((storedConsent) => {
       setAnalyticsConsent(storedConsent);
@@ -198,7 +236,7 @@ export default function App() {
   const startGame = (gameId: string) => setScreen({ name: 'game', gameId, seed: randomSeed() });
 
   useEffect(() => {
-    if (analyticsConsent !== 'granted') return;
+    if (analyticsConsent !== 'granted' || !arrivalReady) return;
     const authStatus = profile ? 'signed_in' : 'guest';
     if (profile && identifiedProfileId.current !== profile.id) {
       identifyAnalytics(profile);
@@ -207,12 +245,28 @@ export default function App() {
     registerAnalyticsContext(authStatus);
     if (!openedReported.current) {
       openedReported.current = true;
+      const arrival = arrivalRef.current;
       captureAnalytics('app_opened', {
         backend_configured: isBackendConfigured,
         auth_status: authStatus,
+        ...arrival.attribution,
       });
+      if (
+        !landingReported.current &&
+        isLandingArrival({
+          isWeb: arrival.isWeb,
+          hasHref: arrival.hasHref,
+          entry_source: arrival.attribution.entry_source,
+        })
+      ) {
+        landingReported.current = true;
+        captureAnalytics('landing_viewed', {
+          ...arrival.attribution,
+          surface: arrival.isWeb ? 'web' : 'native',
+        });
+      }
     }
-  }, [analyticsConsent, profile]);
+  }, [analyticsConsent, arrivalReady, profile]);
 
   useEffect(() => {
     if (
@@ -315,6 +369,21 @@ export default function App() {
         : screen.name === 'auth'
           ? 'account'
           : 'game';
+
+  /**
+   * Flips one feedback channel. Applied to the effect layer immediately so the
+   * tap that turns sound back on is itself audible, then persisted; a failed
+   * write costs the preference next launch, not this session.
+   */
+  const toggleFeedback = (channel: FeedbackChannel) => {
+    const next = toggleChannel(feedbackSettings, channel);
+    setFeedbackSettings(next);
+    applyFeedbackSettings(next);
+    void saveFeedbackSettings(next);
+    // Demonstrate what was just switched on. Gating happens inside `feedback`,
+    // so enabling vibration buzzes without also making noise, and vice versa.
+    if (next[channel]) feedback('correct');
+  };
 
   const navigate = (to: DrawerDestination) => {
     if (to.kind === 'hub') setScreen({ name: 'hub' });
@@ -547,6 +616,8 @@ export default function App() {
           activeGameId={activeGameId}
           activeKind={activeKind}
           signedInAs={profile?.username ?? null}
+          feedbackSettings={feedbackSettings}
+          onToggleFeedback={toggleFeedback}
           analyticsConsent={analyticsConsent}
           onAnalyticsPress={() => {
             if (!isAnalyticsConfigured) return;

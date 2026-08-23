@@ -13,6 +13,8 @@ export const DEFAULT_CATEGORY_ID = 'wikipedia-popularity';
 
 const OUT_DIR = fileURLToPath(new URL('../src/data/categories/', import.meta.url));
 const CHANGELOG_PATH = fileURLToPath(new URL('../docs/CHANGELOG.md', import.meta.url));
+const PACKAGE_JSON_PATH = fileURLToPath(new URL('../package.json', import.meta.url));
+const APP_JSON_PATH = fileURLToPath(new URL('../app.json', import.meta.url));
 
 export type KeywordFile = {
   category: { id: string; name: string; metricLabel: string; unit: string };
@@ -146,30 +148,50 @@ export function compareSnapshots(
   };
 }
 
-export function appendUnreleasedBullet(
+export function nextPatchVersion(version: string): string {
+  const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+  if (!match) {
+    throw new Error(`version must be x.y.z, got ${JSON.stringify(version)}`);
+  }
+  return `${match[1]}.${match[2]}.${Number(match[3]) + 1}`;
+}
+
+export function replaceDeclaredVersion(source: string, next: string): string {
+  if (!/"version"\s*:\s*"\d+\.\d+\.\d+"/.test(source)) {
+    throw new Error('JSON is missing a "version": "x.y.z" field');
+  }
+  return source.replace(/("version"\s*:\s*")\d+\.\d+\.\d+(")/, `$1${next}$2`);
+}
+
+export function prependVersionSection(
   markdown: string,
+  version: string,
+  date: string,
   section: 'Added' | 'Changed',
   bullet: string,
 ): string {
   const line = bullet.startsWith('- ') ? bullet : `- ${bullet}`;
-  const heading = `### ${section}`;
-  const headingAt = markdown.indexOf(heading);
-  if (headingAt === -1) {
-    const unreleased = markdown.indexOf('## [Unreleased]');
-    if (unreleased === -1) {
-      throw new Error('CHANGELOG.md is missing ## [Unreleased]');
-    }
-    const insertAt = markdown.indexOf('\n', unreleased) + 1;
-    return `${markdown.slice(0, insertAt)}\n${heading}\n${line}\n${markdown.slice(insertAt)}`;
+  const firstVersion = markdown.search(/^## \[\d+\.\d+\.\d+\]/m);
+  if (firstVersion === -1) {
+    throw new Error('CHANGELOG.md has no ## [x.y.z] heading');
   }
-  const afterHeading = headingAt + heading.length;
-  const nl = markdown[afterHeading] === '\n' ? afterHeading + 1 : afterHeading;
-  return `${markdown.slice(0, nl)}${line}\n${markdown.slice(nl)}`;
+  return `${markdown.slice(0, firstVersion)}## [${version}] - ${date}\n\n### ${section}\n${line}\n\n${markdown.slice(firstVersion)}`;
 }
 
 export function writeChangelogBullet(section: 'Added' | 'Changed', bullet: string): void {
-  const next = appendUnreleasedBullet(readFileSync(CHANGELOG_PATH, 'utf8'), section, bullet);
-  writeFileSync(CHANGELOG_PATH, next);
+  const packageJson = readFileSync(PACKAGE_JSON_PATH, 'utf8');
+  const current = JSON.parse(packageJson).version;
+  if (typeof current !== 'string') {
+    throw new Error('package.json version must be a string');
+  }
+  const next = nextPatchVersion(current);
+  const date = new Date().toISOString().slice(0, 10);
+  writeFileSync(
+    CHANGELOG_PATH,
+    prependVersionSection(readFileSync(CHANGELOG_PATH, 'utf8'), next, date, section, bullet),
+  );
+  writeFileSync(PACKAGE_JSON_PATH, replaceDeclaredVersion(packageJson, next));
+  writeFileSync(APP_JSON_PATH, replaceDeclaredVersion(readFileSync(APP_JSON_PATH, 'utf8'), next));
 }
 
 export async function buildWikipediaPopularitySnapshot(

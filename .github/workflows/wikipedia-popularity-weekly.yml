@@ -52,3 +52,5 @@ jobs:
           add-paths: |
             src/data/categories/wikipedia-popularity.json
             docs/CHANGELOG.md
+            package.json
+            app.json

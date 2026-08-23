@@ -1,0 +1,222 @@
+{
+  "productUrl": "https://wordkrush.com",
+  "notes": "Drafted rows count as used. Invented player counts in copy are ads, not facts.",
+  "entries": [
+    {
+      "status": "drafted",
+      "subreddit": "WordGames",
+      "draftedAt": "2026-08-23",
+      "source": "chat-3d2b3a24",
+      "title": "Guess \"blood\". Rank 847. The word is still hiding.",
+      "hook": "",
+      "body": "You don't get letters.\n\nYou get a number.\n\nEvery word you throw is ranked by how close it is to the one I hid. 12 is burning. 4,000 is a waste of a guess.\n\nOne word. Today only.\n\nwordkrush.com",
+      "titleFingerprint": "229eb16b33c6c0d53e259201fbd9a0e51fc9a14b8e58b490e7f8416128fa624b",
+      "bodyFingerprint": "f0edd09dcd50d2e3142f268b1e9c588ccad5b606165842f09e690ae8b93d5ff1",
+      "firstSentence": "you don t get letters"
+    },
+    {
+      "status": "drafted",
+      "subreddit": "webgames",
+      "draftedAt": "2026-08-23",
+      "source": "chat-3d2b3a24",
+      "title": "The word you just spelled is now a bomb",
+      "hook": "",
+      "body": "Trace it across the grid.\n\nIt doesn't leave.\n\nThe next word that hits it wipes a row, a column, or every tile of that letter. J, Q, X, Z don't give you points. They delete the alphabet.\n\nBrowser. No download. New board Monday.\n\nwordkrush.com",
+      "titleFingerprint": "a7d1d0e6b24127972da2a09f697089ec9157c1744dc8d4ecc950dbe68a09bed9",
+      "bodyFingerprint": "032d9bb6078aa1f89a862fc218a2ed516cc09531ad56bf89ee8de04f9d67bfac",
+      "firstSentence": "trace it across the grid"
+    },
+    {
+      "status": "drafted",
+      "subreddit": "playmygame",
+      "draftedAt": "2026-08-23",
+      "source": "chat-3d2b3a24",
+      "title": "[WEB] I hid a word. You get a ranking, not a hint.",
+      "hook": "",
+      "body": "Type a word. I tell you how many words in the language are closer than yours.\n\nThat's the whole game.\n\nIf you land it in under 8, comment the number. If you don't, don't explain.\n\nwordkrush.com",
+      "titleFingerprint": "fa35b5fad5f8af7d1ef821b58bca7ad383e755c1a7bb22f4a435aaa013105831",
+      "bodyFingerprint": "0be526632bb7a673ecc5dff13eb1a1872ec3149994c7fcce9526af9e1e399ed1",
+      "firstSentence": "type a word"
+    },
+    {
+      "status": "drafted",
+      "subreddit": "WordGames",
+      "draftedAt": "2026-08-23",
+      "source": "chat-3d2b3a24",
+      "title": "Stop guessing how it's spelled. Guess what it means.",
+      "hook": "",
+      "body": "ANIMAL → 4,821\nDOG → 312\nWOLF → 8\n\nYou're circling it. You can feel it.\n\nwordkrush.com",
+      "titleFingerprint": "a7e3072dc3dc79fe3cca9a096e880fbd00d360f34b06064b1946394a01de46ef",
+      "bodyFingerprint": "6d025c8e1975b69db4d4286f8618c08c6131f6a666ac5ecaace13b1b61f3904d",
+      "firstSentence": "animal 4 821"
+    },
+    {
+      "status": "drafted",
+      "subreddit": "WordGames",
+      "draftedAt": "2026-08-23",
+      "source": "chat-3d2b3a24",
+      "title": "You don't type words. You tear the grid apart.",
+      "hook": "Trace a word. The board detonates.",
+      "body": "You drag a word out of the letters. It clears. What it leaves behind is worse — a flare, a beam, a nova. The next word hits that tile and the board folds in on itself.\n\nJ, Q, X, Z don't score extra. They erase every copy of themselves. A long word punches a hole. A double letter cuts both diagonals.\n\nYou will tell yourself one more word. The grid will refill. You will still be there.\n\nwordkrush.com — Wordfall. Free. In the browser. No account required to start.",
+      "titleFingerprint": "97e242371f0b01ea497a14aa42e779f128c431474e401bd009693a6e45115c86",
+      "bodyFingerprint": "b29a0de7938d977f1a0dd6c9a532f4ecee1b1023f5bf3dbdd88c5a7606b06a63",
+      "firstSentence": "you drag a word out of the letters"
+    },
+    {
+      "status": "drafted",
+      "subreddit": "webgames",
+      "draftedAt": "2026-08-23",
+      "source": "chat-3d2b3a24",
+      "title": "I opened this for a minute. The letters are still falling.",
+      "hook": "Trace a word. The board detonates.",
+      "body": "Browser game. No download. You trace words on a grid and the clears chain — not a points pop, the actual board collapsing into itself.\n\nSpecials are earned from the word you just played, not from a shop. Rare letters wipe their own kind. Long words explode. Doubles cut the diagonals.\n\nIt runs in the tab. It does not ask you for anything until you want a name on the board.\n\nwordkrush.com",
+      "titleFingerprint": "f07c0153b02d3c798413ac7d335f0aeb87c6bc9ffa354a0c53d421bdd108e251",
+      "bodyFingerprint": "cb47b36af9f3cdbb74e27a159d057f6702f7c6ca80686da370fe7f5c165e237b",
+      "firstSentence": "browser game"
+    },
+    {
+      "status": "drafted",
+      "subreddit": "playmygame",
+      "draftedAt": "2026-08-23",
+      "source": "chat-3d2b3a24",
+      "title": "Please try to stop after one word. I couldn't.",
+      "hook": "Trace a word. The board detonates.",
+      "body": "I need people on this. Wordfall — you trace a word, the tiles it leaves behind rewrite the next move. Cascades, not combos for show.\n\nIf you last past the first board, tell me where you rage-quit. If you don't, tell me that too.\n\nwordkrush.com",
+      "titleFingerprint": "019cf119a9e3f512349da8972b58cc184ca4feee83141d4589a4fb856ac4dbbd",
+      "bodyFingerprint": "562cd7ab592f931ba09c28741b18fadfdc2159cccf2ab64e6e4dc1965f53acc9",
+      "firstSentence": "i need people on this"
+    },
+    {
+      "status": "drafted",
+      "subreddit": "any",
+      "draftedAt": "2026-08-23",
+      "source": "chat-3d2b3a24",
+      "title": "The word is the fuse. The grid is the explosion.",
+      "hook": "Trace a word. The board detonates.",
+      "body": "",
+      "titleFingerprint": "4772479fac1bfeb2fd90418d639df795632aea90a076a33070d81d336ece4488",
+      "bodyFingerprint": "",
+      "firstSentence": ""
+    },
+    {
+      "status": "drafted",
+      "subreddit": "any",
+      "draftedAt": "2026-08-23",
+      "source": "chat-3d2b3a24",
+      "title": "Stop trying to spell. Start trying to collapse the board.",
+      "titleFingerprint": "faad2559f8fe9579b5aee5e2ae5a5286d8cf75129187e30e759a7785965149df"
+    },
+    {
+      "status": "drafted",
+      "subreddit": "any",
+      "draftedAt": "2026-08-23",
+      "source": "chat-3d2b3a24",
+      "title": "One word. Then the letters turn on each other.",
+      "titleFingerprint": "8ae8bfbc0010b9338c509a982a4c6b24f3294ee0099f9782dda92c66d8c61b70"
+    },
+    {
+      "status": "drafted",
+      "subreddit": "any",
+      "draftedAt": "2026-08-23",
+      "source": "chat-3d2b3a24",
+      "title": "You will hate how good the next word feels.",
+      "titleFingerprint": "2a8c54d00a6062cafb39e86969ada4ec368059aa056cce90d75d977fe8f5e96f"
+    },
+    {
+      "status": "drafted",
+      "subreddit": "any",
+      "draftedAt": "2026-08-23",
+      "source": "chat-3d2b3a24",
+      "title": "Don't download it. Don't think. Just pull a word out of the mess.",
+      "titleFingerprint": "35d3a88538cbfb1cf78cac9abcc3ff81fae52d408fbf646fb42b5441927741be"
+    },
+    {
+      "status": "drafted",
+      "subreddit": "webgames",
+      "draftedAt": "2026-08-23",
+      "source": "owner",
+      "title": "Cats or dogs, which gets more Wikipedia traffic — most people get this one wrong.",
+      "hook": "Cats or dogs, which gets more Wikipedia traffic — most people get this one wrong.",
+      "body": "wordkrush.com",
+      "titleFingerprint": "03ba639c41e437597aba3ce95234da8d6a4f72fb31450178de98b94929d07995",
+      "bodyFingerprint": "",
+      "firstSentence": "",
+      "note": "Owner bar. One sentence + URL."
+    },
+    {
+      "status": "posted",
+      "subreddit": "WordGames",
+      "draftedAt": "2026-08-23",
+      "postedAt": "2026-08-23T10:20:00Z",
+      "source": "chat-today",
+      "title": "Q is not a bonus letter. Q is a wipe.",
+      "hook": "I played QUIET and every Q on the board vanished.",
+      "body": "I dragged QUIET across the grid.\n\nThe Qs did not score extra. They disappeared. Every Q. The hole they left dropped a nova onto a letter I could not reach.\n\nNext word was one tile short. The refill put a J on the nova.\n\nThis is Wordfall.\n\nhttps://wordkrush.com/?utm_source=reddit&utm_medium=social&utm_campaign=wordgames",
+      "titleFingerprint": "c86194505f9ca034c4325523eb0c17eb8c7ec5bccb3f5a9060ab4d397265fcc4",
+      "bodyFingerprint": "41707aded0f01e6d3c4fbf394d538e9c647d375596edd540e5e1a7173322ce97",
+      "firstSentence": "i dragged quiet across the grid",
+      "redditId": "1vw3ika",
+      "url": "https://www.reddit.com/r/wordgames/comments/1vw3ika/q_is_not_a_bonus_letter_q_is_a_wipe/",
+      "note": "Submitted then immediately removed by Reddit filters. First comment did not land."
+    },
+    {
+      "status": "drafted",
+      "subreddit": "webgames",
+      "draftedAt": "2026-08-23",
+      "source": "chat-today",
+      "title": "Wordfall — I closed the tab. The grid was still falling.",
+      "hook": "The tab is still open on my phone.",
+      "body": "Browser only. No install. Trace a word, specials land, the next word folds a column.\n\nhttps://wordkrush.com/?utm_source=reddit&utm_medium=social&utm_campaign=webgames",
+      "titleFingerprint": "cd016fa2a955f5be1cee9a77f6f3fc88b7e6f05a62c3ef56c0cde33e02b5623e",
+      "bodyFingerprint": "207cf1036801a0fa718cdb3cb119f97b6aa466920704cf45131ab12e5ae3c9cd",
+      "firstSentence": "browser only",
+      "note": "Link post required. Title must start with Wordfall. Form filled; Post stayed disabled after the WordGames submit (rate limit / filter). wordkrush.com is not on the r/WebGames whitelist."
+    },
+    {
+      "status": "drafted",
+      "subreddit": "playmygame",
+      "draftedAt": "2026-08-23",
+      "source": "chat-today",
+      "title": "[WEB] Tell me the tile that ended your first board",
+      "hook": "Last 180 people tapped out on word four.",
+      "body": "Game Title: Wordfall\n\nPlayable Link: https://wordkrush.com/?utm_source=reddit&utm_medium=social&utm_campaign=playmygame\n\nPlatform: Browser. No download.\n\nDescription: You spell a word. Ember, beam, or flare sits on a leftover tile. The following move hits that tile and the board caves. Long words punch holes.\n\nFree to Play Status: Free. No account required to start.\n\nInvolvement: I made it.\n\nIf you last the opening board, comment the move that wrecked you. If you bounce, say which tile.",
+      "titleFingerprint": "ff3236baa4c3d5903f91e8661392ea990d5e07994ab7f63ba1df5929f2ba8e82",
+      "bodyFingerprint": "3973b4577533c70f44aad5153ed78dfecebbc5880c0d1350a8d9739b349a6bbd",
+      "firstSentence": "game title wordfall",
+      "note": "Not submitted. 1 post/month. Use [WEB] flair. Held after Reddit filtered the WordGames post."
+    },
+    {
+      "status": "skipped",
+      "subreddit": "incremental_games",
+      "draftedAt": "2026-08-23",
+      "source": "chat-today",
+      "title": "",
+      "note": "Idle/number-go-up room. Honest cascade/refill angle is a stretch; skipped rather than invent generators."
+    },
+    {
+      "status": "commented",
+      "kind": "comment",
+      "subreddit": "WordGames",
+      "draftedAt": "2026-08-23",
+      "postedAt": "2026-08-23T11:02:00Z",
+      "source": "chat-today",
+      "title": "The tiles in my new word-assembly game Forage are fragments, not just single letters",
+      "hook": "a 3-letter tile is either the word or a brick",
+      "body": "CASTLE as C + AST + LE looks generous and then fights you. Once you are used to one letter at a time, a 3-letter tile is either the word or a brick.\n\nThe scoring makes the greed obvious (6 letters = 10, UNREASONING at 45). I will try today's board. Curious if those 3-letter tiles feel like a gift or they lock you out of a 6-letter you already see.",
+      "redditId": "p5dwtcm",
+      "url": "https://www.reddit.com/r/wordgames/comments/1vvo1fy/the_tiles_in_my_new_wordassembly_game_forage_are/p5dwtcm/",
+      "note": "Live, 1 point. CTA edit blocked by Reddit rate limit (~8 min). Retry: opposite-problem + Wordfall UTM."
+    },
+    {
+      "status": "drafted",
+      "kind": "comment",
+      "subreddit": "WordGames",
+      "draftedAt": "2026-08-23",
+      "source": "chat-today",
+      "title": "Does this Word Game Idea Sound Interesting?",
+      "body": "The interesting bit is not the dungeon dressing. It is whether the word you spell is the move or just a key you farm so you can open a chest.\n\nIf a 6-letter word is the only way through a frost room, I am playing a word game. If I am mostly managing HP and keys and the letters are loot, I bounce.\n\nI will try the demo. The one I keep opening when I want the word itself to be the punch is Wordfall — you trace it, leftovers turn into a nova or a beam, the next word caves the grid.\n\nhttps://wordkrush.com/?utm_source=reddit&utm_medium=social&utm_campaign=wordgames",
+      "url": "https://www.reddit.com/r/wordgames/comments/1vvwivd/does_this_word_game_idea_sound_interesting/",
+      "note": "Filled; submit blocked by rate limit. Word is the move → Wordfall CTA."
+    }
+  ]
+}

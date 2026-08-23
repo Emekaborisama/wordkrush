@@ -142,7 +142,7 @@ The suite already encodes the contract. A drop that fails any of these is not do
 | Unique `taskFingerprint` across `LEVELS`; consecutive dated weeks differ | `schedule.test.ts` |
 | Local `serve:web` picker playtest | Job B / Gauntlet skill — before GitHub |
 
-Add a [CHANGELOG.md](CHANGELOG.md) `[Unreleased]` line: which number, which Monday, one-line idea. That is the player-visible record.
+Add a new [CHANGELOG.md](CHANGELOG.md) `[x.y.z]` section (and bump `package.json` / `app.json`): which number, which Monday, one-line idea. That is the player-visible record.
 
 Do not regenerate `dictionary.json`. Weekly levels use the shipped word list (D-018).
 

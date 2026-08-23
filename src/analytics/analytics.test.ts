@@ -28,6 +28,9 @@ describe('analytics privacy boundary', () => {
     expect(allowlistedCapture({ event: 'run_completed' })).toEqual({
       event: 'run_completed',
     });
+    expect(allowlistedCapture({ event: '$identify' })).toEqual({
+      event: '$identify',
+    });
     expect(allowlistedCapture({ event: '$autocapture' })).toBeNull();
     expect(allowlistedCapture({ event: '$exception' })).toBeNull();
   });

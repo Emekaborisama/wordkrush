@@ -11,7 +11,7 @@ Every task card should carry the same contract from [WORKFLOW.md](WORKFLOW.md): 
 
 1. Read [HOW-IT-WORKS.md](HOW-IT-WORKS.md) → [STACK.md](STACK.md) → [BRAINSTORM.md](BRAINSTORM.md) first.
 2. Pick a task whose blockers are clear and whose card already has Description, Context, Scope, Acceptance criteria, Verification, and Sign-off. **Never start a `[decide]` task** — those are the owner's calls.
-3. Follow [WORKFLOW.md](WORKFLOW.md): use the Superthread card's git branch name (`suggested_branch_name`) → build with tests → `npm run check` → changelog line → docs update → open a PR. Features and fixes never land on `master` without a PR. Stacked PRs are allowed.
+3. Follow [WORKFLOW.md](WORKFLOW.md): use the Superthread card's git branch name (`suggested_branch_name`) → build with tests → `npm run check` → new changelog version + `package.json` / `app.json` bump → docs update → open a PR. Features and fixes never land on `master` without a PR. Stacked PRs are allowed.
 4. Move the card on the board and tick the box here in the same PR.
 
 ### Superthread API notes (learned the hard way)
@@ -76,6 +76,22 @@ Guideline 4.2 rejects apps that are too thin. These are the mitigation:
 - [ ] **Supabase magic-link sign-in** (ST-73) — email magic link shipped; phone/SMS identity is superseded by ST-77.
 - [ ] **One unique username; email-only sign-in** (ST-77) — **Doing**; unique `players.display_name`, magic link only (D-037). Owner must apply `0004_unique_username.sql`.
 - [ ] **Magic-link redirect, WordKrush email, and tab icon** (ST-76) — **Doing**; absolute `emailRedirectTo`, branded Magic Link HTML, cache-busted favicon PNG.
+
+## Track: Reddit (Devvit) surface — `reddit/`
+
+Distribution experiment, More or Less only. Decision and costs: STACK D-042.
+Local contract: [reddit/README.md](../reddit/README.md).
+
+- [x] Devvit Web project that shares the Expo engine and snapshot rather than forking them — `additionalSourceRoots` + an explicit crossing-file list in `reddit/tools/tsconfig.shared.json`
+- [x] Server-owned run — the client never gets the seed or a hidden value and never asserts a score; verified by the build (no pool, values, or engine in either client bundle)
+- [x] Per-post board in Devvit Redis, first completed run only; logged-out players can play but are not ranked
+- [x] Daily post from a date-derived seed (13:00 UTC cron), idempotent per calendar day; moderator menu item and install trigger share the same path
+- [x] Spoiler-free result grid + "Copy result" — nothing comments on a player's behalf
+- [ ] **`devvit login` + playtest subreddit** ← blocked on the owner
+- [ ] **Pick a launch subreddit and ask its moderators** ← blocked on the owner; this is the decision the channel lives or dies on
+- [ ] **`devvit publish` → app review** ← blocked on the two above
+- [ ] **CI job for `reddit:types` + `reddit:build`** — deliberately not added yet; a second surface with no automated check is exactly the drift D-042 admits to, but changing CI is an owner call
+- [ ] Consider a "yesterday's answers" comment so the post has a spoiler-safe payoff after the day closes
 
 ## Track: infra
 

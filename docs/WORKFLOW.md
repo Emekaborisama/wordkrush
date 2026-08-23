@@ -1,6 +1,6 @@
 # Way of Working
 
-**Last updated:** 2026-08-22
+**Last updated:** 2026-08-23
 For every collaborator on this repo — human or LLM. Read this before touching code.
 
 ## The docs are the shared brain
@@ -12,11 +12,12 @@ For every collaborator on this repo — human or LLM. Read this before touching 
 | [STACK.md](STACK.md) | Tech choices + decision log | Any stack/tooling change |
 | [BRAINSTORM.md](BRAINSTORM.md) | Game design, assumptions, corrections | Any design change or confirmed assumption |
 | [branding/](branding/README.md) | Name, logo use, brand colour | Identity, lockup, or palette changes |
-| [CHANGELOG.md](CHANGELOG.md) | What shipped, per version | Every behavior-changing PR |
+| [CHANGELOG.md](CHANGELOG.md) | What shipped, one `x.y.z` per PR | Every PR — new version heading, never an in-place edit |
 | [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) | Monday Wordfall drops: catalog, buffer, authoring, automation contract | Cadence, schedule gate, or weekly-release automation |
+| [reddit/README.md](../reddit/README.md) | The Devvit build of More or Less: shared-engine boundary, server-owned run, daily post, launch checklist | Anything under `reddit/` |
 | WORKFLOW.md (this) | How we collaborate | Process changes |
 
-Decisions get **logged, never silently rewritten** — supersede old entries so the reasoning trail survives. If you're an LLM picking this repo up cold: read HOW-IT-WORKS → STACK → BRAINSTORM → CHANGELOG [Unreleased], in that order, before writing code.
+Decisions get **logged, never silently rewritten** — supersede old entries so the reasoning trail survives. If you're an LLM picking this repo up cold: read HOW-IT-WORKS → STACK → BRAINSTORM → CHANGELOG (latest version), in that order, before writing code.
 
 Documentation is updated in the same change while its context is fresh. The
 project stop hook checks once when an agent finishes, and `npm run check:docs`
@@ -51,10 +52,10 @@ If the card has no suggested name yet, still include the card ID in the branch (
    TS, no React/RN/Supabase imports**, with tests. Shared game infrastructure
    can live directly under `src/games/`.
 3. `npm run check` (typecheck + tests) must pass locally.
-4. Update CHANGELOG [Unreleased]; update STACK/BRAINSTORM if a decision changed; keep the matching Superthread card and ROADMAP in sync.
+4. Add a new CHANGELOG `[x.y.z] - date` section and bump `package.json` + `app.json` to that number. Do not append to a shipped version or keep an `[Unreleased]` bucket. Update STACK/BRAINSTORM if a decision changed; keep the matching Superthread card and ROADMAP in sync.
 5. Open a PR from that Superthread branch (to `master`, or to the parent branch if stacked). Include the card ID in the PR title. CI must be green (`check` + `web`). Merge.
 
-Definition of done: PR opened + code + tests + `npm run check` green + changelog line + docs updated. CI also requires `npm run build:web`; that export stays off the local check so the daily loop stays fast.
+Definition of done: PR opened + code + tests + `npm run check` green + new changelog version + matching `package.json` / `app.json` bump + docs updated. CI also requires `npm run build:web`; that export stays off the local check so the daily loop stays fast.
 
 ## Task card contract
 
@@ -79,6 +80,10 @@ npm run test:watch   # logic TDD loop
 npm run check:docs   # documentation impact for changed files
 npm run check        # documentation + typecheck + tests; CI runs this plus `build:web`
 npm run auth:ensure-test-player  # create/refresh local TEST_PLAYER_* in .env (values not printed)
+
+npm run reddit:install   # install the Devvit app's own dependency tree (once)
+npm run reddit:types     # typecheck reddit/ — NOT part of `npm run check`
+npm run reddit:dev       # devvit playtest against a test subreddit
 ```
 
 ## Content pipeline (offline, never at app runtime)
@@ -96,10 +101,19 @@ The app only ever reads the bundled JSON. Changing game data = run pipeline, com
 
 Wordfall weekly levels are a different path: append a row to `src/data/wordfall/levels.ts` with a Monday `availableFrom`, then follow [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) Job B and the Cursor skill `.cursor/skills/wordfall-weekly-gauntlet/`. Unique `taskFingerprint`, seven-day featured window, then **local** `npm run check` → `build:web` → `serve:web` (port 8080) and a picker playtest **before** `git push` (D-038). Do not run the Wikipedia ingest for a Wordfall drop. Monday does not fetch content; the catalog in git is the schedule.
 
+The **Reddit app** is a third path, and not the same thing as Reddit ads. [`reddit/`](../reddit/README.md) is a Devvit project with its own `package.json`, its own dependency tree, and its own TypeScript build (D-042). It imports `src/games/more-or-less/engine.ts` and `src/data/categories/` rather than copying them, so:
+
+- Changing `src/games/more-or-less/` or `src/data/categories/` affects **both** surfaces. Run `npm run reddit:types` as well as `npm run check`.
+- `npm run typecheck` deliberately skips `reddit/`; `npm test` deliberately includes `reddit/src/shared/**/*.test.ts`.
+- Adding an import to the shared engine will fail `reddit:types` with TS6307 until `reddit/tools/tsconfig.shared.json` lists the new file. That is the boundary working, not a bug.
+- There is no CI job for it yet. Until there is, `npm run reddit:types` before merging anything that touches the shared engine is a manual step.
+
+Reddit ads are a different path again: drafts, the reuse ledger, and the link card live in [marketing/reddits/](marketing/reddits/README.md). The Cursor skill `.cursor/skills/reddit-ad-posts/` reads that ledger, checks each sub's rules in the browser, and only submits when the owner names the sub. No Reddit MCP. Do not invent a `docs/gtm/` tree — GTM strategy stays in [marketing/](marketing/README.md).
+
 ## Release process
 
-1. Move CHANGELOG [Unreleased] → `[x.y.z] - date`; bump `package.json` + `app.json` when the number changes. `package.json` / `app.json` are already `0.1.0` for the first GitHub Release.
-2. Merge that PR to `master`. [release.yml](../.github/workflows/release.yml) publishes GitHub Release `vX.Y.Z` from the matching changelog section (`scripts/changelog-notes.mjs`). Pushing tag `vX.Y.Z` does the same. The job is idempotent: an existing tag/release is left alone. A master push whose changelog is still `[Unreleased]` is a no-op.
+1. The PR already is the version: new CHANGELOG `[x.y.z] - date` plus matching `package.json` / `app.json`. There is no separate roll-up PR.
+2. Merge that PR to `master`. [release.yml](../.github/workflows/release.yml) publishes GitHub Release `vX.Y.Z` from the matching changelog section (`scripts/changelog-notes.mjs`). Pushing tag `vX.Y.Z` does the same. The job is idempotent: an existing tag/release is left alone. A master push whose `package.json` version has no changelog section is a no-op.
 3. `eas build --platform ios --profile production` → `eas submit --platform ios` → TestFlight → App Store. Still a human step; blocked on Expo login and Apple Developer.
 4. Web: nothing to do — merging to `master` deploys to Railway automatically once `check` and `web` are green (D-020, D-029). Public site: [wordKrush.com](https://wordkrush.com).
 
@@ -143,5 +157,7 @@ analytics still starts opted out and requires the player's explicit consent.
 - [ ] Apple Developer Program ($99/yr) + `eas credentials` once
 - [ ] Apply `supabase/migrations/0001_init.sql`, `0002_leaderboard.sql`, `0003_global_scores.sql`, and `0004_unique_username.sql` in the Supabase SQL editor
 - [ ] **Supabase Auth magic link (D-033):** Authentication → URL Configuration. Site URL must be exactly `https://wordkrush.com` (include `https://`; a bare `wordkrush.com` becomes the path `/wordkrush.com` on the API host). Redirect allow-list: `https://wordkrush.com/**`, `http://localhost:8081/**`, `http://localhost:8080/**`, `wordkrush://**`, `exp://**`. This free project cannot edit Auth email templates on the default mailer (June 2026). Enable custom SMTP only after a provider is ready — an empty host/user/pass breaks sending. Typical path is [Resend](https://resend.com/docs/send-with-supabase-smtp): verify `wordkrush.com`, then Host `smtp.resend.com`, Port `465`, Username `resend`, Password = Resend API key. Sender `noreply@wordkrush.com`, name `WordKrush`. Then Authentication → Email Templates → Magic Link: subject `Sign in to WordKrush`, body from `supabase/templates/magic-link.html` (keep `{{ .ConfirmationURL }}` and `{{ .Token }}`). SMTP credentials stay in the dashboard, never in `.env` or `EXPO_PUBLIC_*`.
+
+- [ ] **Reddit app (D-042):** `npm run reddit:install`, then `npm --prefix reddit run login` with the Reddit account that will own it. Playtest with `npm run reddit:dev` against a test subreddit, then `npm --prefix reddit run launch` for app review. **Pick the launch subreddit and talk to its moderators before installing** — an app dropped into a community that was not asked is a removal, not a launch. Confirm the 13:00 UTC cron hour suits that audience.
 
 Web hosting and the v1 data source are resolved by STACK D-020 and D-012.

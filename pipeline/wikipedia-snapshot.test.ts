@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_SWING_VS_PREVIOUS } from './sanity';
 import {
-  appendUnreleasedBullet,
   compareSnapshots,
   formatRotateReport,
   itemId,
+  nextPatchVersion,
+  prependVersionSection,
+  replaceDeclaredVersion,
   swingRatio,
   type BundledItem,
 } from './wikipedia-snapshot';
@@ -80,18 +82,36 @@ describe('swingRatio', () => {
   });
 });
 
-describe('appendUnreleasedBullet', () => {
-  it('prepends under an existing Changed section', () => {
-    const md = `## [Unreleased]\n\n### Changed\n- old line\n`;
-    expect(appendUnreleasedBullet(md, 'Changed', 'new line')).toContain(
-      '### Changed\n- new line\n- old line\n',
+describe('nextPatchVersion', () => {
+  it('increments the patch number', () => {
+    expect(nextPatchVersion('0.1.0')).toBe('0.1.1');
+  });
+
+  it('rejects a non-semver version', () => {
+    expect(() => nextPatchVersion('1.0')).toThrow(/x\.y\.z/);
+  });
+});
+
+describe('replaceDeclaredVersion', () => {
+  it('rewrites the first version field and leaves the rest alone', () => {
+    expect(replaceDeclaredVersion('{\n  "version": "0.1.0"\n}\n', '0.1.1')).toBe(
+      '{\n  "version": "0.1.1"\n}\n',
+    );
+  });
+});
+
+describe('prependVersionSection', () => {
+  it('inserts a new version above the current heading', () => {
+    const md = `# Changelog\n\n## [0.1.0] - 2026-08-22\n\n### Added\n- old\n`;
+    expect(prependVersionSection(md, '0.1.1', '2026-08-23', 'Changed', 'fresh')).toBe(
+      `# Changelog\n\n## [0.1.1] - 2026-08-23\n\n### Changed\n- fresh\n\n## [0.1.0] - 2026-08-22\n\n### Added\n- old\n`,
     );
   });
 
-  it('creates the section when it is missing', () => {
-    const md = `## [Unreleased]\n\n### Added\n- something\n`;
-    const next = appendUnreleasedBullet(md, 'Changed', 'fresh');
-    expect(next).toContain('### Changed\n- fresh\n');
+  it('fails closed when no version heading exists', () => {
+    expect(() => prependVersionSection('# Changelog\n', '0.1.1', '2026-08-23', 'Added', 'x')).toThrow(
+      /no ## \[x\.y\.z\]/,
+    );
   });
 });
 
