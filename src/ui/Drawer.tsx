@@ -23,8 +23,13 @@ type Props = {
   signedInAs?: string | null;
   analyticsConsent: AnalyticsConsent;
   onAnalyticsPress: () => void;
+  /** Sound/vibration switches — the game's *feel*, not the player's report. */
   feedbackSettings: FeedbackSettings;
   onToggleFeedback: (channel: FeedbackChannel) => void;
+  /** False when the feedback widget is unavailable on this build (native, or
+      no Userback token configured) — the entry is hidden rather than dead. */
+  canSendFeedback: boolean;
+  onSendFeedback: () => void;
 };
 
 const WIDTH = 304;
@@ -51,6 +56,8 @@ export function Drawer({
   onAnalyticsPress,
   feedbackSettings,
   onToggleFeedback,
+  canSendFeedback,
+  onSendFeedback,
 }: Props) {
   const slide = useRef(new Animated.Value(open ? 0 : -WIDTH)).current;
   const fade = useRef(new Animated.Value(open ? 1 : 0)).current;
@@ -141,7 +148,31 @@ export function Drawer({
           onPress={() => go({ kind: 'account' })}
         />
 
-        <Text style={styles.sectionLabel}>FEEDBACK</Text>
+        {canSendFeedback && (
+          <>
+            <Text style={styles.sectionLabel}>FEEDBACK</Text>
+            <Item
+              label="Send feedback"
+              icon={<Text style={styles.itemGlyph}>✎</Text>}
+              accent={theme.accent}
+              onPress={() => {
+                // Closed first: the widget renders its own full-screen form
+                // outside the React tree, and leaving the drawer open behind it
+                // means dismissing two things to get back to the game.
+                onClose();
+                onSendFeedback();
+              }}
+            />
+          </>
+        )}
+
+        {/* Named for what they are. The player's own feedback is the section
+            above; this is the game's sound and vibration. The label follows the
+            same capability check as the row below it, so it never promises a
+            vibration switch that is not there. */}
+        <Text style={styles.sectionLabel}>
+          {canVibrate() ? 'SOUND & VIBRATION' : 'SOUND'}
+        </Text>
         {/* Left open rather than closing the drawer: these are switches people
             flip and immediately want to hear, not navigation. */}
         <Item
