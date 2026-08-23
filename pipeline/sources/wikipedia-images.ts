@@ -1,5 +1,5 @@
 /**
- * Fetches lead images for Wikipedia articles — and, critically, their licences.
+ * Fetches images for Wikipedia articles — and, critically, their licences.
  *
  * WHY THE LICENCE CHECK IS NOT OPTIONAL:
  * Wikipedia hosts two kinds of image. Freely-licensed files (public domain,
@@ -8,14 +8,22 @@
  * in an App Store app is copyright infringement. Album art, film posters and
  * many corporate logos fall in that second bucket.
  *
+ * The article lead (`pageimages`, free-only) is the happy path. Corporate
+ * pages often have a fair-use logo or screenshot there, so `pageimages`
+ * returns nothing. Those pages still have CC/PD photos in the body
+ * (headquarters, hardware, events). Walk those next; still skip fair-use.
+ *
  * So: fetch the licence with the image, ship only free ones, and record the
  * attribution that CC BY / CC BY-SA legally require.
  */
 
 const API = 'https://en.wikipedia.org/w/api.php';
+const MEDIA_LIST = 'https://en.wikipedia.org/api/rest_v1/page/media-list';
 const USER_AGENT = 'wordkrush/0.1 (https://wordkrush.com)';
 
 const CONCURRENCY = 4;
+/** Licence checks after the lead image misses. Enough to find a photo; not a crawl. */
+export const MAX_FALLBACK_CHECKS = 12;
 
 export type ImageInfo = {
   url: string;
@@ -85,6 +93,69 @@ export function stripHtml(html: string): string {
     .trim();
 }
 
+export function asFileTitle(name: string): string {
+  return /^file:/i.test(name) ? name : `File:${name}`;
+}
+
+export function fileTitleName(title: string): string {
+  return title.replace(/^file:/i, '').trim();
+}
+
+/**
+ * Navbox / template chrome that is on almost every article and is never a
+ * usable card image. Licence-checking these would be wasted requests.
+ */
+const WIKI_CHROME =
+  /^(commons-logo|ambox|wiki[_ ]|wikimedia|wikidata|oojs[ _]ui|gnome-mime|padlock|edit-clear|text_document|increase|decrease|steady|symbol[_ ]|star[_ ]|sound-icon|red[_ ]pog|crystal[_ ]clear|folder[_ ]|question[_ ]book|semi-protection|protection-unlocked|unbalanced[_ ]scales|office-book|portal-|edit[_ ]icon|lock-gray|speaker[_ ]icon|wikt-|cscr-)/i;
+
+export function isWikiChromeFile(title: string): boolean {
+  return WIKI_CHROME.test(fileTitleName(title));
+}
+
+function extensionRank(title: string): number {
+  const ext = (fileTitleName(title).split('.').pop() ?? '').toLowerCase();
+  if (ext === 'jpg' || ext === 'jpeg' || ext === 'webp') return 0;
+  if (ext === 'png' || ext === 'gif') return 1;
+  if (ext === 'svg') return 2;
+  return 3;
+}
+
+function relevanceRank(title: string, article: string): number {
+  const stem = article.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  if (!stem) return 2;
+  const compact = fileTitleName(title)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+  if (compact.startsWith(stem)) return 0;
+  if (compact.includes(stem)) return 1;
+  return 2;
+}
+
+/** Photos before logos/maps; names that mention the article before unrelated files. */
+export function preferPhotoFirst(titles: string[], article: string): string[] {
+  return [...titles].sort((a, b) => {
+    const ext = extensionRank(a) - extensionRank(b);
+    if (ext !== 0) return ext;
+    const rel = relevanceRank(a, article) - relevanceRank(b, article);
+    if (rel !== 0) return rel;
+    return fileTitleName(a).localeCompare(fileTitleName(b));
+  });
+}
+
+export function selectFallbackCandidates(
+  fileTitles: string[],
+  article: string,
+  skip: ReadonlySet<string> = new Set(),
+): string[] {
+  const skipNorm = new Set([...skip].map((title) => asFileTitle(title).toLowerCase()));
+  const kept = fileTitles.filter((title) => {
+    if (isWikiChromeFile(title)) return false;
+    if (skipNorm.has(asFileTitle(title).toLowerCase())) return false;
+    return true;
+  });
+  return preferPhotoFirst(kept, article);
+}
+
 async function get(params: Record<string, string>): Promise<any> {
   const url = `${API}?${new URLSearchParams({ ...params, format: 'json', formatversion: '2' })}`;
   const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
@@ -92,8 +163,7 @@ async function get(params: Record<string, string>): Promise<any> {
   return res.json();
 }
 
-async function fetchOne(article: string, thumbWidth: number): Promise<ImageInfo | null> {
-  // 1. Which file is the article's lead image?
+async function fetchLeadFileName(article: string): Promise<string | null> {
   const page = await get({
     action: 'query',
     prop: 'pageimages',
@@ -102,15 +172,37 @@ async function fetchOne(article: string, thumbWidth: number): Promise<ImageInfo 
     redirects: '1',
   });
   const fileName = page?.query?.pages?.[0]?.pageimage;
-  if (!fileName) return null;
+  return typeof fileName === 'string' && fileName ? fileName : null;
+}
 
-  // 2. Its licence and a thumbnail URL.
+async function listPageMedia(article: string): Promise<string[]> {
+  const restUrl = `${MEDIA_LIST}/${encodeURIComponent(article.replace(/ /g, '_'))}`;
+  const res = await fetch(restUrl, { headers: { 'User-Agent': USER_AGENT } });
+  if (res.ok) {
+    const data: { items?: Array<{ type?: string; title?: string }> } = await res.json();
+    return (data.items ?? [])
+      .filter((item) => item.type === 'image' && typeof item.title === 'string')
+      .map((item) => item.title as string);
+  }
+
+  const page = await get({
+    action: 'query',
+    prop: 'images',
+    imlimit: '50',
+    titles: article,
+    redirects: '1',
+  });
+  const images: Array<{ title?: string }> = page?.query?.pages?.[0]?.images ?? [];
+  return images.filter((image) => typeof image.title === 'string').map((image) => image.title as string);
+}
+
+async function fetchFileInfo(fileTitle: string, thumbWidth: number): Promise<ImageInfo | null> {
   const file = await get({
     action: 'query',
     prop: 'imageinfo',
     iiprop: 'extmetadata|url',
     iiurlwidth: String(thumbWidth),
-    titles: `File:${fileName}`,
+    titles: asFileTitle(fileTitle),
   });
   const info = file?.query?.pages?.[0]?.imageinfo?.[0];
   if (!info) return null;
@@ -118,15 +210,9 @@ async function fetchOne(article: string, thumbWidth: number): Promise<ImageInfo 
   const meta = info.extmetadata ?? {};
   const license: string = meta.LicenseShortName?.value ?? '';
 
-  if (!isFreeLicense(license)) {
-    console.warn(`  skipped (licence "${license || 'unknown'}"): ${article}`);
-    return null;
-  }
+  if (!isFreeLicense(license)) return null;
   const restrictions: string = meta.Restrictions?.value ?? '';
-  if (isBlockingRestriction(restrictions)) {
-    console.warn(`  skipped (restriction "${restrictions}"): ${article}`);
-    return null;
-  }
+  if (isBlockingRestriction(restrictions)) return null;
 
   const url: string | undefined = info.thumburl ?? info.url;
   if (!url) return null;
@@ -138,6 +224,24 @@ async function fetchOne(article: string, thumbWidth: number): Promise<ImageInfo 
     filePage: info.descriptionurl ?? '',
     restrictions,
   };
+}
+
+async function fetchOne(article: string, thumbWidth: number): Promise<ImageInfo | null> {
+  const leadName = await fetchLeadFileName(article);
+  if (leadName) {
+    const lead = await fetchFileInfo(leadName, thumbWidth);
+    if (lead) return lead;
+  }
+
+  const media = await listPageMedia(article);
+  const skip = new Set(leadName ? [asFileTitle(leadName)] : []);
+  const candidates = selectFallbackCandidates(media, article, skip).slice(0, MAX_FALLBACK_CHECKS);
+  for (const title of candidates) {
+    const info = await fetchFileInfo(title, thumbWidth);
+    if (info) return info;
+  }
+  console.warn(`  no freely-licensed image: ${article}`);
+  return null;
 }
 
 /** Fetch images for many articles, bounded concurrency. Missing/non-free -> absent from the map. */

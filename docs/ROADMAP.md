@@ -1,6 +1,6 @@
 # Roadmap & Task List
 
-**Last updated:** 2026-08-22
+**Last updated:** 2026-08-23
 **Board of record:** Superthread → *My Private Space* → **BestGame** board (team `tbJ3qEwK`, board `2`, lists: To do `8` / Doing `9` / Done `10`).
 
 Live status lives on the board, not here. This file exists so an LLM reading the repo cold knows what the work *is*, what blocks it, and what order it goes in — without needing board access.
@@ -49,6 +49,7 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 - [x] Supabase schema, ingest with sanity checks, snapshot export, Wikipedia pageviews source
 - [x] LLM validator service (`validator/`, 18 tests) — schema, consistency check, flagging, playability checks
 - [x] First shipped category: `wikipedia-popularity` — monthly Wikipedia pageviews
+- [ ] **Fill blank More or Less cards when the Wikipedia lead is non-free** (ST-79) — **Doing**; fall back to other freely-licensed photos on the article
 - [ ] **Weekly Wikipedia popularity snapshot cron** (ST-75) — **Doing**; Monday GitHub Action re-measures the curated list and opens a review PR (D-036)
 - [ ] Wire validator into `pipeline/ingest.ts` (`POST /validate/batch`) — batch-validate incoming rows and quarantine flagged pairs
 - [ ] Run ingest → export end-to-end against live Supabase ← blocked on migration — prove the factory path after the SQL schema lands

@@ -120,6 +120,9 @@
       "categoryId": "wikipedia-popularity",
       "label": "TikTok",
       "value": 367045,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/TikTok_Headquarters.jpg/960px-TikTok_Headquarters.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Coolcaesar",
+      "imageLicense": "CC BY 4.0",
       "source": "wikipedia-pageviews:20260201-20260731",
       "updatedAt": "2026-08-16"
     },
@@ -183,6 +186,9 @@
       "categoryId": "wikipedia-popularity",
       "label": "Netflix",
       "value": 214302,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Netflix_at_Thong_Lor.jpg/960px-Netflix_at_Thong_Lor.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Sry85",
+      "imageLicense": "CC BY-SA 4.0",
       "source": "wikipedia-pageviews:20260201-20260731",
       "updatedAt": "2026-08-16"
     },
@@ -499,6 +505,9 @@
       "categoryId": "wikipedia-popularity",
       "label": "PlayStation",
       "value": 45925,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/PlayStation_4_Slim_8504.jpg/960px-PlayStation_4_Slim_8504.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Ashley Pomeroy",
+      "imageLicense": "CC BY-SA 4.0",
       "source": "wikipedia-pageviews:20260201-20260731",
       "updatedAt": "2026-08-16"
     },

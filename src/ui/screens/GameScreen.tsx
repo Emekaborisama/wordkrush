@@ -286,9 +286,9 @@ function Card({
   const tokens = gameAccentTokens(accent);
   const borderColor = highlight === undefined ? undefined : highlight ? accent : theme.danger;
 
-  // Images are a bonus, never a requirement: 3 of 50 items have no freely
-  // licensed image, and a remote fetch can fail offline. Either way the card
-  // keeps the same shape and the game plays exactly the same.
+  // Images are a bonus, never a requirement: a remote fetch can fail offline,
+  // and a rare item may still lack a freely-licensed file. Either way the
+  // card keeps the same shape and the game plays exactly the same.
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(item.imageUrl) && !imageFailed;
 

@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.5.1] - 2026-08-23
+
+### Fixed
+- **TikTok, Netflix, and PlayStation cards no longer render as a blank colour block.** Wikipedia `pageimages` only returns a freely-licensed lead image, so corporate articles whose infobox is a fair-use logo or screenshot shipped with no picture at all. The image builder now walks other files on the article and takes the first CC/PD photograph (headquarters, booth, hardware). Fair-use files are still rejected. Coverage is tested at the documented 90% floor (D-045).
+
 ## [0.5.0] - 2026-08-23
 
 ### Added
