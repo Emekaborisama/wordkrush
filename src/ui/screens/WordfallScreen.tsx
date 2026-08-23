@@ -494,6 +494,7 @@ function LevelPlay({
           <BoardView
             board={state.board}
             selection={state.selection}
+            lastPlay={state.lastPlay}
             accent={ACCENT}
             maxWidth={boardBounds.width}
             maxHeight={boardBounds.height}
