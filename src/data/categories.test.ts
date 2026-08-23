@@ -80,6 +80,13 @@ describe.each(files)('%s', (file) => {
     }
   });
 
+  it('covers most items with a freely-licensed image', () => {
+    // OBSERVABILITY: at least 90%. A blank card next to a photographed one
+    // reads as a broken image, so this is the floor, not a target.
+    const withImage = items.filter((item) => item.imageUrl).length;
+    expect(withImage / items.length).toBeGreaterThanOrEqual(0.9);
+  });
+
   it('spans a wide enough value range to support the difficulty curve', () => {
     // The hardest band needs pairs 1.15-1.5x apart; the easiest needs >=3x.
     // A flat dataset silently makes the difficulty curve a no-op.
