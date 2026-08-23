@@ -18,6 +18,7 @@ Rules:
 - **Wordfall's per-letter tick is driven by the reducer, not the gesture.** The trace tick fires when the selection actually grows, rather than on `onTrace`, which fires on every pointer move that lands on a tile — including the one already under the finger.
 
 ### Fixed
+- **`npm test` no longer needs `reddit/node_modules` to be installed.** The Reddit app's route suite imported `hono` directly, which only exists in `reddit/package.json` — so it passed locally and failed CI, where only the root tree is installed. `hono` is now a root devDependency pinned to the version the Reddit app ships; it is deliberately *not* aliased to a fake, because the route tests exercise the real router.
 - **The daily-streak test suite was never running.** `src/streak/types.test.ts` had existed since the streak shipped but matched no pattern in `vitest.config.ts`, so it was silently collected by nothing. It is now included, along with the new settings suite — `npm test` goes from 35 files to 37.
 
 ## [0.2.0] - 2026-08-23

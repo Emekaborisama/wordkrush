@@ -11,6 +11,12 @@ export default defineConfig({
         './reddit/src/server/testing/devvit-fake.ts',
         import.meta.url,
       ).pathname,
+      // `hono` is not aliased — the route tests exercise the real router, so
+      // faking it would test nothing. It is a root devDependency instead,
+      // pinned to the exact version `reddit/package.json` ships, so the tests
+      // run against the router the Reddit app actually uses. That is the only
+      // reason a package the Expo app never imports appears in this
+      // package.json; CI installs the root tree only (see D-042).
     },
   },
   test: {

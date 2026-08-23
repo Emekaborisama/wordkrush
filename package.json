@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "hono": "4.12.32",
     "tsx": "^4.23.12",
     "typescript": "~6.0.3",
     "vitest": "^4.1.10"
