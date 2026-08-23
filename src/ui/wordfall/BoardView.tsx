@@ -1,8 +1,16 @@
-import { memo, useEffect, useMemo, useRef } from 'react';
-import { Animated, PanResponder, StyleSheet, Text, View } from 'react-native';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, PanResponder, StyleSheet, Text, View } from 'react-native';
 import { colOf, rowOf } from '../../games/wordfall/board';
-import type { Board, SpecialKind } from '../../games/wordfall/types';
+import type { Board, PlayResult, SpecialKind } from '../../games/wordfall/types';
 import { font, radius, theme, type } from '../theme';
+import {
+  CLEAR_HOLD_MS,
+  PUFF_MS,
+  chainStamp,
+  ghostsFromCleared,
+  playJuiceKey,
+  type ClearGhost,
+} from './clearJuice';
 import { SPECIAL_VISUALS, TILE } from './visuals';
 
 const GAP = 6;
@@ -22,6 +30,7 @@ type Props = {
   maxWidth: number;
   maxHeight: number;
   disabled?: boolean;
+  lastPlay: PlayResult | null;
 };
 
 export function BoardView({
@@ -34,6 +43,7 @@ export function BoardView({
   maxWidth,
   maxHeight,
   disabled = false,
+  lastPlay,
 }: Props) {
   const containerRef = useRef<View>(null);
   /**
@@ -45,6 +55,42 @@ export function BoardView({
    * lookup once the finger crosses a child boundary.
    */
   const origin = useRef({ x: 0, y: 0 });
+  const previousTiles = useRef(board.tiles);
+  const seenJuice = useRef('');
+  const [ghosts, setGhosts] = useState<ClearGhost[]>([]);
+  const [bornId, setBornId] = useState<number | null>(null);
+  const juiceKey = lastPlay && lastPlay.cleared.length > 0 ? playJuiceKey(lastPlay) : '';
+  const dropHoldMs = juiceKey ? CLEAR_HOLD_MS : 0;
+  const stamp = lastPlay ? chainStamp(lastPlay.chain) : null;
+
+  useLayoutEffect(() => {
+    if (juiceKey !== seenJuice.current) {
+      if (juiceKey && lastPlay) {
+        setGhosts(ghostsFromCleared(previousTiles.current, lastPlay.cleared));
+        setBornId(
+          lastPlay.created
+            ? (previousTiles.current[lastPlay.created.index]?.id ?? null)
+            : null,
+        );
+      } else {
+        setBornId(null);
+      }
+      seenJuice.current = juiceKey;
+    }
+    previousTiles.current = board.tiles;
+  }, [juiceKey, board.tiles, lastPlay?.cleared, lastPlay?.created?.index]);
+
+  useEffect(() => {
+    if (ghosts.length === 0) return;
+    const handle = setTimeout(() => setGhosts([]), PUFF_MS + 40);
+    return () => clearTimeout(handle);
+  }, [ghosts]);
+
+  useEffect(() => {
+    if (bornId === null) return;
+    const handle = setTimeout(() => setBornId(null), 480);
+    return () => clearTimeout(handle);
+  }, [bornId, juiceKey]);
 
   const horizontalGaps = GAP * (board.width - 1);
   const verticalGaps = GAP * (board.height - 1);
@@ -146,8 +192,21 @@ export function BoardView({
               top={rowOf(board, index) * (tileSize + GAP)}
               order={selectedAt.get(index)}
               accent={accent}
+              dropHoldMs={dropHoldMs}
+              justBorn={bornId === tile.id}
+              juiceKey={juiceKey}
             />
           ))}
+          {ghosts.map((ghost) => (
+            <PuffGhost
+              key={ghost.key}
+              ghost={ghost}
+              size={tileSize}
+              left={colOf(board, ghost.index) * (tileSize + GAP)}
+              top={rowOf(board, ghost.index) * (tileSize + GAP)}
+            />
+          ))}
+          {stamp && juiceKey ? <ChainStamp key={juiceKey} label={stamp} accent={accent} /> : null}
         </>
       )}
     </View>
@@ -225,6 +284,9 @@ const TileView = memo(function TileView({
   top,
   order,
   accent,
+  dropHoldMs,
+  justBorn,
+  juiceKey,
 }: {
   letter: string;
   special: SpecialKind | null;
@@ -235,11 +297,18 @@ const TileView = memo(function TileView({
   /** Position in the current trace, or undefined if not selected. */
   order: number | undefined;
   accent: string;
+  dropHoldMs: number;
+  justBorn: boolean;
+  juiceKey: string;
 }) {
   const selected = order !== undefined;
   const drop = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const previousTop = useRef<number | null>(null);
+  // Read at drop time so a later lastPlay=null (new trace) cannot cancel the
+  // in-flight hold and leave tiles stuck at their translateY offset.
+  const dropHoldRef = useRef(dropHoldMs);
+  dropHoldRef.current = dropHoldMs;
 
   // Falling. A tile that moves up the screen is impossible in this game, so
   // any change in `top` is a drop: start it at its old position and spring it
@@ -255,16 +324,25 @@ const TileView = memo(function TileView({
     } else {
       return;
     }
-    Animated.spring(drop, {
-      toValue: 0,
-      damping: 14,
-      stiffness: 190,
-      mass: 0.8,
-      useNativeDriver: true,
-    }).start();
+    const spring = () => {
+      Animated.spring(drop, {
+        toValue: 0,
+        damping: 14,
+        stiffness: 190,
+        mass: 0.8,
+        useNativeDriver: true,
+      }).start();
+    };
+    const hold = dropHoldRef.current;
+    if (hold > 0) {
+      const handle = setTimeout(spring, hold);
+      return () => clearTimeout(handle);
+    }
+    spring();
   }, [top, size, drop]);
 
   useEffect(() => {
+    if (justBorn) return;
     Animated.spring(scale, {
       toValue: selected ? 1.1 : 1,
       damping: 16,
@@ -272,7 +350,27 @@ const TileView = memo(function TileView({
       mass: 0.6,
       useNativeDriver: true,
     }).start();
-  }, [selected, scale]);
+  }, [selected, scale, justBorn]);
+
+  useEffect(() => {
+    if (!justBorn) return;
+    Animated.sequence([
+      Animated.spring(scale, {
+        toValue: 1.28,
+        damping: 16,
+        stiffness: 320,
+        mass: 0.6,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        damping: 16,
+        stiffness: 320,
+        mass: 0.6,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [justBorn, juiceKey, scale]);
 
   const visual = special ? SPECIAL_VISUALS[special] : null;
 
@@ -322,6 +420,133 @@ const TileView = memo(function TileView({
   );
 });
 
+function PuffGhost({
+  ghost,
+  size,
+  left,
+  top,
+}: {
+  ghost: ClearGhost;
+  size: number;
+  left: number;
+  top: number;
+}) {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: PUFF_MS,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+  }, [progress]);
+
+  const scale = progress.interpolate({
+    inputRange: [0, 0.4, 1],
+    outputRange: [1, 1.22, 0.35],
+  });
+  const opacity = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0],
+  });
+  const dotSize = size * 0.16;
+
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left, top, width: size, height: size }}>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.tile,
+          {
+            width: size,
+            height: size,
+            transform: [{ scale }],
+            opacity,
+          },
+          ghost.crate && styles.crate,
+        ]}
+      >
+        {ghost.crate ? (
+          <Text style={[styles.crateMark, { fontSize: size * 0.4 }]}>▤</Text>
+        ) : (
+          <Text style={[styles.letter, { fontSize: size * 0.46 }]}>
+            {ghost.letter.toUpperCase()}
+          </Text>
+        )}
+      </Animated.View>
+      {[0, 1, 2, 3, 4, 5].map((i) => {
+        const angle = (i / 6) * Math.PI * 2;
+        const distance = size * (i % 2 === 0 ? 0.58 : 0.38);
+        const translateX = progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, Math.cos(angle) * distance],
+        });
+        const translateY = progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, Math.sin(angle) * distance],
+        });
+        const dotOpacity = progress.interpolate({
+          inputRange: [0, 0.35, 1],
+          outputRange: [1, 1, 0],
+        });
+        return (
+          <Animated.View
+            key={i}
+            pointerEvents="none"
+            style={[
+              styles.puffDot,
+              {
+                width: dotSize,
+                height: dotSize,
+                borderRadius: dotSize / 2,
+                left: size / 2 - dotSize / 2,
+                top: size / 2 - dotSize / 2,
+                opacity: dotOpacity,
+                transform: [{ translateX }, { translateY }],
+              },
+            ]}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
+function ChainStamp({
+  label,
+  accent,
+}: {
+  label: 'CRUSH' | 'NOVA';
+  accent: string;
+}) {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: 720,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [progress]);
+
+  const scale = progress.interpolate({
+    inputRange: [0, 0.42, 1],
+    outputRange: [0.55, 1.12, 0.92],
+  });
+  const opacity = progress.interpolate({
+    inputRange: [0, 0.18, 0.72, 1],
+    outputRange: [0, 1, 1, 0],
+  });
+
+  return (
+    <Animated.View pointerEvents="none" style={[styles.stamp, { transform: [{ scale }], opacity }]}>
+      <Text style={[styles.stampText, { color: accent }]}>{label}</Text>
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
   board: { width: '100%', position: 'relative', alignSelf: 'center' },
   tile: {
@@ -359,4 +584,24 @@ const styles = StyleSheet.create({
     borderBottomColor: TILE.crateDepth,
   },
   crateMark: { color: TILE.crateMark },
+  puffDot: {
+    position: 'absolute',
+    backgroundColor: TILE.faceEdge,
+  },
+  stamp: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stampText: {
+    ...type.title,
+    fontFamily: font.bold,
+    fontSize: 42,
+    lineHeight: 48,
+    fontWeight: '700',
+  },
 });

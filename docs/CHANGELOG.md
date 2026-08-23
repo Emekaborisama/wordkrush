@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.5.2] - 2026-08-23
+
+### Added
+- **Wordfall match juice: puff, then fall.** A valid word used to blink tiles off and spring the rest down. Cleared tiles now scale-fade with a short burst in place, gravity waits ~140ms, and a new special pops on its tile. A 2× chain stamps CRUSH and 3×+ stamps NOVA — our words, not Candy Crush's. Timing is UI-only over `lastPlay`; the reducer is unchanged. Lottie `crush-hit` / `crush-best` stay empty (ST-72).
+
 ## [0.5.1] - 2026-08-23
 
 ### Fixed
