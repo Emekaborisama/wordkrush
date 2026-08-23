@@ -6,6 +6,17 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.5.0] - 2026-08-23
+
+### Added
+- **Vibration now works in the phone browser, not just the native app.** 0.4.0 shipped the haptics web twin as five empty no-ops, so the browser build had a sound half and no vibration half at all. The inherited reasoning was that the Vibration API is "unsupported in Safari and feels wrong on a laptop" — both true, and neither one a description of Android Chrome on a phone, which supports `navigator.vibrate` and where a buzz is exactly right. Capability is now detected (`navigator.vibrate` plus `(pointer: coarse)`) instead of assumed: Safari, every iOS browser, and desktops still get nothing, but they get it by being asked rather than guessed at (D-044).
+
+### Changed
+- **The drawer's vibration switch is gated on capability, not on platform.** It appears wherever a buzz can actually fire — always on native, and on web only for a capable touch device — so it is never a control that does nothing.
+
+### Fixed
+- **`src/native/` test files were never being collected.** The directory matched no pattern in `vitest.config.ts`, the same trap the daily-streak suite was in before 0.4.0. Added the pattern along with 10 tests covering the vibration gate (Safari, laptop, a throwing `matchMedia`, absent `navigator`) and the buzz patterns themselves.
+
 ## [0.4.0] - 2026-08-23
 
 ### Added
