@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" width="960" height="520" role="img" aria-label="Four tiers of defence. A submission passes Tier 0 structural SQL checks, then Tier 1 replay verification, then Tier 2 behavioural scoring, before becoming a ranked entry. Tier 0 and Tier 1 reject into a retained, never-shown store; Tier 2 only flags into a human review queue. Tier 3 containment is that right-hand column.">
+  <rect width="960" height="520" fill="#0A0817"/>
+
+  <text x="24" y="36" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#FFF9F6">Defence in four tiers</text>
+  <text x="24" y="57" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#87809E">Each tier catches what the previous cannot. Cost rises as the population narrows.</text>
+
+  <!-- submission -->
+  <rect x="225" y="82" width="150" height="32" rx="16" fill="#1A1732" stroke="#4B4171" stroke-width="1.5"/>
+  <text x="300" y="103" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#C5BED8">SUBMISSION</text>
+  <line x1="300" y1="114" x2="300" y2="131" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="300,140 295,131 305,131" fill="#4B4171"/>
+
+  <!-- TIER 0 -->
+  <rect x="130" y="140" width="340" height="76" rx="10" fill="#1A1732" stroke="#32E487" stroke-width="1.5"/>
+  <text x="146" y="166" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#32E487">TIER 0 · Structural</text>
+  <text x="146" y="185" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#FFF9F6">is this shape even legal?</text>
+  <text x="146" y="203" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#87809E">fabricated numbers · floods · closed windows</text>
+  <text x="454" y="166" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#87809E">SQL / RLS</text>
+  <text x="454" y="185" text-anchor="end" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#32E487">hours</text>
+
+  <line x1="300" y1="216" x2="300" y2="231" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="300,240 295,231 305,231" fill="#4B4171"/>
+
+  <!-- TIER 1 -->
+  <rect x="130" y="240" width="340" height="76" rx="10" fill="#1A1732" stroke="#9B78FF" stroke-width="1.5"/>
+  <text x="146" y="266" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#9B78FF">TIER 1 · Replay</text>
+  <text x="146" y="285" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#FFF9F6">does the run reproduce?</text>
+  <text x="146" y="303" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#87809E">re-runs the pure reducer over seed + action log</text>
+  <text x="454" y="266" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#87809E">worker</text>
+  <text x="454" y="285" text-anchor="end" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#9B78FF">days</text>
+
+  <line x1="300" y1="316" x2="300" y2="331" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="300,340 295,331 305,331" fill="#4B4171"/>
+
+  <!-- TIER 2 -->
+  <rect x="130" y="340" width="340" height="76" rx="10" fill="#1A1732" stroke="#FFB020" stroke-width="1.5"/>
+  <text x="146" y="366" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#FFB020">TIER 2 · Behavioural</text>
+  <text x="146" y="385" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#FFF9F6">did a human appear to play it?</text>
+  <text x="146" y="403" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#87809E">timing · solver word-order · absence of error</text>
+  <text x="454" y="366" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#87809E">scoring</text>
+  <text x="454" y="385" text-anchor="end" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#FFB020">weeks</text>
+
+  <line x1="300" y1="416" x2="300" y2="431" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="300,440 295,431 305,431" fill="#4B4171"/>
+
+  <!-- ranked entry -->
+  <rect x="215" y="440" width="170" height="32" rx="16" fill="#103624" stroke="#32E487" stroke-width="1.5"/>
+  <text x="300" y="461" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#32E487">RANKED ENTRY</text>
+
+  <!-- reject: tier 0 -->
+  <line x1="470" y1="178" x2="611" y2="178" stroke="#FF5E72" stroke-width="1.5"/>
+  <polygon points="620,178 611,173 611,183" fill="#FF5E72"/>
+  <text x="540" y="170" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#FF5E72">reject</text>
+
+  <!-- reject: tier 1 -->
+  <polyline points="470,278 560,278 560,230 611,230" fill="none" stroke="#FF5E72" stroke-width="1.5"/>
+  <polygon points="620,230 611,225 611,235" fill="#FF5E72"/>
+  <text x="514" y="270" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#FF5E72">reject</text>
+
+  <!-- flag: tier 2 -->
+  <line x1="470" y1="378" x2="611" y2="378" stroke="#FFB020" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <polygon points="620,378 611,373 611,383" fill="#FFB020"/>
+  <text x="540" y="370" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#FFB020">flag only</text>
+
+  <!-- rejected store -->
+  <rect x="620" y="150" width="300" height="110" rx="10" fill="#241F43" stroke="#FF5E72" stroke-width="1.5"/>
+  <text x="636" y="178" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#FF5E72">REJECTED — retained, never shown</text>
+  <text x="636" y="201" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#C5BED8">Silent: the author sees an accepted</text>
+  <text x="636" y="217" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#C5BED8">submission that simply never appears.</text>
+  <text x="636" y="243" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#FFB020">This corpus is what tunes Tier 2.</text>
+
+  <!-- review queue -->
+  <rect x="620" y="330" width="300" height="88" rx="10" fill="#241F43" stroke="#FFB020" stroke-width="1.5"/>
+  <text x="636" y="358" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#FFB020">REVIEW QUEUE — human</text>
+  <text x="636" y="381" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#C5BED8">A suspicion score, never a verdict.</text>
+  <text x="636" y="397" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#C5BED8">Excluding a great player costs more</text>
+  <text x="636" y="411" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#C5BED8">than a cheater does.</text>
+
+  <text x="620" y="452" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#C5BED8">TIER 3 · Containment</text>
+  <text x="620" y="469" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#87809E">is this whole right-hand column.</text>
+
+  <text x="24" y="502" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#87809E">Tiers 0 and 1 are backend-only — no client release. Tier 2 is the only one that catches a bot playing the real challenge correctly (SEC-03).</text>
+</svg>

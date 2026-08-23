@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 590" width="960" height="590" role="img" aria-label="The two-board split. Who chose the seed decides everything downstream. A client-chosen seed gives an unbounded solve window and a run that is genuinely correct, which no verifier can distinguish from skill, so it may only ever be a personal best. A server-issued seed withheld until the window opens gives a bounded window, one entry per challenge, and a full action log that can be replayed — the only path that earns a global rank.">
+  <rect width="960" height="590" fill="#0A0817"/>
+
+  <text x="24" y="36" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#FFF9F6">The two-board split</text>
+  <text x="24" y="57" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#87809E">One question at the top decides whether a run can be verified at all.</text>
+
+  <!-- pivot -->
+  <rect x="350" y="76" width="260" height="44" rx="10" fill="#241F43" stroke="#FFB020" stroke-width="2"/>
+  <text x="480" y="104" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#FFB020">Who chose the seed?</text>
+
+  <!-- branch bus -->
+  <polyline points="480,120 480,146 250,146 250,235" fill="none" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="250,244 245,235 255,235" fill="#4B4171"/>
+  <polyline points="480,120 480,146 710,146 710,235" fill="none" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="710,244 705,235 715,235" fill="#4B4171"/>
+
+  <!-- headers -->
+  <rect x="90" y="176" width="320" height="44" rx="10" fill="#1A1732" stroke="#4B4171" stroke-width="1.5"/>
+  <text x="250" y="204" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#C5BED8">CASUAL · free play</text>
+
+  <rect x="550" y="176" width="320" height="44" rx="10" fill="#1A1732" stroke="#32E487" stroke-width="1.5"/>
+  <text x="710" y="204" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#32E487">RANKED · daily / weekly challenge</text>
+
+  <!-- row 1 -->
+  <rect x="90" y="244" width="320" height="64" rx="10" fill="#1A1732" stroke="#4B4171" stroke-width="1.5"/>
+  <text x="250" y="271" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#FFF9F6">Client picks the seed</text>
+  <text x="250" y="291" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#87809E">randomSeed()</text>
+
+  <rect x="550" y="244" width="320" height="64" rx="10" fill="#1A1732" stroke="#4B4171" stroke-width="1.5"/>
+  <text x="710" y="271" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#FFF9F6">Server issues the seed</text>
+  <text x="710" y="291" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#32E487">withheld until opens_at</text>
+
+  <line x1="250" y1="308" x2="250" y2="319" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="250,328 245,319 255,319" fill="#4B4171"/>
+  <line x1="710" y1="308" x2="710" y2="319" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="710,328 705,319 715,319" fill="#4B4171"/>
+
+  <!-- row 2 -->
+  <rect x="90" y="328" width="320" height="64" rx="10" fill="#1A1732" stroke="#4B4171" stroke-width="1.5"/>
+  <text x="250" y="355" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#FFF9F6">Unbounded solve window</text>
+  <text x="250" y="375" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#87809E">the answer key is already on the device</text>
+
+  <rect x="550" y="328" width="320" height="64" rx="10" fill="#1A1732" stroke="#4B4171" stroke-width="1.5"/>
+  <text x="710" y="355" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#FFF9F6">Bounded window · one entry</text>
+  <text x="710" y="375" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#87809E">unique (player_id, challenge_id)</text>
+
+  <line x1="250" y1="392" x2="250" y2="403" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="250,412 245,403 255,403" fill="#4B4171"/>
+  <line x1="710" y1="392" x2="710" y2="403" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="710,412 705,403 715,403" fill="#4B4171"/>
+
+  <!-- row 3 -->
+  <rect x="90" y="412" width="320" height="64" rx="10" fill="#241F43" stroke="#FF5E72" stroke-width="1.5"/>
+  <text x="250" y="439" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#FFF9F6">The run is genuinely correct</text>
+  <text x="250" y="459" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#FF5E72">no verifier can tell this from skill</text>
+
+  <rect x="550" y="412" width="320" height="64" rx="10" fill="#1A1732" stroke="#4B4171" stroke-width="1.5"/>
+  <text x="710" y="439" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#FFF9F6">Full action log submitted</text>
+  <text x="710" y="459" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#87809E">proof jsonb  →  replay the reducer</text>
+
+  <line x1="250" y1="476" x2="250" y2="487" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="250,496 245,487 255,487" fill="#4B4171"/>
+  <line x1="710" y1="476" x2="710" y2="487" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="710,496 705,487 715,487" fill="#4B4171"/>
+
+  <!-- outcomes -->
+  <rect x="90" y="496" width="320" height="48" rx="10" fill="#1A1732" stroke="#4B4171" stroke-width="1.5"/>
+  <text x="250" y="518" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#C5BED8">PERSONAL BEST · FRIENDS</text>
+  <text x="250" y="535" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#FF5E72">never a global rank</text>
+
+  <rect x="550" y="496" width="320" height="48" rx="10" fill="#103624" stroke="#32E487" stroke-width="2"/>
+  <text x="710" y="518" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#32E487">THE GLOBAL LEADERBOARD</text>
+  <text x="710" y="535" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#87809E">verified entries only</text>
+
+  <text x="24" y="574" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#87809E">Today one table serves both, so the whole board inherits the left-hand guarantee — which is none.  SEC-01, SEC-03</text>
+</svg>
