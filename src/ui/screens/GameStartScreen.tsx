@@ -1,16 +1,16 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getGame } from '../../games/registry';
 import type { ScoreBoard } from '../../scores/types';
 import { Badge, Button, GameArtwork, Stat, Surface } from '../components';
-import { font, radius, space, theme, type, withAlpha } from '../theme';
+import { font, space, theme, type, withAlpha } from '../theme';
 
 type Props = {
   gameId: string;
   board: ScoreBoard;
   onPlay: () => void;
   onScores: () => void;
-  /** Game-specific block above the footer — today's category, level, etc. */
+  /** Game-specific block at the top of the status card — today's category, level, etc. */
   detail?: ReactNode;
   /** Small print under everything. */
   footer?: string;
@@ -21,10 +21,17 @@ type Props = {
 /**
  * The screen between the hub and a run, shared by every game.
  *
- * Every title gets the same shape — art, badge, name, blurb, the player's own
- * numbers, then the CTA — so entering Clueless feels like entering More or
- * Less. Anything game-specific arrives through `detail` rather than by forking
- * the layout, which is what let the three games drift apart in the first place.
+ * Every title gets the same shape — art, badge, name, blurb, one status card,
+ * then the CTA — so entering Clueless feels like entering More or Less.
+ * Anything game-specific arrives through `detail` rather than by forking the
+ * layout, which is what let the three games drift apart in the first place.
+ *
+ * `detail` and the player's numbers share ONE card deliberately. They answer
+ * the same question — what is this game like right now — and as two adjacent
+ * bordered cards they competed for a single glance and read as clutter. The
+ * numbers are also hidden until there are some: a first-time player was being
+ * shown a full-width accent card containing "—" and "0", which is the loudest
+ * element on the screen saying the least.
  */
 export function GameStartScreen({
   gameId,
@@ -38,6 +45,7 @@ export function GameStartScreen({
   const game = getGame(gameId);
   const accent = game?.accent ?? theme.accent;
   const { bestStreak, totalRuns } = board;
+  const played = totalRuns > 0;
 
   // "Best" is a lie in a lower-is-better game — Clueless wants the FEWEST
   // guesses, so the label has to follow the registry, not the other way round.
@@ -46,47 +54,61 @@ export function GameStartScreen({
   ).toUpperCase()}`;
 
   return (
-    <View style={styles.root}>
+    // Scrolls rather than overlaps. The blurb is 2 lines on More or Less and 3
+    // on Clueless, and a fixed column let the bottom block ride up over the
+    // status card on the taller one — the same way it would on any short phone.
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.hero}>
         <GameArtwork gameId={gameId} accent={accent} size={136} raised />
         {game?.badge ? <Badge label={game.badge} color={accent} /> : null}
         <Text style={styles.title}>{game?.name ?? 'Play'}</Text>
         <Text style={styles.subtitle}>{game?.blurb ?? game?.tagline ?? ''}</Text>
-
-        {/* What is on today/this week sits with the pitch, not under the CTA:
-            it is the reason to tap Play, so it has to be read first. */}
-        {detail ? <View style={styles.detailSlot}>{detail}</View> : null}
       </View>
 
       <View style={styles.bottom}>
-        <Surface
-          level={2}
-          borderColor={withAlpha(accent, 0.38)}
-          radius={radius.lg}
-          style={styles.stats}
-        >
-          <Stat
-            value={totalRuns === 0 ? '—' : bestStreak}
-            label={bestLabel}
-            size="lg"
-            color={accent}
-          />
-          <View style={styles.divider} />
-          <Stat value={totalRuns} label={totalRuns === 1 ? 'RUN' : 'RUNS'} size="lg" />
-        </Surface>
+        {detail || played ? (
+          <Surface level={2} borderColor={withAlpha(accent, 0.3)} style={styles.status}>
+            {detail}
+            {detail && played ? <View style={styles.hairline} /> : null}
+            {played ? (
+              <View style={styles.stats}>
+                <View style={styles.statCell}>
+                  <Stat value={bestStreak} label={bestLabel} size="md" align="left" color={accent} />
+                </View>
+                <View style={styles.statCell}>
+                  <Stat
+                    value={totalRuns}
+                    label={totalRuns === 1 ? 'RUN' : 'RUNS'}
+                    size="md"
+                    align="left"
+                  />
+                </View>
+              </View>
+            ) : null}
+          </Surface>
+        ) : null}
 
         <View style={styles.actions}>
           <Button title={playLabel} size="lg" onPress={onPlay} color={accent} />
           <Button title="View scores" variant="tonal" size="md" onPress={onScores} color={accent} />
         </View>
-      </View>
 
-      {footer ? <Text style={styles.footer}>{footer}</Text> : null}
-    </View>
+        {footer ? <Text style={styles.footer}>{footer}</Text> : null}
+      </View>
+    </ScrollView>
   );
 }
 
-/** Shared shape for the `detail` slot, so each game's block matches the others. */
+/**
+ * Shared shape for the `detail` slot, so each game's block matches the others.
+ *
+ * Content only — the card around it belongs to GameStartScreen, which is what
+ * lets the detail and the stats sit inside one border instead of two.
+ */
 export function StartDetail({
   label,
   title,
@@ -99,25 +121,24 @@ export function StartDetail({
   accent: string;
 }) {
   return (
-    <Surface level={1} radius={radius.md} style={styles.detailBox}>
+    <View style={styles.detailRow}>
       <View style={[styles.detailDot, { backgroundColor: accent, shadowColor: accent }]} />
       <View style={styles.detailCopy}>
         <Text style={styles.detailLabel}>{label}</Text>
         <Text style={styles.detailTitle}>{title}</Text>
         {meta ? <Text style={styles.detailMeta}>{meta}</Text> : null}
       </View>
-    </Surface>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: theme.bg,
-    paddingHorizontal: space.lg,
-    paddingBottom: space.md,
-  },
-  hero: { alignItems: 'center', paddingTop: space.md, paddingHorizontal: space.md, gap: space.xs },
+  root: { flex: 1, backgroundColor: theme.bg },
+  // One gutter for the whole screen. The hero used to add its own inset on top
+  // of this, so the status card and the buttons sat at different widths and the
+  // stack looked broken rather than designed.
+  content: { flexGrow: 1, paddingHorizontal: space.lg, paddingBottom: space.md },
+  hero: { alignItems: 'center', paddingTop: space.md, gap: space.xs },
   title: { ...type.hero, color: theme.text, fontSize: 40, lineHeight: 44, marginTop: space.xs },
   subtitle: {
     ...type.body,
@@ -126,21 +147,17 @@ const styles = StyleSheet.create({
     maxWidth: 340,
     marginTop: space.xxs,
   },
-  detailSlot: { alignSelf: 'stretch', marginTop: space.md },
   bottom: { flex: 1, justifyContent: 'flex-end', gap: space.md, paddingTop: space.lg },
-  stats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: space.md,
-  },
-  divider: { width: 1, height: 48, backgroundColor: theme.border },
+  status: { gap: space.md },
+  hairline: { height: 1, backgroundColor: theme.border },
+  stats: { flexDirection: 'row' },
+  statCell: { flex: 1 },
   actions: { gap: space.sm },
-  detailBox: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  detailRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   detailDot: {
     width: 12,
     height: 12,
-    borderRadius: radius.pill,
+    borderRadius: 999,
     shadowOpacity: 0.6,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
@@ -154,6 +171,6 @@ const styles = StyleSheet.create({
     fontFamily: font.medium,
     fontSize: 10.5,
     textAlign: 'center',
-    marginTop: space.sm,
+    marginTop: space.xs,
   },
 });
