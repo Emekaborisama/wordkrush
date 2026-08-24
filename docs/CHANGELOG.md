@@ -6,6 +6,13 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.7.0] - 2026-08-24
+
+### Added
+- **Clueless now has Easy, Standard, and Expert daily modes.** Easy opens with a reviewed thematic sentence, Standard reveals the same sentence after 15 valid unique guesses, and Expert never shows it. The answer, ranked meaning trail, unlimited guesses, and one-puzzle-per-day cadence are unchanged.
+- **Daily mode locking keeps the challenge honest.** Players can change mode until the first valid guess; rejected and repeated words do not count or lock anything. Leaving and returning restores the locked mode, while sessions saved before this release resume as Standard.
+- **Scores are comparable within difficulty.** Local and global Clueless boards can switch between Easy, Standard, and Expert. The stable `clueless` game id remains; migration `0005_clueless_difficulty_leaderboards.sql` maps historical rows to Standard and partitions global ranks by mode.
+
 ## [0.6.1] - 2026-08-23
 
 ### Added

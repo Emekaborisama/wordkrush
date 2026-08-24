@@ -1,13 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { PUZZLES, VOCABULARY, puzzleByNumber, todaysPuzzleNumber } from '../../data/clueless';
+import {
+  CLUELESS_HINTS,
+  PUZZLES,
+  VOCABULARY,
+  puzzleByNumber,
+  todaysPuzzleNumber,
+} from '../../data/clueless';
 import {
   bestRank,
   closeness,
   guessCount,
   indexPuzzle,
+  isDifficultyLocked,
+  isHintVisible,
   newPuzzle,
   normalizeGuess,
   reducer,
+  STANDARD_HINT_GUESS_THRESHOLD,
   sortGuesses,
   type PuzzleIndex,
 } from './engine';
@@ -45,6 +54,21 @@ describe('shipped data', () => {
   it('has a vocabulary at least as large as any puzzle rank list', () => {
     for (const p of PUZZLES) {
       expect(VOCABULARY.length).toBeGreaterThanOrEqual(p.ranked.length);
+    }
+  });
+
+  it('pairs every shipped puzzle with one bounded, spoiler-free thematic hint', () => {
+    expect(CLUELESS_HINTS).toHaveLength(PUZZLES.length);
+    for (const puzzle of PUZZLES) {
+      const hint = CLUELESS_HINTS.find((candidate) => candidate.puzzleNumber === puzzle.number);
+      expect(hint?.secret, `puzzle ${puzzle.number}`).toBe(puzzle.secret);
+      const words = hint!.text.trim().split(/\s+/);
+      expect(words.length, `puzzle ${puzzle.number}`).toBeGreaterThanOrEqual(6);
+      expect(words.length, `puzzle ${puzzle.number}`).toBeLessThanOrEqual(16);
+      const escapedSecret = puzzle.secret.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      expect(hint!.text, `puzzle ${puzzle.number}`).not.toMatch(
+        new RegExp(`\\b${escapedSecret}\\b`, 'i'),
+      );
     }
   });
 });
@@ -116,6 +140,35 @@ describe('guessing', () => {
   it('clears a rejection once a valid guess lands', () => {
     const rejected = guess(fresh(), 'zzzzqqqq');
     expect(guess(rejected, 'purple').rejection).toBeNull();
+  });
+});
+
+describe('difficulty and hints', () => {
+  it('shows the hint immediately on easy and never on expert', () => {
+    expect(isHintVisible(newPuzzle(22, 'easy'))).toBe(true);
+    expect(isHintVisible(newPuzzle(22, 'expert'))).toBe(false);
+  });
+
+  it('reveals the standard hint after 15 valid unique guesses', () => {
+    let state = newPuzzle(22, 'standard');
+    const words = puzzle.ranked.slice(1, STANDARD_HINT_GUESS_THRESHOLD + 1);
+    for (const [index, word] of words.entries()) {
+      state = guess(state, word);
+      expect(isHintVisible(state)).toBe(index + 1 >= STANDARD_HINT_GUESS_THRESHOLD);
+    }
+  });
+
+  it('does not advance or lock difficulty for rejected guesses', () => {
+    const invalid = guess(newPuzzle(22, 'standard'), 'zzzzqqqq');
+    expect(invalid.guesses).toHaveLength(0);
+    expect(isDifficultyLocked(invalid)).toBe(false);
+    expect(isHintVisible(invalid)).toBe(false);
+  });
+
+  it('locks difficulty after the first valid guess', () => {
+    const state = guess(newPuzzle(22, 'easy'), 'purple');
+    expect(isDifficultyLocked(state)).toBe(true);
+    expect(state.difficulty).toBe('easy');
   });
 });
 

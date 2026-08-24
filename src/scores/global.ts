@@ -1,5 +1,6 @@
 import type { Profile } from '../auth/auth';
 import { supabase } from '../auth/client';
+import { normalizeCluelessScoreContext } from '../games/clueless/scoring';
 import type { ScoreBoard, ScoreEntry } from './types';
 
 export type GlobalScore = {
@@ -72,11 +73,12 @@ export function parseGlobalScores(value: unknown): GlobalScore[] {
 export async function loadGlobalLeaderboard(
   gameId: string,
   limit = 50,
+  contextId?: string,
 ): Promise<GlobalLeaderboardResult> {
   if (!supabase) return { ok: false, reason: 'unconfigured' };
 
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('global_leaderboard')
       .select(
         'id,player_id,display_name,game_id,score,context_id,duration_ms,played_at,status,global_rank',
@@ -84,12 +86,18 @@ export async function loadGlobalLeaderboard(
       .eq('game_id', gameId)
       .order('global_rank', { ascending: true })
       .limit(limit);
+    if (contextId) query = query.eq('context_id', contextId);
+    const { data, error } = await query;
 
     if (error) return { ok: false, reason: 'unavailable' };
     return { ok: true, entries: parseGlobalScores(data as unknown) };
   } catch {
     return { ok: false, reason: 'unavailable' };
   }
+}
+
+export function scoreContextForSubmission(gameId: string, contextId: string): string {
+  return gameId === 'clueless' ? normalizeCluelessScoreContext(contextId) : contextId;
 }
 
 export async function submitGlobalScore(
@@ -112,7 +120,7 @@ export async function submitGlobalScore(
         player_id: profile.id,
         game_id: gameId,
         score: entry.streak,
-        context_id: entry.categoryId,
+        context_id: scoreContextForSubmission(gameId, entry.categoryId),
         seed: entry.seed,
         duration_ms: entry.durationMs ?? null,
         client_entry_id: entry.id,

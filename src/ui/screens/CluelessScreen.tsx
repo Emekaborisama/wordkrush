@@ -9,10 +9,19 @@ import {
 } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import { rankBucket } from '../../analytics/events';
-import { VOCABULARY, puzzleByNumber } from '../../data/clueless';
-import { bestRank, closeness, indexPuzzle, newPuzzle, reducer, type Action } from '../../games/clueless/engine';
+import { hintForPuzzle, VOCABULARY, puzzleByNumber } from '../../data/clueless';
+import {
+  bestRank,
+  closeness,
+  indexPuzzle,
+  isHintVisible,
+  newPuzzle,
+  reducer,
+  STANDARD_HINT_GUESS_THRESHOLD,
+  type Action,
+} from '../../games/clueless/engine';
 import { isCluelessState, rehydrate } from '../../games/clueless/persistence';
-import type { CluelessState } from '../../games/clueless/types';
+import type { CluelessDifficulty, CluelessState } from '../../games/clueless/types';
 import { loadProgress, saveProgress } from '../../games/progress';
 import { getGame } from '../../games/registry';
 import { feedback } from '../../native/feedback';
@@ -34,7 +43,8 @@ const GAME_ID = 'clueless';
 
 type Props = {
   puzzleNumber: number;
-  onWin: (guessesUsed: number) => void;
+  difficulty: CluelessDifficulty;
+  onWin: (guessesUsed: number, difficulty: CluelessDifficulty) => void;
   onExit: () => void;
   /** Opened automatically the first time someone plays. */
   showHelpInitially?: boolean;
@@ -42,6 +52,7 @@ type Props = {
 
 export function CluelessScreen({
   puzzleNumber,
+  difficulty,
   onWin,
   onExit,
   showHelpInitially = false,
@@ -52,8 +63,8 @@ export function CluelessScreen({
 
   const [state, dispatch] = useReducer(
     (s: CluelessState, a: Action) => reducer(s, a, index),
-    puzzleNumber,
-    newPuzzle,
+    { puzzleNumber, difficulty },
+    ({ puzzleNumber: number, difficulty: mode }) => newPuzzle(number, mode),
   );
   const [input, setInput] = useState('');
   const [help, setHelp] = useState(showHelpInitially);
@@ -67,7 +78,7 @@ export function CluelessScreen({
     void loadProgress(GAME_ID, puzzleNumber, isCluelessState).then((saved) => {
       if (cancelled) return;
       if (saved) {
-        dispatch({ type: 'restore', state: rehydrate(saved) });
+        dispatch({ type: 'restore', state: rehydrate(saved, difficulty) });
         // A session restored in the won state was already scored; re-reporting
         // it would add a duplicate entry to the score table on every visit.
         if (saved.status === 'won') reported.current = true;
@@ -77,17 +88,25 @@ export function CluelessScreen({
         game_id: 'clueless',
         is_resume: Boolean(saved && saved.status !== 'won'),
         puzzle_number: puzzleNumber,
+        difficulty: saved?.difficulty ?? difficulty,
+        hint_source:
+          (saved?.difficulty ?? difficulty) === 'easy'
+            ? 'opening'
+            : (saved?.difficulty ?? difficulty) === 'standard'
+              ? 'guess_threshold'
+              : 'none',
       });
       captureAnalytics('daily_puzzle_viewed', {
         game_id: 'clueless',
         puzzle_number: puzzleNumber,
         already_completed: saved?.status === 'won',
+        difficulty: saved?.difficulty ?? difficulty,
       });
     });
     return () => {
       cancelled = true;
     };
-  }, [puzzleNumber]);
+  }, [puzzleNumber, difficulty]);
 
   // Persist after every change, once restore has run.
   useEffect(() => {
@@ -114,6 +133,7 @@ export function CluelessScreen({
       result_kind:
         next.status === 'won' ? 'correct' : rejectionKind ?? 'valid',
       rank_bucket: next.rejection ? undefined : rankBucket(bestRank(next)),
+      difficulty: next.difficulty,
     });
 
     if (next.status === 'won' && before !== 'won') {
@@ -122,7 +142,7 @@ export function CluelessScreen({
       feedback('win');
       if (!reported.current) {
         reported.current = true;
-        onWin(next.guesses.length);
+        onWin(next.guesses.length, next.difficulty);
       }
     } else if (next.rejection?.kind === 'not-a-word') {
       feedback('wrong');
@@ -133,6 +153,9 @@ export function CluelessScreen({
   const best = bestRank(state);
   const warmth = closeness(best, puzzle.rankedCount);
   const accent = getGame(GAME_ID)?.accent ?? theme.violet;
+  const hint = hintForPuzzle(puzzle.number);
+  const hintVisible = isHintVisible(state);
+  const hintRemaining = Math.max(0, STANDARD_HINT_GUESS_THRESHOLD - state.guesses.length);
 
   return (
     <KeyboardAvoidingView
@@ -141,7 +164,7 @@ export function CluelessScreen({
     >
       <GameHeader
         title="Clueless"
-        subtitle={`DAILY #${puzzle.number}`}
+        subtitle={`DAILY #${puzzle.number} · ${state.difficulty.toUpperCase()}`}
         accent={accent}
         onExit={onExit}
         onHelp={() => setHelp(true)}
@@ -154,6 +177,24 @@ export function CluelessScreen({
           color={accent}
         />
       </View>
+
+      {!won && state.difficulty !== 'expert' ? (
+        <Surface
+          level={hintVisible ? 2 : 1}
+          borderColor={hintVisible ? withAlpha(accent, 0.45) : undefined}
+          radius={radius.md}
+          style={styles.hintCard}
+        >
+          <Text style={[styles.hintLabel, hintVisible && { color: accent }]}>
+            {hintVisible ? 'THEMATIC HINT' : 'HINT LOCKED'}
+          </Text>
+          <Text style={hintVisible ? styles.hintText : styles.hintCountdown}>
+            {hintVisible
+              ? hint.text
+              : `${hintRemaining} valid ${hintRemaining === 1 ? 'guess' : 'guesses'} until the hint`}
+          </Text>
+        </Surface>
+      ) : null}
 
       {/* Warmth meter: turns the abstract best-rank number into something you
           can read at a glance, and gives the screen a focal point. */}
@@ -270,7 +311,7 @@ export function CluelessScreen({
         visible={help}
         onClose={() => setHelp(false)}
         title="How to play Clueless"
-        intro="There’s a secret word. Every guess is scored by how close it is in meaning — not spelling."
+        intro="There’s a secret word. Every guess is scored by meaning, not spelling. Your difficulty decides when a thematic hint appears."
         accent={accent}
         steps={[
           { n: 1, title: 'Guess any word', body: 'Anything at all. Start broad and follow the heat.' },
@@ -301,6 +342,10 @@ const styles = StyleSheet.create({
     gap: space.sm,
   },
   statsRow: { flexDirection: 'row', justifyContent: 'center', gap: space.sm },
+  hintCard: { gap: space.xs },
+  hintLabel: { ...type.overline, color: theme.textDim },
+  hintText: { ...type.bodyStrong, color: theme.text },
+  hintCountdown: { ...type.caption, color: theme.textMuted },
   meter: { gap: space.sm },
   meterCopy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   meterTitle: { ...type.overline, color: theme.textDim },

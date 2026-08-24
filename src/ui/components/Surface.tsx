@@ -3,6 +3,7 @@ import {
   StyleSheet,
   View,
   type AccessibilityRole,
+  type AccessibilityState,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -22,6 +23,8 @@ type Props = {
   disabled?: boolean;
   accessibilityLabel?: string;
   accessibilityRole?: AccessibilityRole;
+  accessibilityState?: AccessibilityState;
+  'aria-checked'?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -41,6 +44,8 @@ export function Surface({
   disabled,
   accessibilityLabel,
   accessibilityRole,
+  accessibilityState,
+  'aria-checked': ariaChecked,
   style,
 }: Props) {
   const depth = elevation(level);
@@ -56,10 +61,18 @@ export function Surface({
     raised && shadow.card,
     style,
   ];
+  const resolvedAccessibilityState =
+    disabled === undefined ? accessibilityState : { ...accessibilityState, disabled };
 
   if (!onPress) {
     return (
-      <View style={box} accessibilityRole={accessibilityRole} accessibilityLabel={accessibilityLabel}>
+      <View
+        style={box}
+        accessibilityRole={accessibilityRole}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityState={resolvedAccessibilityState}
+        aria-checked={ariaChecked}
+      >
         {children}
       </View>
     );
@@ -71,7 +84,8 @@ export function Surface({
       disabled={disabled}
       accessibilityRole={accessibilityRole ?? 'button'}
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled }}
+      accessibilityState={resolvedAccessibilityState}
+      aria-checked={ariaChecked}
       style={[box, disabled && styles.disabled]}
     >
       {children}

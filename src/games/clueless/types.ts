@@ -11,6 +11,9 @@ export type Puzzle = {
   ranked: string[];
 };
 
+export const CLUELESS_DIFFICULTIES = ['easy', 'standard', 'expert'] as const;
+export type CluelessDifficulty = (typeof CLUELESS_DIFFICULTIES)[number];
+
 /** A word the player submitted, with how close it turned out to be. */
 export type Guess = {
   word: string;
@@ -29,6 +32,8 @@ export type GuessRejection =
 
 export type CluelessState = {
   puzzleNumber: number;
+  /** Selected before play and locked by the first valid, unique guess. */
+  difficulty: CluelessDifficulty;
   /** Sorted best (rank 1) first. Unranked words sink to the bottom. */
   guesses: Guess[];
   status: 'playing' | 'won';

@@ -15,7 +15,12 @@ import {
   type GlobalLeaderboardResult,
   type GlobalScore,
 } from '../../scores/global';
-import { topScores, type ScoreBoard, type ScoreEntry } from '../../scores/types';
+import {
+  boardForContexts,
+  topScores,
+  type ScoreBoard,
+  type ScoreEntry,
+} from '../../scores/types';
 import {
   Badge,
   Button,
@@ -37,6 +42,13 @@ type Props = {
   backendConfigured: boolean;
   onSignIn: () => void;
   onSignOut: () => void;
+  scoreContexts?: {
+    id: string;
+    label: string;
+    /** Additional local-only aliases retained for backwards compatibility. */
+    localAliases?: string[];
+  }[];
+  initialScoreContext?: string;
 };
 
 type BoardTab = 'global' | 'local';
@@ -54,30 +66,47 @@ export function ScoresScreen({
   backendConfigured,
   onSignIn,
   onSignOut,
+  scoreContexts,
+  initialScoreContext,
 }: Props) {
   const game = getGame(gameId);
-  const top = topScores(board, 10, game?.scoreDirection);
+  const [scoreContext, setScoreContext] = useState(
+    initialScoreContext ?? scoreContexts?.[0]?.id,
+  );
+  const activeContext = scoreContexts?.find((context) => context.id === scoreContext);
+  const visibleBoard = activeContext
+    ? boardForContexts(
+        board,
+        [activeContext.id, ...(activeContext.localAliases ?? [])],
+        game?.scoreDirection,
+      )
+    : board;
+  const top = topScores(visibleBoard, 10, game?.scoreDirection);
   const scoreNoun = game?.scoreNoun ?? 'rounds';
   const accent = game?.accent ?? theme.accent;
   const [tab, setTab] = useState<BoardTab>(backendConfigured ? 'global' : 'local');
   const [global, setGlobal] = useState<GlobalState>({ status: 'loading', entries: [] });
-  const syncedCount = board.history.filter((entry) => entry.synced).length;
+  const syncedCount = visibleBoard.history.filter((entry) => entry.synced).length;
 
   useEffect(() => {
     if (tab !== 'global') return;
     let active = true;
-    setGlobal((current) => ({ status: 'loading', entries: current.entries }));
-    void loadGlobalLeaderboard(gameId).then((result) => {
+    // Context changes must not display Easy rows under an Expert heading while
+    // the next request is in flight.
+    setGlobal({ status: 'loading', entries: [] });
+    void loadGlobalLeaderboard(gameId, 50, scoreContext).then((result) => {
       if (active) setGlobal(globalStateFrom(result));
     });
     return () => {
       active = false;
     };
-  }, [gameId, tab, syncedCount]);
+  }, [gameId, tab, syncedCount, scoreContext]);
 
   const refreshGlobal = () => {
     setGlobal((current) => ({ status: 'loading', entries: current.entries }));
-    void loadGlobalLeaderboard(gameId).then((result) => setGlobal(globalStateFrom(result)));
+    void loadGlobalLeaderboard(gameId, 50, scoreContext).then((result) =>
+      setGlobal(globalStateFrom(result)),
+    );
   };
 
   const myGlobal = profile
@@ -103,6 +132,19 @@ export function ScoresScreen({
         />
       </Surface>
 
+      {scoreContexts ? (
+        <Surface level={1} radius={radius.md} padded={false} style={styles.tabs}>
+          {scoreContexts.map((context) => (
+            <BoardTabButton
+              key={context.id}
+              label={context.label}
+              active={scoreContext === context.id}
+              onPress={() => setScoreContext(context.id)}
+            />
+          ))}
+        </Surface>
+      ) : null}
+
       <Surface
         level={2}
         borderColor={withAlpha(accent, 0.4)}
@@ -110,14 +152,16 @@ export function ScoresScreen({
         style={styles.statsRow}
       >
         <Stat
-          value={tab === 'global' ? (myGlobal ? `#${myGlobal.rank}` : '—') : board.bestStreak}
+          value={
+            tab === 'global' ? (myGlobal ? `#${myGlobal.rank}` : '—') : visibleBoard.bestStreak
+          }
           label={tab === 'global' ? 'YOUR GLOBAL RANK' : `BEST ${scoreNoun.toUpperCase()}`}
           size="lg"
           color={accent}
         />
         <View style={styles.divider} />
         <Stat
-          value={tab === 'global' ? board.bestStreak : board.totalRuns}
+          value={tab === 'global' ? visibleBoard.bestStreak : visibleBoard.totalRuns}
           label={tab === 'global' ? 'YOUR LOCAL BEST' : 'RUNS PLAYED'}
           size="lg"
         />

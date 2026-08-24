@@ -139,6 +139,26 @@ If no candidate fits the band, widen it progressively rather than failing — ne
 
 Deliberately no settings, no accounts, no onboarding in v1.
 
+### Clueless difficulty modes **[GIVEN — 2026-08-24]**
+
+Clueless remains one secret word per UTC day, with unlimited guesses ranked by
+meaning and fewer guesses scoring better. “Levels” means a daily difficulty
+choice, not a campaign:
+
+- **Easy:** a short thematic sentence is visible before the first guess.
+- **Standard:** the same sentence appears after 15 valid, unique guesses.
+- **Expert:** no sentence appears.
+
+The first valid guess locks that day’s mode. Rejected and repeated words neither
+advance the Standard threshold nor lock the choice. Scores and global ranks are
+separate by mode; otherwise an opening hint would compete directly with an
+unassisted run.
+
+Hints are reviewed content, not runtime AI and not a nearest-neighbour guess.
+They describe a context or association without including the answer, its
+inflections, letter/length clues, or a direct synonym. This preserves
+Clueless’s “meaning, not spelling” identity and the bundled-offline boundary.
+
 ## 7. Architecture
 
 The critical constraint: **game reducers under `src/games/<game-id>/` must

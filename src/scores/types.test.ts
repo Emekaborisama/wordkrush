@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addScore,
+  boardForContexts,
   EMPTY_BOARD,
   isValidEntry,
   MAX_HISTORY,
@@ -63,6 +64,23 @@ describe('topScores', () => {
       entry(5, '2026-08-09T00:00:00.000Z'),
     );
     expect(topScores(board)[0].playedAt).toBe('2026-08-09T00:00:00.000Z');
+  });
+});
+
+describe('boardForContexts', () => {
+  it('keeps only comparable runs and recomputes a lower-is-better best', () => {
+    const easy = { ...entry(12), id: 'easy', categoryId: 'easy' };
+    const standard = { ...entry(8), id: 'standard', categoryId: 'standard' };
+    const legacy = { ...entry(5), id: 'legacy', categoryId: 'clueless' };
+    const board = [easy, standard, legacy].reduce(
+      (current, score) => addScore(current, score, 'lower'),
+      EMPTY_BOARD,
+    );
+
+    const filtered = boardForContexts(board, ['standard', 'clueless'], 'lower');
+    expect(filtered.history.map((score) => score.id)).toEqual(['legacy', 'standard']);
+    expect(filtered.bestStreak).toBe(5);
+    expect(filtered.totalRuns).toBe(2);
   });
 });
 

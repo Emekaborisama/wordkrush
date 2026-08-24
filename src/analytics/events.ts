@@ -10,6 +10,9 @@ type CommonGameProperties = {
 };
 
 type ArrivalProperties = ArrivalAttribution;
+type CluelessDifficultyProperty = {
+  difficulty?: 'easy' | 'standard' | 'expert';
+};
 
 export type AnalyticsEvents = {
   analytics_consent_changed: {
@@ -35,13 +38,14 @@ export type AnalyticsEvents = {
   game_selected: CommonGameProperties & {
     source: 'hub' | 'drawer';
   };
-  run_started: CommonGameProperties & {
+  run_started: CommonGameProperties & CluelessDifficultyProperty & {
     is_resume: boolean;
     category_id?: string;
     puzzle_number?: number;
     level_number?: number;
+    hint_source?: 'opening' | 'guess_threshold' | 'none';
   };
-  run_completed: CommonGameProperties & {
+  run_completed: CommonGameProperties & CluelessDifficultyProperty & {
     outcome: 'win' | 'loss';
     score: number;
     score_kind: 'streak' | 'guesses_used' | 'points';
@@ -51,8 +55,9 @@ export type AnalyticsEvents = {
     puzzle_number?: number;
     level_number?: number;
     relaxed_rounds?: number;
+    hint_source?: 'opening' | 'guess_threshold' | 'none';
   };
-  guess_submitted: CommonGameProperties & {
+  guess_submitted: CommonGameProperties & CluelessDifficultyProperty & {
     guess_index: number;
     choice?: 'more' | 'less';
     result_kind: 'correct' | 'incorrect' | 'valid' | 'not_a_word' | 'already_guessed';
@@ -84,7 +89,7 @@ export type AnalyticsEvents = {
     duration_ms: number;
     failure_mode: 'time' | 'moves';
   };
-  daily_puzzle_viewed: CommonGameProperties & {
+  daily_puzzle_viewed: CommonGameProperties & CluelessDifficultyProperty & {
     puzzle_number: number;
     already_completed: boolean;
   };
