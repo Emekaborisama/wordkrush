@@ -98,14 +98,14 @@ expose a typed event map so names and property shapes cannot drift.
 | `app_ready` | P1 | `App.tsx` after boards and session restore settle | Above plus `duration_ms`, `boards_result`, `session_result` as bounded enums | Startup success and latency |
 | `screen_viewed` | P1 | Observe the `Screen` union in `App.tsx` | `screen_name`, optional `game_id`, `source` | Navigation and funnel entry |
 | `game_selected` | P1 | Hub card or drawer navigation | `game_id`, `source: hub \| drawer` | Demand by title and discovery source |
-| `run_started` | P1 | WordKrush comparison-mode `startGame`; Clueless/Wordfall after restore resolves | `game_id`, `is_resume`, optional `category_id`, `puzzle_number`, `level_number` | Start rate and resume behavior |
-| `run_completed` | P1 | Existing completion callbacks in `App.tsx` | `game_id`, `outcome`, `score`, `score_kind`, `duration_ms?`, `is_new_best`, game context | Completion, retention, and balance |
-| `guess_submitted` | P1 | WordKrush comparison mode and Clueless submit handlers | `game_id`, `guess_index`, optional `choice`, `result_kind`, `rank_bucket` | Core-loop depth and input friction |
+| `run_started` | P1 | WordKrush comparison-mode `startGame`; Clueless/Wordfall after restore resolves | `game_id`, `is_resume`, optional `category_id`, `puzzle_number`, `level_number`; Clueless adds bounded `difficulty` and `hint_source` | Start rate and resume behavior |
+| `run_completed` | P1 | Existing completion callbacks in `App.tsx` | `game_id`, `outcome`, `score`, `score_kind`, `duration_ms?`, `is_new_best`, game context; Clueless adds bounded `difficulty` and the hint source actually reached | Completion, retention, and balance |
+| `guess_submitted` | P1 | WordKrush comparison mode and Clueless submit handlers | `game_id`, `guess_index`, optional `choice`, `result_kind`, `rank_bucket`, optional bounded `difficulty` | Core-loop depth and input friction |
 | `round_resolved` | P1 | WordKrush comparison UI observes reducer result | `correct`, `round_index`, `streak_bucket`, `pair_relaxed` | Difficulty curve and fairness |
 | `word_submitted` | P1 | Wordfall submit result | `level_number`, `word_length_bucket`, `valid`, `rejection_kind`, `score_delta_bucket`, `chain_length_bucket` | Input quality and mechanic engagement |
 | `level_completed` | P1 | Wordfall won transition | `level_number`, `score`, `duration_ms`, `words_played`, `moves_left_bucket` | Level pass rate and tuning |
 | `level_failed` | P1 | Wordfall lost transition | `level_number`, `score`, `duration_ms`, `failure_mode: time \| moves` | Difficulty cliffs |
-| `daily_puzzle_viewed` | P1 | Clueless after puzzle restore resolves | `puzzle_number`, `already_completed` | Daily participation |
+| `daily_puzzle_viewed` | P1 | Clueless after puzzle restore resolves | `puzzle_number`, `already_completed`, bounded `difficulty` | Daily participation |
 | `game_over_action` | P1 | WordKrush comparison result-screen action | `action: play_again \| scores \| home`, `streak_bucket`, `is_new_best` | Replay and post-run intent |
 | `scores_viewed` | P2 | Scores screen mount | `game_id`, `run_count_bucket`, `has_highlight`, `auth_status` | Score-surface value |
 | `auth_prompt_viewed` | P1 | Scores screen shows eligible account prompt | `game_id`, `run_count_bucket` | Account CTA reach |
@@ -151,9 +151,14 @@ the content pool is too flat, not that player skill changed.
 
 ### Clueless
 
-- Starts and wins by `puzzle_number`.
-- Median and p90 guesses used for completed puzzles.
-- Completion rate and rank-bucket progression by guess index.
+- Starts and wins by `puzzle_number` and `difficulty`.
+- Median and p90 guesses used for completed puzzles by difficulty.
+- Completion rate and rank-bucket progression by guess index and difficulty.
+- Standard completion before vs. after the 15-guess hint threshold.
+
+Hint text and submitted words are content, not analytics properties. Only the
+bounded mode (`easy`, `standard`, `expert`) and source
+(`opening`, `guess_threshold`, `none`) may be captured.
 - Invalid, duplicate, and unranked guess rates.
 - Consecutive-day participation after a completed puzzle.
 

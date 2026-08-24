@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseGlobalScores } from './global';
+import { parseGlobalScores, scoreContextForSubmission } from './global';
 
 const row = {
   id: 'score-1',
@@ -45,5 +45,18 @@ describe('parseGlobalScores', () => {
 
   it('returns an empty list for a non-array response', () => {
     expect(parseGlobalScores({ data: row })).toEqual([]);
+  });
+});
+
+describe('scoreContextForSubmission', () => {
+  it('maps legacy Clueless runs to Standard', () => {
+    expect(scoreContextForSubmission('clueless', 'clueless')).toBe('standard');
+    expect(scoreContextForSubmission('clueless', 'easy')).toBe('easy');
+  });
+
+  it('does not change other games', () => {
+    expect(scoreContextForSubmission('more-or-less', 'wikipedia-popularity')).toBe(
+      'wikipedia-popularity',
+    );
   });
 });

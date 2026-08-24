@@ -4,6 +4,7 @@ import type { CluelessState } from './types';
 
 const valid: CluelessState = {
   puzzleNumber: 3,
+  difficulty: 'easy',
   guesses: [
     { word: 'blue', rank: 1 },
     { word: 'ocean', rank: 528 },
@@ -34,6 +35,12 @@ describe('isCluelessState', () => {
     expect(isCluelessState({ ...valid, guesses: [{ word: 'x', rank: -3 }] })).toBe(false);
     expect(isCluelessState({ ...valid, guesses: [{ word: 'x', rank: 1.5 }] })).toBe(false);
     expect(isCluelessState({ ...valid, puzzleNumber: 'three' })).toBe(false);
+    expect(isCluelessState({ ...valid, difficulty: 'impossible' })).toBe(false);
+  });
+
+  it('accepts legacy sessions without a difficulty', () => {
+    const { difficulty: _difficulty, ...legacy } = valid;
+    expect(isCluelessState(legacy)).toBe(true);
   });
 });
 
@@ -56,5 +63,16 @@ describe('rehydrate', () => {
     expect(out.guesses).toEqual(valid.guesses);
     expect(out.status).toBe('won');
     expect(out.puzzleNumber).toBe(3);
+    expect(out.difficulty).toBe('easy');
+  });
+
+  it('maps an in-progress legacy run to standard', () => {
+    const { difficulty: _difficulty, ...legacy } = valid;
+    expect(rehydrate(legacy).difficulty).toBe('standard');
+  });
+
+  it('lets an empty saved run adopt a newly selected mode', () => {
+    const empty = { ...valid, guesses: [], status: 'playing' as const };
+    expect(rehydrate(empty, 'expert').difficulty).toBe('expert');
   });
 });

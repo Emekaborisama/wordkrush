@@ -418,6 +418,34 @@ Reddit app is typechecked with `npm run reddit:types`, by hand.
 
 ---
 
+## Journey 8 — A Clueless player chooses daily difficulty
+
+**1. The start screen restores today before enabling Play.** [BUILT]
+`App.tsx` loads the current Clueless progress envelope by puzzle number. With
+no valid guesses, Easy, Standard, and Expert remain selectable. The first valid
+unique guess makes `guesses.length > 0`, which is the lock: leaving and
+returning restores that mode. Invalid and repeated words add no guess and
+therefore cannot lock or advance anything. Saves from before difficulty modes
+default to Standard.
+
+**2. One reviewed sentence changes when help arrives, not the answer.** [BUILT]
+The hint catalog in `src/data/clueless/` is bundled separately from embedding
+ranks. Easy shows the sentence before play, Standard after 15 valid guesses,
+and Expert never does. The reducer exposes pure visibility/lock helpers; the UI
+only renders their result. No runtime model, nearest-neighbour auto-guess,
+spelling clue, or counted “free guess” is involved.
+
+**3. Scores remain comparable.** [BUILT]
+Finished runs keep `game_id = clueless` and store the mode in `context_id`.
+Local views filter the single offline history by that context.
+`0005_clueless_difficulty_leaderboards.sql` maps old Clueless rows to Standard
+and partitions each player’s best and global rank by game plus difficulty.
+Other games keep one board per game. Until that migration is applied, local
+play and local boards work, while production global Clueless ranks remain on
+the previous view.
+
+---
+
 ## System reference
 
 Quick map of where each journey step lives:
@@ -445,6 +473,7 @@ Quick map of where each journey step lives:
 | Optional auth (email magic link) | `src/auth/` (`redirect-url.ts` `webAuthRedirectUrl`), `src/ui/screens/AuthScreen.tsx`, `supabase/templates/magic-link.html` | [BUILT] — email-only magic link; unique username; web origin (scheme required) / native deep-link restore. Template keeps `{{ .ConfirmationURL }}` + `{{ .Token }}`. Custom SMTP required to save it on this free project (D-033, D-037) |
 | Unique leaderboard username | `supabase/migrations/0004_unique_username.sql`, `src/auth/validation.ts` `usernameKey` | [BUILT: apply on the owner project] — unique index on `username_key(display_name)`; duplicate maps to "That username is taken." |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
+| Clueless difficulty boards | `supabase/migrations/0005_clueless_difficulty_leaderboards.sql`, `src/games/clueless/scoring.ts` | [BUILT: apply migration] — Easy/Standard/Expert partition under stable `clueless` id |
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both |

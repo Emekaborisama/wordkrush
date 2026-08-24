@@ -33,8 +33,13 @@ import {
 import { isBackendConfigured } from './src/auth/client';
 import categoryData from './src/data/categories/wikipedia-popularity.json';
 import { todaysPuzzleNumber } from './src/data/clueless';
+import { STANDARD_HINT_GUESS_THRESHOLD } from './src/games/clueless/engine';
+import { isCluelessState } from './src/games/clueless/persistence';
+import { boardForCluelessDifficulty } from './src/games/clueless/scoring';
+import type { CluelessDifficulty } from './src/games/clueless/types';
 import type { GameState } from './src/games/more-or-less/engine';
 import type { Category } from './src/games/more-or-less/types';
+import { loadProgress } from './src/games/progress';
 import { randomSeed } from './src/games/rng';
 import { GAMES, getGame } from './src/games/registry';
 import { syncPendingScores } from './src/scores/global';
@@ -65,6 +70,7 @@ import {
 } from './src/userback/widget';
 import { Drawer, type DrawerDestination } from './src/ui/Drawer';
 import { AnalyticsConsentPrompt } from './src/ui/AnalyticsConsentPrompt';
+import { CluelessDifficultyPicker } from './src/ui/CluelessDifficultyPicker';
 import { TopBar } from './src/ui/TopBar';
 import { AuthScreen } from './src/ui/screens/AuthScreen';
 import { CluelessScreen } from './src/ui/screens/CluelessScreen';
@@ -82,7 +88,7 @@ const MORE_OR_LESS = 'more-or-less';
 type Screen =
   | { name: 'hub' }
   | { name: 'home'; gameId: string }
-  | { name: 'game'; gameId: string; seed: number }
+  | { name: 'game'; gameId: string; seed: number; difficulty?: CluelessDifficulty }
   | { name: 'over'; gameId: string; state: GameState; entryId: string }
   | { name: 'scores'; gameId: string; highlightId?: string }
   | { name: 'auth'; returnGameId?: string };
@@ -92,7 +98,16 @@ type Screen =
  * is shared; this is the one slot that differs, so a new game adds a case here
  * rather than forking the layout.
  */
-function startDetailFor(gameId: string, category: Category & { provisional?: boolean }) {
+function startDetailFor(
+  gameId: string,
+  category: Category & { provisional?: boolean },
+  clueless: {
+    difficulty: CluelessDifficulty;
+    locked: boolean;
+    ready: boolean;
+    onChange: (difficulty: CluelessDifficulty) => void;
+  },
+) {
   const accent = getGame(gameId)?.accent ?? theme.accent;
   if (gameId === MORE_OR_LESS) {
     return (
@@ -106,12 +121,21 @@ function startDetailFor(gameId: string, category: Category & { provisional?: boo
   }
   if (gameId === 'clueless') {
     return (
-      <StartDetail
-        label="TODAY’S PUZZLE"
-        title={`Daily #${todaysPuzzleNumber()}`}
-        meta="One word a day · unlimited guesses"
-        accent={accent}
-      />
+      <>
+        <StartDetail
+          label="TODAY’S PUZZLE"
+          title={`Daily #${todaysPuzzleNumber()}`}
+          meta="One word a day · unlimited guesses"
+          accent={accent}
+        />
+        <CluelessDifficultyPicker
+          value={clueless.difficulty}
+          locked={clueless.locked}
+          disabled={!clueless.ready}
+          accent={accent}
+          onChange={clueless.onChange}
+        />
+      </>
     );
   }
   if (gameId === 'wordfall') {
@@ -142,6 +166,10 @@ export default function App() {
   });
   const [screen, setScreen] = useState<Screen>({ name: 'hub' });
   const [boards, setBoards] = useState<Record<string, ScoreBoard>>({});
+  const [cluelessDifficulty, setCluelessDifficulty] =
+    useState<CluelessDifficulty>('standard');
+  const [cluelessDifficultyLocked, setCluelessDifficultyLocked] = useState(false);
+  const [cluelessDifficultyReady, setCluelessDifficultyReady] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [streak, setStreak] = useState<DailyStreak>(EMPTY_STREAK);
@@ -227,6 +255,22 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (screen.name !== 'home' || screen.gameId !== 'clueless') return;
+    let cancelled = false;
+    setCluelessDifficultyReady(false);
+    const puzzleNumber = todaysPuzzleNumber();
+    void loadProgress('clueless', puzzleNumber, isCluelessState).then((saved) => {
+      if (cancelled) return;
+      setCluelessDifficulty(saved?.difficulty ?? 'standard');
+      setCluelessDifficultyLocked(Boolean(saved && saved.guesses.length > 0));
+      setCluelessDifficultyReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [screen]);
+
+  useEffect(() => {
     const unsubscribe = subscribeToAuth((next) => {
       setProfile(next);
     });
@@ -250,7 +294,19 @@ export default function App() {
   }, [profileReady, profile]);
 
   const boardFor = (gameId: string) => boards[gameId] ?? EMPTY_BOARD;
-  const startGame = (gameId: string) => setScreen({ name: 'game', gameId, seed: randomSeed() });
+  const openGameHome = (gameId: string) => {
+    if (gameId === 'clueless') setCluelessDifficultyReady(false);
+    setScreen({ name: 'home', gameId });
+  };
+  const startGame = (gameId: string) => {
+    if (gameId === 'clueless' && !cluelessDifficultyReady) return;
+    setScreen({
+      name: 'game',
+      gameId,
+      seed: randomSeed(),
+      difficulty: gameId === 'clueless' ? cluelessDifficulty : undefined,
+    });
+  };
 
   useEffect(() => {
     if (analyticsConsent !== 'granted' || !arrivalReady) return;
@@ -410,7 +466,7 @@ export default function App() {
     if (to.kind === 'hub') setScreen({ name: 'hub' });
     else if (to.kind === 'game') {
       captureAnalytics('game_selected', { game_id: to.gameId, source: 'drawer' });
-      setScreen({ name: 'home', gameId: to.gameId });
+      openGameHome(to.gameId);
     }
     else if (to.kind === 'scores') setScreen({ name: 'scores', gameId: to.gameId });
     else setScreen({ name: 'auth', returnGameId: activeGameId });
@@ -439,7 +495,7 @@ export default function App() {
             streak={streak}
             onPlay={(gameId) => {
               captureAnalytics('game_selected', { game_id: gameId, source: 'hub' });
-              setScreen({ name: 'home', gameId });
+              openGameHome(gameId);
             }}
             onScores={() => setScreen({ name: 'scores', gameId: MORE_OR_LESS })}
           />
@@ -448,16 +504,17 @@ export default function App() {
         {screen.name === 'game' && screen.gameId === 'clueless' && (
           <CluelessScreen
             puzzleNumber={todaysPuzzleNumber()}
-            onExit={() => setScreen({ name: 'home', gameId: 'clueless' })}
-            onWin={async (guessesUsed) => {
-              const previous = boardFor('clueless');
+            difficulty={screen.difficulty ?? 'standard'}
+            onExit={() => openGameHome('clueless')}
+            onWin={async (guessesUsed, difficulty) => {
+              const previous = boardForCluelessDifficulty(boardFor('clueless'), difficulty);
               const next = await recordFinish(() =>
                 recordScore(
                   'clueless',
                   {
                     id: makeEntryId(),
                     streak: guessesUsed,
-                    categoryId: 'clueless',
+                    categoryId: difficulty,
                     playedAt: new Date().toISOString(),
                     seed: todaysPuzzleNumber(),
                   },
@@ -472,6 +529,14 @@ export default function App() {
                 score_kind: 'guesses_used',
                 is_new_best: previous.totalRuns === 0 || guessesUsed < previous.bestStreak,
                 puzzle_number: todaysPuzzleNumber(),
+                difficulty,
+                hint_source:
+                  difficulty === 'easy'
+                    ? 'opening'
+                    : difficulty === 'standard' &&
+                        guessesUsed > STANDARD_HINT_GUESS_THRESHOLD
+                      ? 'guess_threshold'
+                      : 'none',
               });
             }}
           />
@@ -513,11 +578,21 @@ export default function App() {
         {screen.name === 'home' && (
           <GameStartScreen
             gameId={screen.gameId}
-            board={boardFor(screen.gameId)}
+            board={
+              screen.gameId === 'clueless'
+                ? boardForCluelessDifficulty(boardFor('clueless'), cluelessDifficulty)
+                : boardFor(screen.gameId)
+            }
             onPlay={() => startGame(screen.gameId)}
             onScores={() => setScreen({ name: 'scores', gameId: screen.gameId })}
-            detail={startDetailFor(screen.gameId, category)}
+            detail={startDetailFor(screen.gameId, category, {
+              difficulty: cluelessDifficulty,
+              locked: cluelessDifficultyLocked,
+              ready: cluelessDifficultyReady,
+              onChange: setCluelessDifficulty,
+            })}
             footer={startFooterFor(screen.gameId, category)}
+            playDisabled={screen.gameId === 'clueless' && !cluelessDifficultyReady}
           />
         )}
 
@@ -598,6 +673,18 @@ export default function App() {
           <ScoresScreen
             gameId={screen.gameId}
             board={boardFor(screen.gameId)}
+            scoreContexts={
+              screen.gameId === 'clueless'
+                ? [
+                    { id: 'easy', label: 'Easy' },
+                    { id: 'standard', label: 'Standard', localAliases: ['clueless'] },
+                    { id: 'expert', label: 'Expert' },
+                  ]
+                : undefined
+            }
+            initialScoreContext={
+              screen.gameId === 'clueless' ? cluelessDifficulty : undefined
+            }
             highlightId={screen.highlightId}
             profile={profile}
             backendConfigured={isBackendConfigured}

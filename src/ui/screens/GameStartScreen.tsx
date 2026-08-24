@@ -16,6 +16,8 @@ type Props = {
   footer?: string;
   /** Overrides the CTA label. Defaults to "Play now". */
   playLabel?: string;
+  /** Used while game-specific resume state is still resolving. */
+  playDisabled?: boolean;
 };
 
 /**
@@ -41,6 +43,7 @@ export function GameStartScreen({
   detail,
   footer,
   playLabel = 'Play now',
+  playDisabled = false,
 }: Props) {
   const game = getGame(gameId);
   const accent = game?.accent ?? theme.accent;
@@ -93,7 +96,13 @@ export function GameStartScreen({
         ) : null}
 
         <View style={styles.actions}>
-          <Button title={playLabel} size="lg" onPress={onPlay} color={accent} />
+          <Button
+            title={playLabel}
+            size="lg"
+            onPress={onPlay}
+            color={accent}
+            disabled={playDisabled}
+          />
           <Button title="View scores" variant="tonal" size="md" onPress={onScores} color={accent} />
         </View>
 

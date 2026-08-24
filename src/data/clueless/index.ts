@@ -41,6 +41,8 @@ import p28 from './0028.json';
 import p29 from './0029.json';
 import p30 from './0030.json';
 
+export { CLUELESS_HINTS, hintForPuzzle } from './hints';
+
 export const PUZZLES: Puzzle[] = [
   p01, p02, p03, p04, p05, p06, p07, p08, p09, p10,
   p11, p12, p13, p14, p15, p16, p17, p18, p19, p20,

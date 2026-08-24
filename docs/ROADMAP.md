@@ -1,6 +1,6 @@
 # Roadmap & Task List
 
-**Last updated:** 2026-08-23
+**Last updated:** 2026-08-24
 **Board of record:** Superthread → *My Private Space* → **BestGame** board (team `tbJ3qEwK`, board `2`, lists: To do `8` / Doing `9` / Done `10`).
 
 Live status lives on the board, not here. This file exists so an LLM reading the repo cold knows what the work *is*, what blocks it, and what order it goes in — without needing board access.
@@ -64,6 +64,10 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 - [ ] **Show data provenance** — "Source: X, month year" on the reveal; the claim on screen must match the snapshot
 - [ ] **Lottie celebration kit** (ST-72) — remaining deer poses, streak flame, result bursts; owner shares lottie.host *file* URLs. Hub idle deer + player already exist locally (`src/ui/lottie/`, D-032). Not on Wordfall tiles or text pills.
 - [ ] **Wordfall match juice** (ST-80) — **Doing**; puff-then-fall on `lastPlay.cleared`, special-birth pop, Crush/Nova stamp. RN `Animated`, not Lottie.
+
+## Track: Clueless
+
+- [x] **Daily difficulty modes** (ST-82) — **Done**; Easy opens with a reviewed thematic sentence, Standard reveals it after 15 valid guesses, Expert has no hint. The first valid guess locks the day, and local/global scores are partitioned by mode.
 
 ## Track: native / App Store readiness
 

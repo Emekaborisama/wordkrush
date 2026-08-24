@@ -78,6 +78,31 @@ export function topScores(
     .slice(0, limit);
 }
 
+/**
+ * Builds a board for one score context (difficulty, category, level, etc.).
+ *
+ * History is capped, so a filtered board can only report runs still present in
+ * that history. That is preferable to mixing incomparable contexts in one best.
+ */
+export function boardForContexts(
+  board: ScoreBoard,
+  contextIds: readonly string[],
+  direction: ScoreDirection = 'higher',
+): ScoreBoard {
+  const allowed = new Set(contextIds);
+  const history = board.history.filter((entry) => allowed.has(entry.categoryId));
+  const best = history.reduce<number | null>(
+    (current, entry) =>
+      current === null || isBetter(entry.streak, current, direction) ? entry.streak : current,
+    null,
+  );
+  return {
+    bestStreak: best ?? 0,
+    totalRuns: history.length,
+    history,
+  };
+}
+
 /** 1-based rank of a score against local history, for "you placed Nth" messaging. */
 export function rankOf(
   board: ScoreBoard,

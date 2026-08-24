@@ -5,14 +5,22 @@
  * ordered by closeness to the secret, so playing is just a lookup. No model, no
  * network, no floating-point similarity at runtime.
  */
-import type { CluelessState, Guess, GuessRejection, Puzzle } from './types';
+import type {
+  CluelessDifficulty,
+  CluelessState,
+  Guess,
+  GuessRejection,
+  Puzzle,
+} from './types';
 
 export type Action =
   | { type: 'guess'; word: string }
   | { type: 'dismissRejection' }
-  | { type: 'newPuzzle'; puzzleNumber: number }
+  | { type: 'newPuzzle'; puzzleNumber: number; difficulty?: CluelessDifficulty }
   /** Replace state wholesale when resuming a saved session. */
   | { type: 'restore'; state: CluelessState };
+
+export const STANDARD_HINT_GUESS_THRESHOLD = 15;
 
 /** Puzzle data plus the vocabulary, prepared once so guessing is O(1). */
 export type PuzzleIndex = {
@@ -44,14 +52,29 @@ export function normalizeGuess(raw: string): string {
     .replace(/[^a-z']/g, '');
 }
 
-export function newPuzzle(puzzleNumber: number): CluelessState {
+export function newPuzzle(
+  puzzleNumber: number,
+  difficulty: CluelessDifficulty = 'standard',
+): CluelessState {
   return {
     puzzleNumber,
+    difficulty,
     guesses: [],
     status: 'playing',
     lastWord: null,
     rejection: null,
   };
+}
+
+/** A rejected or repeated word never locks the player's daily mode. */
+export function isDifficultyLocked(state: CluelessState): boolean {
+  return state.guesses.length > 0;
+}
+
+export function isHintVisible(state: CluelessState): boolean {
+  if (state.difficulty === 'easy') return true;
+  if (state.difficulty === 'expert') return false;
+  return state.guesses.length >= STANDARD_HINT_GUESS_THRESHOLD;
 }
 
 /** Best first. Unranked (too cold to have shipped a rank) sinks to the bottom. */
@@ -67,7 +90,7 @@ export function sortGuesses(guesses: Guess[]): Guess[] {
 export function reducer(state: CluelessState, action: Action, index: PuzzleIndex): CluelessState {
   switch (action.type) {
     case 'newPuzzle':
-      return newPuzzle(action.puzzleNumber);
+      return newPuzzle(action.puzzleNumber, action.difficulty);
 
     case 'restore':
       // Re-sort on restore rather than trusting stored order: the ordering
@@ -110,6 +133,7 @@ export function reducer(state: CluelessState, action: Action, index: PuzzleIndex
 
       return {
         puzzleNumber: state.puzzleNumber,
+        difficulty: state.difficulty,
         guesses,
         status: rank === 1 ? 'won' : 'playing',
         lastWord: word,
