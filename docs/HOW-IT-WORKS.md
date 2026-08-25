@@ -258,6 +258,19 @@ stays as the in-app fallback. This free project cannot save that template
 until custom SMTP is configured (dashboard only; credentials never enter the
 app). Skip remains a guest path; a missing backend still plays offline.
 
+Player-facing “what’s new” mail is a separate file,
+[whats-new.html](../supabase/templates/whats-new.html), in the same ink/gold
+shell. Auth templates cannot send it — they only cover sign-in, recovery, and
+invite. [player-email.ts](../pipeline/player-email.ts) lists confirmed Auth
+users with the secret key, upserts them into the Resend segment `WordKrush
+players` (without flipping `unsubscribed`), and creates one Broadcast. The
+Tuesday 09:00 UTC job ([player-email-weekly.yml](../.github/workflows/player-email-weekly.yml))
+uses GitHub Environment `best-games` and sends this week’s Wordfall when a
+dated row is live, otherwise the product roundup once. The play button is
+`https://wordkrush.com` with `utm_source=email` / `utm_medium=product-update`.
+Resend’s `{{{RESEND_UNSUBSCRIBE_URL}}}` is the opt-out. Guests have no
+address. `RESEND_API_KEY` is pipeline-only (D-052).
+
 **4. The public board is a view, not a client-ranked dump.** [BUILT]
 [0003_global_scores.sql](../supabase/migrations/0003_global_scores.sql) stores
 immutable submissions (RLS: read non-rejected, insert only `auth.uid() =
@@ -513,6 +526,7 @@ Quick map of where each journey step lives:
 | Content DB schema | `supabase/migrations/0001_init.sql` | [BUILT: apply on the owner project] |
 | Accounts + first leaderboard tables | `supabase/migrations/0002_leaderboard.sql` | [BUILT: apply on the owner project] |
 | Optional auth (email magic link) | `src/auth/` (`redirect-url.ts` `webAuthRedirectUrl`), `src/ui/screens/AuthScreen.tsx`, `supabase/templates/magic-link.html` | [BUILT] — email-only magic link; unique username; web origin (scheme required) / native deep-link restore. Template keeps `{{ .ConfirmationURL }}` + `{{ .Token }}`. Custom SMTP required to save it on this free project (D-033, D-037) |
+| Player “what’s new” email | `supabase/templates/whats-new.html`, `pipeline/player-email.ts`, `.github/workflows/player-email-weekly.yml` | [BUILT] — branded HTML; Tuesday 09:00 UTC Resend Broadcast; job uses GitHub Environment `best-games` for `RESEND_API_KEY` / `SUPABASE_*`; auto = this week’s Wordfall else product roundup once; Resend unsubscribe. Never on Railway (D-052) |
 | Unique leaderboard username | `supabase/migrations/0004_unique_username.sql`, `src/auth/validation.ts` `usernameKey` | [BUILT: apply on the owner project] — unique index on `username_key(display_name)`; duplicate maps to "That username is taken." |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
 | Clueless difficulty boards | `supabase/migrations/0005_clueless_difficulty_leaderboards.sql`, `src/games/clueless/scoring.ts` | [BUILT: apply migration] — Easy/Standard/Expert partition under stable `clueless` id |
@@ -539,6 +553,7 @@ Quick map of where each journey step lives:
 - `.env` gitignored + untracked; shape in `.env.example` (names only). History clean — the one committed `.env` was empty.
 - Finder duplicate names (`* 2.ts`, `* 2.png`, …) and `supabase/.temp/` are gitignored. They are local copies, not app source.
 - `SUPABASE_SECRET_KEY`: pipeline-only, loaded via `tsx --env-file=.env`. Never `EXPO_PUBLIC_`-prefixed — Expo embeds those in the shipped bundle.
+- `RESEND_API_KEY`: pipeline and GitHub Environment `best-games` only (Tuesday player Broadcast). Never `EXPO_PUBLIC_*`, never Railway.
 - Client bundles contain only publishable Supabase, PostHog and Userback project
   configuration under `EXPO_PUBLIC_*`; none grants privileged server access.
   `EXPO_PUBLIC_USERBACK_TOKEN` identifies the feedback project, not the

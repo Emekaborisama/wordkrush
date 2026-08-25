@@ -161,8 +161,8 @@ reason to post** — the hardest thing to manufacture in content marketing, and 
 already exists as shipped product behaviour. The ST-78 weekly gauntlet agent
 generates the levels, so the marginal cost of the hook is near zero.
 
-Use it as the spine of any social presence: a Monday post, a Monday email if a
-list ever exists, a Monday notification once mobile ships. It is an event, not
+Use it as the spine of any social presence: a Monday post, a Tuesday player
+email (D-052), a Monday notification once mobile ships. It is an event, not
 an ad, which is why it survives in communities that reject promotion.
 
 ---

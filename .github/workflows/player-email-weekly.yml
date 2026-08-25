@@ -1,0 +1,63 @@
+name: Player email weekly
+
+# Tuesday, the morning after Wordfall's Monday drop. Syncs confirmed Auth
+# emails into the Resend "WordKrush players" segment and sends one Broadcast.
+# Idempotent on the broadcast name. Dry-run locally; this job sends.
+on:
+  schedule:
+    - cron: '0 9 * * 2' # Tuesday 09:00 UTC
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: auto (this week's Wordfall, else the product roundup once) / whats-new / weekly
+        type: choice
+        options:
+          - auto
+          - whats-new
+          - weekly
+        default: auto
+      dry_run:
+        description: Count recipients and skip the Resend send
+        type: boolean
+        default: false
+
+concurrency:
+  group: player-email-weekly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    # Secrets live on this GitHub Environment (Settings → Environments →
+    # best-games), not under repo Actions secrets. Without this line the
+    # job cannot see RESEND_API_KEY / SUPABASE_*.
+    environment: best-games
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Send the weekly player email
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          RESEND_FROM: ${{ secrets.RESEND_FROM }}
+          RESEND_SEGMENT_ID: ${{ secrets.RESEND_SEGMENT_ID }}
+          TEST_PLAYER_EMAIL: ${{ secrets.TEST_PLAYER_EMAIL }}
+        run: |
+          MODE="${{ github.event.inputs.mode || 'auto' }}"
+          DRY="${{ github.event.inputs.dry_run || 'false' }}"
+          if [ "$DRY" = "true" ]; then
+            npx tsx pipeline/player-email.ts --mode "$MODE" --dry-run
+          else
+            npx tsx pipeline/player-email.ts --mode "$MODE" --send
+          fi

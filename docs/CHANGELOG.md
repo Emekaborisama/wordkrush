@@ -6,6 +6,12 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.4] - 2026-08-25
+
+### Added
+- **Player “what’s new” email** at `supabase/templates/whats-new.html`, in the same ink/gold shell as the magic-link mail. Copy sells three game changes — race friends live, Clueless Easy/Standard/Expert, Wordfall puff then CRUSH/NOVA — and the button is `https://wordkrush.com` with email UTM tags. Auth templates cannot send it. Guests have no address, so this is not an in-app surface.
+- **Tuesday Resend Broadcast for signed-in players** (`pipeline/player-email.ts`, `.github/workflows/player-email-weekly.yml`). 09:00 UTC, the morning after Wordfall’s Monday drop. Syncs confirmed Auth emails into the Resend segment `WordKrush players`, then sends one Broadcast: this week’s Wordfall if a dated row is live, otherwise the product roundup once. Idempotent on the broadcast name. Resend owns unsubscribe (`{{{RESEND_UNSUBSCRIBE_URL}}}`). The job reads `RESEND_API_KEY` / `SUPABASE_*` from GitHub Environment `best-games` — never `EXPO_PUBLIC_*` or Railway (D-052).
+
 ## [0.8.3] - 2026-08-25
 
 ### Added

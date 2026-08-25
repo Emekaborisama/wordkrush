@@ -18,6 +18,8 @@ A drop has three clocks. Confusing them is how a week ships empty.
 | **Build** | The row is inside the binary the player actually runs | Web: Railway deploy on `master` (D-020). iOS: EAS + TestFlight / App Store |
 | **Calendar** | `isLevelReleased` becomes true on the player’s **local** Monday | `src/games/wordfall/schedule.ts` — no I/O |
 
+Signed-in players are mailed on **Tuesday 09:00 UTC** (`pipeline/player-email.ts`, D-052) about that Monday’s drop. The email does not fetch levels; it reads the same bundled catalog. No dated row this week → the job sends the product roundup once, then no-ops until a weekly row exists.
+
 If the row is not in the installed build by that Monday, the player does not have a new level. The picker cannot download it (D-004). Stale clients keep the last catalog they shipped with.
 
 Web players pick up a merged drop on the next Railway deploy. iOS players pick it up only after they install a build that already contains the row. Batch several Mondays into each store cut so native does not miss weeks while review is in flight.
