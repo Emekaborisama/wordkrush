@@ -55,12 +55,12 @@ export const LEVELS: Level[] = [
   {
     number: 2,
     name: 'Stretch',
-    description: 'Make four words with 5 or more letters to create powerful specials.',
+    description: 'Make four-letter words and longer for bigger scores.',
     moves: 14,
     crates: 0,
-    // Forces the player past three-letter words, which is where beams — and
-    // the whole special-tile system — start showing up on the board.
-    objectives: [{ kind: 'length', minLength: 5, target: 4 }],
+    // Starts with four-letter words: doubles can earn flares, while longer
+    // words introduce beams and the rest of the special-tile system.
+    objectives: [{ kind: 'length', minLength: 4, target: 4 }],
   },
   {
     number: 3,
