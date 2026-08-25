@@ -165,6 +165,29 @@ A player who has not updated still has last week’s catalog. That is accepted (
 
 Unlock persistence: `WordfallSave.unlocked` may already be `12` while this build’s last released number is `11`. The screen clamps the current level with `min(unlocked, lastReleasedNumber)`. Do not cap `unlocked` at `LAST_LEVEL` on save.
 
+### Standing review branch
+
+`content/wordfall-weekly` is the standing review branch for recurring Wordfall
+content. It is a narrow automation exception to the normal Superthread
+card-derived branch rule (D-058): routine buffer refills do **not** need one
+card per level, but every resulting PR still receives human review.
+
+Each authoring run first checks whether a review PR from that branch is open:
+
+- If it is open, extend that one PR rather than creating a competing level or
+  PR.
+- If it is not open, start the standing branch from current `master` and open a
+  new review PR only after local verification passes.
+- If the catalog already has four future Mondays, make no content change and
+  open no PR.
+- Otherwise append as many independently designed rows as needed to restore
+  the four-week buffer. The first run therefore fills levels 12–15, not only
+  the immediate next Monday.
+
+Every PR is still one release under D-041. If a later authoring run extends an
+unmerged standing PR, update its pending version and changelog section rather
+than adding a second release heading to the same PR.
+
 ---
 
 ## 7. Automation contract [PLANNED]
@@ -185,33 +208,52 @@ Two jobs. Do not collapse them into “generate and push to master on Monday.”
 - Dated Mondays are consecutive (each is the previous + 7 days).
 - Count of rows with `availableFrom > today` ≥ `BUFFER_WEEKS` (4).
 
-**Fail:** open or update an issue / Superthread card titled `Wordfall weekly buffer low` with the missing Mondays listed. Do not auto-merge a stub level.
+**Fail:** invoke Job B to restore the missing Mondays on the standing
+`content/wordfall-weekly` review branch. The PR body lists the missing dates;
+do not create a per-drop Superthread card or auto-merge a stub level.
 
 This job can land as a GitHub Actions `schedule` workflow that runs the existing Vitest catalog tests plus a small buffer assertion. Until that workflow exists, run the same checks by hand before calling the cadence healthy.
 
-### Job B — Author the next drop (agent or human)
+### Job B — Maintain the weekly buffer (agent or human)
 
 **When:** Job A fails, or the owner asks for the next week.
 
 Follow the Cursor skill [wordfall-weekly-gauntlet](../.cursor/skills/wordfall-weekly-gauntlet/SKILL.md). Working title **Gauntlet**. Steps (in order):
 
 1. Read this file, `src/data/wordfall/levels.ts`, and the last 3 weekly rows (or 9–11 if none exist).
-2. Compute `nextNumber` and `nextMonday` from §4.
-3. Open the Superthread card for this drop and checkout its `suggested_branch_name` ([WORKFLOW.md](WORKFLOW.md)). Do not invent a `feat/` branch (D-021). Recurring cadence may use one standing card per drop or a card-per-week; if the board has no card, **stop and ask** rather than pushing to `master`.
-4. Pick a **hard**, **unique** task. `taskFingerprint` (`src/games/wordfall/schedule.ts`) of the new row must not match any existing `LEVELS` row and must not match last week. Fingerprint is puzzle vs race plus kind (`letter` includes the letter, `length` includes `minLength`) — not the numeric targets. Do not invent a sixth objective kind.
-5. Clock from the week's **sentiment**: urgent/chase → race (`timeLimitMs`); precise/surgical → puzzle (move budget). Never both.
-6. Append the row. Hand-author (or LLM-author) name, description, objectives. Do not copy level 8 with a new date. Featured TTL is seven days (`isNewestRelease`); the row stays in the catalog after Sunday so numbering has no holes. Do not delete last week.
-7. Changelog line. Do not bump `package.json` / `app.json` for a web-only drop.
+2. Count future dated rows. If the buffer is healthy, stop without changing
+   files or GitHub. Otherwise compute each missing consecutive Monday,
+   `nextNumber`, and `nextMonday` from §4.
+3. Use the standing `content/wordfall-weekly` branch and review PR. This
+   documented automation exception needs no Superthread card per drop; never
+   push directly to `master`.
+4. Pick one **hard**, **unique** task for each missing Monday. Each new
+   `taskFingerprint` (`src/games/wordfall/schedule.ts`) must differ from every
+   existing and newly planned row. Fingerprint is puzzle vs race plus kind
+   (`letter` includes the letter, `length` includes `minLength`) — not numeric
+   targets. Do not invent a sixth objective kind.
+5. Clock from each level's **sentiment**: urgent/chase → race
+   (`timeLimitMs`); precise/surgical → puzzle (move budget). Never both.
+6. Append the needed rows. Hand-author (or LLM-author) their names,
+   descriptions, and objectives. Do not copy level 8 with a new date. Featured
+   TTL is seven days (`isNewestRelease`); rows stay in the catalog after Sunday
+   so numbering has no holes. Do not delete last week.
+7. Add one pending [CHANGELOG.md](CHANGELOG.md) release section and matching
+   `package.json` / `app.json` version for the review PR, listing every added
+   level and Monday. If extending an unmerged standing PR, update that pending
+   section instead of adding another version heading.
 8. **Local verify before GitHub** (mandatory, in order). Stop on the first red:
    - `npx vitest run src/games/wordfall/schedule.test.ts src/games/wordfall/engine.test.ts`
    - `npm run check`
    - `npm run build:web`
    - `npm run serve:web` (local production deploy of `dist/` on port 8080 — not `npm run web`)
    - Playtest that export: hub loads, Wordfall start screen loads, picker shows the new row as **drops {Monday}**, launch 1–11 still play. Future rows are not playable today; the solver test is the winnability proof. Do not undate the row to sneak a playtest.
-9. Only then commit, push, and open a PR. CI must be green (`check` + `web`). Merge is a human.
+9. Only then commit, push, and create or update the standing review PR. CI must
+   be green (`check` + `web`). Merge is a human.
 
-**PR title:** `ST-<id> Wordfall level <n> — <Monday>`
-**PR body must state:** number, `availableFrom`, puzzle vs race, fingerprint, solver seeds that won.
+**PR title:** `Wordfall weekly buffer through <last Monday>`
+**PR body must state:** every new number and `availableFrom`, puzzle vs race,
+fingerprint, solver seeds that won, and the native-release caveat.
 
 ### What Monday cron must not do
 

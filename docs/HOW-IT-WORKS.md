@@ -347,13 +347,19 @@ kinds) must be unique, including vs last week. Featured TTL is seven days
 (`isNewestRelease`); the row stays after Sunday so campaign numbering has no
 holes. Job B is the Cursor skill
 [wordfall-weekly-gauntlet](../.cursor/skills/wordfall-weekly-gauntlet/SKILL.md).
+It maintains the four-week queue on the standing
+`content/wordfall-weekly` review branch rather than needing a Superthread card
+for every Monday (D-058).
 
 **2. Local production check, then the row ships like code.** [BUILT: web · blocked on owner: iOS]
 Before GitHub, Job B runs `npm run check`, `npm run build:web`, and
 `npm run serve:web` (port 8080) and playtests that export (D-038). Merge to
 `master` deploys web (D-020, D-029). iOS only sees the row after a store build
 that contains it is installed. That is why the weekly spec keeps a buffer of
-unpublished Mondays in the same catalog.
+unpublished Mondays in the same catalog. An open standing review PR is extended
+when the buffer falls below four; a healthy catalog creates no new PR. Merge
+stays human, and this narrow content-branch exception never pushes to `master`
+or auto-merges.
 
 **3. Monday unlocks locally.** [BUILT]
 [schedule.ts](../src/games/wordfall/schedule.ts) compares the player's local
@@ -567,7 +573,7 @@ Quick map of where each journey step lives:
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |
 | Sound + haptics | `src/native/feedback.ts`, `src/native/sound.ts`, `src/native/haptics.ts`, `assets/sounds/`, `src/settings/` | [BUILT] — one `feedback(event)` table maps five game moments to a clip + haptic; both channels mutable from the drawer. See D-043 |
 | Wordfall match juice | `src/ui/wordfall/clearJuice.ts`, `src/ui/wordfall/BoardView.tsx` | [BUILT] — puff then fall on `lastPlay.cleared`; special-birth pop by tile id; Crush/Nova stamp on chain ≥ 2. RN `Animated`, not Lottie (ST-80, D-032) |
-| Wordfall weekly drops | `src/games/wordfall/schedule.ts` (`taskFingerprint`), `src/data/wordfall/levels.ts`, [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md), `.cursor/skills/wordfall-weekly-gauntlet/` | [BUILT] gate + unique-task + local `serve:web` before GitHub (D-038); [PLANNED] Job A cron — Monday `availableFrom`; launch set has no date |
+| Wordfall weekly drops | `src/games/wordfall/schedule.ts` (`taskFingerprint`), `src/data/wordfall/levels.ts`, [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md), `.cursor/skills/wordfall-weekly-gauntlet/` | [BUILT] gate + unique-task + local `serve:web` before GitHub (D-038); standing `content/wordfall-weekly` review PR maintains four future Mondays without a card per drop (D-058) |
 | Game Center | `src/native/` | [PLANNED] |
 
 ## Security model

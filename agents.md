@@ -86,6 +86,12 @@ name (`suggested_branch_name` / Copy git branch name) when creating the branch
 and opening the PR. Do not invent a different branch name. Stacked PRs are
 allowed; see `docs/WORKFLOW.md`.
 
+The narrowly documented recurring-content loops are exceptions to that branch
+rule: `content/wikipedia-popularity-weekly`, `content/clueless-daily`, and
+`content/wordfall-weekly`. They may update one human-reviewed standing PR
+without a card per content item; every other feature or fix still needs its
+own Superthread branch.
+
 ## Non-negotiable architecture
 
 - Use TypeScript with strict typing. Do not add `any`, disable strict mode, or
