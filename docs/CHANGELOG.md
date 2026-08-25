@@ -6,6 +6,12 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.1] - 2026-08-25
+
+### Fixed
+- **Weekly Wikipedia popularity cron no longer fails `check:docs` on its own version bump.** The job writes a new changelog section and patches `package.json` / `app.json` (D-041), then runs `npm run check` on that dirty tree. The docs audit treated those manifests as a stack/system change, so it demanded HOW-IT-WORKS and STACK for a content snapshot. A version-only bump now counts as changelog only (D-049).
+- **A Wikimedia image 429 no longer looks like a picture change.** Thrown image fetches keep the previously shipped URL instead of blanking the card, so a rate-limit cannot open a PR that strips dozens of images.
+
 ## [0.8.0] - 2026-08-25
 
 ### Added

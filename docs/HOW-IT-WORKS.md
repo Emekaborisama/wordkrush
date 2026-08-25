@@ -1,6 +1,6 @@
 # How It Works
 
-**Last updated:** 2026-08-23
+**Last updated:** 2026-08-25
 **What this is:** the living explainer for the whole system, told as **end-to-end journeys** — from the user, down through every layer, and back to the user. Each step names the code that handles it, the logic behind it, and the risk it carries. When a workflow changes, this doc changes in the same PR.
 
 Doc boundaries: [STACK.md](STACK.md) = *what we chose* (decision log) · [BRAINSTORM.md](BRAINSTORM.md) = *what we're designing* · [WORKFLOW.md](WORKFLOW.md) = *how we collaborate* · [marketing/](marketing/README.md) = *how we reach players* (GTM decision log, G-00x) · this doc = *how the built system behaves*. Decisions are referenced by STACK id (D-00x), never re-argued here.
@@ -115,7 +115,7 @@ The JSON diff goes up in a PR — **the diff is the content review**. CI must pa
 **6. The player sees the number** — with its provenance ("Source: monthly Wikipedia pageviews, <month year>") [PLANNED], so the claim on screen is exactly the claim the data supports.
 
 **7. Weekly rotation keeps the snapshot from freezing.** [BUILT]
-Monday 09:00 UTC (and `workflow_dispatch`) GitHub Action [wikipedia-popularity-weekly.yml](../.github/workflows/wikipedia-popularity-weekly.yml) runs `npm run pipeline:rotate`. That job uses the same builder as `pipeline:preview` — Wikimedia pageviews plus freely-licensed images — because the factory ingest→export path is still blocked on the 0001 migration. Images prefer the article's free lead (`pageimages`); when that is a fair-use logo or screenshot and `pageimages` returns nothing, [wikipedia-images.ts](../pipeline/sources/wikipedia-images.ts) walks other files on the page and ships the first freely-licensed photograph. Fair-use files are still skipped. The job compares the new file to the bundled JSON and **skips the PR** when only `updatedAt` would change (most weeks of a month share one complete-month window). A material change writes the JSON, bumps the patch version, adds a new changelog section, runs `npm run check`, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. Swings >10x vs the currently shipped values are listed on the PR; a human merges. The job never pushes to `master` and never fetches at play time (D-004, D-036). Output stays `provisional: true` until ST-35 lands.
+Monday 09:00 UTC (and `workflow_dispatch`) GitHub Action [wikipedia-popularity-weekly.yml](../.github/workflows/wikipedia-popularity-weekly.yml) runs `npm run pipeline:rotate`. That job uses the same builder as `pipeline:preview` — Wikimedia pageviews plus freely-licensed images — because the factory ingest→export path is still blocked on the 0001 migration. Images prefer the article's free lead (`pageimages`); when that is a fair-use logo or screenshot and `pageimages` returns nothing, [wikipedia-images.ts](../pipeline/sources/wikipedia-images.ts) walks other files on the page and ships the first freely-licensed photograph. Fair-use files are still skipped. A thrown fetch (Wikimedia 429, network) keeps the picture already in the bundled JSON rather than treating a blank as a content change. The job compares the new file to the bundled JSON and **skips the PR** when only `updatedAt` would change (most weeks of a month share one complete-month window). A material change writes the JSON, bumps the patch version, adds a new changelog section, runs `npm run check`, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. The D-041 version bump of `package.json` / `app.json` is changelog, not a stack/system change (D-049), so that check can pass on a content-only rotate. Swings >10x vs the currently shipped values are listed on the PR; a human merges. The job never pushes to `master` and never fetches at play time (D-004, D-036). Output stays `provisional: true` until ST-35 lands.
 
 **8. And back: the correction loop.** [BUILT: pipeline side · ongoing]
 Data ages (bundled = frozen until next release, accepted trade-off D-004). Refresh = weekly rotate, or a manual `pipeline:preview` / ingest→export. A wrong-feeling answer in playtesting starts at the JSON diff (or `item_values.raw` once the factory path is live) and ends in either a corrected snapshot or a removed item. App Store review latency (days) is why validation happens *before* shipping, not after.
@@ -139,11 +139,13 @@ avoids repetitive agent loops and token cost.
 `npm run check:docs` uses `scripts/check-docs.mjs` locally and in GitHub Actions.
 CI compares the complete pull-request diff to its base branch; the local check
 also includes untracked files. A missing document fails with the exact file and
-reason. Semantic changes such as a design decision or task-status update still
-require human or agent judgement because file paths cannot prove intent.
-CI also runs `npm run build:web` in a sibling job; merge and Railway deploy
-wait for both `check` and `web` (D-029). The export is not part of the local
-`npm run check` loop.
+reason. A D-041 version-only bump of `package.json` / `app.json` still requires
+the changelog and does **not** require HOW-IT-WORKS or STACK (D-049); any other
+edit to those manifests still does. Semantic changes such as a design decision
+or task-status update still require human or agent judgement because file paths
+cannot prove intent. CI also runs `npm run build:web` in a sibling job; merge
+and Railway deploy wait for both `check` and `web` (D-029). The export is not
+part of the local `npm run check` loop.
 
 ---
 
@@ -515,7 +517,7 @@ Quick map of where each journey step lives:
 | GitHub Release | `.github/workflows/release.yml`, `scripts/changelog-notes.mjs` | [BUILT] — every PR is a version; publish `vX.Y.Z` from that changelog section on master merge or tag (D-039, D-041) |
 | Web host | `railway.json`, `server/serve.mjs` | [BUILT] — Nixpacks runs `CI=true npm run build:web` on service `wordcrush`; `serve.mjs` listens on `$PORT` |
 | Web favicon + share preview | `assets/favicon.png`, `assets/apple-touch-icon.png`, `assets/logo/wordkrush-lockup.png`, `scripts/patch-web-head.mjs` | [BUILT] — cache-busted tab icons in `dist/`; Open Graph / Twitter tags with the lockup at `/og-image.png` (not the favicon crop) |
-| Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] — audits git-visible changes; Finder `* 2.*` copies and `supabase/.temp/` are gitignored so they do not count as source |
+| Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] — audits git-visible changes; version-only `package.json` / `app.json` bumps are changelog (D-049); Finder `* 2.*` copies and `supabase/.temp/` are gitignored so they do not count as source |
 | Consent and product analytics | `src/analytics/`, `src/ui/AnalyticsConsentPrompt.tsx` | [BUILT] |
 | Player feedback (bugs + suggestions) | `src/userback/`, `@userback/widget`, drawer "Send feedback" | [BUILT: web] — launcher on every non-game screen, hidden during a run; signed-in players are identified, guests stay anonymous. Native is a documented no-op stub pending a Userback Mobile SDK key (D-046) |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |

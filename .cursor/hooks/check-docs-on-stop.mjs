@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { localChangedFiles, requiredDocumentsFor } from '../../scripts/check-docs.mjs';
+import { documentationImpact, localChangedFiles } from '../../scripts/check-docs.mjs';
 
-const missing = requiredDocumentsFor(localChangedFiles());
+const missing = documentationImpact(localChangedFiles());
 
 if (missing.length === 0) {
   process.stdout.write('{}\n');

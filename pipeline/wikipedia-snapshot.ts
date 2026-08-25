@@ -148,6 +148,30 @@ export function compareSnapshots(
   };
 }
 
+/**
+ * A thrown Wikimedia fetch is not a content change. Keep the picture already
+ * shipped so a 429 cannot blank cards or open a noisy PR.
+ */
+export function carryForwardImages(
+  previous: BundledItem[],
+  next: BundledItem[],
+  failedIds: ReadonlySet<string>,
+): BundledItem[] {
+  if (failedIds.size === 0) return next;
+  const prevById = new Map(previous.map((item) => [item.id, item]));
+  return next.map((item) => {
+    if (!failedIds.has(item.id)) return item;
+    const prev = prevById.get(item.id);
+    if (!prev?.imageUrl) return item;
+    return {
+      ...item,
+      imageUrl: prev.imageUrl,
+      ...(prev.imageAttribution ? { imageAttribution: prev.imageAttribution } : {}),
+      ...(prev.imageLicense ? { imageLicense: prev.imageLicense } : {}),
+    };
+  });
+}
+
 export function nextPatchVersion(version: string): string {
   const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
   if (!match) {
@@ -198,15 +222,17 @@ export async function buildWikipediaPopularitySnapshot(
   categoryId = DEFAULT_CATEGORY_ID,
 ): Promise<{ snapshot: BundledCategory; keywordCount: number }> {
   const file = loadKeywordFile(categoryId);
+  const previous = loadBundledCategory(categoryId);
   const source = createWikipediaSource();
   const volumes = await source.fetchVolumes(file.items.map((item) => item.term));
-  const images = await fetchImages(
+  const { images, failed } = await fetchImages(
     file.items.map((item) => item.term),
     800,
   );
+  const failedIds = new Set(failed.map((term) => itemId(file.category.id, term)));
   const updatedAt = new Date().toISOString().slice(0, 10);
 
-  const items = file.items
+  const fetched = file.items
     .map((item) => {
       const value = volumes.get(item.term);
       if (value === undefined) return null;
@@ -229,6 +255,8 @@ export async function buildWikipediaPopularitySnapshot(
     })
     .filter((item): item is BundledItem => item !== null)
     .sort((a, b) => b.value - a.value);
+
+  const items = carryForwardImages(previous?.items ?? [], fetched, failedIds);
 
   return {
     keywordCount: file.items.length,
