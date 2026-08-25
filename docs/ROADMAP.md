@@ -70,7 +70,9 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 
 ## Track: Clueless
 
-- [x] **Daily difficulty modes** (ST-82) — **Done**; Easy opens with a reviewed thematic sentence, Standard reveals it after 15 valid guesses, Expert has no hint. The first valid guess locks the day, and local/global scores are partitioned by mode.
+- [x] **Daily difficulty modes** (ST-82) — **Superseded by D-057**; their score partitions remain as assistance contexts, but the player no longer selects a mode.
+- [ ] **Local-midnight solo path** (ST-90) — **Doing**; First Spark → Follow the Heat → No Map, then one completion-gated Daily Vault per local midnight. Solo and team answer streams are separate; validator and app tests cover policy, path, persistence, and spoiler separation.
+- [ ] **Cursor Daily Vault authoring Automation** — **Blocked on final editor setup**; committed skill and cache-backed append guard are ready. Configure the 18:00 GMT+1 automation in Cursor to update the standing `content/clueless-daily` review PR; it must never auto-merge.
 - [x] **TextField Fredoka + no web focus ring** (ST-84) — typed text uses Fredoka; the orange UA outline on the inner input is suppressed.
 
 ## Track: teams / live races

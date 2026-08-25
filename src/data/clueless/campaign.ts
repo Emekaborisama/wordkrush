@@ -1,31 +1,33 @@
 /**
  * Clueless team path.
  *
- * Daily play stays on `todaysPuzzleNumber()` (UTC). Team races use the same
- * bundled puzzles as a numbered path, but never today's daily — racing that
- * number would spoil the secret for anyone who had not opened the day yet.
+ * Team races reserve the legacy puzzle range. Solo Daily Vault levels use a
+ * separate range, so racing a team level can never reveal a future solo answer.
  */
 import type { CampaignLevel } from '../../games/campaign';
-import { PUZZLES, todaysPuzzleNumber } from './index';
+import { puzzleByNumber } from './index';
 
 export type CluelessTeamLevel = CampaignLevel & {
   puzzleNumber: number;
 };
 
-export const CLUELESS_TEAM_LEVELS: readonly CluelessTeamLevel[] = PUZZLES.map((puzzle) => ({
-  number: puzzle.number,
-  puzzleNumber: puzzle.number,
-  name: `Path ${puzzle.number}`,
-  description: 'Find the secret word before the clock runs out.',
-}));
+/** Team-only content IDs. Keep this disjoint from `CLUELESS_SOLO_LEVELS`. */
+export const CLUELESS_TEAM_PUZZLE_NUMBERS = Array.from({ length: 30 }, (_, index) => index + 1);
+
+export const CLUELESS_TEAM_LEVELS: readonly CluelessTeamLevel[] =
+  CLUELESS_TEAM_PUZZLE_NUMBERS.map((puzzleNumber, index) => ({
+    number: index + 1,
+    puzzleNumber,
+    name: `Path ${index + 1}`,
+    description: 'Find the secret word before the clock runs out.',
+  }));
 
 export function cluelessTeamLevelByNumber(n: number): CluelessTeamLevel | undefined {
   return CLUELESS_TEAM_LEVELS[n - 1];
 }
 
-export function isCluelessDailySpoiler(
-  levelNumber: number,
-  today: Date = new Date(),
-): boolean {
-  return levelNumber === todaysPuzzleNumber(today);
+export function puzzleForCluelessTeamLevel(level: CluelessTeamLevel) {
+  const puzzle = puzzleByNumber(level.puzzleNumber);
+  if (!puzzle) throw new Error(`Missing Clueless team puzzle ${level.puzzleNumber}`);
+  return puzzle;
 }

@@ -6,6 +6,16 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.10] - 2026-08-25
+
+### Added
+- **Clueless solo path.** First Spark begins with a hint, Follow the Heat earns one after 15 valid guesses, and No Map removes it. Clearing a level opens the next tutorial step or schedules one Daily Vault for the player’s next local midnight.
+- **Spoiler-safe Daily Vault content.** Solo and team races now use disjoint bundled answer streams. The first 20 future vaults ship with the app, including occasional reviewed Clue Drops.
+- **Cache-backed Daily Vault authoring.** The validator appends one eligible, semantically distinct puzzle without a runtime model request, and the committed daily-authoring contract prepares a human-reviewed `content/clueless-daily` PR.
+
+### Changed
+- Clueless leaderboards label retained score partitions by assistance received rather than a player-selected difficulty. Historical Standard rows remain comparable.
+
 ## [0.8.9] - 2026-08-25
 
 ### Fixed

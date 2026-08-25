@@ -1,5 +1,5 @@
 import { MATCH_DURATION_MS, type CampaignLevel, type PathGameId } from '../games/campaign';
-import { CLUELESS_TEAM_LEVELS, isCluelessDailySpoiler } from '../data/clueless/campaign';
+import { CLUELESS_TEAM_LEVELS } from '../data/clueless/campaign';
 import { MORE_OR_LESS_LEVELS } from '../data/more-or-less/levels';
 import { LEVELS } from '../data/wordfall';
 import { isLevelReleased } from '../games/wordfall/schedule';
@@ -35,7 +35,7 @@ export function pathRows(gameId: PathGameId, now: Date = new Date()): PathRow[] 
       description: level.description,
       meta: 'SECRET WORD',
       released: true,
-      dailySpoiler: isCluelessDailySpoiler(level.number, now),
+      dailySpoiler: false,
       durationMs: MATCH_DURATION_MS.clueless,
     }));
   }

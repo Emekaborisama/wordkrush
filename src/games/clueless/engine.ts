@@ -6,7 +6,7 @@
  * network, no floating-point similarity at runtime.
  */
 import type {
-  CluelessDifficulty,
+  CluelessHintPolicy,
   CluelessState,
   Guess,
   GuessRejection,
@@ -16,7 +16,7 @@ import type {
 export type Action =
   | { type: 'guess'; word: string }
   | { type: 'dismissRejection' }
-  | { type: 'newPuzzle'; puzzleNumber: number; difficulty?: CluelessDifficulty }
+  | { type: 'newPuzzle'; puzzleNumber: number; hintPolicy?: CluelessHintPolicy }
   /** Replace state wholesale when resuming a saved session. */
   | { type: 'restore'; state: CluelessState };
 
@@ -54,11 +54,11 @@ export function normalizeGuess(raw: string): string {
 
 export function newPuzzle(
   puzzleNumber: number,
-  difficulty: CluelessDifficulty = 'standard',
+  hintPolicy: CluelessHintPolicy = 'guess_threshold',
 ): CluelessState {
   return {
     puzzleNumber,
-    difficulty,
+    hintPolicy,
     guesses: [],
     status: 'playing',
     lastWord: null,
@@ -66,14 +66,9 @@ export function newPuzzle(
   };
 }
 
-/** A rejected or repeated word never locks the player's daily mode. */
-export function isDifficultyLocked(state: CluelessState): boolean {
-  return state.guesses.length > 0;
-}
-
 export function isHintVisible(state: CluelessState): boolean {
-  if (state.difficulty === 'easy') return true;
-  if (state.difficulty === 'expert') return false;
+  if (state.hintPolicy === 'opening') return true;
+  if (state.hintPolicy === 'none') return false;
   return state.guesses.length >= STANDARD_HINT_GUESS_THRESHOLD;
 }
 
@@ -90,7 +85,7 @@ export function sortGuesses(guesses: Guess[]): Guess[] {
 export function reducer(state: CluelessState, action: Action, index: PuzzleIndex): CluelessState {
   switch (action.type) {
     case 'newPuzzle':
-      return newPuzzle(action.puzzleNumber, action.difficulty);
+      return newPuzzle(action.puzzleNumber, action.hintPolicy);
 
     case 'restore':
       // Re-sort on restore rather than trusting stored order: the ordering
@@ -133,7 +128,7 @@ export function reducer(state: CluelessState, action: Action, index: PuzzleIndex
 
       return {
         puzzleNumber: state.puzzleNumber,
-        difficulty: state.difficulty,
+        hintPolicy: state.hintPolicy,
         guesses,
         status: rank === 1 ? 'won' : 'playing',
         lastWord: word,

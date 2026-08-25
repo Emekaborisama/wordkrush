@@ -11,8 +11,49 @@ export type Puzzle = {
   ranked: string[];
 };
 
-export const CLUELESS_DIFFICULTIES = ['easy', 'standard', 'expert'] as const;
-export type CluelessDifficulty = (typeof CLUELESS_DIFFICULTIES)[number];
+/**
+ * When a level's reviewed thematic hint becomes visible. This is level content,
+ * not a setting the player chooses.
+ */
+export const CLUELESS_HINT_POLICIES = ['opening', 'guess_threshold', 'none'] as const;
+export type CluelessHintPolicy = (typeof CLUELESS_HINT_POLICIES)[number];
+
+/**
+ * Score contexts retained from the former difficulty picker. Assistance still
+ * changes how comparable guess counts are, so completed runs stay partitioned
+ * even though the path now selects the assistance policy.
+ */
+export const CLUELESS_ASSISTANCE_CONTEXTS = ['easy', 'standard', 'expert'] as const;
+export type CluelessAssistanceContext = (typeof CLUELESS_ASSISTANCE_CONTEXTS)[number];
+
+/** @deprecated Use `CluelessAssistanceContext` for persisted score context. */
+export type CluelessDifficulty = CluelessAssistanceContext;
+
+export function hintPolicyForAssistanceContext(
+  context: CluelessAssistanceContext,
+): CluelessHintPolicy {
+  switch (context) {
+    case 'easy':
+      return 'opening';
+    case 'standard':
+      return 'guess_threshold';
+    case 'expert':
+      return 'none';
+  }
+}
+
+export function assistanceContextForHintPolicy(
+  policy: CluelessHintPolicy,
+): CluelessAssistanceContext {
+  switch (policy) {
+    case 'opening':
+      return 'easy';
+    case 'guess_threshold':
+      return 'standard';
+    case 'none':
+      return 'expert';
+  }
+}
 
 /** A word the player submitted, with how close it turned out to be. */
 export type Guess = {
@@ -32,8 +73,8 @@ export type GuessRejection =
 
 export type CluelessState = {
   puzzleNumber: number;
-  /** Selected before play and locked by the first valid, unique guess. */
-  difficulty: CluelessDifficulty;
+  /** Set by the current level before play starts. */
+  hintPolicy: CluelessHintPolicy;
   /** Sorted best (rank 1) first. Unranked words sink to the bottom. */
   guesses: Guess[];
   status: 'playing' | 'won';

@@ -453,31 +453,33 @@ Reddit app is typechecked with `npm run reddit:types`, by hand.
 
 ---
 
-## Journey 8 — A Clueless player chooses daily difficulty
+## Journey 8 — A Clueless player clears a personal path
 
-**1. The start screen restores today before enabling Play.** [BUILT]
-`App.tsx` loads the current Clueless progress envelope by puzzle number. With
-no valid guesses, Easy, Standard, and Expert remain selectable. The first valid
-unique guess makes `guesses.length > 0`, which is the lock: leaving and
-returning restores that mode. Invalid and repeated words add no guess and
-therefore cannot lock or advance anything. Saves from before difficulty modes
-default to Standard.
+**1. The start screen restores a local path cursor before enabling Play.** [BUILT]
+`src/games/clueless/path.ts` owns pure progression math and
+`path-storage.ts` persists only `completedThrough` plus a local-calendar
+`nextUnlockOn`. Levels 1–3 open back-to-back. Completing level 3 or a Daily
+Vault schedules exactly one future level at the player’s next local midnight;
+an unfinished level cannot advance the path.
 
-**2. One reviewed sentence changes when help arrives, not the answer.** [BUILT]
-The hint catalog in `src/data/clueless/` is bundled separately from embedding
-ranks. Easy shows the sentence before play, Standard after 15 valid guesses,
-and Expert never does. The reducer exposes pure visibility/lock helpers; the UI
-only renders their result. No runtime model, nearest-neighbour auto-guess,
-spelling clue, or counted “free guess” is involved.
+**2. Level metadata owns help and content.** [BUILT]
+`src/data/clueless/levels.ts` maps every solo level to a distinct bundled
+puzzle, reviewed name/copy, phase, and hint policy. First Spark reveals its
+hint immediately, Follow the Heat after 15 valid unique guesses, and No Map
+does not reveal one. Later Vaults default to no hint, with reviewed Clue Drops
+as explicit exceptions. The engine remains a pure lookup/reducer; no runtime
+model or content fetch is involved.
 
-**3. Scores remain comparable.** [BUILT]
-Finished runs keep `game_id = clueless` and store the mode in `context_id`.
-Local views filter the single offline history by that context.
-`0005_clueless_difficulty_leaderboards.sql` maps old Clueless rows to Standard
-and partitions each player’s best and global rank by game plus difficulty.
-Other games keep one board per game. Until that migration is applied, local
-play and local boards work, while production global Clueless ranks remain on
-the previous view.
+**3. Solo and team paths cannot spoil each other.** [BUILT]
+The solo catalog and `src/data/clueless/campaign.ts` reserve disjoint answer
+streams. A team race therefore cannot reveal a future Daily Vault. The former
+UTC `todaysPuzzleNumber` selector remains only to identify historic saves.
+
+**4. Scores remain comparable.** [BUILT]
+Finished runs retain `game_id = clueless` and derive the existing
+`easy`/`standard`/`expert` context from a level’s assistance policy. Local and
+global boards remain partitioned by that context; historical `clueless` rows
+normalize to threshold help. No player-selected difficulty remains.
 
 ## Journey 9 — A signed-in crew races a path row
 
@@ -493,12 +495,12 @@ disband.
 **2. The picker is Wordfall-shaped for every title.** [BUILT]
 Shared unlock math in `src/games/campaign.ts` (`unlockAfterWin`, dual
 `applyMatchUnlocks`). Wordfall reuses it. More or Less reads
-`src/data/more-or-less/levels.ts`. Clueless team path uses bundled puzzle
-numbers and refuses today's UTC daily. A row above the team cursor stays
-locked; a row the team has opened but the player has not is playable in the
-session and marked team-ahead. On a phone the level list scrolls in the leftover
-column with Host / Join as a footer; on a laptop the roster sits in a left
-column and the picker on the right.
+`src/data/more-or-less/levels.ts`. Clueless team path uses its own bundled
+puzzle stream, disjoint from future solo Vaults. A row above the team cursor
+stays locked; a row the team has opened but the player has not is playable in
+the session and marked team-ahead. On a phone the level list scrolls in the
+leftover column with Host / Join as a footer; on a laptop the roster sits in a
+left column and the picker on the right.
 
 **3. A lobby is 2–10 ready players, then a server seed.** [BUILT]
 `create_match` / `join_match` / `set_ready` / `start_match`. Late joins after
@@ -549,7 +551,7 @@ Quick map of where each journey step lives:
 | Player weekly email | `pipeline/player-email.ts`, `pipeline/player-email-news.ts`, `pipeline/player-email-draft.ts`, `assets/email/`, `.github/workflows/player-email-weekly.yml` | [BUILT] — Tuesday 09:00 UTC Resend Broadcast from this week’s changelog + Wordfall; OpenAI drafts player copy once; hero is in-game art/hub screenshot at `/email/`; quiet weeks skip; `{{{contact.first_name|there}}}` / `{{{game|the games}}}`; job uses GitHub Environment `best-games`. Never on Railway (D-054) |
 | Unique leaderboard username | `supabase/migrations/0004_unique_username.sql`, `src/auth/validation.ts` `usernameKey` | [BUILT: apply on the owner project] — unique index on `username_key(display_name)`; duplicate maps to "That username is taken." |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
-| Clueless difficulty boards | `supabase/migrations/0005_clueless_difficulty_leaderboards.sql`, `src/games/clueless/scoring.ts` | [BUILT: apply migration] — Easy/Standard/Expert partition under stable `clueless` id |
+| Clueless local path + assistance boards | `src/games/clueless/{path,path-storage}.ts`, `src/data/clueless/levels.ts`, `src/games/clueless/scoring.ts` | [BUILT] — local-midnight Daily Vault gate, level-owned assistance, and stable score partitions under `clueless` id |
 | Teams + live races | `supabase/migrations/0006_teams_and_live_matches.sql`, `0007_team_crud.sql`, `0008_live_roster_ten.sql`, `src/teams/`, `src/live/`, `src/games/campaign.ts` | [BUILT: apply migrations] — private teams with rename/leave/disband, 2–10 player races, dual unlock; live scores stay off `global_leaderboard` |
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |

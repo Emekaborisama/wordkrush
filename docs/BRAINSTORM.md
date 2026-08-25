@@ -140,20 +140,34 @@ If no candidate fits the band, widen it progressively rather than failing — ne
 
 Deliberately no settings, no accounts, no onboarding in v1.
 
-### Clueless difficulty modes **[GIVEN — 2026-08-24]**
+### Clueless difficulty modes **[SUPERSEDED — 2026-08-25 by the solo path]**
 
-Clueless remains one secret word per UTC day, with unlimited guesses ranked by
-meaning and fewer guesses scoring better. “Levels” means a daily difficulty
-choice, not a campaign:
+The former UTC daily Easy / Standard / Expert picker is replaced by the
+level-owned assistance policy below. Historical score partitions remain valid
+for comparison; players no longer choose one before a level starts.
 
-- **Easy:** a short thematic sentence is visible before the first guess.
-- **Standard:** the same sentence appears after 15 valid, unique guesses.
-- **Expert:** no sentence appears.
+### Clueless solo path **[GIVEN — 2026-08-25]**
 
-The first valid guess locks that day’s mode. Rejected and repeated words neither
-advance the Standard threshold nor lock the choice. Scores and global ranks are
-separate by mode; otherwise an opening hint would compete directly with an
-unassisted run.
+Clueless has one personal, offline solo path. Guesses remain unlimited and
+ranked by meaning; fewer guesses remains better.
+
+- **Level 1 — First Spark:** its reviewed thematic hint is visible on opening.
+- **Level 2 — Follow the Heat:** its reviewed hint appears after 15 valid,
+  unique guesses.
+- **Level 3 — No Map:** no hint.
+- **Level 4 onward — Daily Vault:** a completed level schedules one next level
+  for the player’s next **local** midnight. An unsolved level never advances.
+
+Hint behavior belongs to bundled level metadata, not a player-selected mode.
+A Daily Vault defaults to no hint; a deliberately authored Clue Drop may carry
+an opening or 15-guess hint. The start screen shows the tutorial rail, next
+Vault node, and local-time countdown. Clearing a level uses the existing win
+celebration and daily flame rather than creating a second streak.
+
+Scores remain partitioned internally by **assistance context** (`easy`,
+`standard`, `expert`) so runs with different help never compete. Those labels
+describe score comparability only, not selectable difficulty. Historical
+`clueless` scores normalize to the threshold-help context.
 
 Hints are reviewed content, not runtime AI and not a nearest-neighbour guess.
 They describe a context or association without including the answer, its
@@ -174,10 +188,10 @@ player's personal cursor advances only if that player completed. During a team
 session everyone plays the team's selected level. Completing it is what moves
 a personal cursor.
 
-Clueless daily stays solo (UTC). Team Clueless is a timed path on bundled
-puzzle numbers, never today's daily. The rival HUD shows guess count and
-found/not — never other players' words. Live results do not write
-`global_leaderboard`. Reddit is out of scope.
+Clueless solo and team races use separate bundled answer streams. Team Clueless
+is a timed path whose content can never reveal a future Daily Vault answer.
+The rival HUD shows guess count and found/not — never other players' words.
+Live results do not write `global_leaderboard`. Reddit is out of scope.
 
 ## 7. Architecture
 

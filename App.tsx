@@ -39,14 +39,36 @@ import {
 } from './src/auth/auth';
 import { isBackendConfigured } from './src/auth/client';
 import categoryData from './src/data/categories/wikipedia-popularity.json';
-import { todaysPuzzleNumber } from './src/data/clueless';
+import {
+  cluelessSoloLevelByNumber,
+  puzzleForCluelessSoloLevel,
+  type CluelessSoloLevel,
+} from './src/data/clueless/levels';
+import {
+  cluelessTeamLevelByNumber,
+  puzzleForCluelessTeamLevel,
+} from './src/data/clueless/campaign';
 import { moreOrLessLevelByNumber } from './src/data/more-or-less/levels';
 import { applyMatchUnlocks, LIVE_ROSTER_LABEL, playerCountBucket, type PathGameId } from './src/games/campaign';
 import { loadPersonalUnlocked, savePersonalUnlocked } from './src/games/campaignStorage';
-import { STANDARD_HINT_GUESS_THRESHOLD } from './src/games/clueless/engine';
-import { isCluelessState } from './src/games/clueless/persistence';
-import { boardForCluelessDifficulty } from './src/games/clueless/scoring';
-import type { CluelessDifficulty } from './src/games/clueless/types';
+import {
+  availabilityForCluelessPathLevel,
+  completeCluelessPathLevel,
+  currentCluelessPathLevel,
+  EMPTY_CLUELESS_PATH,
+  nextCluelessPathUnlockAt,
+  type CluelessPathAvailability,
+  type CluelessPathProgress,
+} from './src/games/clueless/path';
+import {
+  loadCluelessPathProgress,
+  saveCluelessPathProgress,
+} from './src/games/clueless/path-storage';
+import { boardForCluelessAssistanceContext } from './src/games/clueless/scoring';
+import {
+  assistanceContextForHintPolicy,
+  type CluelessAssistanceContext,
+} from './src/games/clueless/types';
 import type { GameState } from './src/games/more-or-less/engine';
 import {
   emptyProgress,
@@ -61,7 +83,6 @@ import {
 } from './src/games/more-or-less/rounds';
 import { loadRoundProgress, saveRoundProgress } from './src/games/more-or-less/rounds-storage';
 import type { Category } from './src/games/more-or-less/types';
-import { loadProgress } from './src/games/progress';
 import { randomSeed } from './src/games/rng';
 import { GAMES, getGame } from './src/games/registry';
 import { syncPendingScores } from './src/scores/global';
@@ -95,7 +116,6 @@ import type { LiveMatchSnapshot } from './src/live/types';
 import { parseTeamInviteUrl } from './src/teams/codes';
 import { Drawer, type DrawerDestination } from './src/ui/Drawer';
 import { AnalyticsConsentPrompt } from './src/ui/AnalyticsConsentPrompt';
-import { CluelessDifficultyPicker } from './src/ui/CluelessDifficultyPicker';
 import { TopBar } from './src/ui/TopBar';
 import { AuthScreen } from './src/ui/screens/AuthScreen';
 import { CluelessScreen } from './src/ui/screens/CluelessScreen';
@@ -129,7 +149,7 @@ type LiveRun = {
 type Screen =
   | { name: 'hub' }
   | { name: 'home'; gameId: string }
-  | { name: 'game'; gameId: string; seed: number; difficulty?: CluelessDifficulty; live?: LiveRun }
+  | { name: 'game'; gameId: string; seed: number; cluelessLevelNumber?: number; live?: LiveRun }
   | { name: 'over'; gameId: string; state: GameState; entryId: string }
   | { name: 'scores'; gameId: string; highlightId?: string }
   | { name: 'auth'; returnTo?: 'teams' | 'scores'; returnGameId?: string }
@@ -151,10 +171,12 @@ function startDetailFor(
   gameId: string,
   category: Category & { provisional?: boolean },
   clueless: {
-    difficulty: CluelessDifficulty;
-    locked: boolean;
+    progress: CluelessPathProgress;
+    currentLevel: CluelessSoloLevel | undefined;
+    availability: CluelessPathAvailability;
+    nextUnlockAt: Date | null;
+    now: Date;
     ready: boolean;
-    onChange: (difficulty: CluelessDifficulty) => void;
   },
   labelRound?: ReturnType<typeof resolveRound>,
 ) {
@@ -176,20 +198,62 @@ function startDetailFor(
     );
   }
   if (gameId === 'clueless') {
+    if (!clueless.ready) {
+      return (
+        <StartDetail
+          label="SOLO PATH"
+          title="Finding your next clue…"
+          meta="Your path is safely stored on this device."
+          accent={accent}
+        />
+      );
+    }
+    if (!clueless.currentLevel) {
+      return (
+        <StartDetail
+          label="DAILY VAULT"
+          title="More vaults arrive in an app update"
+          meta="You cleared the bundled path. Keep the flame going in the other games meanwhile."
+          accent={accent}
+        />
+      );
+    }
+    const level = clueless.currentLevel;
+    const tutorialRail = [1, 2, 3]
+      .map((number) => (number <= clueless.progress.completedThrough ? '●' : '○'))
+      .join(' — ');
+    const vaultNode = level.phase === 'daily' ? (clueless.availability === 'playable' ? '✦' : '◇') : '◇';
+    const unlockMeta =
+      clueless.nextUnlockAt && clueless.availability === 'waiting'
+        ? localUnlockCopy(clueless.nextUnlockAt, clueless.now)
+        : level.description;
     return (
       <>
         <StartDetail
-          label="TODAY’S PUZZLE"
-          title={`Daily #${todaysPuzzleNumber()}`}
-          meta="One word a day · unlimited guesses"
+          label={
+            clueless.availability === 'waiting'
+              ? 'DAILY VAULT · LOCKED'
+              : level.phase === 'daily'
+                ? 'DAILY VAULT · READY'
+                : 'SOLO PATH'
+          }
+          title={
+            clueless.availability === 'waiting'
+              ? `Vault ${level.number} is sealed`
+              : `Level ${level.number} · ${level.name}`
+          }
+          meta={unlockMeta}
           accent={accent}
         />
-        <CluelessDifficultyPicker
-          value={clueless.difficulty}
-          locked={clueless.locked}
-          disabled={!clueless.ready}
+        <StartDetail
+          label="YOUR PATH"
+          title={`${tutorialRail}  →  ${vaultNode}`}
+          meta={
+            clueless.progress.completedThrough < 3
+              ? 'Clear the three sparks to reach the Daily Vault.'
+              : 'One solved vault schedules exactly one more at your next local midnight.'
+          }
           accent={accent}
-          onChange={clueless.onChange}
         />
       </>
     );
@@ -205,6 +269,17 @@ function startDetailFor(
     );
   }
   return null;
+}
+
+function localUnlockCopy(unlockAt: Date, now: Date): string {
+  const remainingMs = Math.max(0, unlockAt.getTime() - now.getTime());
+  const totalMinutes = Math.ceil(remainingMs / 60_000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0) {
+    return `Opens in ${hours}h ${minutes}m at your local midnight.`;
+  }
+  return `Opens in ${Math.max(1, minutes)}m at your local midnight.`;
 }
 
 function startFooterFor(gameId: string, category: Category & { provisional?: boolean }) {
@@ -248,10 +323,10 @@ export default function App() {
   const wide = isWideLayout(width);
   const [screen, setScreen] = useState<Screen>({ name: 'hub' });
   const [boards, setBoards] = useState<Record<string, ScoreBoard>>({});
-  const [cluelessDifficulty, setCluelessDifficulty] =
-    useState<CluelessDifficulty>('standard');
-  const [cluelessDifficultyLocked, setCluelessDifficultyLocked] = useState(false);
-  const [cluelessDifficultyReady, setCluelessDifficultyReady] = useState(false);
+  const [cluelessPath, setCluelessPath] =
+    useState<CluelessPathProgress>(EMPTY_CLUELESS_PATH);
+  const [cluelessPathReady, setCluelessPathReady] = useState(false);
+  const [cluelessPathNow, setCluelessPathNow] = useState(() => new Date());
   const [profile, setProfile] = useState<Profile | null>(null);
   const [pendingInvite, setPendingInvite] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -338,6 +413,10 @@ export default function App() {
       setStreakReady(true);
     });
     void loadRoundProgress(FIRST_ROUND_ID).then(setLabelProgress);
+    void loadCluelessPathProgress().then((progress) => {
+      setCluelessPath(progress);
+      setCluelessPathReady(true);
+    });
     // Sound/vibration switches. Defaults are on, so a slow read just means the
     // first moment of the session uses the defaults rather than nothing.
     void loadFeedbackSettings().then((stored) => {
@@ -356,20 +435,21 @@ export default function App() {
   }, [profileReady, pendingInvite]);
 
   useEffect(() => {
-    if (screen.name !== 'home' || screen.gameId !== 'clueless') return;
-    let cancelled = false;
-    setCluelessDifficultyReady(false);
-    const puzzleNumber = todaysPuzzleNumber();
-    void loadProgress('clueless', puzzleNumber, isCluelessState).then((saved) => {
-      if (cancelled) return;
-      setCluelessDifficulty(saved?.difficulty ?? 'standard');
-      setCluelessDifficultyLocked(Boolean(saved && saved.guesses.length > 0));
-      setCluelessDifficultyReady(true);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [screen]);
+    if (!cluelessPathReady || screen.name !== 'home' || screen.gameId !== 'clueless') return;
+    const now = new Date();
+    setCluelessPathNow(now);
+    const unlockAt = nextCluelessPathUnlockAt(cluelessPath);
+    if (!unlockAt || unlockAt.getTime() <= now.getTime()) return;
+
+    // Refresh the countdown every minute and exactly at local midnight, without
+    // depending on a server clock or a background task.
+    const nextRefreshAt = Math.min(unlockAt.getTime(), now.getTime() + 60_000);
+    const timer = setTimeout(
+      () => setCluelessPathNow(new Date()),
+      Math.max(1, nextRefreshAt - now.getTime() + 50),
+    );
+    return () => clearTimeout(timer);
+  }, [screen, cluelessPath, cluelessPathReady]);
 
   useEffect(() => {
     const unsubscribe = subscribeToAuth((next) => {
@@ -402,18 +482,35 @@ export default function App() {
   const boardFor = (gameId: string) => boards[gameId] ?? EMPTY_BOARD;
   const labelResolved = resolveRound(snapshot, labelProgress);
   const soloPool = soloCategory(snapshot, labelProgress);
+  const currentCluelessLevelNumber = currentCluelessPathLevel(cluelessPath);
+  const currentCluelessLevel = cluelessSoloLevelByNumber(currentCluelessLevelNumber);
+  const currentCluelessAvailability = availabilityForCluelessPathLevel(
+    cluelessPath,
+    currentCluelessLevelNumber,
+    cluelessPathNow,
+  );
+  const currentCluelessAssistanceContext: CluelessAssistanceContext = currentCluelessLevel
+    ? assistanceContextForHintPolicy(currentCluelessLevel.hintPolicy)
+    : 'expert';
+  const currentCluelessUnlockAt = nextCluelessPathUnlockAt(cluelessPath);
   const openGameHome = (gameId: string) => {
-    if (gameId === 'clueless') setCluelessDifficultyReady(false);
     setScreen({ name: 'home', gameId });
   };
   const startGame = (gameId: string) => {
-    if (gameId === 'clueless' && !cluelessDifficultyReady) return;
+    if (
+      gameId === 'clueless' &&
+      (!cluelessPathReady ||
+        !currentCluelessLevel ||
+        currentCluelessAvailability !== 'playable')
+    ) {
+      return;
+    }
     setLabelJustPassed(false);
     setScreen({
       name: 'game',
       gameId,
       seed: randomSeed(),
-      difficulty: gameId === 'clueless' ? cluelessDifficulty : undefined,
+      cluelessLevelNumber: gameId === 'clueless' ? currentCluelessLevel?.number : undefined,
     });
   };
 
@@ -425,7 +522,6 @@ export default function App() {
       name: 'game',
       gameId: match.gameId,
       seed: match.seed,
-      difficulty: match.gameId === 'clueless' ? 'expert' : undefined,
       live: {
         matchId: match.id,
         gameId: match.gameId,
@@ -588,6 +684,19 @@ export default function App() {
   // hidden there — a menu bar over a live round is a mis-tap waiting to happen.
   // Every game now plays under `game`, so the one check covers all three.
   const showChrome = screen.name !== 'game';
+  const activeSoloCluelessLevel =
+    screen.name === 'game' && screen.gameId === 'clueless' && !screen.live
+      ? cluelessSoloLevelByNumber(screen.cluelessLevelNumber ?? currentCluelessLevelNumber)
+      : undefined;
+  const activeTeamCluelessLevel =
+    screen.name === 'game' && screen.gameId === 'clueless' && screen.live
+      ? cluelessTeamLevelByNumber(screen.live.levelNumber)
+      : undefined;
+  const activeCluelessPuzzle = activeSoloCluelessLevel
+    ? puzzleForCluelessSoloLevel(activeSoloCluelessLevel)
+    : activeTeamCluelessLevel
+      ? puzzleForCluelessTeamLevel(activeTeamCluelessLevel)
+      : undefined;
   // Userback's floating launcher is chrome too, so it follows the same rule.
   useEffect(() => {
     setUserbackLauncherVisible(showChrome);
@@ -660,15 +769,20 @@ export default function App() {
           />
         )}
 
-        {screen.name === 'game' && screen.gameId === 'clueless' && (
+        {screen.name === 'game' && screen.gameId === 'clueless' && activeCluelessPuzzle && (
           <LiveMaybe
             live={screen.live}
             playerId={profile?.id}
             onFinished={(snapshot) => void completeLiveRace(snapshot)}
           >
           <CluelessScreen
-            puzzleNumber={screen.live?.levelNumber ?? todaysPuzzleNumber()}
-            difficulty={screen.live ? 'expert' : screen.difficulty ?? 'standard'}
+            key={screen.live ? `team-${screen.live.levelNumber}` : `solo-${activeSoloCluelessLevel?.number}`}
+            puzzleNumber={activeCluelessPuzzle.number}
+            levelNumber={screen.live?.levelNumber ?? activeSoloCluelessLevel?.number}
+            levelName={screen.live ? activeTeamCluelessLevel?.name : activeSoloCluelessLevel?.name}
+            pathPhase={screen.live ? 'team' : activeSoloCluelessLevel?.phase}
+            hintPolicy={screen.live ? 'none' : activeSoloCluelessLevel?.hintPolicy ?? 'none'}
+            hint={screen.live ? null : activeSoloCluelessLevel?.hint}
             persist={!screen.live}
             onScore={
               screen.live
@@ -680,41 +794,47 @@ export default function App() {
             onExit={() =>
               screen.live ? setScreen({ name: 'teams' }) : openGameHome('clueless')
             }
-            onWin={async (guessesUsed, difficulty) => {
+            onWin={async (guessesUsed, assistanceContext) => {
               if (screen.live) {
                 await postMatchScore(screen.live.matchId, guessesUsed, true, true);
                 return;
               }
-              const previous = boardForCluelessDifficulty(boardFor('clueless'), difficulty);
+              const level = activeSoloCluelessLevel;
+              if (!level) return;
+              const previous = boardForCluelessAssistanceContext(
+                boardFor('clueless'),
+                assistanceContext,
+              );
               const next = await recordFinish(() =>
                 recordScore(
                   'clueless',
                   {
                     id: makeEntryId(),
                     streak: guessesUsed,
-                    categoryId: difficulty,
+                    categoryId: assistanceContext,
                     playedAt: new Date().toISOString(),
-                    seed: todaysPuzzleNumber(),
+                    seed: activeCluelessPuzzle.number,
                   },
                   'lower',
                 ),
               );
               setBoards((prev) => ({ ...prev, clueless: next }));
+              const completedAt = new Date();
+              const nextPath = completeCluelessPathLevel(cluelessPath, level.number, completedAt);
+              await saveCluelessPathProgress(nextPath);
+              setCluelessPath(nextPath);
+              setCluelessPathNow(completedAt);
               captureAnalytics('run_completed', {
                 game_id: 'clueless',
                 outcome: 'win',
                 score: guessesUsed,
                 score_kind: 'guesses_used',
                 is_new_best: previous.totalRuns === 0 || guessesUsed < previous.bestStreak,
-                puzzle_number: todaysPuzzleNumber(),
-                difficulty,
-                hint_source:
-                  difficulty === 'easy'
-                    ? 'opening'
-                    : difficulty === 'standard' &&
-                        guessesUsed > STANDARD_HINT_GUESS_THRESHOLD
-                      ? 'guess_threshold'
-                      : 'none',
+                puzzle_number: activeCluelessPuzzle.number,
+                level_number: level.number,
+                path_phase: level.phase,
+                assistance_context: assistanceContext,
+                hint_source: level.hintPolicy,
               });
             }}
           />
@@ -782,10 +902,24 @@ export default function App() {
             gameId={screen.gameId}
             board={
               screen.gameId === 'clueless'
-                ? boardForCluelessDifficulty(boardFor('clueless'), cluelessDifficulty)
+                ? boardForCluelessAssistanceContext(
+                    boardFor('clueless'),
+                    currentCluelessAssistanceContext,
+                  )
                 : boardFor(screen.gameId)
             }
             onPlay={() => startGame(screen.gameId)}
+            playLabel={
+              screen.gameId === 'clueless'
+                ? !cluelessPathReady
+                  ? 'Loading path…'
+                  : currentCluelessAvailability === 'waiting'
+                    ? 'Vault opens at midnight'
+                    : currentCluelessLevel?.phase === 'daily'
+                      ? 'Open Daily Vault'
+                      : 'Play level'
+                : undefined
+            }
             onRace={() => {
               if (!profile) setScreen({ name: 'auth', returnTo: 'teams', returnGameId: screen.gameId });
               else setScreen({ name: 'teams' });
@@ -802,15 +936,22 @@ export default function App() {
               screen.gameId,
               soloPool,
               {
-                difficulty: cluelessDifficulty,
-                locked: cluelessDifficultyLocked,
-                ready: cluelessDifficultyReady,
-                onChange: setCluelessDifficulty,
+                progress: cluelessPath,
+                currentLevel: currentCluelessLevel,
+                availability: currentCluelessAvailability,
+                nextUnlockAt: currentCluelessUnlockAt,
+                now: cluelessPathNow,
+                ready: cluelessPathReady,
               },
               screen.gameId === MORE_OR_LESS ? labelResolved : undefined,
             )}
             footer={startFooterFor(screen.gameId, category)}
-            playDisabled={screen.gameId === 'clueless' && !cluelessDifficultyReady}
+            playDisabled={
+              screen.gameId === 'clueless' &&
+              (!cluelessPathReady ||
+                !currentCluelessLevel ||
+                currentCluelessAvailability !== 'playable')
+            }
           />
         )}
 
@@ -993,14 +1134,14 @@ export default function App() {
             scoreContexts={
               screen.gameId === 'clueless'
                 ? [
-                    { id: 'easy', label: 'Easy' },
-                    { id: 'standard', label: 'Standard', localAliases: ['clueless'] },
-                    { id: 'expert', label: 'Expert' },
+                    { id: 'easy', label: 'Hint at start' },
+                    { id: 'standard', label: 'Clue after 15', localAliases: ['clueless'] },
+                    { id: 'expert', label: 'No hint' },
                   ]
                 : undefined
             }
             initialScoreContext={
-              screen.gameId === 'clueless' ? cluelessDifficulty : undefined
+              screen.gameId === 'clueless' ? currentCluelessAssistanceContext : undefined
             }
             highlightId={screen.highlightId}
             profile={profile}

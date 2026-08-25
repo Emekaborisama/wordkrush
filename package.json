@@ -1,6 +1,6 @@
 {
   "name": "wordkrush",
-  "version": "0.8.9",
+  "version": "0.8.10",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "check:docs": "node scripts/check-docs.mjs",
     "check": "npm run check:docs && npm run typecheck && npm run test",
-    "test:validator": "cd validator && uv run pytest -q",
+    "test:validator": "cd validator && uv run --extra dev python -m pytest -q",
     "smoke": "cd validator && uv run python -m smoke.run_smoke",
     "check:all": "npm run check && npm run test:validator",
     "pipeline:ingest": "tsx --env-file=.env pipeline/ingest.ts",

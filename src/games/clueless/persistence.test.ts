@@ -4,7 +4,7 @@ import type { CluelessState } from './types';
 
 const valid: CluelessState = {
   puzzleNumber: 3,
-  difficulty: 'easy',
+  hintPolicy: 'opening',
   guesses: [
     { word: 'blue', rank: 1 },
     { word: 'ocean', rank: 528 },
@@ -35,11 +35,12 @@ describe('isCluelessState', () => {
     expect(isCluelessState({ ...valid, guesses: [{ word: 'x', rank: -3 }] })).toBe(false);
     expect(isCluelessState({ ...valid, guesses: [{ word: 'x', rank: 1.5 }] })).toBe(false);
     expect(isCluelessState({ ...valid, puzzleNumber: 'three' })).toBe(false);
+    expect(isCluelessState({ ...valid, hintPolicy: 'impossible' })).toBe(false);
     expect(isCluelessState({ ...valid, difficulty: 'impossible' })).toBe(false);
   });
 
-  it('accepts legacy sessions without a difficulty', () => {
-    const { difficulty: _difficulty, ...legacy } = valid;
+  it('accepts sessions from before level-owned hint policies', () => {
+    const { hintPolicy: _hintPolicy, ...legacy } = valid;
     expect(isCluelessState(legacy)).toBe(true);
   });
 });
@@ -63,16 +64,17 @@ describe('rehydrate', () => {
     expect(out.guesses).toEqual(valid.guesses);
     expect(out.status).toBe('won');
     expect(out.puzzleNumber).toBe(3);
-    expect(out.difficulty).toBe('easy');
+    expect(out.hintPolicy).toBe('opening');
   });
 
-  it('maps an in-progress legacy run to standard', () => {
-    const { difficulty: _difficulty, ...legacy } = valid;
-    expect(rehydrate(legacy).difficulty).toBe('standard');
+  it('maps an old selected difficulty to its equivalent hint policy', () => {
+    const { hintPolicy: _hintPolicy, ...legacy } = valid;
+    expect(rehydrate({ ...legacy, difficulty: 'easy' }).hintPolicy).toBe('opening');
   });
 
-  it('lets an empty saved run adopt a newly selected mode', () => {
-    const empty = { ...valid, guesses: [], status: 'playing' as const };
-    expect(rehydrate(empty, 'expert').difficulty).toBe('expert');
+  it('uses the caller fallback for an older session without assistance data', () => {
+    const { hintPolicy: _hintPolicy, ...legacy } = valid;
+    const empty = { ...legacy, guesses: [], status: 'playing' as const };
+    expect(rehydrate(empty, 'none').hintPolicy).toBe('none');
   });
 });

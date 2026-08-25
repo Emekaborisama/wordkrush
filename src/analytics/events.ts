@@ -11,8 +11,11 @@ type CommonGameProperties = {
 };
 
 type ArrivalProperties = ArrivalAttribution;
-type CluelessDifficultyProperty = {
-  difficulty?: 'easy' | 'standard' | 'expert';
+type CluelessLevelProperties = {
+  /** Historical score partitions, now selected by level-owned assistance. */
+  assistance_context?: 'easy' | 'standard' | 'expert';
+  hint_source?: 'opening' | 'guess_threshold' | 'none';
+  path_phase?: 'tutorial' | 'daily' | 'team';
 };
 
 export type AnalyticsEvents = {
@@ -39,14 +42,13 @@ export type AnalyticsEvents = {
   game_selected: CommonGameProperties & {
     source: 'hub' | 'drawer';
   };
-  run_started: CommonGameProperties & CluelessDifficultyProperty & {
+  run_started: CommonGameProperties & CluelessLevelProperties & {
     is_resume: boolean;
     category_id?: string;
     puzzle_number?: number;
     level_number?: number;
-    hint_source?: 'opening' | 'guess_threshold' | 'none';
   };
-  run_completed: CommonGameProperties & CluelessDifficultyProperty & {
+  run_completed: CommonGameProperties & CluelessLevelProperties & {
     outcome: 'win' | 'loss';
     score: number;
     score_kind: 'streak' | 'guesses_used' | 'points';
@@ -56,15 +58,16 @@ export type AnalyticsEvents = {
     puzzle_number?: number;
     level_number?: number;
     relaxed_rounds?: number;
-    hint_source?: 'opening' | 'guess_threshold' | 'none';
   };
   label_round_passed: CommonGameProperties & {
     round_id: string;
     rounds_passed: number;
     item_count: number;
   };
-  guess_submitted: CommonGameProperties & CluelessDifficultyProperty & {
+  guess_submitted: CommonGameProperties & CluelessLevelProperties & {
     guess_index: number;
+    puzzle_number?: number;
+    level_number?: number;
     choice?: 'more' | 'less';
     result_kind: 'correct' | 'incorrect' | 'valid' | 'not_a_word' | 'already_guessed';
     rank_bucket?: 'win' | 'top_10' | 'top_100' | 'cold' | 'unranked';
@@ -95,8 +98,9 @@ export type AnalyticsEvents = {
     duration_ms: number;
     failure_mode: 'time' | 'moves';
   };
-  daily_puzzle_viewed: CommonGameProperties & CluelessDifficultyProperty & {
+  daily_puzzle_viewed: CommonGameProperties & CluelessLevelProperties & {
     puzzle_number: number;
+    level_number?: number;
     already_completed: boolean;
   };
   game_over_action: CommonGameProperties & {

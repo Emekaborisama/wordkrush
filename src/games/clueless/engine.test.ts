@@ -11,7 +11,6 @@ import {
   closeness,
   guessCount,
   indexPuzzle,
-  isDifficultyLocked,
   isHintVisible,
   newPuzzle,
   normalizeGuess,
@@ -32,7 +31,7 @@ const fresh = () => newPuzzle(22);
 
 describe('shipped data', () => {
   it('bundles every puzzle with a secret ranked first', () => {
-    expect(PUZZLES).toHaveLength(30);
+    expect(PUZZLES.length).toBeGreaterThan(0);
     for (const p of PUZZLES) {
       expect(p.ranked[0], `puzzle ${p.number}`).toBe(p.secret);
       expect(p.ranked.length).toBeGreaterThan(1000);
@@ -57,9 +56,10 @@ describe('shipped data', () => {
     }
   });
 
-  it('pairs every shipped puzzle with one bounded, spoiler-free thematic hint', () => {
-    expect(CLUELESS_HINTS).toHaveLength(PUZZLES.length);
-    for (const puzzle of PUZZLES) {
+  it('keeps legacy team hints bounded and spoiler-free', () => {
+    const legacyTeamPuzzles = PUZZLES.filter((puzzle) => puzzle.number <= 30);
+    expect(CLUELESS_HINTS).toHaveLength(legacyTeamPuzzles.length);
+    for (const puzzle of legacyTeamPuzzles) {
       const hint = CLUELESS_HINTS.find((candidate) => candidate.puzzleNumber === puzzle.number);
       expect(hint?.secret, `puzzle ${puzzle.number}`).toBe(puzzle.secret);
       const words = hint!.text.trim().split(/\s+/);
@@ -143,14 +143,14 @@ describe('guessing', () => {
   });
 });
 
-describe('difficulty and hints', () => {
-  it('shows the hint immediately on easy and never on expert', () => {
-    expect(isHintVisible(newPuzzle(22, 'easy'))).toBe(true);
-    expect(isHintVisible(newPuzzle(22, 'expert'))).toBe(false);
+describe('level hint policies', () => {
+  it('shows an opening hint and never shows a no-hint level', () => {
+    expect(isHintVisible(newPuzzle(22, 'opening'))).toBe(true);
+    expect(isHintVisible(newPuzzle(22, 'none'))).toBe(false);
   });
 
-  it('reveals the standard hint after 15 valid unique guesses', () => {
-    let state = newPuzzle(22, 'standard');
+  it('reveals a threshold hint after 15 valid unique guesses', () => {
+    let state = newPuzzle(22, 'guess_threshold');
     const words = puzzle.ranked.slice(1, STANDARD_HINT_GUESS_THRESHOLD + 1);
     for (const [index, word] of words.entries()) {
       state = guess(state, word);
@@ -158,17 +158,15 @@ describe('difficulty and hints', () => {
     }
   });
 
-  it('does not advance or lock difficulty for rejected guesses', () => {
-    const invalid = guess(newPuzzle(22, 'standard'), 'zzzzqqqq');
+  it('does not advance a threshold hint for rejected guesses', () => {
+    const invalid = guess(newPuzzle(22, 'guess_threshold'), 'zzzzqqqq');
     expect(invalid.guesses).toHaveLength(0);
-    expect(isDifficultyLocked(invalid)).toBe(false);
     expect(isHintVisible(invalid)).toBe(false);
   });
 
-  it('locks difficulty after the first valid guess', () => {
-    const state = guess(newPuzzle(22, 'easy'), 'purple');
-    expect(isDifficultyLocked(state)).toBe(true);
-    expect(state.difficulty).toBe('easy');
+  it('keeps the level policy after a valid guess', () => {
+    const state = guess(newPuzzle(22, 'opening'), 'purple');
+    expect(state.hintPolicy).toBe('opening');
   });
 });
 

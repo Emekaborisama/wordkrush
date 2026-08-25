@@ -5,8 +5,11 @@
  * also means all of it ships with the app and the game works with no network —
  * the same offline guarantee as WordKrush comparison (docs/STACK.md D-004).
  *
- * Regenerate with:
+ * Build the initial corpus with:
  *   cd validator && uv run python -m app.clueless.build --words <list> --puzzles N
+ *
+ * Append one reviewed future level with:
+ *   cd validator && uv run python -m app.clueless.build --append-secret <word>
  */
 import type { Puzzle } from '../../games/clueless/types';
 import vocabData from './vocab.json';
@@ -40,6 +43,29 @@ import p27 from './0027.json';
 import p28 from './0028.json';
 import p29 from './0029.json';
 import p30 from './0030.json';
+import p31 from './0031.json';
+import p32 from './0032.json';
+import p33 from './0033.json';
+import p34 from './0034.json';
+import p35 from './0035.json';
+import p36 from './0036.json';
+import p37 from './0037.json';
+import p38 from './0038.json';
+import p39 from './0039.json';
+import p40 from './0040.json';
+import p41 from './0041.json';
+import p42 from './0042.json';
+import p43 from './0043.json';
+import p44 from './0044.json';
+import p45 from './0045.json';
+import p46 from './0046.json';
+import p47 from './0047.json';
+import p48 from './0048.json';
+import p49 from './0049.json';
+import p50 from './0050.json';
+import p51 from './0051.json';
+import p52 from './0052.json';
+import p53 from './0053.json';
 
 export { CLUELESS_HINTS, hintForPuzzle } from './hints';
 
@@ -47,6 +73,9 @@ export const PUZZLES: Puzzle[] = [
   p01, p02, p03, p04, p05, p06, p07, p08, p09, p10,
   p11, p12, p13, p14, p15, p16, p17, p18, p19, p20,
   p21, p22, p23, p24, p25, p26, p27, p28, p29, p30,
+  p31, p32, p33, p34, p35, p36, p37, p38, p39, p40,
+  p41, p42, p43, p44, p45,
+  p46, p47, p48, p49, p50, p51, p52, p53,
 ] as Puzzle[];
 
 export const VOCABULARY: string[] = vocabData as string[];
@@ -57,12 +86,8 @@ export function puzzleByNumber(n: number): Puzzle | undefined {
 }
 
 /**
- * Which puzzle "today" is.
- *
- * Wraps once the set is exhausted rather than running out — a player who finds
- * the app after the puzzles run dry should still get a game, not an error.
- * Replacing this with a real daily schedule is a content decision, not a code
- * one (see the roadmap).
+ * Legacy UTC-day selector retained only to identify pre-path saved sessions.
+ * New solo play uses `src/games/clueless/path.ts` and level metadata instead.
  */
 export function todaysPuzzleNumber(date = new Date()): number {
   const epoch = Date.UTC(2026, 7, 17); // 2026-08-17, puzzle #1
