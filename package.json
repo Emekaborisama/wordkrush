@@ -1,6 +1,6 @@
 {
   "name": "wordkrush",
-  "version": "0.8.6",
+  "version": "0.8.7",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -22,6 +22,7 @@
     "pipeline:export": "tsx --env-file=.env pipeline/export-snapshot.ts",
     "pipeline:wordfall": "tsx pipeline/build-wordfall-dictionary.ts",
     "auth:ensure-test-player": "tsx --env-file=.env pipeline/ensure-test-player.ts",
+    "email:weekly": "tsx --env-file=.env pipeline/player-email.ts",
     "serve:web": "node server/serve.mjs",
     "reddit:install": "npm --prefix reddit install",
     "reddit:types": "npm --prefix reddit run test:types",

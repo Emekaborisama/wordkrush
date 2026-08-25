@@ -84,10 +84,11 @@ not traded away in a refactor.
 | Secret | Where it lives | Rule |
 |---|---|---|
 | `SUPABASE_SECRET_KEY` | `.env` (gitignored), GitHub Actions secrets | Full RLS bypass. Server and pipeline only. **Never** `EXPO_PUBLIC_`. Only `pipeline/db.ts` reads it. |
+| `RESEND_API_KEY` | `.env` (gitignored), GitHub Environment `best-games` | Sends Broadcasts to every signed-in player. Pipeline and the Tuesday workflow only (`environment: best-games`). **Never** `EXPO_PUBLIC_` or Railway. |
 | `SUPABASE_PUBLISHABLE_KEY` | Bundle | Public by design. Safe only because RLS is correct. |
 | `EXPO_PUBLIC_POSTHOG_KEY` | Bundle | Public by design (D-024). |
 | `TEST_PLAYER_*` | `.env` | An ordinary confirmed user, not a service-role stand-in (D-035). Real credentials — never printed, committed, or shipped. |
-| `OPENAI_API_KEY` | `.env` | Offline validator only. Never called at runtime (D-010). |
+| `OPENAI_API_KEY` | `.env`, GitHub Environment `best-games` | Offline validator **and** Tuesday player-email draft (`pipeline/player-email.ts`). Never called at game runtime (D-010, D-054). |
 | `RAILWAY_TOKEN` | GitHub Actions secrets | Deploy only (D-020). |
 
 The load-bearing detail is the naming rule, stated in `.env.example` itself:

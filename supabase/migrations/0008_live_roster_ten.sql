@@ -1,4 +1,4 @@
--- Raise live-race lobby from 2–4 to 2–10 (D-053).
+-- Raise live-race lobby from 2–4 to 2–10 (D-055).
 -- CREATE OR REPLACE so a project that already applied 0006 at the old cap
 -- picks up the new roster without a reset. 0007 is team CRUD.
 -- Apply after 0007_team_crud.sql.
