@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { pickerStatus, type PickerStatus } from '../games/campaign';
 import type { PathRow } from '../live/catalog';
 import { Badge, Surface } from './components';
@@ -11,6 +11,7 @@ type Props = {
   selected: number | null;
   accent: string;
   onSelect: (levelNumber: number) => void;
+  style?: StyleProp<ViewStyle>;
 };
 
 function statusLabel(status: PickerStatus, row: PathRow): string | null {
@@ -29,9 +30,14 @@ export function CampaignPicker({
   selected,
   accent,
   onSelect,
+  style,
 }: Props) {
   return (
-    <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={style}
+      contentContainerStyle={styles.list}
+      showsVerticalScrollIndicator={false}
+    >
       {rows.map((row) => {
         const status = pickerStatus(row.number, personalUnlocked, teamUnlocked);
         const locked = status === 'locked' || !row.released || row.dailySpoiler;

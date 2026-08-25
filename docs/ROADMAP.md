@@ -64,6 +64,7 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 - [ ] **Show data provenance** — "Source: X, month year" on the reveal; the claim on screen must match the snapshot
 - [ ] **Lottie celebration kit** (ST-72) — remaining deer poses, streak flame, result bursts; owner shares lottie.host *file* URLs. Hub idle deer + player already exist locally (`src/ui/lottie/`, D-032). Not on Wordfall tiles or text pills.
 - [ ] **Wordfall match juice** (ST-80) — **Doing**; puff-then-fall on `lastPlay.cleared`, special-birth pop, Crush/Nova stamp. RN `Animated`, not Lottie.
+- [ ] **Mobile hub layout, laptop chrome, and team CRUD** (ST-85) — **Doing**; phone is full-bleed, laptop is a wide column, Teams can rename/leave/disband. Needs `0006` and `0007` on the project.
 
 ## Track: Clueless
 

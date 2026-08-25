@@ -64,7 +64,11 @@ if (!html.includes('rel="icon"')) {
 if (!html.includes('</title>')) {
   throw new Error(`${htmlPath} has no <title> to anchor Open Graph tags on`);
 }
+const viewportCss =
+  '<style id="wk-web-viewport">html,body{height:100%;height:100dvh;margin:0;background-color:#0A0817;overflow:hidden}body>div{height:100%}#wk-mascot canvas,#wk-mascot svg{max-width:100%!important;max-height:100%!important}</style>';
+
 html = html.replace(/<link rel="icon"[^>]*>/, links);
-html = html.replace('</title>', `</title>${meta}`);
+// Keep in sync with `WEB_VIEWPORT_CSS` in `src/ui/webViewport.ts`.
+html = html.replace('</title>', `</title>${meta}${viewportCss}`);
 writeFileSync(htmlPath, html);
 console.log(`web icons -> dist/ (v=${stamp}), og:image -> dist/ (v=${ogStamp})`);

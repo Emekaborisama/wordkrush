@@ -1,15 +1,9 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { GAMES, type GameDefinition } from '../../games/registry';
 import type { ScoreBoard } from '../../scores/types';
 import { dayKey, type DailyStreak } from '../../streak/types';
-import {
-  Badge,
-  BrandArtwork,
-  Button,
-  GameArtwork,
-  StreakBadge,
-  Surface,
-} from '../components';
+import { Badge, Button, GameArtwork, StreakBadge, Surface } from '../components';
+import { isWideLayout } from '../layout';
 import { Mascot } from '../lottie/Mascot';
 import { font, gameAccentTokens, radius, space, theme, type, withAlpha } from '../theme';
 
@@ -21,34 +15,35 @@ type Props = {
 };
 
 export function HubScreen({ boards, streak, onPlay, onScores }: Props) {
+  const wide = isWideLayout(useWindowDimensions().width);
   return (
     <View style={styles.root}>
       <View style={styles.hero}>
-        <BrandArtwork size={54} />
-        <View style={styles.heroCopy}>
-          <Text style={styles.brand}>WordKrush</Text>
-          <Text style={styles.heroSubtitle}>Pick a challenge. Keep your mind moving.</Text>
-        </View>
+        <Text style={styles.heroSubtitle}>Pick a challenge. Keep your mind moving.</Text>
         <StreakBadge streak={streak} today={dayKey(new Date())} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-        <Text style={[type.overline, styles.sectionLabel]}>CHOOSE YOUR GAME</Text>
+      <ScrollView
+        style={styles.listScroll}
+        contentContainerStyle={[styles.list, wide && styles.listWide]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={[type.overline, styles.sectionLabel, wide && styles.sectionWide]}>
+          CHOOSE YOUR GAME
+        </Text>
         {GAMES.map((game) => (
           <GameCard
             key={game.id}
             game={game}
             board={boards[game.id]}
+            wide={wide}
             onPress={() => onPlay(game.id)}
           />
         ))}
+        <View style={[styles.mascotRow, wide && styles.mascotWide]} pointerEvents="none">
+          <Mascot size={wide ? 88 : 64} />
+        </View>
       </ScrollView>
-
-      {/* Decorative only. The mascot is not the brand mark — the logo owns the
-          header slot above (docs/branding/logos.md). */}
-      <View style={styles.mascotRow} pointerEvents="none">
-        <Mascot size={64} />
-      </View>
 
       <Button title="View your scores" variant="outline" size="md" onPress={onScores} />
     </View>
@@ -58,10 +53,12 @@ export function HubScreen({ boards, streak, onPlay, onScores }: Props) {
 function GameCard({
   game,
   board,
+  wide,
   onPress,
 }: {
   game: GameDefinition;
   board?: ScoreBoard;
+  wide: boolean;
   onPress: () => void;
 }) {
   const locked = game.status === 'coming-soon';
@@ -79,7 +76,7 @@ function GameCard({
       disabled={locked}
       borderColor={locked ? theme.border : tokens.border}
       accessibilityLabel={locked ? `${game.name}, coming soon` : `Play ${game.name}`}
-      style={styles.card}
+      style={[styles.card, wide && styles.cardWide]}
     >
       <View style={[styles.cardGlow, { backgroundColor: locked ? theme.border : tokens.glow }]} />
       <GameArtwork gameId={game.id} accent={game.accent} size={86} raised />
@@ -119,7 +116,12 @@ function GameCard({
 }
 
 const styles = StyleSheet.create({
-  mascotRow: { alignItems: 'center', justifyContent: 'flex-end' },
+  mascotRow: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+    maxHeight: 96,
+  },
   root: {
     flex: 1,
     backgroundColor: theme.bg,
@@ -132,19 +134,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    minHeight: 72,
   },
-  heroCopy: { flex: 1 },
-  brand: {
-    color: theme.text,
-    fontFamily: font.bold,
-    fontSize: 29,
-    fontWeight: '700',
-    letterSpacing: -0.8,
-  },
-  heroSubtitle: { ...type.caption, color: theme.textMuted, marginTop: 1 },
+  heroSubtitle: { ...type.caption, color: theme.textMuted, flex: 1 },
+  // `height: 0` plus `flex: 1` is how a column child actually shrinks on
+  // RN-web; `minHeight: 0` alone still sizes to the cards and they paint
+  // under the scores button.
+  listScroll: { flex: 1, minHeight: 0, height: 0, overflow: 'hidden' },
   list: { gap: space.md, paddingBottom: space.sm },
+  listWide: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'stretch' },
   sectionLabel: { color: theme.textDim, marginBottom: -2 },
+  sectionWide: { width: '100%', flexBasis: '100%' },
   card: {
     minHeight: 142,
     flexDirection: 'row',
@@ -153,6 +152,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
+  cardWide: { flexGrow: 1, flexBasis: 280, minWidth: 260 },
+  mascotWide: { flexBasis: '100%', width: '100%' },
   cardGlow: {
     position: 'absolute',
     width: 150,

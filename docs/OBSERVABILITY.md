@@ -117,6 +117,9 @@ expose a typed event map so names and property shapes cannot drift.
 | `signed_out` | P2 | Sign-out operation succeeds | none | Account disengagement and session lifecycle |
 | `team_created` | P1 | Team create RPC succeeds | none | Whether signed-in players form a crew |
 | `team_joined` | P1 | Team join RPC succeeds | `via: code \| invite` | Invite vs typed-code conversion |
+| `team_renamed` | P2 | Owner rename RPC succeeds | none | Whether crews get a lasting name |
+| `team_left` | P2 | Member leave RPC succeeds | none | Churn from a crew |
+| `team_disbanded` | P2 | Owner disband RPC succeeds | none | Crew teardown |
 | `match_created` | P1 | Host opens a lobby | `game_id`, `level_number` | Which path rows get raced |
 | `match_started` | P1 | Host starts a ready lobby | `game_id`, `level_number`, `player_count_bucket: 2 \| 3 \| 4` | Live-race start rate |
 | `match_finished` | P1 | Match reaches `finished` | `game_id`, `level_number`, `player_count_bucket`, `complete`, `outcome: win \| loss` | Completion vs spectating the clock |

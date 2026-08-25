@@ -143,6 +143,29 @@ export async function joinTeam(code: string): Promise<TeamApiResult<TeamSnapshot
   return rpc('join_team', { p_code: normalized }, parseTeamSnapshot);
 }
 
+export async function renameTeam(name: string): Promise<TeamApiResult<TeamSnapshot>> {
+  return rpc('rename_team', { p_name: name.trim() }, parseTeamSnapshot);
+}
+
+async function rpcEmpty(name: string): Promise<TeamApiResult<true>> {
+  if (!supabase) return fail('unconfigured', UNCONFIGURED);
+  try {
+    const { error } = await supabase.rpc(name);
+    if (error) return fail('error', error.message);
+    return { ok: true, value: true };
+  } catch {
+    return fail('unavailable', 'Team service is unavailable.');
+  }
+}
+
+export async function leaveTeam(): Promise<TeamApiResult<true>> {
+  return rpcEmpty('leave_team');
+}
+
+export async function disbandTeam(): Promise<TeamApiResult<true>> {
+  return rpcEmpty('disband_team');
+}
+
 export function teamUnlocked(snapshot: TeamSnapshot, gameId: PathGameId): number {
   return snapshot.progress.find((row) => row.gameId === gameId)?.unlocked ?? 1;
 }

@@ -273,12 +273,15 @@ unchanged.
 (D-030). Symbol glyphs stay on the system face. Game data remains bundled
 JSON; missing Supabase keys still leave every title playable. Splash uses the
 black lockup in `assets/logo/`; auth uses the clear lockup; drawer and top bar
-use the W mark via `BrandArtwork`. The hub hero is the little-deer mascot
+use the W mark via `BrandArtwork`. The hub list scrolls under that top bar —
+the deer is a clipped mascot at the end of the game list, not a second lockup
 (`src/ui/lottie/Mascot.tsx`, pose `idle`). Outcome screens reuse the same
 component with `celebrate` or `wince` (More or Less game over, Wordfall
 level result, Clueless solved). Clip URLs live in `LOTTIE_CLIPS`; deer poses
-currently share one lottie.host file and fall back to bundled
-`assets/lottie/deer.lottie` (D-032). Reduce-motion skips playback.
+play the bundled `assets/lottie/deer.lottie` and do not fall back to
+lottie.host while that file still has a white backdrop (D-032, D-050).
+Reduce-motion skips playback. The web export fills `100dvh` so mobile URL-bar
+`100vh` does not clip the hub.
 
 ---
 
@@ -450,9 +453,12 @@ the previous view.
 
 **1. A team is invite-only.** [BUILT]
 `TeamsScreen` creates or joins through RPCs (`create_team`, `join_team`) in
-`0006_teams_and_live_matches.sql`. There is no public directory. Deep links
+`0006_teams_and_live_matches.sql`, and renames, leaves, or disbands through
+`0007_team_crud.sql`. There is no public directory. Deep links
 `wordkrush://team?code=` and `/?team=` land on the same join path. Guests still
-play solo; the Race CTA asks them to sign in.
+play solo; the Race CTA asks them to sign in. The owner is the only person who
+can rename or disband; a member can leave. The owner cannot leave — they
+disband.
 
 **2. The picker is Wordfall-shaped for every title.** [BUILT]
 Shared unlock math in `src/games/campaign.ts` (`unlockAfterWin`, dual
@@ -460,7 +466,9 @@ Shared unlock math in `src/games/campaign.ts` (`unlockAfterWin`, dual
 `src/data/more-or-less/levels.ts`. Clueless team path uses bundled puzzle
 numbers and refuses today's UTC daily. A row above the team cursor stays
 locked; a row the team has opened but the player has not is playable in the
-session and marked team-ahead.
+session and marked team-ahead. On a phone the level list scrolls in the leftover
+column with Host / Join as a footer; on a laptop the roster sits in a left
+column and the picker on the right.
 
 **3. A lobby is 2–4 ready players, then a server seed.** [BUILT]
 `create_match` / `join_match` / `set_ready` / `start_match`. Late joins after
@@ -486,9 +494,9 @@ Quick map of where each journey step lives:
 
 | Piece | Where | Status |
 |---|---|---|
-| App shell (iOS + web) | `App.tsx`, `index.ts`, `app.json` | [BUILT] — WordKrush hub, lockup splash `#0A0817`, `expo-font`; web at wordKrush.com |
+| App shell (iOS + web) | `App.tsx`, `index.ts`, `app.json` | [BUILT] — WordKrush hub, lockup splash `#0A0817`, `expo-font`; web at wordKrush.com uses `100dvh`; phone is full-bleed, laptop is a 1080px column (D-051) |
 | Brand kit | `assets/logo/`, `docs/branding/`, `BrandArtwork` | [BUILT] — black lockup on splash; clear lockup on auth/Android; W mark on icon, drawer, top bar |
-| Mascot (deer) | `src/ui/lottie/`, `LOTTIE_CLIPS`, `assets/lottie/deer.lottie` | [BUILT] — hub + outcome poses; flame/burst CDN rows empty (D-032) |
+| Mascot (deer) | `src/ui/lottie/`, `LOTTIE_CLIPS`, `assets/lottie/deer.lottie` | [BUILT] — hub + outcome poses; bundled file only until lottie.host drops the white plate (D-050); flame/burst CDN rows empty (D-032) |
 | Display type | `@expo-google-fonts/fredoka`, `src/ui/theme.ts` | [BUILT] — every text tier, all three games; symbol glyphs stay on the system face (D-030) |
 | Fairness guard + difficulty bands | `src/games/more-or-less/pairing.ts` (+ 9 tests) | [BUILT] |
 | Engine reducer, pair selector, scoring | `src/games/more-or-less/engine.ts` | [BUILT] |
@@ -508,7 +516,7 @@ Quick map of where each journey step lives:
 | Unique leaderboard username | `supabase/migrations/0004_unique_username.sql`, `src/auth/validation.ts` `usernameKey` | [BUILT: apply on the owner project] — unique index on `username_key(display_name)`; duplicate maps to "That username is taken." |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
 | Clueless difficulty boards | `supabase/migrations/0005_clueless_difficulty_leaderboards.sql`, `src/games/clueless/scoring.ts` | [BUILT: apply migration] — Easy/Standard/Expert partition under stable `clueless` id |
-| Teams + live races | `supabase/migrations/0006_teams_and_live_matches.sql`, `src/teams/`, `src/live/`, `src/games/campaign.ts` | [BUILT: apply migration] — private teams, 2–4 player races, dual unlock; live scores stay off `global_leaderboard` |
+| Teams + live races | `supabase/migrations/0006_teams_and_live_matches.sql`, `0007_team_crud.sql`, `src/teams/`, `src/live/`, `src/games/campaign.ts` | [BUILT: apply migrations] — private teams with rename/leave/disband, 2–4 player races, dual unlock; live scores stay off `global_leaderboard` |
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both |

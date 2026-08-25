@@ -140,7 +140,7 @@ Located in `src/ui/components/`.
 | `EmptyState` | Scores' empty block, Clueless first-guess prompt | ✅ built |
 | `GameArtwork` | Hub's emoji art tile (`IconTile` was not built) | ✅ built |
 | `Mascot` | Hub deer + outcome poses (`src/ui/lottie/`, `LOTTIE_CLIPS`) | ✅ built |
-| `BrandArtwork` | Hub/drawer/top-bar W mark; auth clear lockup | ✅ built |
+| `BrandArtwork` | Drawer/top-bar W mark; auth clear lockup | ✅ built |
 | `IconButton` | 44pt icon hits on game headers | ✅ built |
 | `TextField` | Clueless guess input | ✅ built |
 | `GameStartScreen` | per-game pre-run screens (was More-or-Less-only `HomeScreen`) | ✅ built |

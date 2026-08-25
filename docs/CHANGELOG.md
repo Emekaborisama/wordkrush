@@ -6,6 +6,19 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.3] - 2026-08-25
+
+### Added
+- **Teams are now CRUD, not create-and-stuck.** The owner can rename or disband the crew; a member can leave. Disband and leave ask for a second tap. Needs `0007_team_crud.sql` on the project (after `0006`).
+
+### Fixed
+- **Phone chrome fills the phone; laptop chrome is a laptop column.** The 460×900 fake-phone frame is gone. Below 720px the shell is full-bleed. At 720px and up it is a centered 1080px column. Hub cards sit in a row on a laptop. Teams split roster/manage on the left and the level list on the right.
+- **The phone web hub no longer clips the streak or buries Wordfall under the deer.** The game list is the only scrolling region (`flex: 1; height: 0` on RN-web); the deer sits at the end of that list and **View your scores** stays a footer. The TopBar already carries the lockup, so the hub dropped the duplicate WordKrush heading.
+- **Teams titles sit below the top bar**, not in it. Create/join and roster screens now pad the `ScreenHeader` the same way other chrome screens do.
+- **The team race picker no longer sits under Host / Join on a phone.** Roster and manage scroll in a capped pane, the level list uses the leftover column, and Host / Join stay a footer. Title chips share one row instead of stacking as full-width buttons.
+- **The hub deer is no longer a white rounded plate.** `Mascot` plays only the bundled `.lottie` (white backdrop layer already stripped). A miss is an empty slot rather than the lottie.host copy, which still has that full-canvas white shape. The player is clipped to the 4:3 slot.
+- **Mobile browser chrome no longer eats the top of the app.** The web shell uses the visible viewport (`100dvh`) and ink behind the letterboxed laptop column.
+
 ## [0.8.2] - 2026-08-25
 
 ### Changed

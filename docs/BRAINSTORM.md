@@ -162,7 +162,9 @@ Clueless’s “meaning, not spelling” identity and the bundled-offline bounda
 ### Teams and live races **[GIVEN — 2026-08-25]**
 
 One signed-in team layer covers every title. Guests keep solo Play. Teams are
-private invite-only (code / `wordkrush://team?code=`). A live race is 2–4
+private invite-only (code / `wordkrush://team?code=`). The owner can rename or
+disband the crew; a member can leave. The owner cannot leave — they disband.
+A live race is 2–4
 players on the same numbered path row at once; ranking uses each player's own
 score, never a combined team total.
 

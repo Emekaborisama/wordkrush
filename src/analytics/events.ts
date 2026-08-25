@@ -129,6 +129,9 @@ export type AnalyticsEvents = {
   team_joined: {
     via: 'code' | 'invite';
   };
+  team_renamed: Record<string, never>;
+  team_left: Record<string, never>;
+  team_disbanded: Record<string, never>;
   match_created: CommonGameProperties & {
     level_number: number;
   };
@@ -183,6 +186,9 @@ export const ANALYTICS_EVENT_NAMES: ReadonlySet<string> = new Set<AnalyticsEvent
   'signed_out',
   'team_created',
   'team_joined',
+  'team_renamed',
+  'team_left',
+  'team_disbanded',
   'match_created',
   'match_started',
   'match_finished',

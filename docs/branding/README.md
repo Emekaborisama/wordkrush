@@ -43,4 +43,4 @@ site copy may use the longer purpose sentence.
 - `BrandArtwork` renders the mark (default) or the clear lockup (`variant="lockup"`).
 - Splash uses the lockup on black, composited on `#0A0817`.
 - App icon and favicon use the W mark. Android adaptive foreground uses the clear lockup.
-- The **mascot** is a little deer (`Mascot` in `src/ui/lottie/`). It sits on the hub hero. It is not the logo: do not replace the lockup or the W with it on splash, store icon, or auth.
+- The **mascot** is a little deer (`Mascot` in `src/ui/lottie/`). It sits above the hub scores button. It is not the logo: do not replace the lockup or the W with it on splash, store icon, or auth.
