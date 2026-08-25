@@ -3,6 +3,7 @@ import { Animated, Easing, PanResponder, StyleSheet, Text, View } from 'react-na
 import { colOf, rowOf } from '../../games/wordfall/board';
 import type { Board, PlayResult, SpecialKind } from '../../games/wordfall/types';
 import { font, radius, theme, type } from '../theme';
+import { WORDFALL_BOARD_WEB_ID } from '../webViewport';
 import {
   CLEAR_HOLD_MS,
   PUFF_MS,
@@ -109,6 +110,12 @@ export function BoardView({
   const responder = useMemo(
     () =>
       PanResponder.create({
+        // Capture at the board boundary. On web this keeps an initial pointer
+        // on a tile from being claimed by a descendant before tracing starts.
+        // The board's scoped web CSS disables the browser's selection/scroll
+        // defaults that PanResponder itself cannot cancel.
+        onStartShouldSetPanResponderCapture: () => !live.current.disabled,
+        onMoveShouldSetPanResponderCapture: () => !live.current.disabled,
         onStartShouldSetPanResponder: () => !live.current.disabled,
         onMoveShouldSetPanResponder: () => !live.current.disabled,
         onPanResponderGrant: (e) => {
@@ -162,6 +169,7 @@ export function BoardView({
   return (
     <View
       ref={containerRef}
+      nativeID={WORDFALL_BOARD_WEB_ID}
       style={[styles.board, width > 0 && { width, height }]}
       onLayout={() => {
         measure();
