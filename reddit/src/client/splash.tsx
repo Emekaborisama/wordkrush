@@ -49,7 +49,8 @@ function Splash() {
       </button>
 
       <div className="splash__footer">
-        Everyone here plays the same questions. Posted automatically by the WordKrush app.
+        This week’s names. Everyone here plays the same questions. Posted automatically by the
+        WordKrush app.
       </div>
     </div>
   );

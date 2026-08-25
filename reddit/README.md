@@ -101,9 +101,11 @@ rule is what the board depends on, and it is enforced with the board itself
 
 A cron task in `devvit.json` fires at 13:00 UTC and posts the day's challenge.
 That is the entire content calendar: the Wikipedia snapshot is refreshed weekly
-by the parent repo's pipeline ([D-036](../docs/STACK.md)), and each day picks a
-different sequence out of it from a date-derived seed —
-`seedFromDate` in `src/games/rng.ts`, whose doc comment anticipated exactly this.
+by the parent repo's pipeline ([D-036](../docs/STACK.md), [D-052](../docs/STACK.md)),
+which now enqueues a new labelled set. Each post plays **that week's newest
+round** (same names for everyone on the post) and a date-derived seed picks the
+sequence — `seedFromDate` in `src/games/rng.ts`. Personal "rounds passed" is
+Expo/web only; a Reddit post cannot wait for each reader to exhaust a set.
 
 `createDailyPost` is idempotent per calendar day, so the cron task, the
 moderator menu item and the install trigger cannot split a community's board

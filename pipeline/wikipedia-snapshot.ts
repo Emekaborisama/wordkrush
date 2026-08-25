@@ -33,6 +33,11 @@ export type BundledItem = {
   updatedAt: string;
 };
 
+export type LabelRoundDef = {
+  id: string;
+  itemIds: string[];
+};
+
 export type BundledCategory = {
   id: string;
   name: string;
@@ -40,6 +45,7 @@ export type BundledCategory = {
   unit: string;
   provisional: true;
   items: BundledItem[];
+  rounds?: LabelRoundDef[];
 };
 
 export type ValueChange = {
@@ -218,28 +224,37 @@ export function writeChangelogBullet(section: 'Added' | 'Changed', bullet: strin
   writeFileSync(APP_JSON_PATH, replaceDeclaredVersion(readFileSync(APP_JSON_PATH, 'utf8'), next));
 }
 
-export async function buildWikipediaPopularitySnapshot(
-  categoryId = DEFAULT_CATEGORY_ID,
-): Promise<{ snapshot: BundledCategory; keywordCount: number }> {
-  const file = loadKeywordFile(categoryId);
-  const previous = loadBundledCategory(categoryId);
+export function defaultRounds(items: BundledItem[]): LabelRoundDef[] {
+  return [{ id: 'round-1', itemIds: items.map((item) => item.id) }];
+}
+
+export function keywordByItemId(
+  categoryId: string,
+  keywords: { label: string; term: string }[],
+): Map<string, { label: string; term: string }> {
+  return new Map(keywords.map((item) => [itemId(categoryId, item.term), item]));
+}
+
+export async function measureKeywords(
+  categoryId: string,
+  keywords: { label: string; term: string }[],
+  previous: BundledItem[] = [],
+): Promise<{ items: BundledItem[]; omitted: number; sourceName: string }> {
   const source = createWikipediaSource();
-  const volumes = await source.fetchVolumes(file.items.map((item) => item.term));
-  const { images, failed } = await fetchImages(
-    file.items.map((item) => item.term),
-    800,
-  );
-  const failedIds = new Set(failed.map((term) => itemId(file.category.id, term)));
+  const terms = keywords.map((item) => item.term);
+  const volumes = await source.fetchVolumes(terms);
+  const { images, failed } = await fetchImages(terms, 800);
+  const failedIds = new Set(failed.map((term) => itemId(categoryId, term)));
   const updatedAt = new Date().toISOString().slice(0, 10);
 
-  const fetched = file.items
+  const fetched = keywords
     .map((item) => {
       const value = volumes.get(item.term);
       if (value === undefined) return null;
       const image = images.get(item.term);
       return {
-        id: itemId(file.category.id, item.term),
-        categoryId: file.category.id,
+        id: itemId(categoryId, item.term),
+        categoryId,
         label: item.label,
         value,
         ...(image
@@ -256,14 +271,42 @@ export async function buildWikipediaPopularitySnapshot(
     .filter((item): item is BundledItem => item !== null)
     .sort((a, b) => b.value - a.value);
 
-  const items = carryForwardImages(previous?.items ?? [], fetched, failedIds);
+  return {
+    items: carryForwardImages(previous, fetched, failedIds),
+    omitted: keywords.length - fetched.length,
+    sourceName: source.name,
+  };
+}
+
+export async function buildWikipediaPopularitySnapshot(
+  categoryId = DEFAULT_CATEGORY_ID,
+): Promise<{ snapshot: BundledCategory; keywordCount: number }> {
+  const file = loadKeywordFile(categoryId);
+  const previous = loadBundledCategory(categoryId);
+  let extras: { label: string; term: string }[] = [];
+  try {
+    const { loadReservoir } = await import('./reservoir');
+    extras = loadReservoir().items;
+  } catch {
+    extras = [];
+  }
+  const lookup = keywordByItemId(categoryId, [...file.items, ...extras]);
+  const extraKeywords = (previous?.items ?? [])
+    .map((item) => lookup.get(item.id))
+    .filter((item): item is { label: string; term: string } => item !== undefined)
+    .filter((item) => !file.items.some((row) => row.term === item.term));
+  const keywords = [...file.items, ...extraKeywords];
+  const measured = await measureKeywords(categoryId, keywords, previous?.items ?? []);
+  const rounds =
+    previous?.rounds && previous.rounds.length > 0 ? previous.rounds : defaultRounds(measured.items);
 
   return {
-    keywordCount: file.items.length,
+    keywordCount: keywords.length,
     snapshot: {
       ...file.category,
       provisional: true,
-      items,
+      rounds,
+      items: measured.items,
     },
   };
 }
@@ -279,6 +322,7 @@ export function formatRotateReport(
   diff: SnapshotDiff,
   itemCount: number,
   omitted: number,
+  appendedRoundId?: string,
 ): string {
   const lines = [
     'Weekly Wikipedia popularity snapshot.',
@@ -287,6 +331,10 @@ export function formatRotateReport(
     `Window: ${diff.nextSource ?? 'unknown'}.`,
     '',
   ];
+  if (appendedRoundId) {
+    lines.push(`Appended label round: ${appendedRoundId}.`);
+    lines.push('');
+  }
   if (!diff.materialChange) {
     lines.push('No material change vs the bundled snapshot. No PR.');
     return `${lines.join('\n')}\n`;

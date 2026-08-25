@@ -94,12 +94,13 @@ npm run reddit:dev       # devvit playtest against a test subreddit
 npm run pipeline:ingest   # keywords → source → validate → Supabase (needs .env)
 npm run pipeline:export   # latest good snapshot → src/data/categories/*.json
 npm run pipeline:preview  # Wikipedia pageviews + free-licence images → bundled JSON (no Supabase)
-npm run pipeline:rotate   # same builder as preview; write only on a material change
+npm run pipeline:rotate   # re-measure shipped items; enqueue a new unused label round
+npm run pipeline:reservoir # rebuild the Wikipedia keyword reservoir from Wikimedia tops
 ```
 
 The app only ever reads the bundled JSON. Changing game data = run pipeline, commit the JSON diff, release. The JSON diff in the PR *is* the content review.
 
-**Weekly Wikipedia popularity** is automated: `.github/workflows/wikipedia-popularity-weekly.yml` runs Mondays at 09:00 UTC (and on `workflow_dispatch`). It calls `pipeline:rotate`, runs `npm run check` on a material change, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. That branch is an automation exception to the Superthread-name rule (D-036); do not merge it without reading the JSON diff. The job never pushes to `master`. Until the factory path is live (ST-35), the file stays `provisional: true`.
+**Weekly Wikipedia popularity** is automated: `.github/workflows/wikipedia-popularity-weekly.yml` runs Mondays at 09:00 UTC (and on `workflow_dispatch`). It calls `pipeline:rotate`, which re-measures the bundled items and appends a new unused label round sampled from the reservoir, runs `npm run check` on a material change, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. That branch is an automation exception to the Superthread-name rule (D-036, D-052); do not merge it without reading the JSON diff. The job never pushes to `master` and never changes the set a player is currently on. Until the factory path is live (ST-35), the file stays `provisional: true`.
 
 Wordfall weekly levels are a different path: append a row to `src/data/wordfall/levels.ts` with a Monday `availableFrom`, then follow [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) Job B and the Cursor skill `.cursor/skills/wordfall-weekly-gauntlet/`. Unique `taskFingerprint`, seven-day featured window, then **local** `npm run check` → `build:web` → `serve:web` (port 8080) and a picker playtest **before** `git push` (D-038). Do not run the Wikipedia ingest for a Wordfall drop. Monday does not fetch content; the catalog in git is the schedule.
 

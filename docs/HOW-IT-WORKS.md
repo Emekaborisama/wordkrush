@@ -62,7 +62,7 @@ The reducer compares the two bundled values. Note what "correct" means here: **B
 The hidden value counts up to its real number — the emotional beat of the whole game — then the judgement's feedback fires: `feedback('correct')` or `feedback('wrong')`, which plays a clip and a haptic together (`src/native/feedback.ts`). The haptic half runs through the `haptics.ts` / `haptics.native.ts` twins — `expo-haptics` on native, the browser Vibration API on a capable touch device, nothing on Safari or a laptop (D-044); the clip plays everywhere. Correct → streak++, winning card slides left, new challenger enters (carry-over chain — genre standard, still [OPEN] vs the reference game). Wrong → run over.
 
 **7. Back to the player: game over.** [BUILT]
-The run is written to the local board first (`src/scores/storage.ts`). Game over shows the streak, the pair that ended it, and Play Again / scores / all-games. Scores open a two-tab surface: **On this device** is the offline history; **Global** is each signed-in player's best run for that game (Journey 5). Game Center remains a later native 4.2 extra, not this board.
+The run is written to the local board first (`src/scores/storage.ts`). Game over shows the streak, the pair that ended it, and Play Again / scores / all-games. Solo More or Less also shows **rounds passed** and how many names remain in the current set. Scores open a two-tab surface: **On this device** is the offline history; **Global** is each signed-in player's best run for that game (Journey 5). Game Center remains a later native 4.2 extra, not this board.
 
 ---
 
@@ -93,7 +93,7 @@ The player asked "does *sushi* have more searches than *pizza*?" — this is how
 ### Step by step
 
 **1. We author terms.** [BUILT]
-[pipeline/keywords/wikipedia-popularity.json](../pipeline/keywords/wikipedia-popularity.json): 50 items, each with a display label and the exact `term` sent to the pageviews source. Keeping them separate means UI polish never silently changes what was measured.
+[pipeline/keywords/wikipedia-popularity.json](../pipeline/keywords/wikipedia-popularity.json) is the original 50 — display `label` plus the exact `term` sent to the pageviews source. A much larger filtered list lives in [pipeline/keywords/wikipedia-popularity-reservoir.json](../pipeline/keywords/wikipedia-popularity-reservoir.json) (`npm run pipeline:reservoir`). Play never reads the reservoir. The bundled snapshot queues **label rounds** (`rounds[].itemIds`); solo More or Less plays only the player's current round until every name in it has been shown.
 
 **2. Ingest fetches real numbers — in batches, long before any player sees them.** [BUILT]
 `npm run pipeline:ingest` ([ingest.ts](../pipeline/ingest.ts)) pulls volumes through a **source adapter** in batches of 20. The shipped adapter is Wikimedia pageviews (`pipeline/sources/wikipedia.ts`); the mock remains available for deterministic checks, but the real path is no longer a one-file swap. The uncomfortable fact driving that design is now different: the v1 metric is monthly Wikipedia pageviews, not Google search volume.
@@ -114,8 +114,8 @@ The JSON diff goes up in a PR — **the diff is the content review**. CI must pa
 
 **6. The player sees the number** — with its provenance ("Source: monthly Wikipedia pageviews, <month year>") [PLANNED], so the claim on screen is exactly the claim the data supports.
 
-**7. Weekly rotation keeps the snapshot from freezing.** [BUILT]
-Monday 09:00 UTC (and `workflow_dispatch`) GitHub Action [wikipedia-popularity-weekly.yml](../.github/workflows/wikipedia-popularity-weekly.yml) runs `npm run pipeline:rotate`. That job uses the same builder as `pipeline:preview` — Wikimedia pageviews plus freely-licensed images — because the factory ingest→export path is still blocked on the 0001 migration. Images prefer the article's free lead (`pageimages`); when that is a fair-use logo or screenshot and `pageimages` returns nothing, [wikipedia-images.ts](../pipeline/sources/wikipedia-images.ts) walks other files on the page and ships the first freely-licensed photograph. Fair-use files are still skipped. A thrown fetch (Wikimedia 429, network) keeps the picture already in the bundled JSON rather than treating a blank as a content change. The job compares the new file to the bundled JSON and **skips the PR** when only `updatedAt` would change (most weeks of a month share one complete-month window). A material change writes the JSON, bumps the patch version, adds a new changelog section, runs `npm run check`, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. The D-041 version bump of `package.json` / `app.json` is changelog, not a stack/system change (D-049), so that check can pass on a content-only rotate. Swings >10x vs the currently shipped values are listed on the PR; a human merges. The job never pushes to `master` and never fetches at play time (D-004, D-036). Output stays `provisional: true` until ST-35 lands.
+**7. Weekly rotation enqueues a new labelled set.** [BUILT]
+Monday 09:00 UTC (and `workflow_dispatch`) GitHub Action [wikipedia-popularity-weekly.yml](../.github/workflows/wikipedia-popularity-weekly.yml) runs `npm run pipeline:rotate`. That job re-measures every item already in the snapshot (Wikimedia pageviews plus freely-licensed images — same builder as `pipeline:preview`) because the factory ingest→export path is still blocked on the 0001 migration. It then samples an unused round of about 25 playable articles from the reservoir and **appends** it. It does not swap the set a player is currently on; they stay until they exhaust it. Images prefer the article's free lead (`pageimages`); when that is a fair-use logo or screenshot and `pageimages` returns nothing, [wikipedia-images.ts](../pipeline/sources/wikipedia-images.ts) walks other files on the page and ships the first freely-licensed photograph. Fair-use files are still skipped. A thrown fetch (Wikimedia 429, network) keeps the picture already in the bundled JSON rather than treating a blank as a content change. The job compares the new file to the bundled JSON and **skips the PR** when only `updatedAt` would change and no round was appended. A material change writes the JSON, bumps the patch version, adds a new changelog section, runs `npm run check`, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. The D-041 version bump of `package.json` / `app.json` is changelog, not a stack/system change (D-049), so that check can pass on a content-only rotate. Swings >10x vs the currently shipped values are listed on the PR; a human merges. The job never pushes to `master` and never fetches at play time (D-004, D-036, D-052). Output stays `provisional: true` until ST-35 lands.
 
 **8. And back: the correction loop.** [BUILT: pipeline side · ongoing]
 Data ages (bundled = frozen until next release, accepted trade-off D-004). Refresh = weekly rotate, or a manual `pipeline:preview` / ingest→export. A wrong-feeling answer in playtesting starts at the JSON diff (or `item_values.raw` once the factory path is live) and ends in either a corrected snapshot or a removed item. App Store review latency (days) is why validation happens *before* shipping, not after.
@@ -414,10 +414,11 @@ than the board is worth.
 the clipboard; nothing comments on a player's behalf.
 
 **6. The weekly snapshot became a daily calendar.** [BUILT]
-D-036's Monday refresh feeds seven posts. Each day's seed is
+D-052's Monday enqueue feeds the newest published round into seven posts. Each day's seed is
 `seedFromDate` (UTC), and `createDailyPost` is idempotent per calendar day, so
 the cron task, the moderator menu item and the install trigger cannot split a
-community's board across two posts.
+community's board across two posts. Everyone on a post plays that round's names;
+personal round-gating stays on Expo/web.
 
 **Not on this surface:** Supabase accounts, the global leaderboard, the
 cross-game daily streak, and PostHog. Reddit identity and Devvit Redis replace
@@ -523,7 +524,7 @@ Quick map of where each journey step lives:
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both |
-| Wikipedia popularity weekly | `.github/workflows/wikipedia-popularity-weekly.yml`, `pipeline/rotate-wikipedia-popularity.ts` | [BUILT] — Monday 09:00 UTC + `workflow_dispatch`; PR on `content/wikipedia-popularity-weekly`, never `master` (D-036) |
+| Wikipedia popularity weekly | `.github/workflows/wikipedia-popularity-weekly.yml`, `pipeline/rotate-wikipedia-popularity.ts`, `pipeline/keywords/wikipedia-popularity-reservoir.json` | [BUILT] — Monday 09:00 UTC + `workflow_dispatch`; re-measures shipped items and enqueues a new label round; PR on `content/wikipedia-popularity-weekly`, never `master` (D-036, D-052) |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both, then `railway up --service wordcrush` |
 | GitHub Release | `.github/workflows/release.yml`, `scripts/changelog-notes.mjs` | [BUILT] — every PR is a version; publish `vX.Y.Z` from that changelog section on master merge or tag (D-039, D-041) |
 | Web host | `railway.json`, `server/serve.mjs` | [BUILT] — Nixpacks runs `CI=true npm run build:web` on service `wordcrush`; `serve.mjs` listens on `$PORT` |

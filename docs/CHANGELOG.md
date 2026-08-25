@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.5] - 2026-08-25
+
+### Added
+- **More or Less label rounds.** Solo play is no longer one eternal set of 50 Wikipedia names. Each round is a queued set; see every name to unlock the next. Streak is still this run; **rounds passed** is how many sets you have cleared. The start screen says so in one line, the HUD shows `SEEN n/m`, and scores/hub show the counter. New sets are sampled weekly from a pipeline-only reservoir of 14,112 filtered Wikimedia titles (short of 20k without padding) and only *enqueued* — the calendar does not swap the set you are on. Reddit still plays the newest published round so a post stays shared.
+
 ## [0.8.4] - 2026-08-25
 
 ### Fixed

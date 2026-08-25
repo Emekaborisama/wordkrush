@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import categoryJson from '../../../src/data/categories/wikipedia-popularity.json';
 import { CATEGORY, METRIC_LABEL, POOL } from './pool';
 
 describe('the bundled pool', () => {
-  it('loads the same snapshot the Expo app plays on', () => {
+  it('plays the newest published round so every player on the post sees the same names', () => {
     expect(CATEGORY.id).toBe('wikipedia-popularity');
     expect(POOL.length).toBeGreaterThanOrEqual(20);
+    const latest = categoryJson.rounds?.at(-1);
+    expect(latest).toBeDefined();
+    expect(POOL.map((item) => item.id).sort()).toEqual([...(latest?.itemIds ?? [])].sort());
   });
 
   it('gives every item a positive, finite, comparable value', () => {

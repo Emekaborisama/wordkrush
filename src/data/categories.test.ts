@@ -9,7 +9,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { isFairPair, ratio } from '../games/more-or-less/pairing';
-import type { Category, Item } from '../games/more-or-less/types';
+import { itemsForRound, snapshotRounds, type CategorySnapshot } from '../games/more-or-less/rounds';
+import type { Item } from '../games/more-or-less/types';
 
 const DIR = fileURLToPath(new URL('./categories/', import.meta.url));
 const files = readdirSync(DIR).filter((f) => f.endsWith('.json'));
@@ -19,9 +20,7 @@ it('has at least one category bundled', () => {
 });
 
 describe.each(files)('%s', (file) => {
-  const category: Category & { provisional?: boolean } = JSON.parse(
-    readFileSync(DIR + file, 'utf8'),
-  );
+  const category: CategorySnapshot = JSON.parse(readFileSync(DIR + file, 'utf8'));
   const items: Item[] = category.items;
 
   it('has the required category metadata', () => {
@@ -112,6 +111,24 @@ describe.each(files)('%s', (file) => {
       }
       // Needs real headroom, not one lucky pair, or runs repeat themselves.
       expect(found, `band "${name}" has only ${found} usable pairs`).toBeGreaterThan(10);
+    }
+  });
+
+  it('queues label rounds whose ids all resolve and can form a fair pair', () => {
+    const rounds = snapshotRounds(category);
+    expect(new Set(rounds.map((round) => round.id)).size).toBe(rounds.length);
+    for (const round of rounds) {
+      expect(round.itemIds.length, round.id).toBeGreaterThanOrEqual(20);
+      expect(new Set(round.itemIds).size, round.id).toBe(round.itemIds.length);
+      const pool = itemsForRound(category, round);
+      expect(pool.length, round.id).toBe(round.itemIds.length);
+      let fair = 0;
+      for (let i = 0; i < pool.length; i++) {
+        for (let j = i + 1; j < pool.length; j++) {
+          if (isFairPair(pool[i], pool[j])) fair++;
+        }
+      }
+      expect(fair, `${round.id} has no fair pairs`).toBeGreaterThan(0);
     }
   });
 });

@@ -127,8 +127,9 @@ If no candidate fits the band, widen it progressively rather than failing — ne
 
 ## 5. Scoring
 
-- **Streak** — consecutive correct answers. The primary score.
+- **Streak** — consecutive correct answers. The primary score for a single run.
 - **Best streak** — persisted locally, the thing players chase.
+- **Label rounds passed** — how many Wikipedia name-sets the player has exhausted. A round is one queued set of labels. The set does not change until every name in it has been shown; the weekly pipeline only *enqueues* the next set. Separate from streak and from the cross-game daily flame. **[GIVEN]**
 - **Lives** — **[OPEN]**. Single-life endless is purer and higher-tension; 3 lives is friendlier to new players. The engine should support both via config so it can be playtested rather than argued about.
 
 ## 6. Screens (v1, minimal)
@@ -344,3 +345,4 @@ Append here whenever an assumption is confirmed or overturned. Never delete an e
 | 2026-08-22 | §7 architecture | The owner consolidated game code under one root: each title uses `src/games/<game-id>/`. More or Less moved from `src/game/` to `src/games/more-or-less/`; shared RNG and registry modules remain directly under `src/games/`. |
 | 2026-08-22 | Wordfall cadence | Owner: Wordfall gets a new level each week. Implemented as bundled rows with a Monday `availableFrom`, not a live content server. |
 | 2026-08-22 | Wordfall weekly uniqueness + TTL | Weekly drop is a unique hard task vs the catalog (especially last week). Featured window is seven days; expired rows stay playable so campaign unlocks do not hole. Agent must locally test and `serve:web` before GitHub. |
+| 2026-08-25 | Solo More or Less pool | Owner: the Wikipedia labels are a gated round queue, not one eternal 50. The player stays on the current set until every name has been seen; new sets are sampled weekly from a pipeline-only reservoir. Calendar does not advance the player. Reddit keeps the newest published round so a post stays shared. |

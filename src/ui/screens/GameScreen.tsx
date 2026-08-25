@@ -41,6 +41,12 @@ type Props = {
   band?: RatioBand;
   targetStreak?: number;
   onScore?: (score: number, complete: boolean) => void;
+  labelRound?: {
+    seenCount: number;
+    total: number;
+    preferUnseenIds: readonly string[];
+    onSeen: (ids: string[]) => void;
+  };
 };
 
 export function GameScreen({
@@ -53,14 +59,21 @@ export function GameScreen({
   band,
   targetStreak,
   onScore,
+  labelRound,
 }: Props) {
-  const pool: Item[] = category.items;
+  const poolRef = useRef(category.items);
+  const pool: Item[] = poolRef.current;
+  const preferRef = useRef(labelRound?.preferUnseenIds);
+  preferRef.current = labelRound?.preferUnseenIds;
+  const onSeenRef = useRef(labelRound?.onSeen);
+  onSeenRef.current = labelRound?.onSeen;
   const accent = getGame('more-or-less')?.accent ?? theme.success;
   const [help, setHelp] = useState(false);
   const [state, dispatch] = useReducer(
-    (s: GameState, a: Parameters<typeof reducer>[1]) => reducer(s, a, pool),
+    (s: GameState, a: Parameters<typeof reducer>[1]) =>
+      reducer(s, a, pool, preferRef.current),
     undefined,
-    () => newRun(pool, seed, bestStreak, band),
+    () => newRun(pool, seed, bestStreak, band, preferRef.current),
   );
 
   // A run is keyed by category, not by seed: resuming has to work when the
@@ -108,6 +121,10 @@ export function GameScreen({
   useEffect(() => {
     onScore?.(state.streak, targetStreak != null ? state.streak >= targetStreak : false);
   }, [state.streak, targetStreak, onScore]);
+
+  useEffect(() => {
+    onSeenRef.current?.([state.left.id, state.right.id]);
+  }, [state.left.id, state.right.id]);
 
   const revealed = state.status !== 'playing';
   const counted = useCountUp(state.right.value, motion.countMs, revealed);
@@ -169,6 +186,13 @@ export function GameScreen({
       <View style={styles.statsRow}>
         <ProgressPill label="STREAK" value={state.streak} color={accent} />
         <ProgressPill label="BEST" value={state.bestStreak} color={theme.accentSecondary} />
+        {labelRound ? (
+          <ProgressPill
+            label="SEEN"
+            value={`${labelRound.seenCount}/${labelRound.total}`}
+            color={theme.accent}
+          />
+        ) : null}
       </View>
 
       <View style={styles.arena}>
@@ -279,6 +303,11 @@ export function GameScreen({
             n: 3,
             title: 'Keep the streak alive',
             body: 'Get it right and the winner slides left to face a new challenger. One wrong answer ends the run.',
+          },
+          {
+            n: 4,
+            title: 'Clear the set',
+            body: 'See every name in this set to unlock the next. The names will not change until you do.',
           },
         ]}
       />
