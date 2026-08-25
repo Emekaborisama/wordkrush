@@ -72,7 +72,7 @@ if (!html.includes('</title>')) {
   throw new Error(`${htmlPath} has no <title> to anchor Open Graph tags on`);
 }
 const viewportCss =
-  '<style id="wk-web-viewport">html,body{height:100%;height:100dvh;margin:0;background-color:#0A0817;overflow:hidden}body>div{height:100%}#wk-mascot canvas,#wk-mascot svg{max-width:100%!important;max-height:100%!important}</style>';
+  '<style id="wk-web-viewport">html,body{height:100%;height:100dvh;margin:0;background-color:#0A0817;overflow:hidden}body>div{height:100%}#wk-mascot canvas,#wk-mascot svg{max-width:100%!important;max-height:100%!important}#wk-wordfall-board,#wk-wordfall-board *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}#wk-wordfall-board{touch-action:none!important}</style>';
 
 html = html.replace(/<link rel="icon"[^>]*>/, links);
 // Keep in sync with `WEB_VIEWPORT_CSS` in `src/ui/webViewport.ts`.

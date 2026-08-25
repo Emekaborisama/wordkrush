@@ -296,7 +296,10 @@ unchanged.
 (D-030). Symbol glyphs stay on the system face. `TextField` sets Fredoka on
 the `TextInput` itself — RN-web's default `font` shorthand would otherwise
 keep the system sans — and a stylesheet rule kills the UA `:focus-visible`
-ring so only the designed shell border shows. Game data remains bundled
+ring so only the designed shell border shows. `BoardView` captures Wordfall
+traces at the board boundary; its web-only CSS scope disables browser text
+selection, touch callouts, and touch actions there, so mouse, trackpad, and
+iPad-finger drags trace tiles rather than highlight their letters. Game data remains bundled
 JSON; missing Supabase keys still leave every title playable. Splash uses the
 black lockup in `assets/logo/`; auth uses the clear lockup; drawer and top bar
 use the W mark via `BrandArtwork`. The hub list scrolls under that top bar —
