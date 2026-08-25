@@ -1,6 +1,6 @@
 -- Teams and live races.
 --
--- Private invite-only teams. Live races are 2–4 simultaneous players on one
+-- Private invite-only teams. Live races are 2–10 simultaneous players on one
 -- numbered path row. Solo play stays offline; this layer is additive (D-016).
 -- Live results never write global_leaderboard.
 --
@@ -368,7 +368,7 @@ begin
   end if;
 
   select count(*) into roster from match_players where match_id = p_match_id;
-  if roster >= 4 then
+  if roster >= 10 then
     raise exception 'Lobby is full';
   end if;
 
@@ -498,8 +498,8 @@ begin
 
   select count(*) into roster from match_players where match_id = p_match_id;
   select count(*) into unready from match_players where match_id = p_match_id and ready = false;
-  if roster < 2 or roster > 4 then
-    raise exception 'Need 2–4 players';
+  if roster < 2 or roster > 10 then
+    raise exception 'Need 2–10 players';
   end if;
   if unready > 0 then
     raise exception 'Everyone must be ready';

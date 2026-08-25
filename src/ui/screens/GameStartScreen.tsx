@@ -21,6 +21,8 @@ type Props = {
   onRace?: () => void;
   raceDisabled?: boolean;
   raceLabel?: string;
+  /** Caption under the Race button so the roster size is visible before the lobby. */
+  raceHint?: string;
 };
 
 /**
@@ -50,6 +52,7 @@ export function GameStartScreen({
   onRace,
   raceDisabled = false,
   raceLabel = 'Race with team',
+  raceHint,
 }: Props) {
   const game = getGame(gameId);
   const accent = game?.accent ?? theme.accent;
@@ -110,14 +113,17 @@ export function GameStartScreen({
             disabled={playDisabled}
           />
           {onRace ? (
-            <Button
-              title={raceLabel}
-              variant="tonal"
-              size="md"
-              onPress={onRace}
-              color={accent}
-              disabled={raceDisabled}
-            />
+            <>
+              <Button
+                title={raceLabel}
+                variant="tonal"
+                size="md"
+                onPress={onRace}
+                color={accent}
+                disabled={raceDisabled}
+              />
+              {raceHint ? <Text style={styles.raceHint}>{raceHint}</Text> : null}
+            </>
           ) : null}
           <Button title="View scores" variant="tonal" size="md" onPress={onScores} color={accent} />
         </View>
@@ -197,5 +203,10 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     textAlign: 'center',
     marginTop: space.xs,
+  },
+  raceHint: {
+    ...type.caption,
+    color: theme.textMuted,
+    textAlign: 'center',
   },
 });

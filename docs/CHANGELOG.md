@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.6] - 2026-08-25
+
+### Changed
+- **A live race now holds 2–10 players, not 2–4.** The start screen, Teams, and lobby say so. Same private team, same invite, same dual unlock. Apply `0008_live_roster_ten.sql` if 0006 is already on the project (D-053).
+
 ## [0.8.5] - 2026-08-25
 
 ### Added

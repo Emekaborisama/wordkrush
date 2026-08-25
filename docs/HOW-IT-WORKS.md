@@ -474,10 +474,13 @@ session and marked team-ahead. On a phone the level list scrolls in the leftover
 column with Host / Join as a footer; on a laptop the roster sits in a left
 column and the picker on the right.
 
-**3. A lobby is 2–4 ready players, then a server seed.** [BUILT]
+**3. A lobby is 2–10 ready players, then a server seed.** [BUILT]
 `create_match` / `join_match` / `set_ready` / `start_match`. Late joins after
 `started_at` are refused. The seed is assigned on start, not by the host
-client. Realtime on `matches` and `match_players` plus a 1.5s poll.
+client. Realtime on `matches` and `match_players` plus a 1.5s poll. Teams,
+lobby, and the Race CTA copy the 2–10 cap so players see it before they ready
+up (D-053). `0008_live_roster_ten.sql` replaces the RPCs if 0006 already ran
+at the old 2–4 cap.
 
 **4. Rival HUD never leaks answers.** [BUILT]
 `LiveRaceHud` shows a clock and each player's numeric score plus
@@ -520,7 +523,7 @@ Quick map of where each journey step lives:
 | Unique leaderboard username | `supabase/migrations/0004_unique_username.sql`, `src/auth/validation.ts` `usernameKey` | [BUILT: apply on the owner project] — unique index on `username_key(display_name)`; duplicate maps to "That username is taken." |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
 | Clueless difficulty boards | `supabase/migrations/0005_clueless_difficulty_leaderboards.sql`, `src/games/clueless/scoring.ts` | [BUILT: apply migration] — Easy/Standard/Expert partition under stable `clueless` id |
-| Teams + live races | `supabase/migrations/0006_teams_and_live_matches.sql`, `0007_team_crud.sql`, `src/teams/`, `src/live/`, `src/games/campaign.ts` | [BUILT: apply migrations] — private teams with rename/leave/disband, 2–4 player races, dual unlock; live scores stay off `global_leaderboard` |
+| Teams + live races | `supabase/migrations/0006_teams_and_live_matches.sql`, `0007_team_crud.sql`, `0008_live_roster_ten.sql`, `src/teams/`, `src/live/`, `src/games/campaign.ts` | [BUILT: apply migrations] — private teams with rename/leave/disband, 2–10 player races, dual unlock; live scores stay off `global_leaderboard` |
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both |
