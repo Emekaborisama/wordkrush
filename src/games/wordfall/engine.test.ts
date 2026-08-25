@@ -464,6 +464,13 @@ describe('shipped levels', () => {
     expect(LEVELS.map((l) => l.number)).toEqual(LEVELS.map((_, i) => i + 1));
   });
 
+  it('sets Stretch to four-letter words and longer', () => {
+    const stretch = levelByNumber(2)!;
+
+    expect(stretch.description).toBe('Make four-letter words and longer for bigger scores.');
+    expect(stretch.objectives).toEqual([{ kind: 'length', minLength: 4, target: 4 }]);
+  });
+
   it('gives every level a name, moves and at least one objective', () => {
     for (const l of LEVELS) {
       expect(l.name.length, `level ${l.number}`).toBeGreaterThan(0);
