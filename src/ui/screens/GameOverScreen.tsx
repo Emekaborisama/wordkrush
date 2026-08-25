@@ -16,6 +16,12 @@ type Props = {
   onPlayAgain: () => void;
   onHome: () => void;
   onScores: () => void;
+  labelRound?: {
+    roundsPassed: number;
+    remaining: number;
+    justPassed: boolean;
+    caughtUp: boolean;
+  };
 };
 
 export function GameOverScreen({
@@ -25,6 +31,7 @@ export function GameOverScreen({
   onPlayAgain,
   onHome,
   onScores,
+  labelRound,
 }: Props) {
   const isBest = state.streak > 0 && state.streak >= board.bestStreak;
   const accent = getGame('more-or-less')?.accent ?? theme.success;
@@ -66,7 +73,24 @@ export function GameOverScreen({
           <Stat value={`#${rank}`} label="LOCAL RANK" />
           <View style={styles.summaryRule} />
           <Stat value={board.bestStreak} label="BEST" color={accent} />
+          {labelRound ? (
+            <>
+              <View style={styles.summaryRule} />
+              <Stat value={labelRound.roundsPassed} label="ROUNDS PASSED" color={accent} />
+            </>
+          ) : null}
         </View>
+        {labelRound ? (
+          <Text style={styles.roundNote}>
+            {labelRound.justPassed
+              ? labelRound.caughtUp
+                ? 'Set cleared — new names drop next week.'
+                : 'Set cleared — new names unlocked.'
+              : labelRound.remaining === 1
+                ? '1 name left in this set.'
+                : `${labelRound.remaining} names left in this set.`}
+          </Text>
+        ) : null}
 
         {/* Keep the losing pair visible: the reveal explains the result and
             gives the player one useful fact to take into the next run. */}
@@ -123,4 +147,10 @@ const styles = StyleSheet.create({
   pairValue: { ...type.bodyStrong, marginTop: 2 },
   pairVs: { ...type.overline, color: theme.textDim },
   pairMetric: { ...type.caption, color: theme.textDim, textAlign: 'center', marginTop: space.sm },
+  roundNote: {
+    ...type.caption,
+    color: theme.textMuted,
+    textAlign: 'center',
+    marginTop: space.md,
+  },
 });

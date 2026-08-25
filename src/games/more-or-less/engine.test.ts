@@ -194,6 +194,13 @@ describe('selectChallenger', () => {
     expect(isFairPair(anchor, item)).toBe(true);
   });
 
+  it('prefers unseen-in-round items when that list is provided', () => {
+    const anchor = pool[0];
+    const prefer = pool.filter((item) => item.id !== anchor.id).slice(0, 3).map((item) => item.id);
+    const { item } = selectChallenger(pool, anchor, 0, [anchor.id], 1, undefined, prefer);
+    expect(prefer).toContain(item.id);
+  });
+
   it('throws a diagnostic error when no fair challenger exists', () => {
     const flat: Item[] = [
       { id: 'a', categoryId: 'x', label: 'A', value: 100 },

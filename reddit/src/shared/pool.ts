@@ -11,6 +11,7 @@
  * at boot with a readable message, not produce an unfair question at round 30.
  */
 import categoryJson from '../../../src/data/categories/wikipedia-popularity.json';
+import { latestRoundItems, type CategorySnapshot } from '../../../src/games/more-or-less/rounds';
 import type { Category, Item } from '../../../src/games/more-or-less/types';
 
 const UNITS = new Set(['count', 'currency', 'percent']);
@@ -78,8 +79,8 @@ function readCategory(raw: unknown): Category {
 
 export const CATEGORY: Category = readCategory(categoryJson);
 
-/** Every item today's run can draw from. */
-export const POOL: Item[] = CATEGORY.items;
+/** This week's names — the newest published round, shared by everyone on the post. */
+export const POOL: Item[] = latestRoundItems(categoryJson as CategorySnapshot);
 
 /** What the numbers mean. Shown next to every value; never call it "searches". */
 export const METRIC_LABEL: string = CATEGORY.metricLabel;

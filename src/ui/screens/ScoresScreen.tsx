@@ -49,6 +49,7 @@ type Props = {
     localAliases?: string[];
   }[];
   initialScoreContext?: string;
+  roundsPassed?: number;
 };
 
 type BoardTab = 'global' | 'local';
@@ -68,6 +69,7 @@ export function ScoresScreen({
   onSignOut,
   scoreContexts,
   initialScoreContext,
+  roundsPassed,
 }: Props) {
   const game = getGame(gameId);
   const [scoreContext, setScoreContext] = useState(
@@ -165,6 +167,12 @@ export function ScoresScreen({
           label={tab === 'global' ? 'YOUR LOCAL BEST' : 'RUNS PLAYED'}
           size="lg"
         />
+        {tab === 'local' && roundsPassed !== undefined ? (
+          <>
+            <View style={styles.divider} />
+            <Stat value={roundsPassed} label="ROUNDS PASSED" size="lg" color={accent} />
+          </>
+        ) : null}
       </Surface>
 
       {tab === 'global' ? (

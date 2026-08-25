@@ -48,6 +48,18 @@ import { isCluelessState } from './src/games/clueless/persistence';
 import { boardForCluelessDifficulty } from './src/games/clueless/scoring';
 import type { CluelessDifficulty } from './src/games/clueless/types';
 import type { GameState } from './src/games/more-or-less/engine';
+import {
+  emptyProgress,
+  recordSeen,
+  resolveRound,
+  roundLabel,
+  roundMeta,
+  snapshotRounds,
+  soloCategory,
+  type CategorySnapshot,
+  type LabelRoundProgress,
+} from './src/games/more-or-less/rounds';
+import { loadRoundProgress, saveRoundProgress } from './src/games/more-or-less/rounds-storage';
 import type { Category } from './src/games/more-or-less/types';
 import { loadProgress } from './src/games/progress';
 import { randomSeed } from './src/games/rng';
@@ -101,8 +113,10 @@ import { LAPTOP_MAX_WIDTH, isWideLayout } from './src/ui/layout';
 import { theme } from './src/ui/theme';
 import { ensureWebViewport } from './src/ui/webViewport';
 
-const category = categoryData as Category & { provisional?: boolean };
+const snapshot = categoryData as CategorySnapshot;
+const category: Category & { provisional?: boolean } = snapshot;
 const MORE_OR_LESS = 'more-or-less';
+const FIRST_ROUND_ID = snapshotRounds(snapshot)[0]?.id ?? 'round-1';
 
 type LiveRun = {
   matchId: string;
@@ -142,14 +156,21 @@ function startDetailFor(
     ready: boolean;
     onChange: (difficulty: CluelessDifficulty) => void;
   },
+  labelRound?: ReturnType<typeof resolveRound>,
 ) {
   const accent = getGame(gameId)?.accent ?? theme.accent;
   if (gameId === MORE_OR_LESS) {
+    const seen = labelRound?.seenCount ?? 0;
+    const total = labelRound?.round.itemIds.length ?? category.items.length;
     return (
       <StartDetail
-        label="TODAY’S CATEGORY"
-        title={category.name}
-        meta={`${category.items.length} matchups · ${category.metricLabel}`}
+        label={labelRound ? roundLabel(labelRound) : 'THIS SET'}
+        title={`${seen} / ${total} names seen`}
+        meta={
+          labelRound
+            ? roundMeta(labelRound)
+            : 'See every name to unlock the next set. It will not change until you do. New sets are added each week.'
+        }
         accent={accent}
       />
     );
@@ -243,6 +264,10 @@ export default function App() {
   const [arrivalReady, setArrivalReady] = useState(false);
   const [profileReady, setProfileReady] = useState(false);
   const [streakReady, setStreakReady] = useState(false);
+  const [labelProgress, setLabelProgress] = useState<LabelRoundProgress>(() =>
+    emptyProgress(FIRST_ROUND_ID),
+  );
+  const [labelJustPassed, setLabelJustPassed] = useState(false);
   const [boardsResult, setBoardsResult] = useState<'loaded' | 'fallback'>('loaded');
   const startupAt = useRef(Date.now());
   const openedReported = useRef(false);
@@ -312,6 +337,7 @@ export default function App() {
       setStreak(loadedStreak);
       setStreakReady(true);
     });
+    void loadRoundProgress(FIRST_ROUND_ID).then(setLabelProgress);
     // Sound/vibration switches. Defaults are on, so a slow read just means the
     // first moment of the session uses the defaults rather than nothing.
     void loadFeedbackSettings().then((stored) => {
@@ -374,12 +400,15 @@ export default function App() {
   }, [profileReady, profile]);
 
   const boardFor = (gameId: string) => boards[gameId] ?? EMPTY_BOARD;
+  const labelResolved = resolveRound(snapshot, labelProgress);
+  const soloPool = soloCategory(snapshot, labelProgress);
   const openGameHome = (gameId: string) => {
     if (gameId === 'clueless') setCluelessDifficultyReady(false);
     setScreen({ name: 'home', gameId });
   };
   const startGame = (gameId: string) => {
     if (gameId === 'clueless' && !cluelessDifficultyReady) return;
+    setLabelJustPassed(false);
     setScreen({
       name: 'game',
       gameId,
@@ -622,6 +651,7 @@ export default function App() {
           <HubScreen
             boards={boards}
             streak={streak}
+            labelRoundsPassed={labelProgress.roundsPassed}
             onPlay={(gameId) => {
               captureAnalytics('game_selected', { game_id: gameId, source: 'hub' });
               openGameHome(gameId);
@@ -763,12 +793,17 @@ export default function App() {
             raceDisabled={!isBackendConfigured}
             raceLabel={isBackendConfigured ? 'Race with team' : 'Race with team (offline)'}
             onScores={() => setScreen({ name: 'scores', gameId: screen.gameId })}
-            detail={startDetailFor(screen.gameId, category, {
-              difficulty: cluelessDifficulty,
-              locked: cluelessDifficultyLocked,
-              ready: cluelessDifficultyReady,
-              onChange: setCluelessDifficulty,
-            })}
+            detail={startDetailFor(
+              screen.gameId,
+              soloPool,
+              {
+                difficulty: cluelessDifficulty,
+                locked: cluelessDifficultyLocked,
+                ready: cluelessDifficultyReady,
+                onChange: setCluelessDifficulty,
+              },
+              screen.gameId === MORE_OR_LESS ? labelResolved : undefined,
+            )}
             footer={startFooterFor(screen.gameId, category)}
             playDisabled={screen.gameId === 'clueless' && !cluelessDifficultyReady}
           />
@@ -784,10 +819,26 @@ export default function App() {
             // Remounting per seed guarantees a clean run rather than relying on
             // the reducer's initializer, which React only calls on first mount.
             key={screen.seed}
-            category={category}
+            category={screen.live ? category : soloPool}
             seed={screen.seed}
             bestStreak={boardFor(screen.gameId).bestStreak}
             persist={!screen.live}
+            labelRound={
+              screen.live
+                ? undefined
+                : {
+                    seenCount: labelResolved.seenCount,
+                    total: labelResolved.round.itemIds.length,
+                    preferUnseenIds: labelResolved.preferUnseenIds,
+                    onSeen: (ids) => {
+                      setLabelProgress((prev) => {
+                        const result = recordSeen(snapshot, prev, ids, { allowAdvance: false });
+                        void saveRoundProgress(result.progress);
+                        return result.progress;
+                      });
+                    },
+                  }
+            }
             band={
               screen.live
                 ? moreOrLessLevelByNumber(screen.live.levelNumber)?.band
@@ -821,6 +872,18 @@ export default function App() {
               }
               const entryId = makeEntryId();
               const previous = boardFor(screen.gameId);
+              const roundResult = recordSeen(snapshot, labelProgress, state.seenIds);
+              setLabelProgress(roundResult.progress);
+              setLabelJustPassed(roundResult.justPassed);
+              await saveRoundProgress(roundResult.progress);
+              if (roundResult.justPassed) {
+                captureAnalytics('label_round_passed', {
+                  game_id: 'more-or-less',
+                  round_id: labelResolved.round.id,
+                  rounds_passed: roundResult.progress.roundsPassed,
+                  item_count: labelResolved.round.itemIds.length,
+                });
+              }
               // Persist before navigating so a reload mid-transition cannot
               // lose the run that just finished.
               const next = await recordFinish(() =>
@@ -880,8 +943,14 @@ export default function App() {
         {screen.name === 'over' && (
           <GameOverScreen
             state={screen.state}
-            category={category}
+            category={soloPool}
             board={boardFor(screen.gameId)}
+            labelRound={{
+              roundsPassed: labelProgress.roundsPassed,
+              remaining: labelResolved.remaining,
+              justPassed: labelJustPassed,
+              caughtUp: labelResolved.caughtUp,
+            }}
             onPlayAgain={() => {
               captureAnalytics('game_over_action', {
                 game_id: 'more-or-less',
@@ -931,6 +1000,7 @@ export default function App() {
             highlightId={screen.highlightId}
             profile={profile}
             backendConfigured={isBackendConfigured}
+            roundsPassed={screen.gameId === MORE_OR_LESS ? labelProgress.roundsPassed : undefined}
             onBack={() => setScreen({ name: 'hub' })}
             onSignIn={() => setScreen({ name: 'auth', returnGameId: screen.gameId })}
             onSignOut={async () => {

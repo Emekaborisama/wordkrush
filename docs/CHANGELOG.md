@@ -6,10 +6,21 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
-## [0.8.4] - 2026-08-25
+## [0.8.6] - 2026-08-25
 
 ### Added
-- **Tuesday player email is this week’s changes, not a static roundup.** `pipeline/player-email.ts` reads player-facing bullets from `docs/CHANGELOG.md` (last 7 days) plus this week’s Wordfall drop, asks OpenAI once for player-voice copy, and personalizes with Resend merge tags (`{{{contact.first_name|there}}}`, `{{{game|the games}}}` from the latest `global_scores` row). The letter shows a real in-game picture — Wordfall key art when a drop is live, otherwise Clueless / More or Less art or a hub screenshot — hosted at `https://wordkrush.com/email/` after the web build copies `assets/games/` and `assets/email/hub.png`. Quiet weeks skip. Broadcast name is `WordKrush weekly YYYY-MM-DD` (that Monday) so the same letter is not sent twice. `OPENAI_API_KEY` lives on GitHub Environment `best-games` next to Resend/Supabase; a failed call falls back to a deterministic draft of the same facts. Still never Railway / `EXPO_PUBLIC_*` (D-053). The branded shell at `supabase/templates/whats-new.html` remains as a one-off template, not the weekly send.
+- **Tuesday player email is this week’s changes, not a static roundup.** `pipeline/player-email.ts` reads player-facing bullets from `docs/CHANGELOG.md` (last 7 days) plus this week’s Wordfall drop, asks OpenAI once for player-voice copy, and personalizes with Resend merge tags (`{{{contact.first_name|there}}}`, `{{{game|the games}}}` from the latest `global_scores` row). The letter shows a real in-game picture — Wordfall key art when a drop is live, otherwise Clueless / More or Less art or a hub screenshot — hosted at `https://wordkrush.com/email/` after the web build copies `assets/games/` and `assets/email/hub.png`. Quiet weeks skip. Broadcast name is `WordKrush weekly YYYY-MM-DD` (that Monday) so the same letter is not sent twice. `OPENAI_API_KEY` lives on GitHub Environment `best-games` next to Resend/Supabase; a failed call falls back to a deterministic draft of the same facts. Still never Railway / `EXPO_PUBLIC_*` (D-054). The branded shell at `supabase/templates/whats-new.html` remains as a one-off template, not the weekly send.
+
+## [0.8.5] - 2026-08-25
+
+### Added
+- **More or Less label rounds.** Solo play is no longer one eternal set of 50 Wikipedia names. Each round is a queued set; see every name to unlock the next. Streak is still this run; **rounds passed** is how many sets you have cleared. The start screen says so in one line, the HUD shows `SEEN n/m`, and scores/hub show the counter. New sets are sampled weekly from a pipeline-only reservoir of 14,112 filtered Wikimedia titles (short of 20k without padding) and only *enqueued* — the calendar does not swap the set you are on. Reddit still plays the newest published round so a post stays shared.
+
+## [0.8.4] - 2026-08-25
+
+### Fixed
+- **Typed text in `TextField` now uses Fredoka**, matching the Guess button and the rest of the UI. The input had size and weight but no `fontFamily`, and on web RN-web's `font: 14px System` reset was also eating the longhand, so the focused field fell back to the system sans (D-030).
+- **The inner focus rectangle around a guess field is gone.** Chrome/Safari paint a sharp ring on the `<input>` (`:focus-visible`) that sits inside the rounded shell — orange first, then white. Focus still shows as the game-accent shell border.
 
 ## [0.8.3] - 2026-08-25
 

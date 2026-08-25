@@ -13,7 +13,7 @@ import {
 const changelog = `## [0.8.4] - 2026-08-25
 
 ### Added
-- **Tuesday Resend Broadcast** (\`pipeline/player-email.ts\`). OpenAI drafts copy (D-053).
+- **Tuesday Resend Broadcast** (\`pipeline/player-email.ts\`). OpenAI drafts copy (D-054).
 
 ## [0.8.3] - 2026-08-25
 
@@ -59,7 +59,7 @@ describe('isPlayerFacing', () => {
     expect(isPlayerFacing('**Teams are now CRUD.** The owner can rename.')).toBe(true);
     expect(isPlayerFacing('Tuesday Resend Broadcast (`pipeline/player-email.ts`).')).toBe(false);
     expect(isPlayerFacing('Wikipedia popularity snapshot refreshed')).toBe(false);
-    expect(isPlayerFacing('OpenAI drafts copy (D-053).')).toBe(false);
+    expect(isPlayerFacing('OpenAI drafts copy (D-054).')).toBe(false);
   });
 });
 

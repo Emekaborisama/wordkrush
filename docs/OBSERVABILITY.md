@@ -100,6 +100,7 @@ expose a typed event map so names and property shapes cannot drift.
 | `game_selected` | P1 | Hub card or drawer navigation | `game_id`, `source: hub \| drawer` | Demand by title and discovery source |
 | `run_started` | P1 | WordKrush comparison-mode `startGame`; Clueless/Wordfall after restore resolves | `game_id`, `is_resume`, optional `category_id`, `puzzle_number`, `level_number`; Clueless adds bounded `difficulty` and `hint_source` | Start rate and resume behavior |
 | `run_completed` | P1 | Existing completion callbacks in `App.tsx` | `game_id`, `outcome`, `score`, `score_kind`, `duration_ms?`, `is_new_best`, game context; Clueless adds bounded `difficulty` and the hint source actually reached | Completion, retention, and balance |
+| `label_round_passed` | P1 | More or Less game-over after a set is exhausted | `round_id`, `rounds_passed`, `item_count` | Come-back loop: how many Wikipedia name-sets players clear |
 | `guess_submitted` | P1 | WordKrush comparison mode and Clueless submit handlers | `game_id`, `guess_index`, optional `choice`, `result_kind`, `rank_bucket`, optional bounded `difficulty` | Core-loop depth and input friction |
 | `round_resolved` | P1 | WordKrush comparison UI observes reducer result | `correct`, `round_index`, `streak_bucket`, `pair_relaxed` | Difficulty curve and fairness |
 | `word_submitted` | P1 | Wordfall submit result | `level_number`, `word_length_bucket`, `valid`, `rejection_kind`, `score_delta_bucket`, `chain_length_bucket` | Input quality and mechanic engagement |

@@ -66,9 +66,11 @@ export function selectChallenger(
   seenIds: string[],
   seed: number,
   bandOverride?: RatioBand,
+  preferUnseenIds?: readonly string[],
 ): { item: Item; seed: number; relaxed: boolean } {
   const band = bandOverride ?? targetBandForStreak(streak);
   const recent = new Set(seenIds.slice(-RECENT_WINDOW));
+  const preferred = new Set(preferUnseenIds ?? []);
 
   const fair = pool.filter((item) => item.id !== anchor.id && isFairPair(anchor, item));
   if (fair.length === 0) {
@@ -81,7 +83,9 @@ export function selectChallenger(
   const unseen = fair.filter((item) => !recent.has(item.id));
   // Falling back to `fair` when everything is recent keeps long runs alive
   // rather than throwing once the pool is exhausted.
-  const candidates = unseen.length > 0 ? unseen : fair;
+  const fresh = unseen.length > 0 ? unseen : fair;
+  const wanted = preferred.size > 0 ? fresh.filter((item) => preferred.has(item.id)) : [];
+  const candidates = wanted.length > 0 ? wanted : fresh;
 
   const inBand = candidates.filter((item) => {
     const r = ratio(anchor.value, item.value);
@@ -98,11 +102,17 @@ export function newRun(
   seed: number,
   bestStreak = 0,
   bandOverride?: RatioBand,
+  preferUnseenIds?: readonly string[],
 ): GameState {
   if (pool.length < 2) throw new Error('newRun needs at least 2 items');
 
-  const [firstIndex, s1] = nextInt(seed, pool.length);
-  const left = pool[firstIndex];
+  const preferred = preferUnseenIds ?? [];
+  const leftPool =
+    preferred.length > 0 ? pool.filter((item) => preferred.includes(item.id)) : pool;
+  const pickFrom = leftPool.length > 0 ? leftPool : pool;
+  const [firstIndex, s1] = nextInt(seed, pickFrom.length);
+  const left = pickFrom[firstIndex];
+  if (!left) throw new Error('newRun could not pick an anchor');
   const { item: right, seed: s2 } = selectChallenger(
     pool,
     left,
@@ -110,6 +120,7 @@ export function newRun(
     [left.id],
     s1,
     bandOverride,
+    preferUnseenIds,
   );
 
   return {
@@ -133,10 +144,15 @@ export function isCorrect(left: Item, right: Item, choice: Guess): boolean {
   return choice === 'more' ? right.value > left.value : right.value < left.value;
 }
 
-export function reducer(state: GameState, action: Action, pool: Item[]): GameState {
+export function reducer(
+  state: GameState,
+  action: Action,
+  pool: Item[],
+  preferUnseenIds?: readonly string[],
+): GameState {
   switch (action.type) {
     case 'newRun':
-      return newRun(pool, action.seed, state.bestStreak, state.bandOverride);
+      return newRun(pool, action.seed, state.bestStreak, state.bandOverride, preferUnseenIds);
 
     case 'restore':
       // Land on 'playing': a run saved mid-reveal would otherwise resume with
@@ -171,6 +187,7 @@ export function reducer(state: GameState, action: Action, pool: Item[]): GameSta
         state.seenIds,
         state.seed,
         state.bandOverride,
+        preferUnseenIds,
       );
 
       return {

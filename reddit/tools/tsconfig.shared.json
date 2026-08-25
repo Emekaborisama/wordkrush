@@ -47,6 +47,7 @@
     "../../src/games/more-or-less/engine.ts",
     "../../src/games/more-or-less/pairing.ts",
     "../../src/games/more-or-less/types.ts",
+    "../../src/games/more-or-less/rounds.ts",
     "../../src/data/categories/wikipedia-popularity.json"
   ],
   "exclude": ["../src/shared/**/*.test.ts"]
