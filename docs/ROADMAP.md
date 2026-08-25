@@ -1,6 +1,6 @@
 # Roadmap & Task List
 
-**Last updated:** 2026-08-24
+**Last updated:** 2026-08-25
 **Board of record:** Superthread → *My Private Space* → **BestGame** board (team `tbJ3qEwK`, board `2`, lists: To do `8` / Doing `9` / Done `10`).
 
 Live status lives on the board, not here. This file exists so an LLM reading the repo cold knows what the work *is*, what blocks it, and what order it goes in — without needing board access.
@@ -68,6 +68,10 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 ## Track: Clueless
 
 - [x] **Daily difficulty modes** (ST-82) — **Done**; Easy opens with a reviewed thematic sentence, Standard reveals it after 15 valid guesses, Expert has no hint. The first valid guess locks the day, and local/global scores are partitioned by mode.
+
+## Track: teams / live races
+
+- [ ] **Teams and live races** (ST-83) — **Doing**; private invite-only crew, 2–4 player simultaneous races on a numbered path, dual team/personal unlock. Needs `0006_teams_and_live_matches.sql` applied on the project.
 
 ## Track: native / App Store readiness
 

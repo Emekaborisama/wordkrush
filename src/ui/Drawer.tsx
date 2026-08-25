@@ -11,6 +11,7 @@ export type DrawerDestination =
   | { kind: 'hub' }
   | { kind: 'game'; gameId: string }
   | { kind: 'scores'; gameId: string }
+  | { kind: 'teams' }
   | { kind: 'account' };
 
 type Props = {
@@ -133,6 +134,13 @@ export function Drawer({
         })}
 
         <Text style={styles.sectionLabel}>YOU</Text>
+        <Item
+          label="Teams"
+          icon={<Text style={styles.itemGlyph}>◎</Text>}
+          active={activeKind === 'teams'}
+          accent={theme.accentSecondary}
+          onPress={() => go({ kind: 'teams' })}
+        />
         <Item
           label="Scores"
           icon={<Text style={styles.itemGlyph}>★</Text>}

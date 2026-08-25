@@ -4,7 +4,7 @@ import {
   Fredoka_700Bold,
   useFonts,
 } from '@expo-google-fonts/fredoka';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
 import { readArrivalContext, type ArrivalContext } from './src/analytics/arrival';
 import { isLandingArrival } from './src/analytics/attribution';
@@ -33,6 +33,9 @@ import {
 import { isBackendConfigured } from './src/auth/client';
 import categoryData from './src/data/categories/wikipedia-popularity.json';
 import { todaysPuzzleNumber } from './src/data/clueless';
+import { moreOrLessLevelByNumber } from './src/data/more-or-less/levels';
+import { applyMatchUnlocks, playerCountBucket, type PathGameId } from './src/games/campaign';
+import { loadPersonalUnlocked, savePersonalUnlocked } from './src/games/campaignStorage';
 import { STANDARD_HINT_GUESS_THRESHOLD } from './src/games/clueless/engine';
 import { isCluelessState } from './src/games/clueless/persistence';
 import { boardForCluelessDifficulty } from './src/games/clueless/scoring';
@@ -68,6 +71,9 @@ import {
   setUserbackLauncherVisible,
   syncUserback,
 } from './src/userback/widget';
+import { joinMatch, postMatchScore } from './src/live/api';
+import type { LiveMatchSnapshot } from './src/live/types';
+import { parseTeamInviteUrl } from './src/teams/codes';
 import { Drawer, type DrawerDestination } from './src/ui/Drawer';
 import { AnalyticsConsentPrompt } from './src/ui/AnalyticsConsentPrompt';
 import { CluelessDifficultyPicker } from './src/ui/CluelessDifficultyPicker';
@@ -78,20 +84,40 @@ import { GameOverScreen } from './src/ui/screens/GameOverScreen';
 import { GameScreen } from './src/ui/screens/GameScreen';
 import { GameStartScreen, StartDetail } from './src/ui/screens/GameStartScreen';
 import { HubScreen } from './src/ui/screens/HubScreen';
+import { LiveLobbyScreen } from './src/ui/screens/LiveLobbyScreen';
+import { LivePlayShell } from './src/ui/screens/LivePlayShell';
+import { LiveResultsScreen } from './src/ui/screens/LiveResultsScreen';
 import { ScoresScreen } from './src/ui/screens/ScoresScreen';
+import { TeamsScreen } from './src/ui/screens/TeamsScreen';
 import { WordfallScreen } from './src/ui/screens/WordfallScreen';
 import { frame, theme } from './src/ui/theme';
 
 const category = categoryData as Category & { provisional?: boolean };
 const MORE_OR_LESS = 'more-or-less';
 
+type LiveRun = {
+  matchId: string;
+  gameId: PathGameId;
+  levelNumber: number;
+  seed: number;
+  endsAt: string | null;
+};
+
 type Screen =
   | { name: 'hub' }
   | { name: 'home'; gameId: string }
-  | { name: 'game'; gameId: string; seed: number; difficulty?: CluelessDifficulty }
+  | { name: 'game'; gameId: string; seed: number; difficulty?: CluelessDifficulty; live?: LiveRun }
   | { name: 'over'; gameId: string; state: GameState; entryId: string }
   | { name: 'scores'; gameId: string; highlightId?: string }
-  | { name: 'auth'; returnGameId?: string };
+  | { name: 'auth'; returnTo?: 'teams' | 'scores'; returnGameId?: string }
+  | { name: 'teams' }
+  | { name: 'live-lobby'; matchId: string }
+  | {
+      name: 'live-results';
+      snapshot: LiveMatchSnapshot;
+      personalAdvanced: boolean;
+      teamAdvanced: boolean;
+    };
 
 /**
  * The game-specific block on a start screen. Everything else about the screen
@@ -158,6 +184,30 @@ function startFooterFor(gameId: string, category: Category & { provisional?: boo
   return 'Works offline';
 }
 
+function LiveMaybe({
+  live,
+  playerId,
+  onFinished,
+  children,
+}: {
+  live?: LiveRun;
+  playerId?: string;
+  onFinished: (snapshot: LiveMatchSnapshot) => void;
+  children: ReactNode;
+}) {
+  if (!live || !playerId) return children;
+  return (
+    <LivePlayShell
+      matchId={live.matchId}
+      playerId={playerId}
+      gameId={live.gameId}
+      onFinished={onFinished}
+    >
+      {children}
+    </LivePlayShell>
+  );
+}
+
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
     Fredoka_500Medium,
@@ -171,6 +221,7 @@ export default function App() {
   const [cluelessDifficultyLocked, setCluelessDifficultyLocked] = useState(false);
   const [cluelessDifficultyReady, setCluelessDifficultyReady] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [pendingInvite, setPendingInvite] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [streak, setStreak] = useState<DailyStreak>(EMPTY_STREAK);
   const [feedbackSettings, setFeedbackSettings] =
@@ -225,7 +276,11 @@ export default function App() {
     void (async () => {
       try {
         const initialUrl = await Linking.getInitialURL();
-        if (initialUrl) await completeSessionFromUrl(initialUrl);
+        if (initialUrl) {
+          await completeSessionFromUrl(initialUrl);
+          const invite = parseTeamInviteUrl(initialUrl);
+          if (invite) setPendingInvite(invite);
+        }
         const restoredProfile = await currentProfile();
         hadRestoredSession.current = restoredProfile !== null;
         setProfile(restoredProfile);
@@ -255,6 +310,11 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!profileReady || !pendingInvite) return;
+    setScreen((current) => (current.name === 'hub' ? { name: 'teams' } : current));
+  }, [profileReady, pendingInvite]);
+
+  useEffect(() => {
     if (screen.name !== 'home' || screen.gameId !== 'clueless') return;
     let cancelled = false;
     setCluelessDifficultyReady(false);
@@ -276,6 +336,11 @@ export default function App() {
     });
     const links = Linking.addEventListener('url', ({ url }) => {
       void completeSessionFromUrl(url);
+      const invite = parseTeamInviteUrl(url);
+      if (invite) {
+        setPendingInvite(invite);
+        setScreen({ name: 'teams' });
+      }
     });
     return () => {
       unsubscribe();
@@ -305,6 +370,52 @@ export default function App() {
       gameId,
       seed: randomSeed(),
       difficulty: gameId === 'clueless' ? cluelessDifficulty : undefined,
+    });
+  };
+
+  const startLiveRace = (snapshot: LiveMatchSnapshot) => {
+    const { match } = snapshot;
+    if (match.seed == null) return;
+    void joinMatch(match.id);
+    setScreen({
+      name: 'game',
+      gameId: match.gameId,
+      seed: match.seed,
+      difficulty: match.gameId === 'clueless' ? 'expert' : undefined,
+      live: {
+        matchId: match.id,
+        gameId: match.gameId,
+        levelNumber: match.levelNumber,
+        seed: match.seed,
+        endsAt: match.endsAt,
+      },
+    });
+  };
+
+  const completeLiveRace = async (snapshot: LiveMatchSnapshot) => {
+    const self = snapshot.players.find((player) => player.playerId === profile?.id);
+    const anyone = snapshot.players.some((player) => player.complete);
+    const personal = await loadPersonalUnlocked(snapshot.match.gameId);
+    const next = applyMatchUnlocks({
+      personalUnlocked: personal,
+      teamUnlocked: personal,
+      levelNumber: snapshot.match.levelNumber,
+      playerCompleted: Boolean(self?.complete),
+      anyoneCompleted: anyone,
+    });
+    if (self?.complete) await savePersonalUnlocked(snapshot.match.gameId, next.personalUnlocked);
+    captureAnalytics('match_finished', {
+      game_id: snapshot.match.gameId,
+      level_number: snapshot.match.levelNumber,
+      player_count_bucket: playerCountBucket(snapshot.players.length),
+      complete: Boolean(self?.complete),
+      outcome: self?.complete ? 'win' : 'loss',
+    });
+    setScreen({
+      name: 'live-results',
+      snapshot,
+      personalAdvanced: Boolean(self?.complete),
+      teamAdvanced: anyone,
     });
   };
 
@@ -445,7 +556,9 @@ export default function App() {
         ? 'scores'
         : screen.name === 'auth'
           ? 'account'
-          : 'game';
+          : screen.name === 'teams' || screen.name === 'live-lobby' || screen.name === 'live-results'
+            ? 'teams'
+            : 'game';
 
   /**
    * Flips one feedback channel. Applied to the effect layer immediately so the
@@ -469,6 +582,7 @@ export default function App() {
       openGameHome(to.gameId);
     }
     else if (to.kind === 'scores') setScreen({ name: 'scores', gameId: to.gameId });
+    else if (to.kind === 'teams') setScreen({ name: 'teams' });
     else setScreen({ name: 'auth', returnGameId: activeGameId });
   };
 
@@ -502,11 +616,30 @@ export default function App() {
         )}
 
         {screen.name === 'game' && screen.gameId === 'clueless' && (
+          <LiveMaybe
+            live={screen.live}
+            playerId={profile?.id}
+            onFinished={(snapshot) => void completeLiveRace(snapshot)}
+          >
           <CluelessScreen
-            puzzleNumber={todaysPuzzleNumber()}
-            difficulty={screen.difficulty ?? 'standard'}
-            onExit={() => openGameHome('clueless')}
+            puzzleNumber={screen.live?.levelNumber ?? todaysPuzzleNumber()}
+            difficulty={screen.live ? 'expert' : screen.difficulty ?? 'standard'}
+            persist={!screen.live}
+            onScore={
+              screen.live
+                ? (score, complete) => {
+                    void postMatchScore(screen.live!.matchId, score, complete, complete);
+                  }
+                : undefined
+            }
+            onExit={() =>
+              screen.live ? setScreen({ name: 'teams' }) : openGameHome('clueless')
+            }
             onWin={async (guessesUsed, difficulty) => {
+              if (screen.live) {
+                await postMatchScore(screen.live.matchId, guessesUsed, true, true);
+                return;
+              }
               const previous = boardForCluelessDifficulty(boardFor('clueless'), difficulty);
               const next = await recordFinish(() =>
                 recordScore(
@@ -540,12 +673,35 @@ export default function App() {
               });
             }}
           />
+          </LiveMaybe>
         )}
 
         {screen.name === 'game' && screen.gameId === 'wordfall' && (
+          <LiveMaybe
+            live={screen.live}
+            playerId={profile?.id}
+            onFinished={(snapshot) => void completeLiveRace(snapshot)}
+          >
           <WordfallScreen
-            onExit={() => setScreen({ name: 'home', gameId: 'wordfall' })}
+            live={
+              screen.live
+                ? {
+                    levelNumber: screen.live.levelNumber,
+                    seed: screen.live.seed,
+                    onScore: (score, complete) => {
+                      void postMatchScore(screen.live!.matchId, score, complete, complete);
+                    },
+                  }
+                : undefined
+            }
+            onExit={() =>
+              screen.live ? setScreen({ name: 'teams' }) : setScreen({ name: 'home', gameId: 'wordfall' })
+            }
             onLevelWon={async (score, levelNumber, elapsedMs) => {
+              if (screen.live) {
+                await postMatchScore(screen.live.matchId, score, true, true);
+                return;
+              }
               const previous = boardFor('wordfall');
               const next = await recordFinish(() =>
                 recordScore(
@@ -573,6 +729,7 @@ export default function App() {
               });
             }}
           />
+          </LiveMaybe>
         )}
 
         {screen.name === 'home' && (
@@ -584,6 +741,12 @@ export default function App() {
                 : boardFor(screen.gameId)
             }
             onPlay={() => startGame(screen.gameId)}
+            onRace={() => {
+              if (!profile) setScreen({ name: 'auth', returnTo: 'teams', returnGameId: screen.gameId });
+              else setScreen({ name: 'teams' });
+            }}
+            raceDisabled={!isBackendConfigured}
+            raceLabel={isBackendConfigured ? 'Race with team' : 'Race with team (offline)'}
             onScores={() => setScreen({ name: 'scores', gameId: screen.gameId })}
             detail={startDetailFor(screen.gameId, category, {
               difficulty: cluelessDifficulty,
@@ -597,6 +760,11 @@ export default function App() {
         )}
 
         {screen.name === 'game' && screen.gameId === MORE_OR_LESS && (
+          <LiveMaybe
+            live={screen.live}
+            playerId={profile?.id}
+            onFinished={(snapshot) => void completeLiveRace(snapshot)}
+          >
           <GameScreen
             // Remounting per seed guarantees a clean run rather than relying on
             // the reducer's initializer, which React only calls on first mount.
@@ -604,8 +772,38 @@ export default function App() {
             category={category}
             seed={screen.seed}
             bestStreak={boardFor(screen.gameId).bestStreak}
-            onExit={() => setScreen({ name: 'home', gameId: screen.gameId })}
+            persist={!screen.live}
+            band={
+              screen.live
+                ? moreOrLessLevelByNumber(screen.live.levelNumber)?.band
+                : undefined
+            }
+            targetStreak={
+              screen.live
+                ? moreOrLessLevelByNumber(screen.live.levelNumber)?.targetStreak
+                : undefined
+            }
+            onScore={
+              screen.live
+                ? (score, complete) => {
+                    void postMatchScore(screen.live!.matchId, score, complete, false);
+                  }
+                : undefined
+            }
+            onExit={() =>
+              screen.live ? setScreen({ name: 'teams' }) : setScreen({ name: 'home', gameId: screen.gameId })
+            }
             onGameOver={async (state) => {
+              if (screen.live) {
+                const target = moreOrLessLevelByNumber(screen.live.levelNumber)?.targetStreak ?? 0;
+                await postMatchScore(
+                  screen.live.matchId,
+                  state.streak,
+                  state.streak >= target,
+                  true,
+                );
+                return;
+              }
               const entryId = makeEntryId();
               const previous = boardFor(screen.gameId);
               // Persist before navigating so a reload mid-transition cannot
@@ -631,6 +829,36 @@ export default function App() {
               });
               setScreen({ name: 'over', gameId: screen.gameId, state, entryId });
             }}
+          />
+          </LiveMaybe>
+        )}
+
+        {screen.name === 'teams' && (
+          <TeamsScreen
+            profile={profile}
+            pendingInviteCode={pendingInvite}
+            onNeedAuth={() => setScreen({ name: 'auth', returnTo: 'teams' })}
+            onOpenLobby={(matchId) => setScreen({ name: 'live-lobby', matchId })}
+            onInviteConsumed={() => setPendingInvite(null)}
+          />
+        )}
+
+        {screen.name === 'live-lobby' && profile && (
+          <LiveLobbyScreen
+            matchId={screen.matchId}
+            playerId={profile.id}
+            onRacing={startLiveRace}
+            onExit={() => setScreen({ name: 'teams' })}
+          />
+        )}
+
+        {screen.name === 'live-results' && profile && (
+          <LiveResultsScreen
+            snapshot={screen.snapshot}
+            playerId={profile.id}
+            personalAdvanced={screen.personalAdvanced}
+            teamAdvanced={screen.teamAdvanced}
+            onDone={() => setScreen({ name: 'teams' })}
           />
         )}
 
@@ -708,7 +936,8 @@ export default function App() {
               identifyAnalytics(p);
               identifiedProfileId.current = p.id;
               setProfile(p);
-              setScreen({ name: 'scores', gameId: screen.returnGameId ?? MORE_OR_LESS });
+              if (screen.returnTo === 'teams') setScreen({ name: 'teams' });
+              else setScreen({ name: 'scores', gameId: screen.returnGameId ?? MORE_OR_LESS });
             }}
             onSkip={() => {
               captureAnalytics('auth_skipped', {});

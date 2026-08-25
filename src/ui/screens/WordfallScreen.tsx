@@ -62,17 +62,29 @@ const GAME_ID = 'wordfall';
 const SESSION = 'campaign';
 const ACCENT = getGame('wordfall')?.accent ?? theme.warning;
 
+type LiveWordfall = {
+  levelNumber: number;
+  seed: number;
+  onScore: (score: number, complete: boolean) => void;
+};
+
 type Props = {
   /** Called once per level cleared, with the score and how long it took. */
   onLevelWon: (score: number, levelNumber: number, elapsedMs: number) => void;
   onExit: () => void;
   showHelpInitially?: boolean;
+  live?: LiveWordfall;
 };
 
-export function WordfallScreen({ onLevelWon, onExit, showHelpInitially = false }: Props) {
-  const [loaded, setLoaded] = useState(false);
+export function WordfallScreen({
+  onLevelWon,
+  onExit,
+  showHelpInitially = false,
+  live,
+}: Props) {
+  const [loaded, setLoaded] = useState(Boolean(live));
   const [unlocked, setUnlocked] = useState(1);
-  const [levelNumber, setLevelNumber] = useState(1);
+  const [levelNumber, setLevelNumber] = useState(live?.levelNumber ?? 1);
   const [resume, setResume] = useState<WordfallState | null>(null);
   const [help, setHelp] = useState(showHelpInitially);
   const [picking, setPicking] = useState(false);
@@ -80,6 +92,11 @@ export function WordfallScreen({ onLevelWon, onExit, showHelpInitially = false }
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    if (live) {
+      setLevelNumber(live.levelNumber);
+      setLoaded(true);
+      return;
+    }
     let cancelled = false;
     void loadProgress<WordfallSave>(GAME_ID, SESSION, isWordfallSave).then((save) => {
       if (cancelled) return;
@@ -104,16 +121,17 @@ export function WordfallScreen({ onLevelWon, onExit, showHelpInitially = false }
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [live]);
 
   const persist = useCallback(
     (state: WordfallState | null, unlockedNow: number) => {
+      if (live) return;
       // Nothing may be written before the restore completes, or a fresh empty
       // board would overwrite the saved one on launch.
       if (!loaded) return;
       void saveProgress<WordfallSave>(GAME_ID, SESSION, { unlocked: unlockedNow, state });
     },
-    [loaded],
+    [loaded, live],
   );
 
   // Stable identity, so the child's save effect fires on real state changes
@@ -134,8 +152,10 @@ export function WordfallScreen({ onLevelWon, onExit, showHelpInitially = false }
         // than relying on a reset action threading through every field.
         key={`${levelNumber}-${attempt}`}
         level={level}
-        resume={resume?.levelNumber === levelNumber ? resume : null}
+        resume={live ? null : resume?.levelNumber === levelNumber ? resume : null}
+        seed={live?.seed}
         unlocked={unlocked}
+        hidePicker={Boolean(live)}
         onStateChange={handleStateChange}
         onExit={onExit}
         onHelp={() => setHelp(true)}
@@ -143,10 +163,13 @@ export function WordfallScreen({ onLevelWon, onExit, showHelpInitially = false }
         // The clock stops while a sheet is open: losing a timed level because
         // you read the instructions would be a bad joke.
         paused={help || picking}
+        onScore={live?.onScore}
         onWin={(score, elapsedMs) => {
-          const next = unlockAfterWin(unlocked, levelNumber);
-          setUnlocked(next);
-          persist(null, next);
+          if (!live) {
+            const next = unlockAfterWin(unlocked, levelNumber);
+            setUnlocked(next);
+            persist(null, next);
+          }
           onLevelWon(score, levelNumber, elapsedMs);
         }}
         onNext={() => {
@@ -164,7 +187,7 @@ export function WordfallScreen({ onLevelWon, onExit, showHelpInitially = false }
       />
 
       <LevelPicker
-        visible={picking}
+        visible={picking && !live}
         unlocked={unlocked}
         current={levelNumber}
         onClose={() => setPicking(false)}
@@ -236,9 +259,12 @@ function TriggerLegend() {
 function LevelPlay({
   level,
   resume,
+  seed,
   unlocked,
   paused,
+  hidePicker,
   onStateChange,
+  onScore,
   onWin,
   onNext,
   onRetry,
@@ -248,10 +274,13 @@ function LevelPlay({
 }: {
   level: Level;
   resume: WordfallState | null;
+  seed?: number;
   unlocked: number;
   /** Freezes the clock while a modal is covering the board. */
   paused: boolean;
+  hidePicker?: boolean;
   onStateChange: (state: WordfallState) => void;
+  onScore?: (score: number, complete: boolean) => void;
   onWin: (score: number, elapsedMs: number) => void;
   onNext: () => void;
   onRetry: () => void;
@@ -263,7 +292,7 @@ function LevelPlay({
   const [state, dispatch] = useReducer(
     (s: WordfallState, a: Action) => reducer(s, a, ctx),
     resume,
-    (saved) => saved ?? newGame(ctx, randomSeed()),
+    (saved) => saved ?? newGame(ctx, seed ?? randomSeed()),
   );
   const reported = useRef(false);
   const [boardBounds, setBoardBounds] = useState({ width: 0, height: 0 });
@@ -330,6 +359,7 @@ function LevelPlay({
           state.movesLeft >= 5 ? '5_plus' : state.movesLeft >= 1 ? '1_4' : '0',
       });
       onWin(state.score, state.elapsedMs);
+      onScore?.(state.score, true);
     } else if (state.status === 'lost' && !reported.current) {
       reported.current = true;
       const failureMode = lostToClock(state, ctx) ? 'time' : 'moves';
@@ -349,6 +379,7 @@ function LevelPlay({
         is_new_best: false,
         level_number: level.number,
       });
+      onScore?.(state.score, false);
     }
   }, [
     state.status,
@@ -358,8 +389,13 @@ function LevelPlay({
     state.movesLeft,
     level.number,
     onWin,
+    onScore,
     ctx,
   ]);
+
+  useEffect(() => {
+    if (state.status === 'playing') onScore?.(state.score, false);
+  }, [state.score, state.status, onScore]);
 
   /**
    * What the traced word is worth, recomputed as the finger moves.
@@ -454,12 +490,14 @@ function LevelPlay({
         sideWidth={92}
         trailing={
           <View style={styles.headerActions}>
-            <IconButton
-              icon={<Text style={styles.levelListMark}>≡</Text>}
-              accessibilityLabel="Choose a level"
-              onPress={onPickLevel}
-              color={ACCENT}
-            />
+            {hidePicker ? null : (
+              <IconButton
+                icon={<Text style={styles.levelListMark}>≡</Text>}
+                accessibilityLabel="Choose a level"
+                onPress={onPickLevel}
+                color={ACCENT}
+              />
+            )}
             <IconButton
               icon={<Text style={styles.helpMark}>?</Text>}
               accessibilityLabel="How to play"

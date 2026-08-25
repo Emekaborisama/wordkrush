@@ -48,6 +48,8 @@ type Props = {
   onExit: () => void;
   /** Opened automatically the first time someone plays. */
   showHelpInitially?: boolean;
+  persist?: boolean;
+  onScore?: (guesses: number, complete: boolean) => void;
 };
 
 export function CluelessScreen({
@@ -56,6 +58,8 @@ export function CluelessScreen({
   onWin,
   onExit,
   showHelpInitially = false,
+  persist = true,
+  onScore,
 }: Props) {
   const puzzle = puzzleByNumber(puzzleNumber)!;
   // Indexing builds a 5k-entry Map; it must not rerun on every keystroke.
@@ -74,6 +78,17 @@ export function CluelessScreen({
   const restored = useRef(false);
 
   useEffect(() => {
+    if (!persist) {
+      restored.current = true;
+      captureAnalytics('run_started', {
+        game_id: 'clueless',
+        is_resume: false,
+        puzzle_number: puzzleNumber,
+        difficulty,
+        hint_source: difficulty === 'easy' ? 'opening' : difficulty === 'standard' ? 'guess_threshold' : 'none',
+      });
+      return;
+    }
     let cancelled = false;
     void loadProgress(GAME_ID, puzzleNumber, isCluelessState).then((saved) => {
       if (cancelled) return;
@@ -106,13 +121,13 @@ export function CluelessScreen({
     return () => {
       cancelled = true;
     };
-  }, [puzzleNumber, difficulty]);
+  }, [puzzleNumber, difficulty, persist]);
 
   // Persist after every change, once restore has run.
   useEffect(() => {
-    if (!restored.current) return;
+    if (!persist || !restored.current) return;
     void saveProgress(GAME_ID, puzzleNumber, state);
-  }, [state, puzzleNumber]);
+  }, [state, puzzleNumber, persist]);
 
   function submit() {
     if (!input.trim()) return;
@@ -147,6 +162,9 @@ export function CluelessScreen({
     } else if (next.rejection?.kind === 'not-a-word') {
       feedback('wrong');
     }
+    if (!next.rejection) {
+      onScore?.(next.guesses.length, next.status === 'won');
+    }
   }
 
   const won = state.status === 'won';
@@ -164,7 +182,7 @@ export function CluelessScreen({
     >
       <GameHeader
         title="Clueless"
-        subtitle={`DAILY #${puzzle.number} · ${state.difficulty.toUpperCase()}`}
+        subtitle={`${persist ? 'DAILY' : 'PATH'} #${puzzle.number} · ${state.difficulty.toUpperCase()}`}
         accent={accent}
         onExit={onExit}
         onHelp={() => setHelp(true)}
