@@ -10,33 +10,33 @@
       "categoryId": "wikipedia-popularity",
       "label": "Michael Jackson",
       "value": 1780454,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Michael_Jackson_1983_%283x4_cropped%29_%28contrast%29.jpg/960px-Michael_Jackson_1983_%283x4_cropped%29_%28contrast%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Matthew Rolston; Distributed by Epic Records",
-      "imageLicense": "Public domain",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "Public domain"
     },
     {
       "id": "wikipedia-popularity.youtube",
       "categoryId": "wikipedia-popularity",
       "label": "YouTube",
       "value": 1379482,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Youtube_interface%2C_showing_search_results_of_Burger_Recipe.png/960px-Youtube_interface%2C_showing_search_results_of_Burger_Recipe.png?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Lyles BBQ, Smile and Learn - English, The Flat Top King (previous screenshot: yumyotta)",
-      "imageLicense": "Public domain",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "Public domain"
     },
     {
       "id": "wikipedia-popularity.instagram",
       "categoryId": "wikipedia-popularity",
       "label": "Instagram",
       "value": 1020240,
-      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Instagram_logo_2022.svg/960px-Instagram_logo_2022.svg.png?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-      "imageAttribution": "Instagram",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Instagram_screenshot_%2812_January_2026%2C_16h30m39s%2C_UTC_-3%29.png/960px-Instagram_screenshot_%2812_January_2026%2C_16h30m39s%2C_UTC_-3%29.png?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Instagram / Wikimedia Foundation",
       "imageLicense": "Public domain",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.cristiano-ronaldo",
@@ -47,7 +47,7 @@
       "imageAttribution": "Bryan Berlin",
       "imageLicense": "CC BY-SA 4.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.elon-musk",
@@ -58,18 +58,18 @@
       "imageAttribution": "Gage Skidmore",
       "imageLicense": "CC BY-SA 4.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.lionel-messi",
       "categoryId": "wikipedia-popularity",
       "label": "Lionel Messi",
       "value": 579072,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Leo_Messi_Argentina_v_Egypt_7_July_2026-1.jpg/960px-Leo_Messi_Argentina_v_Egypt_7_July_2026-1.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Bryan Berlin",
-      "imageLicense": "CC BY-SA 4.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY-SA 4.0"
     },
     {
       "id": "wikipedia-popularity.barack-obama",
@@ -80,51 +80,51 @@
       "imageAttribution": "Official White House Photo by Pete Souza",
       "imageLicense": "Public domain",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.taylor-swift",
       "categoryId": "wikipedia-popularity",
       "label": "Taylor Swift",
       "value": 406356,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Taylor_Swift_at_the_2023_MTV_Video_Music_Awards_%283%29.png/960px-Taylor_Swift_at_the_2023_MTV_Video_Music_Awards_%283%29.png?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "iHeartRadioCA",
-      "imageLicense": "CC BY 3.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY 3.0"
     },
     {
       "id": "wikipedia-popularity.keanu-reeves",
       "categoryId": "wikipedia-popularity",
       "label": "Keanu Reeves",
       "value": 395320,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Keanu_Reeves_at_TIFF_2025_02_%28Cropped%29.jpg/960px-Keanu_Reeves_at_TIFF_2025_02_%28Cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Gabriel Hutchinson",
-      "imageLicense": "CC BY-SA 4.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY-SA 4.0"
     },
     {
       "id": "wikipedia-popularity.new-york-city",
       "categoryId": "wikipedia-popularity",
       "label": "New York City",
       "value": 369628,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/View_of_Empire_State_Building_from_Rockefeller_Center_New_York_City_dllu_%28cropped%29.jpg/960px-View_of_Empire_State_Building_from_Rockefeller_Center_New_York_City_dllu_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Dllu",
-      "imageLicense": "CC BY-SA 4.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY-SA 4.0"
     },
     {
       "id": "wikipedia-popularity.tiktok",
       "categoryId": "wikipedia-popularity",
       "label": "TikTok",
       "value": 367045,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/TikTok_Headquarters.jpg/960px-TikTok_Headquarters.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Coolcaesar",
-      "imageLicense": "CC BY 4.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY 4.0"
     },
     {
       "id": "wikipedia-popularity.albert-einstein",
@@ -135,7 +135,7 @@
       "imageAttribution": "Oren Jack Turner",
       "imageLicense": "Public domain",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.japan",
@@ -146,7 +146,7 @@
       "imageAttribution": "Wikimedia Commons",
       "imageLicense": "PD",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.brazil",
@@ -157,7 +157,7 @@
       "imageAttribution": "Wikimedia Commons",
       "imageLicense": "PD",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.cat",
@@ -168,7 +168,7 @@
       "imageAttribution": "Alvesgaspar",
       "imageLicense": "CC BY-SA 3.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.beyonc-",
@@ -179,29 +179,29 @@
       "imageAttribution": "Raph_PH",
       "imageLicense": "CC BY 2.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.netflix",
       "categoryId": "wikipedia-popularity",
       "label": "Netflix",
       "value": 214302,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Netflix_at_Thong_Lor.jpg/960px-Netflix_at_Thong_Lor.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Sry85",
-      "imageLicense": "CC BY-SA 4.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY-SA 4.0"
     },
     {
       "id": "wikipedia-popularity.titanic",
       "categoryId": "wikipedia-popularity",
       "label": "Titanic",
       "value": 200267,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/RMS_Titanic_3_%28cropped_to_ship%29.jpg/960px-RMS_Titanic_3_%28cropped_to_ship%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Francis Godolphin Osbourne Stuart",
-      "imageLicense": "Public domain",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "Public domain"
     },
     {
       "id": "wikipedia-popularity.egypt",
@@ -212,7 +212,7 @@
       "imageAttribution": "See File history below for details.",
       "imageLicense": "Public domain",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.black-hole",
@@ -223,18 +223,18 @@
       "imageAttribution": "Event Horizon Telescope, uploader cropped and converted TIF to JPG",
       "imageLicense": "CC BY 4.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.serena-williams",
       "categoryId": "wikipedia-popularity",
       "label": "Serena Williams",
       "value": 188059,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2f/Guests_at_the_2026_Met_Gala_209_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
       "imageAttribution": "SWinxy",
-      "imageLicense": "CC BY 4.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY 4.0"
     },
     {
       "id": "wikipedia-popularity.formula-one",
@@ -245,18 +245,18 @@
       "imageAttribution": "Morio",
       "imageLicense": "CC BY-SA 3.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.paris",
       "categoryId": "wikipedia-popularity",
       "label": "Paris",
       "value": 158076,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/La_Tour_Eiffel_vue_de_la_Tour_Saint-Jacques%2C_Paris_ao%C3%BBt_2014_%282%29.jpg/960px-La_Tour_Eiffel_vue_de_la_Tour_Saint-Jacques%2C_Paris_ao%C3%BBt_2014_%282%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Yann Caradec from Paris, France",
-      "imageLicense": "CC BY-SA 2.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY-SA 2.0"
     },
     {
       "id": "wikipedia-popularity.iceland",
@@ -267,7 +267,7 @@
       "imageAttribution": "Original: Matthías Þórðarson Vector: Árni Dagur and Magasjukur2",
       "imageLicense": "Public domain",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.dog",
@@ -278,51 +278,51 @@
       "imageAttribution": "M. Rehemtulla",
       "imageLicense": "CC BY 2.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.mona-lisa",
       "categoryId": "wikipedia-popularity",
       "label": "Mona Lisa",
       "value": 146590,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/960px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Leonardo da Vinci",
-      "imageLicense": "Public domain",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "Public domain"
     },
     {
       "id": "wikipedia-popularity.mount-everest",
       "categoryId": "wikipedia-popularity",
       "label": "Mount Everest",
       "value": 146576,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Mt._Everest_from_Gokyo_Ri_November_5%2C_2012.jpg/960px-Mt._Everest_from_Gokyo_Ri_November_5%2C_2012.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Rdevany",
-      "imageLicense": "CC BY-SA 3.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY-SA 3.0"
     },
     {
       "id": "wikipedia-popularity.mcdonald-s",
       "categoryId": "wikipedia-popularity",
       "label": "McDonald's",
       "value": 119655,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/McDonald%27s_Golden_Arches.svg/960px-McDonald%27s_Golden_Arches.svg.png?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "McDonald's",
-      "imageLicense": "Public domain",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "Public domain"
     },
     {
       "id": "wikipedia-popularity.spotify",
       "categoryId": "wikipedia-popularity",
       "label": "Spotify",
       "value": 104881,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Spotify_HK_Stockholm.jpg/960px-Spotify_HK_Stockholm.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Goombah",
-      "imageLicense": "CC0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC0"
     },
     {
       "id": "wikipedia-popularity.iphone",
@@ -333,18 +333,18 @@
       "imageAttribution": "Rafael Fernandez",
       "imageLicense": "CC BY-SA 4.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.tesla-inc-",
       "categoryId": "wikipedia-popularity",
       "label": "Tesla",
       "value": 102871,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Tesla_Motors.svg/960px-Tesla_Motors.svg.png?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Tesla",
-      "imageLicense": "Public domain",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "Public domain"
     },
     {
       "id": "wikipedia-popularity.bitcoin",
@@ -355,18 +355,18 @@
       "imageAttribution": "Grayliptrot",
       "imageLicense": "Public domain",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.nintendo",
       "categoryId": "wikipedia-popularity",
       "label": "Nintendo",
       "value": 99116,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Headquarters_of_Nintendo_Co.%2C_Ltd.jpg/960px-Headquarters_of_Nintendo_Co.%2C_Ltd.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Tokumeigakarinoaoshima",
-      "imageLicense": "CC BY-SA 4.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY-SA 4.0"
     },
     {
       "id": "wikipedia-popularity.chess",
@@ -377,7 +377,7 @@
       "imageAttribution": "Alan Light",
       "imageLicense": "CC BY-SA 3.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.basketball",
@@ -388,18 +388,18 @@
       "imageAttribution": "Erik Drost",
       "imageLicense": "CC BY 2.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.komodo-dragon",
       "categoryId": "wikipedia-popularity",
       "label": "Komodo dragon",
       "value": 89670,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/202306_Varanus_komodoensis.jpg/960px-202306_Varanus_komodoensis.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "James Jolokia (james1203)",
-      "imageLicense": "CC BY 4.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY 4.0"
     },
     {
       "id": "wikipedia-popularity.great-pyramid-of-giza",
@@ -410,7 +410,7 @@
       "imageAttribution": "Douwe C. van der Zee",
       "imageLicense": "CC BY-SA 4.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.blue-whale",
@@ -421,7 +421,7 @@
       "imageAttribution": "NOAA Photo Library",
       "imageLicense": "Public domain",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.cheetah",
@@ -432,29 +432,29 @@
       "imageAttribution": "AfricanConservation",
       "imageLicense": "CC BY-SA 4.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.octopus",
       "categoryId": "wikipedia-popularity",
       "label": "Octopus",
       "value": 66931,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Octopus2.jpg/960px-Octopus2.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "albert kok",
-      "imageLicense": "CC BY-SA 3.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY-SA 3.0"
     },
     {
       "id": "wikipedia-popularity.penguin",
       "categoryId": "wikipedia-popularity",
       "label": "Penguin",
       "value": 65208,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/South_Shetland-2016-Deception_Island%E2%80%93Chinstrap_penguin_%28Pygoscelis_antarctica%29_04.jpg/960px-South_Shetland-2016-Deception_Island%E2%80%93Chinstrap_penguin_%28Pygoscelis_antarctica%29_04.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Godot13",
-      "imageLicense": "CC BY-SA 4.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY-SA 4.0"
     },
     {
       "id": "wikipedia-popularity.avocado",
@@ -465,29 +465,29 @@
       "imageAttribution": "B.navez",
       "imageLicense": "CC BY-SA 3.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.pizza",
       "categoryId": "wikipedia-popularity",
       "label": "Pizza",
       "value": 50086,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Pizza-3007395.jpg/960px-Pizza-3007395.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "igorovsyannykov",
-      "imageLicense": "CC0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC0"
     },
     {
       "id": "wikipedia-popularity.sushi",
       "categoryId": "wikipedia-popularity",
       "label": "Sushi",
       "value": 46414,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Sushi_platter.jpg/960px-Sushi_platter.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "chidorian from Japan",
-      "imageLicense": "CC BY-SA 2.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY-SA 2.0"
     },
     {
       "id": "wikipedia-popularity.coffee",
@@ -498,40 +498,40 @@
       "imageAttribution": "Bex Walton",
       "imageLicense": "CC BY 2.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.playstation",
       "categoryId": "wikipedia-popularity",
       "label": "PlayStation",
       "value": 45925,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/PlayStation_4_Slim_8504.jpg/960px-PlayStation_4_Slim_8504.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Ashley Pomeroy",
-      "imageLicense": "CC BY-SA 4.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY-SA 4.0"
     },
     {
       "id": "wikipedia-popularity.yoga",
       "categoryId": "wikipedia-popularity",
       "label": "Yoga",
       "value": 39952,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Shiva_Bangalore.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
       "imageAttribution": "Kalyan Kumar",
-      "imageLicense": "CC BY-SA 2.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY-SA 2.0"
     },
     {
       "id": "wikipedia-popularity.ramen",
       "categoryId": "wikipedia-popularity",
       "label": "Ramen",
       "value": 36608,
+      "source": "wikipedia-pageviews:20260201-20260731",
+      "updatedAt": "2026-08-25",
       "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Shoyu_Ramen%EF%BC%88Tokyo_Ramen%EF%BC%89_-_01.jpg/960px-Shoyu_Ramen%EF%BC%88Tokyo_Ramen%EF%BC%89_-_01.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
       "imageAttribution": "Quercus acuta",
-      "imageLicense": "CC BY-SA 4.0",
-      "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "imageLicense": "CC BY-SA 4.0"
     },
     {
       "id": "wikipedia-popularity.halloween",
@@ -542,7 +542,7 @@
       "imageAttribution": "Toby Ord",
       "imageLicense": "CC BY-SA 2.5",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "wikipedia-popularity.chocolate",
@@ -553,7 +553,7 @@
       "imageAttribution": "Lynnereal",
       "imageLicense": "CC BY-SA 4.0",
       "source": "wikipedia-pageviews:20260201-20260731",
-      "updatedAt": "2026-08-16"
+      "updatedAt": "2026-08-25"
     }
   ]
 }
