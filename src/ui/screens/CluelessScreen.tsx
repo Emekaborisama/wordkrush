@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import { rankBucket } from '../../analytics/events';
-import { hintForPuzzle, VOCABULARY, puzzleByNumber } from '../../data/clueless';
+import { VOCABULARY, puzzleByNumber } from '../../data/clueless';
 import {
   bestRank,
   closeness,
@@ -21,7 +21,12 @@ import {
   type Action,
 } from '../../games/clueless/engine';
 import { isCluelessState, rehydrate } from '../../games/clueless/persistence';
-import type { CluelessDifficulty, CluelessState } from '../../games/clueless/types';
+import {
+  assistanceContextForHintPolicy,
+  type CluelessAssistanceContext,
+  type CluelessHintPolicy,
+  type CluelessState,
+} from '../../games/clueless/types';
 import { loadProgress, saveProgress } from '../../games/progress';
 import { getGame } from '../../games/registry';
 import { feedback } from '../../native/feedback';
@@ -43,8 +48,14 @@ const GAME_ID = 'clueless';
 
 type Props = {
   puzzleNumber: number;
-  difficulty: CluelessDifficulty;
-  onWin: (guessesUsed: number, difficulty: CluelessDifficulty) => void;
+  /** Solo path number or a team path number; omitted for a legacy session. */
+  levelNumber?: number;
+  levelName?: string;
+  pathPhase?: 'tutorial' | 'daily' | 'team';
+  /** Assigned by reviewed level content, never selected during play. */
+  hintPolicy: CluelessHintPolicy;
+  hint?: string | null;
+  onWin: (guessesUsed: number, assistanceContext: CluelessAssistanceContext) => void;
   onExit: () => void;
   /** Opened automatically the first time someone plays. */
   showHelpInitially?: boolean;
@@ -54,7 +65,11 @@ type Props = {
 
 export function CluelessScreen({
   puzzleNumber,
-  difficulty,
+  levelNumber,
+  levelName,
+  pathPhase,
+  hintPolicy,
+  hint,
   onWin,
   onExit,
   showHelpInitially = false,
@@ -67,8 +82,8 @@ export function CluelessScreen({
 
   const [state, dispatch] = useReducer(
     (s: CluelessState, a: Action) => reducer(s, a, index),
-    { puzzleNumber, difficulty },
-    ({ puzzleNumber: number, difficulty: mode }) => newPuzzle(number, mode),
+    { puzzleNumber, hintPolicy },
+    ({ puzzleNumber: number, hintPolicy: policy }) => newPuzzle(number, policy),
   );
   const [input, setInput] = useState('');
   const [help, setHelp] = useState(showHelpInitially);
@@ -84,16 +99,22 @@ export function CluelessScreen({
         game_id: 'clueless',
         is_resume: false,
         puzzle_number: puzzleNumber,
-        difficulty,
-        hint_source: difficulty === 'easy' ? 'opening' : difficulty === 'standard' ? 'guess_threshold' : 'none',
+        level_number: levelNumber,
+        path_phase: pathPhase,
+        assistance_context: assistanceContextForHintPolicy(hintPolicy),
+        hint_source: hintPolicy,
       });
       return;
     }
     let cancelled = false;
     void loadProgress(GAME_ID, puzzleNumber, isCluelessState).then((saved) => {
       if (cancelled) return;
+      const restoredState = saved
+        ? rehydrate(saved, hintPolicy)
+        : newPuzzle(puzzleNumber, hintPolicy);
+      const restoredHintPolicy = restoredState.hintPolicy;
       if (saved) {
-        dispatch({ type: 'restore', state: rehydrate(saved, difficulty) });
+        dispatch({ type: 'restore', state: restoredState });
         // A session restored in the won state was already scored; re-reporting
         // it would add a duplicate entry to the score table on every visit.
         if (saved.status === 'won') reported.current = true;
@@ -103,25 +124,25 @@ export function CluelessScreen({
         game_id: 'clueless',
         is_resume: Boolean(saved && saved.status !== 'won'),
         puzzle_number: puzzleNumber,
-        difficulty: saved?.difficulty ?? difficulty,
-        hint_source:
-          (saved?.difficulty ?? difficulty) === 'easy'
-            ? 'opening'
-            : (saved?.difficulty ?? difficulty) === 'standard'
-              ? 'guess_threshold'
-              : 'none',
+        level_number: levelNumber,
+        path_phase: pathPhase,
+        assistance_context: assistanceContextForHintPolicy(restoredHintPolicy),
+        hint_source: restoredHintPolicy,
       });
       captureAnalytics('daily_puzzle_viewed', {
         game_id: 'clueless',
         puzzle_number: puzzleNumber,
+        level_number: levelNumber,
         already_completed: saved?.status === 'won',
-        difficulty: saved?.difficulty ?? difficulty,
+        path_phase: pathPhase,
+        assistance_context: assistanceContextForHintPolicy(restoredHintPolicy),
+        hint_source: restoredHintPolicy,
       });
     });
     return () => {
       cancelled = true;
     };
-  }, [puzzleNumber, difficulty, persist]);
+  }, [puzzleNumber, hintPolicy, levelNumber, pathPhase, persist]);
 
   // Persist after every change, once restore has run.
   useEffect(() => {
@@ -148,7 +169,11 @@ export function CluelessScreen({
       result_kind:
         next.status === 'won' ? 'correct' : rejectionKind ?? 'valid',
       rank_bucket: next.rejection ? undefined : rankBucket(bestRank(next)),
-      difficulty: next.difficulty,
+      puzzle_number: puzzleNumber,
+      level_number: levelNumber,
+      path_phase: pathPhase,
+      assistance_context: assistanceContextForHintPolicy(next.hintPolicy),
+      hint_source: next.hintPolicy,
     });
 
     if (next.status === 'won' && before !== 'won') {
@@ -157,7 +182,7 @@ export function CluelessScreen({
       feedback('win');
       if (!reported.current) {
         reported.current = true;
-        onWin(next.guesses.length, next.difficulty);
+        onWin(next.guesses.length, assistanceContextForHintPolicy(next.hintPolicy));
       }
     } else if (next.rejection?.kind === 'not-a-word') {
       feedback('wrong');
@@ -171,7 +196,6 @@ export function CluelessScreen({
   const best = bestRank(state);
   const warmth = closeness(best, puzzle.rankedCount);
   const accent = getGame(GAME_ID)?.accent ?? theme.violet;
-  const hint = hintForPuzzle(puzzle.number);
   const hintVisible = isHintVisible(state);
   const hintRemaining = Math.max(0, STANDARD_HINT_GUESS_THRESHOLD - state.guesses.length);
 
@@ -182,7 +206,12 @@ export function CluelessScreen({
     >
       <GameHeader
         title="Clueless"
-        subtitle={`${persist ? 'DAILY' : 'PATH'} #${puzzle.number} · ${state.difficulty.toUpperCase()}`}
+        subtitle={
+          levelName ??
+          `${pathPhase === 'team' ? 'TEAM RACE' : pathPhase === 'daily' ? 'DAILY VAULT' : 'LEVEL'} ${
+            levelNumber ?? puzzle.number
+          }`
+        }
         accent={accent}
         onExit={onExit}
         onHelp={() => setHelp(true)}
@@ -196,7 +225,7 @@ export function CluelessScreen({
         />
       </View>
 
-      {!won && state.difficulty !== 'expert' ? (
+      {!won && state.hintPolicy !== 'none' && hint ? (
         <Surface
           level={hintVisible ? 2 : 1}
           borderColor={hintVisible ? withAlpha(accent, 0.45) : undefined}
@@ -208,7 +237,7 @@ export function CluelessScreen({
           </Text>
           <Text style={hintVisible ? styles.hintText : styles.hintCountdown}>
             {hintVisible
-              ? hint.text
+              ? hint
               : `${hintRemaining} valid ${hintRemaining === 1 ? 'guess' : 'guesses'} until the hint`}
           </Text>
         </Surface>
@@ -329,7 +358,7 @@ export function CluelessScreen({
         visible={help}
         onClose={() => setHelp(false)}
         title="How to play Clueless"
-        intro="There’s a secret word. Every guess is scored by meaning, not spelling. Your difficulty decides when a thematic hint appears."
+        intro="There’s a secret word. Every guess is scored by meaning, not spelling. Each level decides whether a thematic hint appears."
         accent={accent}
         steps={[
           { n: 1, title: 'Guess any word', body: 'Anything at all. Start broad and follow the heat.' },

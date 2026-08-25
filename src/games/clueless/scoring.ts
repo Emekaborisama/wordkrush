@@ -1,20 +1,20 @@
 import { boardForContexts, type ScoreBoard } from '../../scores/types';
-import type { CluelessDifficulty } from './types';
+import type { CluelessAssistanceContext } from './types';
 
 /** Context used by pre-difficulty Clueless scores. */
 export const LEGACY_CLUELESS_SCORE_CONTEXT = 'clueless';
 
-export function normalizeCluelessScoreContext(contextId: string): CluelessDifficulty | string {
+export function normalizeCluelessScoreContext(contextId: string): CluelessAssistanceContext | string {
   return contextId === LEGACY_CLUELESS_SCORE_CONTEXT ? 'standard' : contextId;
 }
 
-export function boardForCluelessDifficulty(
+export function boardForCluelessAssistanceContext(
   board: ScoreBoard,
-  difficulty: CluelessDifficulty,
+  assistanceContext: CluelessAssistanceContext,
 ): ScoreBoard {
   const contexts =
-    difficulty === 'standard'
-      ? [difficulty, LEGACY_CLUELESS_SCORE_CONTEXT]
-      : [difficulty];
+    assistanceContext === 'standard'
+      ? [assistanceContext, LEGACY_CLUELESS_SCORE_CONTEXT]
+      : [assistanceContext];
   return boardForContexts(board, contexts, 'lower');
 }

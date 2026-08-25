@@ -14,6 +14,7 @@ For every collaborator on this repo — human or LLM. Read this before touching 
 | [branding/](branding/README.md) | Name, logo use, brand colour | Identity, lockup, or palette changes |
 | [CHANGELOG.md](CHANGELOG.md) | What shipped, one `x.y.z` per PR | Every PR — new version heading, never an in-place edit |
 | [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) | Monday Wordfall drops: catalog, buffer, authoring, automation contract | Cadence, schedule gate, or weekly-release automation |
+| [CLUELESS-DAILY.md](CLUELESS-DAILY.md) | Completion-gated Daily Vault content, buffer, and review-PR authoring contract | Clueless path, content cadence, or daily authoring automation |
 | [reddit/README.md](../reddit/README.md) | The Devvit build of More or Less: shared-engine boundary, server-owned run, daily post, launch checklist | Anything under `reddit/` |
 | WORKFLOW.md (this) | How we collaborate | Process changes |
 
@@ -104,6 +105,17 @@ The app only ever reads the bundled JSON. Changing game data = run pipeline, com
 **Weekly Wikipedia popularity** is automated: `.github/workflows/wikipedia-popularity-weekly.yml` runs Mondays at 09:00 UTC (and on `workflow_dispatch`). It calls `pipeline:rotate`, which re-measures the bundled items and appends a new unused label round sampled from the reservoir, runs `npm run check` on a material change, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. That branch is an automation exception to the Superthread-name rule (D-036, D-052); do not merge it without reading the JSON diff. The job never pushes to `master` and never changes the set a player is currently on. Until the factory path is live (ST-35), the file stays `provisional: true`.
 
 Wordfall weekly levels are a different path: append a row to `src/data/wordfall/levels.ts` with a Monday `availableFrom`, then follow [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) Job B and the Cursor skill `.cursor/skills/wordfall-weekly-gauntlet/`. Unique `taskFingerprint`, seven-day featured window, then **local** `npm run check` → `build:web` → `serve:web` (port 8080) and a picker playtest **before** `git push` (D-038). Do not run the Wikipedia ingest for a Wordfall drop. Monday does not fetch content; the catalog in git is the schedule.
+
+Clueless Daily Vaults are a fourth content path: the player advances only after
+their current level is solved and their next local midnight arrives. The
+intended daily content authoring run is 18:00 GMT+1 and follows
+[CLUELESS-DAILY.md](CLUELESS-DAILY.md) plus
+`.cursor/skills/clueless-daily-path/`. It appends one cache-ranked future solo
+level to the standing `content/clueless-daily` review PR, never to `master`;
+that standing content branch is an automation exception to the Superthread-name
+rule (D-057). The automation never auto-merges, calls EAS, or fetches content
+at play time. Configure the final schedule in the Cursor Automations editor;
+the committed skill alone does not create a live cron.
 
 The **Reddit app** is a third path, and not the same thing as Reddit ads. [`reddit/`](../reddit/README.md) is a Devvit project with its own `package.json`, its own dependency tree, and its own TypeScript build (D-042). It imports `src/games/more-or-less/engine.ts` and `src/data/categories/` rather than copying them, so:
 
