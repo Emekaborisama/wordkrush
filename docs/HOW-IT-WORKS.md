@@ -115,7 +115,7 @@ The JSON diff goes up in a PR — **the diff is the content review**. CI must pa
 **6. The player sees the number** — with its provenance ("Source: monthly Wikipedia pageviews, <month year>") [PLANNED], so the claim on screen is exactly the claim the data supports.
 
 **7. Weekly rotation keeps the snapshot from freezing.** [BUILT]
-Monday 09:00 UTC (and `workflow_dispatch`) GitHub Action [wikipedia-popularity-weekly.yml](../.github/workflows/wikipedia-popularity-weekly.yml) runs `npm run pipeline:rotate`. That job uses the same builder as `pipeline:preview` — Wikimedia pageviews plus freely-licensed images — because the factory ingest→export path is still blocked on the 0001 migration. Images prefer the article's free lead (`pageimages`); when that is a fair-use logo or screenshot and `pageimages` returns nothing, [wikipedia-images.ts](../pipeline/sources/wikipedia-images.ts) walks other files on the page and ships the first freely-licensed photograph. Fair-use files are still skipped. The job compares the new file to the bundled JSON and **skips the PR** when only `updatedAt` would change (most weeks of a month share one complete-month window). A material change writes the JSON, bumps the patch version, adds a new changelog section, runs `npm run check`, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. Swings >10x vs the currently shipped values are listed on the PR; a human merges. The job never pushes to `master` and never fetches at play time (D-004, D-036). Output stays `provisional: true` until ST-35 lands.
+Monday 09:00 UTC (and `workflow_dispatch`) GitHub Action [wikipedia-popularity-weekly.yml](../.github/workflows/wikipedia-popularity-weekly.yml) runs `npm run pipeline:rotate`. That job uses the same builder as `pipeline:preview` — Wikimedia pageviews plus freely-licensed images — because the factory ingest→export path is still blocked on the 0001 migration. Images prefer the article's free lead (`pageimages`); when that is a fair-use logo or screenshot and `pageimages` returns nothing, [wikipedia-images.ts](../pipeline/sources/wikipedia-images.ts) walks other files on the page and ships the first freely-licensed photograph. Fair-use files are still skipped. A thrown fetch (Wikimedia 429, network) keeps the picture already in the bundled JSON rather than treating a blank as a content change. The job compares the new file to the bundled JSON and **skips the PR** when only `updatedAt` would change (most weeks of a month share one complete-month window). A material change writes the JSON, bumps the patch version, adds a new changelog section, runs `npm run check`, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. The D-041 version bump of `package.json` / `app.json` is changelog, not a stack/system change (D-049), so that check can pass on a content-only rotate. Swings >10x vs the currently shipped values are listed on the PR; a human merges. The job never pushes to `master` and never fetches at play time (D-004, D-036). Output stays `provisional: true` until ST-35 lands.
 
 **8. And back: the correction loop.** [BUILT: pipeline side · ongoing]
 Data ages (bundled = frozen until next release, accepted trade-off D-004). Refresh = weekly rotate, or a manual `pipeline:preview` / ingest→export. A wrong-feeling answer in playtesting starts at the JSON diff (or `item_values.raw` once the factory path is live) and ends in either a corrected snapshot or a removed item. App Store review latency (days) is why validation happens *before* shipping, not after.
@@ -139,11 +139,13 @@ avoids repetitive agent loops and token cost.
 `npm run check:docs` uses `scripts/check-docs.mjs` locally and in GitHub Actions.
 CI compares the complete pull-request diff to its base branch; the local check
 also includes untracked files. A missing document fails with the exact file and
-reason. Semantic changes such as a design decision or task-status update still
-require human or agent judgement because file paths cannot prove intent.
-CI also runs `npm run build:web` in a sibling job; merge and Railway deploy
-wait for both `check` and `web` (D-029). The export is not part of the local
-`npm run check` loop.
+reason. A D-041 version-only bump of `package.json` / `app.json` still requires
+the changelog and does **not** require HOW-IT-WORKS or STACK (D-049); any other
+edit to those manifests still does. Semantic changes such as a design decision
+or task-status update still require human or agent judgement because file paths
+cannot prove intent. CI also runs `npm run build:web` in a sibling job; merge
+and Railway deploy wait for both `check` and `web` (D-029). The export is not
+part of the local `npm run check` loop.
 
 ---
 
@@ -274,12 +276,15 @@ keep the system sans — and a stylesheet rule kills the UA `:focus-visible`
 ring so only the designed shell border shows. Game data remains bundled
 JSON; missing Supabase keys still leave every title playable. Splash uses the
 black lockup in `assets/logo/`; auth uses the clear lockup; drawer and top bar
-use the W mark via `BrandArtwork`. The hub hero is the little-deer mascot
+use the W mark via `BrandArtwork`. The hub list scrolls under that top bar —
+the deer is a clipped mascot at the end of the game list, not a second lockup
 (`src/ui/lottie/Mascot.tsx`, pose `idle`). Outcome screens reuse the same
 component with `celebrate` or `wince` (More or Less game over, Wordfall
 level result, Clueless solved). Clip URLs live in `LOTTIE_CLIPS`; deer poses
-currently share one lottie.host file and fall back to bundled
-`assets/lottie/deer.lottie` (D-032). Reduce-motion skips playback.
+play the bundled `assets/lottie/deer.lottie` and do not fall back to
+lottie.host while that file still has a white backdrop (D-032, D-050).
+Reduce-motion skips playback. The web export fills `100dvh` so mobile URL-bar
+`100vh` does not clip the hub.
 
 ---
 
@@ -451,9 +456,12 @@ the previous view.
 
 **1. A team is invite-only.** [BUILT]
 `TeamsScreen` creates or joins through RPCs (`create_team`, `join_team`) in
-`0006_teams_and_live_matches.sql`. There is no public directory. Deep links
+`0006_teams_and_live_matches.sql`, and renames, leaves, or disbands through
+`0007_team_crud.sql`. There is no public directory. Deep links
 `wordkrush://team?code=` and `/?team=` land on the same join path. Guests still
-play solo; the Race CTA asks them to sign in.
+play solo; the Race CTA asks them to sign in. The owner is the only person who
+can rename or disband; a member can leave. The owner cannot leave — they
+disband.
 
 **2. The picker is Wordfall-shaped for every title.** [BUILT]
 Shared unlock math in `src/games/campaign.ts` (`unlockAfterWin`, dual
@@ -461,7 +469,9 @@ Shared unlock math in `src/games/campaign.ts` (`unlockAfterWin`, dual
 `src/data/more-or-less/levels.ts`. Clueless team path uses bundled puzzle
 numbers and refuses today's UTC daily. A row above the team cursor stays
 locked; a row the team has opened but the player has not is playable in the
-session and marked team-ahead.
+session and marked team-ahead. On a phone the level list scrolls in the leftover
+column with Host / Join as a footer; on a laptop the roster sits in a left
+column and the picker on the right.
 
 **3. A lobby is 2–4 ready players, then a server seed.** [BUILT]
 `create_match` / `join_match` / `set_ready` / `start_match`. Late joins after
@@ -487,9 +497,9 @@ Quick map of where each journey step lives:
 
 | Piece | Where | Status |
 |---|---|---|
-| App shell (iOS + web) | `App.tsx`, `index.ts`, `app.json` | [BUILT] — WordKrush hub, lockup splash `#0A0817`, `expo-font`; web at wordKrush.com |
+| App shell (iOS + web) | `App.tsx`, `index.ts`, `app.json` | [BUILT] — WordKrush hub, lockup splash `#0A0817`, `expo-font`; web at wordKrush.com uses `100dvh`; phone is full-bleed, laptop is a 1080px column (D-051) |
 | Brand kit | `assets/logo/`, `docs/branding/`, `BrandArtwork` | [BUILT] — black lockup on splash; clear lockup on auth/Android; W mark on icon, drawer, top bar |
-| Mascot (deer) | `src/ui/lottie/`, `LOTTIE_CLIPS`, `assets/lottie/deer.lottie` | [BUILT] — hub + outcome poses; flame/burst CDN rows empty (D-032) |
+| Mascot (deer) | `src/ui/lottie/`, `LOTTIE_CLIPS`, `assets/lottie/deer.lottie` | [BUILT] — hub + outcome poses; bundled file only until lottie.host drops the white plate (D-050); flame/burst CDN rows empty (D-032) |
 | Display type | `@expo-google-fonts/fredoka`, `src/ui/theme.ts` | [BUILT] — every text tier, all three games; symbol glyphs stay on the system face (D-030) |
 | Fairness guard + difficulty bands | `src/games/more-or-less/pairing.ts` (+ 9 tests) | [BUILT] |
 | Engine reducer, pair selector, scoring | `src/games/more-or-less/engine.ts` | [BUILT] |
@@ -509,7 +519,7 @@ Quick map of where each journey step lives:
 | Unique leaderboard username | `supabase/migrations/0004_unique_username.sql`, `src/auth/validation.ts` `usernameKey` | [BUILT: apply on the owner project] — unique index on `username_key(display_name)`; duplicate maps to "That username is taken." |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
 | Clueless difficulty boards | `supabase/migrations/0005_clueless_difficulty_leaderboards.sql`, `src/games/clueless/scoring.ts` | [BUILT: apply migration] — Easy/Standard/Expert partition under stable `clueless` id |
-| Teams + live races | `supabase/migrations/0006_teams_and_live_matches.sql`, `src/teams/`, `src/live/`, `src/games/campaign.ts` | [BUILT: apply migration] — private teams, 2–4 player races, dual unlock; live scores stay off `global_leaderboard` |
+| Teams + live races | `supabase/migrations/0006_teams_and_live_matches.sql`, `0007_team_crud.sql`, `src/teams/`, `src/live/`, `src/games/campaign.ts` | [BUILT: apply migrations] — private teams with rename/leave/disband, 2–4 player races, dual unlock; live scores stay off `global_leaderboard` |
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both |
@@ -518,7 +528,7 @@ Quick map of where each journey step lives:
 | GitHub Release | `.github/workflows/release.yml`, `scripts/changelog-notes.mjs` | [BUILT] — every PR is a version; publish `vX.Y.Z` from that changelog section on master merge or tag (D-039, D-041) |
 | Web host | `railway.json`, `server/serve.mjs` | [BUILT] — Nixpacks runs `CI=true npm run build:web` on service `wordcrush`; `serve.mjs` listens on `$PORT` |
 | Web favicon + share preview | `assets/favicon.png`, `assets/apple-touch-icon.png`, `assets/logo/wordkrush-lockup.png`, `scripts/patch-web-head.mjs` | [BUILT] — cache-busted tab icons in `dist/`; Open Graph / Twitter tags with the lockup at `/og-image.png` (not the favicon crop) |
-| Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] — audits git-visible changes; Finder `* 2.*` copies and `supabase/.temp/` are gitignored so they do not count as source |
+| Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] — audits git-visible changes; version-only `package.json` / `app.json` bumps are changelog (D-049); Finder `* 2.*` copies and `supabase/.temp/` are gitignored so they do not count as source |
 | Consent and product analytics | `src/analytics/`, `src/ui/AnalyticsConsentPrompt.tsx` | [BUILT] |
 | Player feedback (bugs + suggestions) | `src/userback/`, `@userback/widget`, drawer "Send feedback" | [BUILT: web] — launcher on every non-game screen, hidden during a run; signed-in players are identified, guests stay anonymous. Native is a documented no-op stub pending a Userback Mobile SDK key (D-046) |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |

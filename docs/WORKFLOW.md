@@ -1,6 +1,6 @@
 # Way of Working
 
-**Last updated:** 2026-08-23
+**Last updated:** 2026-08-25
 For every collaborator on this repo — human or LLM. Read this before touching code.
 
 ## The docs are the shared brain
@@ -23,7 +23,9 @@ Documentation is updated in the same change while its context is fresh. The
 project stop hook checks once when an agent finishes, and `npm run check:docs`
 runs locally and in CI. These checks detect a path-based minimum; they never
 generate prose and do not replace judgement about design decisions or task
-status.
+status. A version-only bump of `package.json` / `app.json` (the D-041 changelog
+process) requires `CHANGELOG.md` and does not require HOW-IT-WORKS or STACK.
+Any other edit to those manifests still does.
 
 Documentation impact:
 - Player-visible or runtime behavior → `CHANGELOG.md`.
@@ -155,7 +157,7 @@ analytics still starts opted out and requires the player's explicit consent.
 
 - [ ] `npx expo login` (Expo account, for EAS builds)
 - [ ] Apple Developer Program ($99/yr) + `eas credentials` once
-- [ ] Apply `supabase/migrations/0001_init.sql`, `0002_leaderboard.sql`, `0003_global_scores.sql`, `0004_unique_username.sql`, `0005_clueless_difficulty_leaderboards.sql`, and `0006_teams_and_live_matches.sql` in the Supabase SQL editor
+- [ ] Apply `supabase/migrations/0001_init.sql`, `0002_leaderboard.sql`, `0003_global_scores.sql`, `0004_unique_username.sql`, `0005_clueless_difficulty_leaderboards.sql`, `0006_teams_and_live_matches.sql`, and `0007_team_crud.sql` in the Supabase SQL editor
 - [ ] **Supabase Auth magic link (D-033):** Authentication → URL Configuration. Site URL must be exactly `https://wordkrush.com` (include `https://`; a bare `wordkrush.com` becomes the path `/wordkrush.com` on the API host). Redirect allow-list: `https://wordkrush.com/**`, `http://localhost:8081/**`, `http://localhost:8080/**`, `wordkrush://**`, `exp://**`. This free project cannot edit Auth email templates on the default mailer (June 2026). Enable custom SMTP only after a provider is ready — an empty host/user/pass breaks sending. Typical path is [Resend](https://resend.com/docs/send-with-supabase-smtp): verify `wordkrush.com`, then Host `smtp.resend.com`, Port `465`, Username `resend`, Password = Resend API key. Sender `noreply@wordkrush.com`, name `WordKrush`. Then Authentication → Email Templates → Magic Link: subject `Sign in to WordKrush`, body from `supabase/templates/magic-link.html` (keep `{{ .ConfirmationURL }}` and `{{ .Token }}`). SMTP credentials stay in the dashboard, never in `.env` or `EXPO_PUBLIC_*`.
 
 - [ ] **Reddit app (D-042):** `npm run reddit:install`, then `npm --prefix reddit run login` with the Reddit account that will own it. Playtest with `npm run reddit:dev` against a test subreddit, then `npm --prefix reddit run launch` for app review. **Pick the launch subreddit and talk to its moderators before installing** — an app dropped into a community that was not asked is a removal, not a launch. Confirm the 13:00 UTC cron hour suits that audience.

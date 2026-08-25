@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_SWING_VS_PREVIOUS } from './sanity';
 import {
+  carryForwardImages,
   compareSnapshots,
   formatRotateReport,
   itemId,
@@ -133,5 +134,30 @@ describe('formatRotateReport', () => {
       0,
     );
     expect(report).toContain('No PR');
+  });
+});
+
+describe('carryForwardImages', () => {
+  const pictured = item({
+    id: 'wikipedia-popularity.pizza',
+    label: 'Pizza',
+    value: 100_000,
+    imageUrl: 'https://example.test/pizza.jpg',
+    imageAttribution: 'Jane Doe',
+    imageLicense: 'CC BY 4.0',
+  });
+
+  it('restores the shipped picture when that article’s fetch threw', () => {
+    const blank = { ...pictured, imageUrl: undefined, imageAttribution: undefined, imageLicense: undefined };
+    const restored = carryForwardImages([pictured], [blank], new Set([pictured.id]));
+    expect(restored[0]?.imageUrl).toBe(pictured.imageUrl);
+    expect(restored[0]?.imageAttribution).toBe('Jane Doe');
+    expect(restored[0]?.imageLicense).toBe('CC BY 4.0');
+  });
+
+  it('leaves a genuine non-free miss blank', () => {
+    const blank = { ...pictured, imageUrl: undefined, imageAttribution: undefined, imageLicense: undefined };
+    const next = carryForwardImages([pictured], [blank], new Set());
+    expect(next[0]?.imageUrl).toBeUndefined();
   });
 });

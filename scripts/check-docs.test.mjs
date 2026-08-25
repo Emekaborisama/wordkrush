@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { requiredDocumentsFor } from './check-docs.mjs';
+import {
+  isVersionOnlyManifestChange,
+  requiredDocumentsFor,
+} from './check-docs.mjs';
 
-function requiredFor(paths) {
-  return requiredDocumentsFor(paths).map(({ document }) => document);
+function requiredFor(paths, options) {
+  return requiredDocumentsFor(paths, options).map(({ document }) => document);
 }
 
 describe('documentation impact rules', () => {
@@ -66,5 +69,57 @@ describe('documentation impact rules', () => {
     expect(
       requiredFor(['pipeline/ingest.ts', 'docs/CHANGELOG.md', 'docs/HOW-IT-WORKS.md']),
     ).toEqual([]);
+  });
+
+  it('treats a D-041 version-only bump as changelog, not stack', () => {
+    expect(
+      requiredFor(
+        [
+          'src/data/categories/wikipedia-popularity.json',
+          'docs/CHANGELOG.md',
+          'package.json',
+          'app.json',
+        ],
+        { versionOnlyManifests: ['package.json', 'app.json'] },
+      ),
+    ).toEqual([]);
+  });
+
+  it('still requires stack docs when package.json changes more than the version', () => {
+    expect(
+      requiredFor(['package.json'], { versionOnlyManifests: [] }),
+    ).toEqual(['docs/CHANGELOG.md', 'docs/HOW-IT-WORKS.md', 'docs/STACK.md']);
+  });
+});
+
+describe('isVersionOnlyManifestChange', () => {
+  it('accepts a package.json version field bump', () => {
+    expect(
+      isVersionOnlyManifestChange(
+        'package.json',
+        '{"name":"wordkrush","version":"0.8.0"}\n',
+        '{"name":"wordkrush","version":"0.8.1"}\n',
+      ),
+    ).toBe(true);
+  });
+
+  it('accepts an app.json expo.version bump', () => {
+    expect(
+      isVersionOnlyManifestChange(
+        'app.json',
+        '{"expo":{"name":"WordKrush","version":"0.8.0"}}\n',
+        '{"expo":{"name":"WordKrush","version":"0.8.1"}}\n',
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects a dependency or config edit', () => {
+    expect(
+      isVersionOnlyManifestChange(
+        'package.json',
+        '{"version":"0.8.0","dependencies":{}}\n',
+        '{"version":"0.8.1","dependencies":{"expo":"57.0.13"}}\n',
+      ),
+    ).toBe(false);
   });
 });

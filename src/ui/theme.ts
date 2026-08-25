@@ -158,7 +158,11 @@ export const numeric = {
   fontVariant: ['tabular-nums'] as const,
 };
 
-export const frame = { maxWidth: 460, maxHeight: 900 } as const;
+export const frame = {
+  /** Full-bleed below `wideMin`; laptop column cap above it. */
+  wideMin: 720,
+  maxWidth: 1080,
+} as const;
 
 /**
  * Type scale.

@@ -5,7 +5,14 @@ import {
   useFonts,
 } from '@expo-google-fonts/fredoka';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { readArrivalContext, type ArrivalContext } from './src/analytics/arrival';
 import { isLandingArrival } from './src/analytics/attribution';
 import {
@@ -90,7 +97,9 @@ import { LiveResultsScreen } from './src/ui/screens/LiveResultsScreen';
 import { ScoresScreen } from './src/ui/screens/ScoresScreen';
 import { TeamsScreen } from './src/ui/screens/TeamsScreen';
 import { WordfallScreen } from './src/ui/screens/WordfallScreen';
-import { frame, theme } from './src/ui/theme';
+import { LAPTOP_MAX_WIDTH, isWideLayout } from './src/ui/layout';
+import { theme } from './src/ui/theme';
+import { ensureWebViewport } from './src/ui/webViewport';
 
 const category = categoryData as Category & { provisional?: boolean };
 const MORE_OR_LESS = 'more-or-less';
@@ -214,6 +223,8 @@ export default function App() {
     Fredoka_600SemiBold,
     Fredoka_700Bold,
   });
+  const { width } = useWindowDimensions();
+  const wide = isWideLayout(width);
   const [screen, setScreen] = useState<Screen>({ name: 'hub' });
   const [boards, setBoards] = useState<Record<string, ScoreBoard>>({});
   const [cluelessDifficulty, setCluelessDifficulty] =
@@ -245,6 +256,10 @@ export default function App() {
   const restoredSessionReported = useRef(false);
   const hadRestoredSession = useRef(false);
   const identifiedProfileId = useRef<string | null>(null);
+
+  useEffect(() => {
+    ensureWebViewport();
+  }, []);
 
   useEffect(() => {
     void (async () => {
@@ -596,11 +611,11 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, wide && styles.safeLaptop]}>
       <StatusBar barStyle="light-content" backgroundColor={theme.bg} />
       <View style={styles.glowViolet} pointerEvents="none" />
       <View style={styles.glowCoral} pointerEvents="none" />
-      <View style={styles.frame}>
+      <View style={[styles.frame, wide && styles.frameLaptop]}>
         {showChrome && <TopBar onMenu={() => setMenuOpen(true)} />}
 
         {screen.name === 'hub' && (
@@ -990,9 +1005,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  // The outer surface fills the window; the inner frame holds the phone-shaped
-  // layout and centres it. On a phone the viewport is smaller than the caps, so
-  // the frame is a no-op there.
   loading: {
     flex: 1,
     backgroundColor: theme.bg,
@@ -1002,8 +1014,10 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.bg,
+  },
+  safeLaptop: {
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 28,
   },
   glowViolet: {
     position: 'absolute',
@@ -1025,12 +1039,14 @@ const styles = StyleSheet.create({
   },
   frame: {
     flex: 1,
+    alignSelf: 'stretch',
     width: '100%',
-    maxWidth: frame.maxWidth,
-    maxHeight: frame.maxHeight,
     backgroundColor: theme.bg,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: theme.border,
+  },
+  frameLaptop: {
+    maxWidth: LAPTOP_MAX_WIDTH,
+    alignSelf: 'center',
+    marginHorizontal: 'auto',
   },
 });

@@ -50,7 +50,7 @@ export function LottiePlayer({
       autoPlay={autoPlay}
       loop={loop}
       resizeMode="contain"
-      style={style}
+      style={[style, styles.clip]}
       webStyle={webStyle}
       onAnimationFinish={(cancelled) => {
         if (!cancelled) onFinish?.();
@@ -65,3 +65,7 @@ export function LottiePlayer({
     />
   );
 }
+
+const styles = StyleSheet.create({
+  clip: { overflow: 'hidden' },
+});

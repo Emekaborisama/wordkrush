@@ -7,13 +7,21 @@ type Props = {
   subtitle?: string;
   eyebrow?: string;
   align?: 'left' | 'center';
+  size?: 'display' | 'title';
   /** Trailing slot — Hub's streak flame, an icon, a settings glyph. */
   trailing?: ReactNode;
 };
 
 /** Title + subtitle, the same block Hub, Home, and Scores each redrew with
     a different font size and gap. */
-export function ScreenHeader({ title, subtitle, eyebrow, align = 'left', trailing }: Props) {
+export function ScreenHeader({
+  title,
+  subtitle,
+  eyebrow,
+  align = 'left',
+  size = 'display',
+  trailing,
+}: Props) {
   return (
     <View style={[styles.row, align === 'center' && styles.center]}>
       <View style={align === 'center' ? styles.center : undefined}>
@@ -22,7 +30,15 @@ export function ScreenHeader({ title, subtitle, eyebrow, align = 'left', trailin
             {eyebrow}
           </Text>
         ) : null}
-        <Text style={[type.display, styles.title, align === 'center' && styles.centerText]}>{title}</Text>
+        <Text
+          style={[
+            size === 'title' ? type.title : type.display,
+            styles.title,
+            align === 'center' && styles.centerText,
+          ]}
+        >
+          {title}
+        </Text>
         {subtitle ? (
           <Text style={[type.body, styles.subtitle, align === 'center' && styles.centerText]}>{subtitle}</Text>
         ) : null}
