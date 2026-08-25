@@ -118,7 +118,11 @@ Local contract: [reddit/README.md](../reddit/README.md).
 - [ ] Add the Python validator suite to CI — must run with `validator/` as cwd (`npm run test:validator`), else pytest loses `asyncio_mode` and the async tests error out
 - [x] Web deploy to Railway after green CI (STACK D-020)
 - [ ] **Railway Expo export needs `CI=true`** (ST-74) — **Doing**; Nixpacks leaves `CI` empty and Expo throws `GetEnv.NoBoolean`. Service is `wordcrush`.
-- [ ] **Wordfall weekly Gauntlet agent loop** (ST-78) — **Doing**; unique `taskFingerprint`, seven-day featured window, local `serve:web` playtest before GitHub (D-038).
+- [ ] **Wordfall weekly Gauntlet buffer loop** (ST-78) — **Doing**; the
+  standing `content/wordfall-weekly` review PR maintains four future Mondays
+  without a Superthread card per level. Every row still has a unique
+  `taskFingerprint`, a seven-day featured window, and a local `serve:web`
+  picker playtest before GitHub (D-038, D-058).
 - [ ] First TestFlight build ← blocked on Apple Developer + Expo login
 
 ## Suggested order

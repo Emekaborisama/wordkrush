@@ -1,11 +1,12 @@
 ---
 name: wordfall-weekly-gauntlet
 description: >-
-  Authors Wordfall's weekly hard drop (working title Gauntlet): one unique
-  task, featured for seven days, never a repeat of last week. Tests the
-  catalog, locally deploys the web export, playtests the picker, and only
-  then pushes a GitHub PR. Use when adding a Monday Wordfall level, weekly
-  drop, Gauntlet, hard weekly level, or when Job B in WORDFALL-WEEKLY.md runs.
+  Maintains Wordfall's four-week hard-drop buffer (working title Gauntlet) on
+  a standing human-reviewed PR: each level is unique, featured for seven days,
+  and never a repeat. Tests the catalog, locally deploys the web export,
+  playtests the picker, and only then updates GitHub. Use when adding a Monday
+  Wordfall level, weekly drop, Gauntlet, hard weekly level, or when Job B in
+  WORDFALL-WEEKLY.md runs.
 ---
 
 # Wordfall weekly Gauntlet
@@ -15,6 +16,8 @@ row is still a dated `LEVELS` entry (D-004, D-027). Product contract:
 [docs/WORDFALL-WEEKLY.md](../../../docs/WORDFALL-WEEKLY.md).
 
 Do not push to GitHub until the local loop in **Verify before GitHub** is green.
+The standing `content/wordfall-weekly` review branch is a documented automation
+exception to the normal Superthread card branch contract (D-058).
 
 ## What a drop is
 
@@ -40,16 +43,27 @@ Do not push to GitHub until the local loop in **Verify before GitHub** is green.
 
 1. Read `docs/WORDFALL-WEEKLY.md`, `src/data/wordfall/levels.ts`, and the last
    three weekly rows (or 9–11 if none exist).
-2. Compute `nextNumber` (last + 1) and `nextMonday` (first dated Monday + 7
-   days, or the coming Monday that a build can actually contain — never today
-   if today is Monday unless the export is already live).
-3. Superthread card → checkout **exact** `suggested_branch_name`. No invented
-   `feat/` branch. No card → stop and ask. Never push the drop to `master`.
-4. Fingerprint every existing row. Design a task whose fingerprint is new.
-5. Append one object to `LEVELS`. Name, required `description`, objectives.
-   `availableFrom` is that Monday. Do not copy level 8 with a new date.
-6. Changelog: new `[x.y.z]` section plus `package.json` / `app.json` bump — number, Monday, one-line idea.
-7. Run **Verify before GitHub**. Only then commit, push, and open the PR.
+2. Count dated rows whose `availableFrom` is still in the future. If there are
+   already four, stop without changing files or GitHub. Otherwise compute each
+   missing consecutive Monday, `nextNumber`, and `nextMonday` (the coming
+   Monday that a build can actually contain — never today unless the export is
+   already live).
+3. Use the standing `content/wordfall-weekly` review branch. If its review PR
+   is open, extend it; otherwise start it from current `master` and create a
+   new review PR only after verification. Do not create a Superthread card or
+   a per-drop branch. An environment-created `cursor/...` branch is not the
+   delivery branch: before any GitHub write, ensure the change is on
+   `content/wordfall-weekly`. Never push to `master`.
+4. Fingerprint every existing and newly planned row. Design one hard task per
+   missing Monday, each with a new fingerprint.
+5. Append enough objects to `LEVELS` to restore the four-week buffer. Each has
+   a name, required `description`, objectives, and its Monday
+   `availableFrom`. Do not copy level 8 with a new date.
+6. Add one pending `[x.y.z]` changelog section plus matching `package.json` /
+   `app.json` bump for the review PR. If extending an unmerged PR, update that
+   pending section rather than creating a second version heading.
+7. Run **Verify before GitHub**. Only then commit, push, and create or update
+   the standing review PR.
 
 ## Verify before GitHub
 
@@ -76,9 +90,10 @@ npm run serve:web
 If the solver cannot win seeds 11 / 4242 / 90210, loosen the target. If it
 wins on move one, tighten it. Re-run the whole verify loop.
 
-Then, and only then: commit, `git push`, open PR
-`ST-<id> Wordfall level <n> — <Monday>`. Body: number, `availableFrom`,
-puzzle vs race, fingerprint, solver seeds that won. Merge stays human.
+Then, and only then: commit, `git push` to `content/wordfall-weekly`, and
+create or update the review PR `Wordfall weekly buffer through <last Monday>`.
+Its body lists every number and `availableFrom`, puzzle vs race, fingerprint,
+solver seeds that won, and the native-release caveat. Merge stays human.
 
 ## Forbidden
 
@@ -86,4 +101,5 @@ puzzle vs race, fingerprint, solver seeds that won. Merge stays human.
 - Repeat last week's fingerprint.
 - New special tiles, dictionary rebuild, engine actions.
 - Runtime fetch / Supabase level read.
+- Per-drop Superthread cards or branches for routine buffer refills.
 - Push to `master`, auto-merge, EAS, or App Store submit.
