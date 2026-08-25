@@ -270,8 +270,8 @@ unchanged.
 `expo-font` plugin in `app.json`) so WordKrush type is available offline
 (D-030). Symbol glyphs stay on the system face. `TextField` sets Fredoka on
 the `TextInput` itself — RN-web's default `font` shorthand would otherwise
-keep the system sans — and hides the UA focus outline so only the designed
-shell border shows. Game data remains bundled
+keep the system sans — and a stylesheet rule kills the UA `:focus-visible`
+ring so only the designed shell border shows. Game data remains bundled
 JSON; missing Supabase keys still leave every title playable. Splash uses the
 black lockup in `assets/logo/`; auth uses the clear lockup; drawer and top bar
 use the W mark via `BrandArtwork`. The hub hero is the little-deer mascot

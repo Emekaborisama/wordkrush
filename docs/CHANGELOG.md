@@ -10,7 +10,7 @@ Rules:
 
 ### Fixed
 - **Typed text in `TextField` now uses Fredoka**, matching the Guess button and the rest of the UI. The input had size and weight but no `fontFamily`, and on web RN-web's `font: 14px System` reset was also eating the longhand, so the focused field fell back to the system sans (D-030).
-- **The yellow/orange ring around a focused guess field is gone.** That was the browser's default outline on the inner `<input>`, not the designed 1px shell. Focus still shows as the game-accent shell border.
+- **The inner focus rectangle around a guess field is gone.** Chrome/Safari paint a sharp ring on the `<input>` (`:focus-visible`) that sits inside the rounded shell — orange first, then white. Focus still shows as the game-accent shell border.
 
 ## [0.8.0] - 2026-08-25
 

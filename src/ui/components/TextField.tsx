@@ -13,17 +13,46 @@ import {
 import { font, radius, space, theme, type, withAlpha } from '../theme';
 
 /**
- * RN-web's TextInput reset is `font: 14px System` plus the UA focus outline.
- * The `font` shorthand discards a sibling `fontFamily` longhand, and Chrome/
- * Safari paint an orange ring on the inner <input> that is not the designed
- * shell border. Native uses `fontFamily` on `styles.input` (D-030).
+ * RN-web's TextInput reset is `font: 14px System`. The `font` shorthand
+ * discards a sibling `fontFamily` longhand. Native uses `fontFamily` on
+ * `styles.input` (D-030).
+ *
+ * Chrome/Safari `:focus-visible` uses an `outline` shorthand whose
+ * specificity beats RN-web's atomic `outlineWidth` class — that is the
+ * sharp rectangle inside the rounded shell (orange, then white). A real
+ * stylesheet rule with !important is the thing that wins.
  */
+const WEB_INPUT_RESET_ID = 'wk-textfield-ua-reset';
+
+type WebStyleSheet = {
+  id: string;
+  textContent: string;
+};
+
+type WebDoc = {
+  getElementById(id: string): WebStyleSheet | null;
+  createElement(tag: 'style'): WebStyleSheet;
+  head: { appendChild(node: WebStyleSheet): void };
+};
+
+function ensureWebInputReset() {
+  if (Platform.OS !== 'web') return;
+  const doc = (globalThis as { document?: WebDoc }).document;
+  if (!doc || doc.getElementById(WEB_INPUT_RESET_ID)) return;
+  const style = doc.createElement('style');
+  style.id = WEB_INPUT_RESET_ID;
+  style.textContent =
+    'input:focus,input:focus-visible,textarea:focus,textarea:focus-visible{outline:none!important;box-shadow:none!important;border:none!important}';
+  doc.head.appendChild(style);
+}
+
 const webInputStyle: StyleProp<TextStyle> =
   Platform.OS === 'web'
     ? ({
         font: `600 16px ${font.semibold}`,
         outlineWidth: 0,
         outlineColor: 'transparent',
+        borderWidth: 0,
       } as TextStyle)
     : null;
 
@@ -48,6 +77,7 @@ export function TextField({
   accessibilityLabel,
   ...props
 }: Props) {
+  ensureWebInputReset();
   const [focused, setFocused] = useState(false);
   const borderColor = error ? theme.danger : focused ? accent : theme.border;
 
