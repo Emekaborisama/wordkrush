@@ -18,6 +18,9 @@ type Props = {
   playLabel?: string;
   /** Used while game-specific resume state is still resolving. */
   playDisabled?: boolean;
+  onRace?: () => void;
+  raceDisabled?: boolean;
+  raceLabel?: string;
 };
 
 /**
@@ -44,6 +47,9 @@ export function GameStartScreen({
   footer,
   playLabel = 'Play now',
   playDisabled = false,
+  onRace,
+  raceDisabled = false,
+  raceLabel = 'Race with team',
 }: Props) {
   const game = getGame(gameId);
   const accent = game?.accent ?? theme.accent;
@@ -103,6 +109,16 @@ export function GameStartScreen({
             color={accent}
             disabled={playDisabled}
           />
+          {onRace ? (
+            <Button
+              title={raceLabel}
+              variant="tonal"
+              size="md"
+              onPress={onRace}
+              color={accent}
+              disabled={raceDisabled}
+            />
+          ) : null}
           <Button title="View scores" variant="tonal" size="md" onPress={onScores} color={accent} />
         </View>
 

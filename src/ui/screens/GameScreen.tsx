@@ -10,6 +10,7 @@ import {
   type Guess,
 } from '../../games/more-or-less/engine';
 import { isGameState, isResumable, matchesDataset } from '../../games/more-or-less/persistence';
+import type { RatioBand } from '../../games/more-or-less/pairing';
 import type { Category, Item } from '../../games/more-or-less/types';
 import { clearProgress, loadProgress, saveProgress } from '../../games/progress';
 import { getGame } from '../../games/registry';
@@ -36,16 +37,30 @@ type Props = {
   bestStreak: number;
   onExit: () => void;
   onGameOver: (state: GameState) => void;
+  persist?: boolean;
+  band?: RatioBand;
+  targetStreak?: number;
+  onScore?: (score: number, complete: boolean) => void;
 };
 
-export function GameScreen({ category, seed, bestStreak, onExit, onGameOver }: Props) {
+export function GameScreen({
+  category,
+  seed,
+  bestStreak,
+  onExit,
+  onGameOver,
+  persist = true,
+  band,
+  targetStreak,
+  onScore,
+}: Props) {
   const pool: Item[] = category.items;
   const accent = getGame('more-or-less')?.accent ?? theme.success;
   const [help, setHelp] = useState(false);
   const [state, dispatch] = useReducer(
     (s: GameState, a: Parameters<typeof reducer>[1]) => reducer(s, a, pool),
     undefined,
-    () => newRun(pool, seed, bestStreak),
+    () => newRun(pool, seed, bestStreak, band),
   );
 
   // A run is keyed by category, not by seed: resuming has to work when the
@@ -53,6 +68,15 @@ export function GameScreen({ category, seed, bestStreak, onExit, onGameOver }: P
   const restored = useRef(false);
 
   useEffect(() => {
+    if (!persist) {
+      restored.current = true;
+      captureAnalytics('run_started', {
+        game_id: 'more-or-less',
+        is_resume: false,
+        category_id: category.id,
+      });
+      return;
+    }
     let cancelled = false;
     void loadProgress('more-or-less', category.id, isGameState).then((saved) => {
       if (cancelled) return;
@@ -73,13 +97,17 @@ export function GameScreen({ category, seed, bestStreak, onExit, onGameOver }: P
     return () => {
       cancelled = true;
     };
-  }, [category.id]);
+  }, [category.id, persist]);
 
   useEffect(() => {
-    if (!restored.current) return;
+    if (!persist || !restored.current) return;
     if (state.status === 'over') void clearProgress('more-or-less');
     else void saveProgress('more-or-less', category.id, state);
-  }, [state, category.id]);
+  }, [state, category.id, persist]);
+
+  useEffect(() => {
+    onScore?.(state.streak, targetStreak != null ? state.streak >= targetStreak : false);
+  }, [state.streak, targetStreak, onScore]);
 
   const revealed = state.status !== 'playing';
   const counted = useCountUp(state.right.value, motion.countMs, revealed);

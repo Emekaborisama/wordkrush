@@ -1,7 +1,7 @@
 # Monitoring and observability
 
 **Status:** Initial PostHog instrumentation implemented; dashboards and operational monitors are managed in their named source systems.
-**Last updated:** 2026-08-23
+**Last updated:** 2026-08-25
 **Owner:** Product and engineering
 
 This document is the source of truth for how WordKrush measures product
@@ -115,6 +115,11 @@ expose a typed event map so names and property shapes cannot drift.
 | `auth_skipped` | P2 | Auth skip action | none | Prompt abandonment |
 | `auth_session_restored` | P1 | Startup session restore succeeds | `result: signed_in` | Signed-in startup reliability without exposing account identity |
 | `signed_out` | P2 | Sign-out operation succeeds | none | Account disengagement and session lifecycle |
+| `team_created` | P1 | Team create RPC succeeds | none | Whether signed-in players form a crew |
+| `team_joined` | P1 | Team join RPC succeeds | `via: code \| invite` | Invite vs typed-code conversion |
+| `match_created` | P1 | Host opens a lobby | `game_id`, `level_number` | Which path rows get raced |
+| `match_started` | P1 | Host starts a ready lobby | `game_id`, `level_number`, `player_count_bucket: 2 \| 3 \| 4` | Live-race start rate |
+| `match_finished` | P1 | Match reaches `finished` | `game_id`, `level_number`, `player_count_bucket`, `complete`, `outcome: win \| loss` | Completion vs spectating the clock |
 
 `score` has different semantics across games, so every completed run includes
 `score_kind`: `streak` for WordKrush comparison mode, `guesses_used` for Clueless, and
@@ -163,7 +168,9 @@ bounded mode (`easy`, `standard`, `expert`) and source
 - Consecutive-day participation after a completed puzzle.
 
 Never capture the submitted word. Rank and validation buckets answer the
-balance question without collecting player-entered text.
+balance question without collecting player-entered text. Live-race events
+(`match_*`) carry only `game_id`, `level_number`, `player_count_bucket`,
+`complete`, and `outcome` — never guesses, secrets, or invite codes.
 
 ### Wordfall
 

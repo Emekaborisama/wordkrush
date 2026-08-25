@@ -15,7 +15,7 @@
  * Both of those are config-shaped rather than hard-coded where it matters, so
  * the still-open framing questions stay cheap to change.
  */
-import { isFairPair, ratio, targetBandForStreak } from './pairing';
+import { isFairPair, ratio, targetBandForStreak, type RatioBand } from './pairing';
 import { nextInt } from '../rng';
 import type { Item } from './types';
 
@@ -35,6 +35,11 @@ export type GameState = {
   seed: number;
   /** Rounds where no pair matched the target band, so it had to widen. */
   relaxedRounds: number;
+  /**
+   * When set, every round uses this band instead of the streak curve.
+   * Campaign rows use it to start tighter than a fresh endless run.
+   */
+  bandOverride?: RatioBand;
 };
 
 export type Action =
@@ -60,8 +65,9 @@ export function selectChallenger(
   streak: number,
   seenIds: string[],
   seed: number,
+  bandOverride?: RatioBand,
 ): { item: Item; seed: number; relaxed: boolean } {
-  const band = targetBandForStreak(streak);
+  const band = bandOverride ?? targetBandForStreak(streak);
   const recent = new Set(seenIds.slice(-RECENT_WINDOW));
 
   const fair = pool.filter((item) => item.id !== anchor.id && isFairPair(anchor, item));
@@ -87,12 +93,24 @@ export function selectChallenger(
   return { item: finalPool[index], seed: nextSeed, relaxed: inBand.length === 0 };
 }
 
-export function newRun(pool: Item[], seed: number, bestStreak = 0): GameState {
+export function newRun(
+  pool: Item[],
+  seed: number,
+  bestStreak = 0,
+  bandOverride?: RatioBand,
+): GameState {
   if (pool.length < 2) throw new Error('newRun needs at least 2 items');
 
   const [firstIndex, s1] = nextInt(seed, pool.length);
   const left = pool[firstIndex];
-  const { item: right, seed: s2 } = selectChallenger(pool, left, 0, [left.id], s1);
+  const { item: right, seed: s2 } = selectChallenger(
+    pool,
+    left,
+    0,
+    [left.id],
+    s1,
+    bandOverride,
+  );
 
   return {
     left,
@@ -104,6 +122,7 @@ export function newRun(pool: Item[], seed: number, bestStreak = 0): GameState {
     seenIds: [left.id, right.id],
     seed: s2,
     relaxedRounds: 0,
+    ...(bandOverride ? { bandOverride } : {}),
   };
 }
 
@@ -117,7 +136,7 @@ export function isCorrect(left: Item, right: Item, choice: Guess): boolean {
 export function reducer(state: GameState, action: Action, pool: Item[]): GameState {
   switch (action.type) {
     case 'newRun':
-      return newRun(pool, action.seed, state.bestStreak);
+      return newRun(pool, action.seed, state.bestStreak, state.bandOverride);
 
     case 'restore':
       // Land on 'playing': a run saved mid-reveal would otherwise resume with
@@ -151,6 +170,7 @@ export function reducer(state: GameState, action: Action, pool: Item[]): GameSta
         state.streak,
         state.seenIds,
         state.seed,
+        state.bandOverride,
       );
 
       return {

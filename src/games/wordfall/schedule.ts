@@ -5,7 +5,10 @@
  * offline; a player who has not updated the app simply does not have next
  * week's row yet.
  */
+import { unlockAfterWin } from '../campaign';
 import type { Level } from './types';
+
+export { unlockAfterWin };
 
 const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -66,11 +69,6 @@ export function releasedLevels<T extends Pick<Level, 'availableFrom'>>(
 export function lastReleasedNumber(levels: readonly Pick<Level, 'number' | 'availableFrom'>[], now: Date): number {
   const released = releasedLevels(levels, now);
   return released.length === 0 ? 1 : released[released.length - 1].number;
-}
-
-/** After a win, unlock the next number even if that level has not shipped yet. */
-export function unlockAfterWin(unlocked: number, levelNumber: number): number {
-  return Math.max(unlocked, levelNumber + 1);
 }
 
 export function isNewestRelease(

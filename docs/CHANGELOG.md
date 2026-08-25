@@ -6,6 +6,13 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.0] - 2026-08-25
+
+### Added
+- **Signed-in players can form a private team and race any title live.** Create or join with a 6-character invite, pick a numbered path row, ready up with 2–4 people, and play the same seed against a shared clock. Ranking is each player's own score — streak, guesses used, or Wordfall points — not a combined team total.
+- **Team and personal path cursors move independently.** Completing a live row unlocks the next slot for the team if anyone finished it, and for a player only if they finished it. Guests and solo Play are unchanged, including Clueless daily.
+- **More or Less has a bundled 10-level team path.** Solo Play stays the endless Wikipedia run. Live rows set a target streak and may start on a tighter fairness band. Clueless team races use existing puzzles except today's daily so the secret stays unspoiled.
+
 ## [0.7.0] - 2026-08-24
 
 ### Added

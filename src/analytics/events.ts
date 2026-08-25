@@ -32,7 +32,7 @@ export type AnalyticsEvents = {
     session_result: 'signed_in' | 'guest';
   };
   screen_viewed: {
-    screen_name: 'hub' | 'home' | 'game' | 'over' | 'scores' | 'auth';
+    screen_name: 'hub' | 'home' | 'game' | 'over' | 'scores' | 'auth' | 'teams' | 'live-lobby' | 'live-results';
     game_id?: string;
   };
   game_selected: CommonGameProperties & {
@@ -125,6 +125,23 @@ export type AnalyticsEvents = {
     result: 'signed_in';
   };
   signed_out: Record<string, never>;
+  team_created: Record<string, never>;
+  team_joined: {
+    via: 'code' | 'invite';
+  };
+  match_created: CommonGameProperties & {
+    level_number: number;
+  };
+  match_started: CommonGameProperties & {
+    level_number: number;
+    player_count_bucket: '2' | '3' | '4';
+  };
+  match_finished: CommonGameProperties & {
+    level_number: number;
+    player_count_bucket: '2' | '3' | '4';
+    complete: boolean;
+    outcome: 'win' | 'loss';
+  };
   score_persist_failed: CommonGameProperties & {
     operation: 'load' | 'save' | 'migration';
     error_category: 'storage';
@@ -164,6 +181,11 @@ export const ANALYTICS_EVENT_NAMES: ReadonlySet<string> = new Set<AnalyticsEvent
   'auth_skipped',
   'auth_session_restored',
   'signed_out',
+  'team_created',
+  'team_joined',
+  'match_created',
+  'match_started',
+  'match_finished',
   'score_persist_failed',
   'progress_persist_failed',
   'card_image_load_failed',

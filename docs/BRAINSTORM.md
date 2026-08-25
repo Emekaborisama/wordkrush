@@ -1,6 +1,6 @@
 # WordKrush — Design Brainstorm
 
-**Last updated:** 2026-08-22
+**Last updated:** 2026-08-25
 **Status:** Design exploration. Nothing implemented yet.
 **Audience:** Whoever (human or LLM) picks this up next. Read this before writing code.
 
@@ -158,6 +158,23 @@ Hints are reviewed content, not runtime AI and not a nearest-neighbour guess.
 They describe a context or association without including the answer, its
 inflections, letter/length clues, or a direct synonym. This preserves
 Clueless’s “meaning, not spelling” identity and the bundled-offline boundary.
+
+### Teams and live races **[GIVEN — 2026-08-25]**
+
+One signed-in team layer covers every title. Guests keep solo Play. Teams are
+private invite-only (code / `wordkrush://team?code=`). A live race is 2–4
+players on the same numbered path row at once; ranking uses each player's own
+score, never a combined team total.
+
+Unlocks are dual: the team's cursor advances if anyone completes the row; a
+player's personal cursor advances only if that player completed. During a team
+session everyone plays the team's selected level. Completing it is what moves
+a personal cursor.
+
+Clueless daily stays solo (UTC). Team Clueless is a timed path on bundled
+puzzle numbers, never today's daily. The rival HUD shows guess count and
+found/not — never other players' words. Live results do not write
+`global_leaderboard`. Reddit is out of scope.
 
 ## 7. Architecture
 

@@ -444,6 +444,38 @@ Other games keep one board per game. Until that migration is applied, local
 play and local boards work, while production global Clueless ranks remain on
 the previous view.
 
+## Journey 9 — A signed-in crew races a path row
+
+**1. A team is invite-only.** [BUILT]
+`TeamsScreen` creates or joins through RPCs (`create_team`, `join_team`) in
+`0006_teams_and_live_matches.sql`. There is no public directory. Deep links
+`wordkrush://team?code=` and `/?team=` land on the same join path. Guests still
+play solo; the Race CTA asks them to sign in.
+
+**2. The picker is Wordfall-shaped for every title.** [BUILT]
+Shared unlock math in `src/games/campaign.ts` (`unlockAfterWin`, dual
+`applyMatchUnlocks`). Wordfall reuses it. More or Less reads
+`src/data/more-or-less/levels.ts`. Clueless team path uses bundled puzzle
+numbers and refuses today's UTC daily. A row above the team cursor stays
+locked; a row the team has opened but the player has not is playable in the
+session and marked team-ahead.
+
+**3. A lobby is 2–4 ready players, then a server seed.** [BUILT]
+`create_match` / `join_match` / `set_ready` / `start_match`. Late joins after
+`started_at` are refused. The seed is assigned on start, not by the host
+client. Realtime on `matches` and `match_players` plus a 1.5s poll.
+
+**4. Rival HUD never leaks answers.** [BUILT]
+`LiveRaceHud` shows a clock and each player's numeric score plus
+complete/not. Clueless never sends guessed words. `post_match_score` writes
+only score, complete, and done. Live results do not insert `global_scores`.
+
+**5. Dual unlock on finish.** [BUILT]
+`finish_match` ranks the roster and bumps `team_progress` if anyone completed.
+The client then advances the personal AsyncStorage cursor only when that
+player completed. Backend down or unconfigured: live CTAs stay disabled and
+solo Play works.
+
 ---
 
 ## System reference
@@ -474,6 +506,7 @@ Quick map of where each journey step lives:
 | Unique leaderboard username | `supabase/migrations/0004_unique_username.sql`, `src/auth/validation.ts` `usernameKey` | [BUILT: apply on the owner project] — unique index on `username_key(display_name)`; duplicate maps to "That username is taken." |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
 | Clueless difficulty boards | `supabase/migrations/0005_clueless_difficulty_leaderboards.sql`, `src/games/clueless/scoring.ts` | [BUILT: apply migration] — Easy/Standard/Expert partition under stable `clueless` id |
+| Teams + live races | `supabase/migrations/0006_teams_and_live_matches.sql`, `src/teams/`, `src/live/`, `src/games/campaign.ts` | [BUILT: apply migration] — private teams, 2–4 player races, dual unlock; live scores stay off `global_leaderboard` |
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both |
@@ -501,9 +534,11 @@ Quick map of where each journey step lives:
   `EXPO_PUBLIC_USERBACK_TOKEN` identifies the feedback project, not the
   Userback account, and is unset in builds that ship without the widget.
 - Supabase access is constrained by Row Level Security (`players`,
-  `leaderboard_entries`, `global_scores`). Clients insert only their own rows
-  and cannot update or delete a submitted score. PostHog remains opted out
-  until explicit consent and never receives account identity.
+  `leaderboard_entries`, `global_scores`, `teams`, `matches`, `match_players`).
+  Clients insert only their own scores and cannot update or delete a submitted
+  one. Team and match writes go through `SECURITY DEFINER` RPCs. PostHog
+  remains opted out until explicit consent and never receives guessed content
+  or account identity until identify.
 
 ## Risk register (live)
 
