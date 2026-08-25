@@ -1,0 +1,160 @@
+name: Merge labeled content PRs
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  pull_request_target:
+    types: [labeled, ready_for_review]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge eligible content PR
+        uses: actions/github-script@v7
+        env:
+          CONTENT_AUTOMERGE_TOKEN: ${{ secrets.CONTENT_AUTOMERGE_TOKEN }}
+        with:
+          github-token: ${{ secrets.CONTENT_AUTOMERGE_TOKEN || github.token }}
+          script: |
+            const autoMergeLabel = 'automation:auto-merge';
+            const eligibleHeadBranches = new Set([
+              'content/clueless-daily',
+              'content/wordfall-weekly',
+            ]);
+            const { owner, repo } = context.repo;
+            const eventName = context.eventName;
+            let pullNumber;
+            let successfulCiForHead = false;
+            let workflowRun;
+
+            if (eventName === 'workflow_run') {
+              workflowRun = context.payload.workflow_run;
+              if (
+                workflowRun.conclusion !== 'success' ||
+                workflowRun.event !== 'pull_request'
+              ) {
+                core.info('Ignoring a CI run that did not succeed for a pull request.');
+                return;
+              }
+
+              const [pullRequest] = workflowRun.pull_requests ?? [];
+              if (!pullRequest) {
+                core.info('The successful CI run is not associated with a pull request.');
+                return;
+              }
+
+              pullNumber = pullRequest.number;
+              successfulCiForHead = true;
+            } else if (eventName === 'pull_request_target') {
+              pullNumber = context.payload.pull_request.number;
+            } else {
+              core.info(`Ignoring unsupported event: ${eventName}.`);
+              return;
+            }
+
+            const { data: pull } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pullNumber,
+            });
+
+            const labels = new Set(pull.labels.map(({ name }) => name));
+            const isEligible =
+              pull.state === 'open' &&
+              !pull.draft &&
+              pull.base.ref === 'master' &&
+              pull.head.repo?.full_name === `${owner}/${repo}` &&
+              eligibleHeadBranches.has(pull.head.ref) &&
+              labels.has(autoMergeLabel);
+
+            if (!isEligible) {
+              core.info(`PR #${pull.number} is not an eligible labeled content PR.`);
+              return;
+            }
+
+            if (
+              workflowRun &&
+              workflowRun.head_sha !== pull.head.sha
+            ) {
+              core.info(`PR #${pull.number} has newer untested changes.`);
+              return;
+            }
+
+            if (!successfulCiForHead) {
+              const { data: runs } = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id: 'ci.yml',
+                event: 'pull_request',
+                head_sha: pull.head.sha,
+                per_page: 100,
+              });
+
+              successfulCiForHead = runs.workflow_runs.some(
+                (run) =>
+                  run.conclusion === 'success' &&
+                  run.head_branch === pull.head.ref &&
+                  run.head_sha === pull.head.sha,
+              );
+            }
+
+            if (!successfulCiForHead) {
+              core.info(`PR #${pull.number} does not have a successful CI run for its current head.`);
+              return;
+            }
+
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner,
+              repo,
+              pull_number: pull.number,
+              per_page: 100,
+            });
+            const latestReviewByAuthor = new Map();
+
+            for (const review of reviews) {
+              if (review.user?.login) {
+                latestReviewByAuthor.set(review.user.login, review.state);
+              }
+            }
+
+            if (
+              [...latestReviewByAuthor.values()].includes('CHANGES_REQUESTED')
+            ) {
+              core.info(`PR #${pull.number} has requested changes.`);
+              return;
+            }
+
+            if (!process.env.CONTENT_AUTOMERGE_TOKEN) {
+              core.setFailed('Set CONTENT_AUTOMERGE_TOKEN to a fine-grained GitHub token before enabling content auto-merge.');
+              return;
+            }
+
+            const { data: merge } = await github.rest.pulls.merge({
+              owner,
+              repo,
+              pull_number: pull.number,
+              sha: pull.head.sha,
+              merge_method: 'merge',
+            });
+
+            if (merge.merged) {
+              core.notice(`Merged eligible content PR #${pull.number}.`);
+              try {
+                await github.rest.git.deleteRef({
+                  owner,
+                  repo,
+                  ref: `heads/${pull.head.ref}`,
+                });
+              } catch (error) {
+                core.warning(`Merged PR #${pull.number}, but could not delete ${pull.head.ref}: ${error.message}`);
+              }
+            } else {
+              core.warning(`PR #${pull.number} was not merged: ${merge.message}`);
+            }
