@@ -1,0 +1,17 @@
+{
+  "name": "WordKrush",
+  "install": "npm ci && (command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh) && export PATH=\"$HOME/.local/bin:$PATH\" && uv sync --project validator --extra dev",
+  "terminals": [
+    {
+      "name": "expo-web",
+      "command": "npm run web",
+      "description": "Expo web dev server (Metro) on http://localhost:8081 with live reload."
+    }
+  ],
+  "ports": [
+    {
+      "name": "expo-web",
+      "port": 8081
+    }
+  ]
+}
