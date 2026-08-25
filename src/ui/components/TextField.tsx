@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -9,7 +10,22 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { radius, space, theme, type, withAlpha } from '../theme';
+import { font, radius, space, theme, type, withAlpha } from '../theme';
+
+/**
+ * RN-web's TextInput reset is `font: 14px System` plus the UA focus outline.
+ * The `font` shorthand discards a sibling `fontFamily` longhand, and Chrome/
+ * Safari paint an orange ring on the inner <input> that is not the designed
+ * shell border. Native uses `fontFamily` on `styles.input` (D-030).
+ */
+const webInputStyle: StyleProp<TextStyle> =
+  Platform.OS === 'web'
+    ? ({
+        font: `600 16px ${font.semibold}`,
+        outlineWidth: 0,
+        outlineColor: 'transparent',
+      } as TextStyle)
+    : null;
 
 type Props = Omit<TextInputProps, 'style'> & {
   label?: string;
@@ -60,7 +76,7 @@ export function TextField({
             setFocused(false);
             onBlur?.(event);
           }}
-          style={[styles.input, inputStyle]}
+          style={[styles.input, webInputStyle, inputStyle]}
         />
         {trailing}
       </View>
@@ -88,6 +104,9 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 52,
     color: theme.text,
+    // TextInput does not inherit type from surrounding Text. Without an
+    // explicit face the UA stylesheet (system sans) wins — D-030.
+    fontFamily: font.semibold,
     fontSize: 16,
     fontWeight: '600',
     paddingVertical: 0,

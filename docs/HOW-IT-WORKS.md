@@ -1,6 +1,6 @@
 # How It Works
 
-**Last updated:** 2026-08-23
+**Last updated:** 2026-08-25
 **What this is:** the living explainer for the whole system, told as **end-to-end journeys** — from the user, down through every layer, and back to the user. Each step names the code that handles it, the logic behind it, and the risk it carries. When a workflow changes, this doc changes in the same PR.
 
 Doc boundaries: [STACK.md](STACK.md) = *what we chose* (decision log) · [BRAINSTORM.md](BRAINSTORM.md) = *what we're designing* · [WORKFLOW.md](WORKFLOW.md) = *how we collaborate* · [marketing/](marketing/README.md) = *how we reach players* (GTM decision log, G-00x) · this doc = *how the built system behaves*. Decisions are referenced by STACK id (D-00x), never re-argued here.
@@ -268,7 +268,10 @@ unchanged.
 **5. Fonts and chrome load before the hub.** [BUILT]
 `App.tsx` waits on bundled Fredoka faces (`@expo-google-fonts/fredoka` via the
 `expo-font` plugin in `app.json`) so WordKrush type is available offline
-(D-030). Symbol glyphs stay on the system face. Game data remains bundled
+(D-030). Symbol glyphs stay on the system face. `TextField` sets Fredoka on
+the `TextInput` itself — RN-web's default `font` shorthand would otherwise
+keep the system sans — and hides the UA focus outline so only the designed
+shell border shows. Game data remains bundled
 JSON; missing Supabase keys still leave every title playable. Splash uses the
 black lockup in `assets/logo/`; auth uses the clear lockup; drawer and top bar
 use the W mark via `BrandArtwork`. The hub hero is the little-deer mascot

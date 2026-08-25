@@ -1,6 +1,6 @@
 # Design System — WordKrush
 
-**Last updated:** 2026-08-22
+**Last updated:** 2026-08-25
 
 This is the source of truth for visual and interaction decisions across the
 hub and every game. Read it before adding a screen or component. It exists so
@@ -142,7 +142,7 @@ Located in `src/ui/components/`.
 | `Mascot` | Hub deer + outcome poses (`src/ui/lottie/`, `LOTTIE_CLIPS`) | ✅ built |
 | `BrandArtwork` | Hub/drawer/top-bar W mark; auth clear lockup | ✅ built |
 | `IconButton` | 44pt icon hits on game headers | ✅ built |
-| `TextField` | Clueless guess input | ✅ built |
+| `TextField` | Clueless guess input (and auth / team forms). Typed text uses Fredoka semibold; web hides the UA focus outline so only the designed shell border shows (D-030) | ✅ built |
 | `GameStartScreen` | per-game pre-run screens (was More-or-Less-only `HomeScreen`) | ✅ built |
 
 ## Rollout plan
