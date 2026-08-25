@@ -348,18 +348,20 @@ kinds) must be unique, including vs last week. Featured TTL is seven days
 holes. Job B is the Cursor skill
 [wordfall-weekly-gauntlet](../.cursor/skills/wordfall-weekly-gauntlet/SKILL.md).
 It maintains the four-week queue on the standing
-`content/wordfall-weekly` review branch rather than needing a Superthread card
-for every Monday (D-058).
+`content/wordfall-weekly` content branch rather than needing a Superthread card
+for every Monday (D-058, D-059).
 
 **2. Local production check, then the row ships like code.** [BUILT: web · blocked on owner: iOS]
 Before GitHub, Job B runs `npm run check`, `npm run build:web`, and
 `npm run serve:web` (port 8080) and playtests that export (D-038). Merge to
 `master` deploys web (D-020, D-029). iOS only sees the row after a store build
 that contains it is installed. That is why the weekly spec keeps a buffer of
-unpublished Mondays in the same catalog. An open standing review PR is extended
-when the buffer falls below four; a healthy catalog creates no new PR. Merge
-stays human, and this narrow content-branch exception never pushes to `master`
-or auto-merges.
+unpublished Mondays in the same catalog. An open standing PR is extended
+when the buffer falls below four; a healthy catalog creates no new PR. Its
+non-draft PR carries `automation:auto-merge`; the GitHub Action merges only
+after CI succeeds for the exact current head. This narrow content-branch
+exception never pushes directly to `master` or bypasses a failed or pending
+check.
 
 **3. Monday unlocks locally.** [BUILT]
 [schedule.ts](../src/games/wordfall/schedule.ts) compares the player's local
@@ -562,6 +564,7 @@ Quick map of where each journey step lives:
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both |
+| Content PR merge gate | `.github/workflows/merge-labeled-content.yml` | [BUILT: token setup pending] — labelled, non-draft `content/clueless-daily` and `content/wordfall-weekly` PRs merge only after their exact head passes CI; `CONTENT_AUTOMERGE_TOKEN` preserves the normal master release path (D-059) |
 | Wikipedia popularity weekly | `.github/workflows/wikipedia-popularity-weekly.yml`, `pipeline/rotate-wikipedia-popularity.ts`, `pipeline/keywords/wikipedia-popularity-reservoir.json` | [BUILT] — Monday 09:00 UTC + `workflow_dispatch`; re-measures shipped items and enqueues a new label round; PR on `content/wikipedia-popularity-weekly`, never `master` (D-036, D-052) |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both, then `railway up --service wordcrush` |
 | GitHub Release | `.github/workflows/release.yml`, `scripts/changelog-notes.mjs` | [BUILT] — every PR is a version; publish `vX.Y.Z` from that changelog section on master merge or tag (D-039, D-041) |
@@ -573,7 +576,7 @@ Quick map of where each journey step lives:
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |
 | Sound + haptics | `src/native/feedback.ts`, `src/native/sound.ts`, `src/native/haptics.ts`, `assets/sounds/`, `src/settings/` | [BUILT] — one `feedback(event)` table maps five game moments to a clip + haptic; both channels mutable from the drawer. See D-043 |
 | Wordfall match juice | `src/ui/wordfall/clearJuice.ts`, `src/ui/wordfall/BoardView.tsx` | [BUILT] — puff then fall on `lastPlay.cleared`; special-birth pop by tile id; Crush/Nova stamp on chain ≥ 2. RN `Animated`, not Lottie (ST-80, D-032) |
-| Wordfall weekly drops | `src/games/wordfall/schedule.ts` (`taskFingerprint`), `src/data/wordfall/levels.ts`, [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md), `.cursor/skills/wordfall-weekly-gauntlet/` | [BUILT] gate + unique-task + local `serve:web` before GitHub (D-038); standing `content/wordfall-weekly` review PR maintains four future Mondays without a card per drop (D-058) |
+| Wordfall weekly drops | `src/games/wordfall/schedule.ts` (`taskFingerprint`), `src/data/wordfall/levels.ts`, [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md), `.cursor/skills/wordfall-weekly-gauntlet/` | [BUILT] gate + unique-task + local `serve:web` before GitHub (D-038); standing `content/wordfall-weekly` PR maintains four future Mondays without a card per drop and merges through the content PR gate (D-058, D-059) |
 | Game Center | `src/native/` | [PLANNED] |
 
 ## Security model

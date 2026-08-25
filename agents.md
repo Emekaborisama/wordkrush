@@ -88,9 +88,12 @@ allowed; see `docs/WORKFLOW.md`.
 
 The narrowly documented recurring-content loops are exceptions to that branch
 rule: `content/wikipedia-popularity-weekly`, `content/clueless-daily`, and
-`content/wordfall-weekly`. They may update one human-reviewed standing PR
-without a card per content item; every other feature or fix still needs its
-own Superthread branch.
+`content/wordfall-weekly`. They may update one standing PR without a card per
+content item. Wikipedia remains human-reviewed. Clueless and Wordfall use the
+`automation:auto-merge` label; the GitHub Action merges only those named
+content branches after CI succeeds for the exact current head, never by direct
+push or by bypassing failed or pending checks. Every other feature or fix still
+needs its own Superthread branch.
 
 ## Non-negotiable architecture
 
