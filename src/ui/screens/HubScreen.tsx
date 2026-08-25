@@ -12,9 +12,10 @@ type Props = {
   streak: DailyStreak;
   onPlay: (gameId: string) => void;
   onScores: () => void;
+  labelRoundsPassed?: number;
 };
 
-export function HubScreen({ boards, streak, onPlay, onScores }: Props) {
+export function HubScreen({ boards, streak, onPlay, onScores, labelRoundsPassed }: Props) {
   const wide = isWideLayout(useWindowDimensions().width);
   return (
     <View style={styles.root}>
@@ -37,6 +38,7 @@ export function HubScreen({ boards, streak, onPlay, onScores }: Props) {
             game={game}
             board={boards[game.id]}
             wide={wide}
+            labelRoundsPassed={game.id === 'more-or-less' ? labelRoundsPassed : undefined}
             onPress={() => onPlay(game.id)}
           />
         ))}
@@ -55,11 +57,13 @@ function GameCard({
   board,
   wide,
   onPress,
+  labelRoundsPassed,
 }: {
   game: GameDefinition;
   board?: ScoreBoard;
   wide: boolean;
   onPress: () => void;
+  labelRoundsPassed?: number;
 }) {
   const locked = game.status === 'coming-soon';
   const best = board?.bestStreak ?? 0;
@@ -93,7 +97,9 @@ function GameCard({
           <View style={styles.cardFooter}>
             <Text style={[styles.cardStat, { color: game.accent }]}>
               {(board?.totalRuns ?? 0) > 0
-                ? `Best ${game.scoreNoun}: ${best}`
+                ? labelRoundsPassed !== undefined
+                  ? `Best ${game.scoreNoun}: ${best} · ${labelRoundsPassed} ${labelRoundsPassed === 1 ? 'round' : 'rounds'}`
+                  : `Best ${game.scoreNoun}: ${best}`
                 : 'Start your first game'}
             </Text>
             <View

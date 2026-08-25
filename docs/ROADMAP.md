@@ -50,7 +50,8 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 - [x] LLM validator service (`validator/`, 18 tests) — schema, consistency check, flagging, playability checks
 - [x] First shipped category: `wikipedia-popularity` — monthly Wikipedia pageviews
 - [ ] **Fill blank More or Less cards when the Wikipedia lead is non-free** (ST-79) — **Doing**; fall back to other freely-licensed photos on the article
-- [ ] **Weekly Wikipedia popularity snapshot cron** (ST-75) — **Doing**; Monday GitHub Action re-measures the curated list and opens a review PR (D-036). The 2026-08-24 run failed `check:docs` on the D-041 patch bump; version-only manifests no longer require STACK/HOW-IT-WORKS (D-049).
+- [ ] **Weekly Wikipedia popularity snapshot cron** (ST-75) — **Doing**; Monday GitHub Action re-measures shipped items, enqueues a new unused label round from the reservoir, and opens a review PR (D-036, D-052). Solo play stays on the current set until every name has been seen.
+- [ ] **Wikipedia label rounds as gated sets** (ST-87) — **Doing**; solo More or Less plays the current queued set until every name is seen; rounds passed is local.
 - [ ] Wire validator into `pipeline/ingest.ts` (`POST /validate/batch`) — batch-validate incoming rows and quarantine flagged pairs
 - [ ] Run ingest → export end-to-end against live Supabase ← blocked on migration — prove the factory path after the SQL schema lands
 - [ ] Human review queue for flagged pairs (v1: a CLI that prints them) — owner can approve or reject, not silently auto-fix

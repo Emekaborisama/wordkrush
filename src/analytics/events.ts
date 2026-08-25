@@ -57,6 +57,11 @@ export type AnalyticsEvents = {
     relaxed_rounds?: number;
     hint_source?: 'opening' | 'guess_threshold' | 'none';
   };
+  label_round_passed: CommonGameProperties & {
+    round_id: string;
+    rounds_passed: number;
+    item_count: number;
+  };
   guess_submitted: CommonGameProperties & CluelessDifficultyProperty & {
     guess_index: number;
     choice?: 'more' | 'less';
@@ -169,6 +174,7 @@ export const ANALYTICS_EVENT_NAMES: ReadonlySet<string> = new Set<AnalyticsEvent
   'game_selected',
   'run_started',
   'run_completed',
+  'label_round_passed',
   'guess_submitted',
   'round_resolved',
   'word_submitted',
