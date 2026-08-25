@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyMatchUnlocks,
   isUnlocked,
+  LIVE_ROSTER_LABEL,
   pickerStatus,
   playerCountBucket,
   unlockAfterWin,
@@ -92,8 +93,12 @@ describe('applyMatchUnlocks', () => {
 
 describe('playerCountBucket', () => {
   it('stays inside the live roster range', () => {
+    expect(LIVE_ROSTER_LABEL).toBe('2–10');
+    expect(playerCountBucket(1)).toBe('2');
     expect(playerCountBucket(2)).toBe('2');
-    expect(playerCountBucket(3)).toBe('3');
     expect(playerCountBucket(4)).toBe('4');
+    expect(playerCountBucket(7)).toBe('7');
+    expect(playerCountBucket(10)).toBe('10');
+    expect(playerCountBucket(11)).toBe('10');
   });
 });

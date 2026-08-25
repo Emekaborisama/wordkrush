@@ -41,7 +41,7 @@ import { isBackendConfigured } from './src/auth/client';
 import categoryData from './src/data/categories/wikipedia-popularity.json';
 import { todaysPuzzleNumber } from './src/data/clueless';
 import { moreOrLessLevelByNumber } from './src/data/more-or-less/levels';
-import { applyMatchUnlocks, playerCountBucket, type PathGameId } from './src/games/campaign';
+import { applyMatchUnlocks, LIVE_ROSTER_LABEL, playerCountBucket, type PathGameId } from './src/games/campaign';
 import { loadPersonalUnlocked, savePersonalUnlocked } from './src/games/campaignStorage';
 import { STANDARD_HINT_GUESS_THRESHOLD } from './src/games/clueless/engine';
 import { isCluelessState } from './src/games/clueless/persistence';
@@ -792,6 +792,11 @@ export default function App() {
             }}
             raceDisabled={!isBackendConfigured}
             raceLabel={isBackendConfigured ? 'Race with team' : 'Race with team (offline)'}
+            raceHint={
+              isBackendConfigured
+                ? `A live race is ${LIVE_ROSTER_LABEL} players on the same board.`
+                : undefined
+            }
             onScores={() => setScreen({ name: 'scores', gameId: screen.gameId })}
             detail={startDetailFor(
               screen.gameId,

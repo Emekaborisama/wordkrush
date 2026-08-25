@@ -137,7 +137,11 @@ export function LiveLobbyScreen({ matchId, playerId, onRacing, onExit }: Props) 
       </Surface>
 
       <Text style={styles.hint}>
-        {readyCount}/{players.length} ready. The host starts when everyone is in and ready.
+        {players.length < LIVE_MIN_PLAYERS
+          ? `Need at least ${LIVE_MIN_PLAYERS} players to start. Up to ${LIVE_MAX_PLAYERS} can race.`
+          : players.length >= LIVE_MAX_PLAYERS
+            ? `Lobby is full. ${readyCount}/${players.length} ready. The host starts when everyone is ready.`
+            : `${readyCount}/${players.length} ready. Up to ${LIVE_MAX_PLAYERS} can race. The host starts when everyone is ready.`}
       </Text>
 
       <View style={styles.actions}>

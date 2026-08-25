@@ -13,7 +13,10 @@ export type PathGameId = (typeof PATH_GAME_IDS)[number];
 
 export const MIN_UNLOCKED = 1;
 export const LIVE_MIN_PLAYERS = 2;
-export const LIVE_MAX_PLAYERS = 4;
+export const LIVE_MAX_PLAYERS = 10;
+export const LIVE_ROSTER_LABEL = `${LIVE_MIN_PLAYERS}–${LIVE_MAX_PLAYERS}`;
+
+export type PlayerCountBucket = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10';
 
 export const MATCH_DURATION_MS = {
   'more-or-less': 90_000,
@@ -76,10 +79,10 @@ export function applyMatchUnlocks(input: {
   };
 }
 
-export function playerCountBucket(count: number): '2' | '3' | '4' {
-  if (count >= 4) return '4';
-  if (count >= 3) return '3';
-  return '2';
+export function playerCountBucket(count: number): PlayerCountBucket {
+  if (!Number.isFinite(count)) return String(LIVE_MIN_PLAYERS) as PlayerCountBucket;
+  const clamped = Math.min(LIVE_MAX_PLAYERS, Math.max(LIVE_MIN_PLAYERS, Math.trunc(count)));
+  return String(clamped) as PlayerCountBucket;
 }
 
 export function isPathGameId(value: string): value is PathGameId {

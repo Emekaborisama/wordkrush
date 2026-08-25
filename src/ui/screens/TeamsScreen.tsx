@@ -5,6 +5,7 @@ import type { Profile } from '../../auth/auth';
 import { isBackendConfigured } from '../../auth/client';
 import { levelByNumber } from '../../data/wordfall';
 import {
+  LIVE_ROSTER_LABEL,
   PATH_GAME_IDS,
   pickerStatus,
   type PathGameId,
@@ -270,7 +271,7 @@ export function TeamsScreen({
       <View style={[styles.root, styles.empty]}>
         <EmptyState
           title="Sign in to race"
-          body="Guests keep solo Play. A team is invite-only and needs an account."
+          body={`Guests keep solo Play. Sign in to race ${LIVE_ROSTER_LABEL} friends on an invite-only team.`}
           actionLabel="Sign in"
           onAction={onNeedAuth}
         />
@@ -291,7 +292,7 @@ export function TeamsScreen({
           eyebrow="TEAMS"
           title="Start a crew"
           size={wide ? 'display' : 'title'}
-          subtitle="Private invite only. Race More or Less, Clueless, or Wordfall together."
+          subtitle={`Private invite only. Race with ${LIVE_ROSTER_LABEL} people on More or Less, Clueless, or Wordfall.`}
         />
         {error ? <FeedbackBanner title="Couldn’t continue" body={error} tone="danger" /> : null}
         <Surface style={styles.card}>
@@ -345,7 +346,7 @@ export function TeamsScreen({
           eyebrow="TEAM"
           title={snapshot.team.name}
           size={wide ? 'display' : 'title'}
-          subtitle={`${snapshot.members.length} ${snapshot.members.length === 1 ? 'player' : 'players'} · code ${snapshot.team.inviteCode}`}
+          subtitle={`${snapshot.members.length} ${snapshot.members.length === 1 ? 'player' : 'players'} · races hold ${LIVE_ROSTER_LABEL} · code ${snapshot.team.inviteCode}`}
         />
         {error ? <FeedbackBanner title="Couldn’t continue" body={error} tone="danger" /> : null}
 
@@ -425,8 +426,8 @@ export function TeamsScreen({
           })}
         </View>
         <Text style={styles.hint} numberOfLines={2}>
-          Team path {teamPath} · your path {personalUnlocked}. Completing the selected level moves
-          your cursor.
+          Team path {teamPath} · your path {personalUnlocked}. A race needs {LIVE_ROSTER_LABEL}{' '}
+          ready players.
         </Text>
         {wide ? raceActions : null}
       </ScrollView>
