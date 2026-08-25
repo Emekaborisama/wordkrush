@@ -165,7 +165,7 @@ Clueless’s “meaning, not spelling” identity and the bundled-offline bounda
 One signed-in team layer covers every title. Guests keep solo Play. Teams are
 private invite-only (code / `wordkrush://team?code=`). The owner can rename or
 disband the crew; a member can leave. The owner cannot leave — they disband.
-A live race is 2–4
+A live race is 2–10
 players on the same numbered path row at once; ranking uses each player's own
 score, never a combined team total.
 
@@ -346,3 +346,4 @@ Append here whenever an assumption is confirmed or overturned. Never delete an e
 | 2026-08-22 | Wordfall cadence | Owner: Wordfall gets a new level each week. Implemented as bundled rows with a Monday `availableFrom`, not a live content server. |
 | 2026-08-22 | Wordfall weekly uniqueness + TTL | Weekly drop is a unique hard task vs the catalog (especially last week). Featured window is seven days; expired rows stay playable so campaign unlocks do not hole. Agent must locally test and `serve:web` before GitHub. |
 | 2026-08-25 | Solo More or Less pool | Owner: the Wikipedia labels are a gated round queue, not one eternal 50. The player stays on the current set until every name has been seen; new sets are sampled weekly from a pipeline-only reservoir. Calendar does not advance the player. Reddit keeps the newest published round so a post stays shared. |
+| 2026-08-25 | Teams / live race size | Owner raised a live race from 2–4 to 2–10 simultaneous players. Team invite, CRUD, and dual unlock are unchanged. |

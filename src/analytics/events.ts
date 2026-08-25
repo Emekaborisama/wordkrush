@@ -1,3 +1,4 @@
+import type { PlayerCountBucket } from '../games/campaign';
 import type { ArrivalAttribution, EntrySource, UtmMedium, UtmSource } from './attribution';
 
 export type AnalyticsConsent = 'unknown' | 'granted' | 'denied';
@@ -142,11 +143,11 @@ export type AnalyticsEvents = {
   };
   match_started: CommonGameProperties & {
     level_number: number;
-    player_count_bucket: '2' | '3' | '4';
+    player_count_bucket: PlayerCountBucket;
   };
   match_finished: CommonGameProperties & {
     level_number: number;
-    player_count_bucket: '2' | '3' | '4';
+    player_count_bucket: PlayerCountBucket;
     complete: boolean;
     outcome: 'win' | 'loss';
   };

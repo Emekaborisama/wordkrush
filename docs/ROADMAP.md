@@ -75,7 +75,8 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 
 ## Track: teams / live races
 
-- [ ] **Teams and live races** (ST-83) — **Doing**; private invite-only crew, 2–4 player simultaneous races on a numbered path, dual team/personal unlock. Needs `0006_teams_and_live_matches.sql` applied on the project.
+- [ ] **Teams and live races** (ST-83) — **Doing**; private invite-only crew, 2–10 player simultaneous races on a numbered path, dual team/personal unlock. Needs `0006_teams_and_live_matches.sql`, `0007_team_crud.sql`, and `0008_live_roster_ten.sql` applied on the project.
+- [ ] **Live races hold 2–10** (ST-88) — **Doing**; player-facing copy plus the cap raise (D-055).
 
 ## Track: native / App Store readiness
 
