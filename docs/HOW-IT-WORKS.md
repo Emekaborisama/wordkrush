@@ -270,7 +270,10 @@ unchanged.
 **5. Fonts and chrome load before the hub.** [BUILT]
 `App.tsx` waits on bundled Fredoka faces (`@expo-google-fonts/fredoka` via the
 `expo-font` plugin in `app.json`) so WordKrush type is available offline
-(D-030). Symbol glyphs stay on the system face. Game data remains bundled
+(D-030). Symbol glyphs stay on the system face. `TextField` sets Fredoka on
+the `TextInput` itself — RN-web's default `font` shorthand would otherwise
+keep the system sans — and a stylesheet rule kills the UA `:focus-visible`
+ring so only the designed shell border shows. Game data remains bundled
 JSON; missing Supabase keys still leave every title playable. Splash uses the
 black lockup in `assets/logo/`; auth uses the clear lockup; drawer and top bar
 use the W mark via `BrandArtwork`. The hub list scrolls under that top bar —

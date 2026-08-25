@@ -69,6 +69,7 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 ## Track: Clueless
 
 - [x] **Daily difficulty modes** (ST-82) — **Done**; Easy opens with a reviewed thematic sentence, Standard reveals it after 15 valid guesses, Expert has no hint. The first valid guess locks the day, and local/global scores are partitioned by mode.
+- [x] **TextField Fredoka + no web focus ring** (ST-84) — typed text uses Fredoka; the orange UA outline on the inner input is suppressed.
 
 ## Track: teams / live races
 

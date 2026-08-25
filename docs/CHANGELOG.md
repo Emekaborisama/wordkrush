@@ -6,6 +6,12 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.4] - 2026-08-25
+
+### Fixed
+- **Typed text in `TextField` now uses Fredoka**, matching the Guess button and the rest of the UI. The input had size and weight but no `fontFamily`, and on web RN-web's `font: 14px System` reset was also eating the longhand, so the focused field fell back to the system sans (D-030).
+- **The inner focus rectangle around a guess field is gone.** Chrome/Safari paint a sharp ring on the `<input>` (`:focus-visible`) that sits inside the rounded shell — orange first, then white. Focus still shows as the game-accent shell border.
+
 ## [0.8.3] - 2026-08-25
 
 ### Added
