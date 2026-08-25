@@ -244,12 +244,19 @@ async function fetchOne(article: string, thumbWidth: number): Promise<ImageInfo 
   return null;
 }
 
+export type ImageFetchResult = {
+  images: Map<string, ImageInfo>;
+  /** Article titles whose fetch threw (rate-limit, network). Not the same as a non-free miss. */
+  failed: string[];
+};
+
 /** Fetch images for many articles, bounded concurrency. Missing/non-free -> absent from the map. */
 export async function fetchImages(
   articles: string[],
   thumbWidth = 400,
-): Promise<Map<string, ImageInfo>> {
-  const out = new Map<string, ImageInfo>();
+): Promise<ImageFetchResult> {
+  const images = new Map<string, ImageInfo>();
+  const failed: string[] = [];
   const queue = [...articles];
 
   async function worker() {
@@ -258,14 +265,15 @@ export async function fetchImages(
       if (article === undefined) return;
       try {
         const info = await fetchOne(article, thumbWidth);
-        if (info) out.set(article, info);
+        if (info) images.set(article, info);
       } catch (err) {
         // One bad article must not sink a whole content build.
+        failed.push(article);
         console.warn(`  image fetch failed for ${article}: ${(err as Error).message}`);
       }
     }
   }
 
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, articles.length) }, worker));
-  return out;
+  return { images, failed };
 }

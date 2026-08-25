@@ -1,6 +1,6 @@
 # Way of Working
 
-**Last updated:** 2026-08-23
+**Last updated:** 2026-08-25
 For every collaborator on this repo — human or LLM. Read this before touching code.
 
 ## The docs are the shared brain
@@ -23,7 +23,9 @@ Documentation is updated in the same change while its context is fresh. The
 project stop hook checks once when an agent finishes, and `npm run check:docs`
 runs locally and in CI. These checks detect a path-based minimum; they never
 generate prose and do not replace judgement about design decisions or task
-status.
+status. A version-only bump of `package.json` / `app.json` (the D-041 changelog
+process) requires `CHANGELOG.md` and does not require HOW-IT-WORKS or STACK.
+Any other edit to those manifests still does.
 
 Documentation impact:
 - Player-visible or runtime behavior → `CHANGELOG.md`.
