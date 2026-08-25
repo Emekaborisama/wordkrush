@@ -89,6 +89,7 @@ Guideline 4.2 rejects apps that are too thin. These are the mitigation:
 - [ ] **Supabase magic-link sign-in** (ST-73) — email magic link shipped; phone/SMS identity is superseded by ST-77.
 - [ ] **One unique username; email-only sign-in** (ST-77) — **Doing**; unique `players.display_name`, magic link only (D-037). Owner must apply `0004_unique_username.sql`.
 - [ ] **Magic-link redirect, WordKrush email, and tab icon** (ST-76) — **Doing**; absolute `emailRedirectTo`, branded Magic Link HTML, cache-busted favicon PNG.
+- [ ] **Tuesday player email via Resend** (ST-86) — **Doing**; changelog + Wordfall Broadcast to confirmed Auth users after Wordfall’s Monday drop (D-054). Secrets on GitHub Environment `best-games`.
 
 ## Track: Reddit (Devvit) surface — `reddit/`
 

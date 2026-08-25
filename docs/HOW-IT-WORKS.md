@@ -258,6 +258,29 @@ stays as the in-app fallback. This free project cannot save that template
 until custom SMTP is configured (dashboard only; credentials never enter the
 app). Skip remains a guest path; a missing backend still plays offline.
 
+Player-facing weekly mail is not an Auth template — those only cover sign-in,
+recovery, and invite. [player-email.ts](../pipeline/player-email.ts) reads
+player-facing bullets from [CHANGELOG.md](CHANGELOG.md) (last 7 days; 14 in
+`whats-new` mode) plus this week’s Wordfall drop, asks OpenAI once for
+player-voice copy from those facts, and skips the week when both are empty.
+It lists confirmed Auth users with the secret key, upserts them into the
+Resend segment `WordKrush players` (username → `first_name`, latest
+`global_scores` row → custom property `game`), and creates one Broadcast
+named `WordKrush weekly YYYY-MM-DD`. Merge tags
+`{{{contact.first_name|there}}}` and `{{{game|the games}}}` personalize the
+same HTML. A hero image is a real game picture, not the lockup: Wordfall key
+art when a Monday drop is live, otherwise Clueless / More or Less art from
+`assets/games/`, or a hub screenshot in `assets/email/hub.png`.
+`scripts/patch-web-head.mjs` copies those files to `dist/email/` so Gmail can
+load `https://wordkrush.com/email/<file>`. The Tuesday 09:00 UTC job
+([player-email-weekly.yml](../.github/workflows/player-email-weekly.yml))
+uses GitHub Environment `best-games`. The play button is
+`https://wordkrush.com` with `utm_source=email` / `utm_medium=product-update`.
+Resend’s `{{{RESEND_UNSUBSCRIBE_URL}}}` is the opt-out. Guests have no
+address. `RESEND_API_KEY` and `OPENAI_API_KEY` are pipeline-only (D-054).
+[whats-new.html](../supabase/templates/whats-new.html) is a branded one-off
+shell, not the weekly send.
+
 **4. The public board is a view, not a client-ranked dump.** [BUILT]
 [0003_global_scores.sql](../supabase/migrations/0003_global_scores.sql) stores
 immutable submissions (RLS: read non-rejected, insert only `auth.uid() =
@@ -517,6 +540,7 @@ Quick map of where each journey step lives:
 | Content DB schema | `supabase/migrations/0001_init.sql` | [BUILT: apply on the owner project] |
 | Accounts + first leaderboard tables | `supabase/migrations/0002_leaderboard.sql` | [BUILT: apply on the owner project] |
 | Optional auth (email magic link) | `src/auth/` (`redirect-url.ts` `webAuthRedirectUrl`), `src/ui/screens/AuthScreen.tsx`, `supabase/templates/magic-link.html` | [BUILT] — email-only magic link; unique username; web origin (scheme required) / native deep-link restore. Template keeps `{{ .ConfirmationURL }}` + `{{ .Token }}`. Custom SMTP required to save it on this free project (D-033, D-037) |
+| Player weekly email | `pipeline/player-email.ts`, `pipeline/player-email-news.ts`, `pipeline/player-email-draft.ts`, `assets/email/`, `.github/workflows/player-email-weekly.yml` | [BUILT] — Tuesday 09:00 UTC Resend Broadcast from this week’s changelog + Wordfall; OpenAI drafts player copy once; hero is in-game art/hub screenshot at `/email/`; quiet weeks skip; `{{{contact.first_name|there}}}` / `{{{game|the games}}}`; job uses GitHub Environment `best-games`. Never on Railway (D-054) |
 | Unique leaderboard username | `supabase/migrations/0004_unique_username.sql`, `src/auth/validation.ts` `usernameKey` | [BUILT: apply on the owner project] — unique index on `username_key(display_name)`; duplicate maps to "That username is taken." |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
 | Clueless difficulty boards | `supabase/migrations/0005_clueless_difficulty_leaderboards.sql`, `src/games/clueless/scoring.ts` | [BUILT: apply migration] — Easy/Standard/Expert partition under stable `clueless` id |
@@ -528,7 +552,7 @@ Quick map of where each journey step lives:
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both, then `railway up --service wordcrush` |
 | GitHub Release | `.github/workflows/release.yml`, `scripts/changelog-notes.mjs` | [BUILT] — every PR is a version; publish `vX.Y.Z` from that changelog section on master merge or tag (D-039, D-041) |
 | Web host | `railway.json`, `server/serve.mjs` | [BUILT] — Nixpacks runs `CI=true npm run build:web` on service `wordcrush`; `serve.mjs` listens on `$PORT` |
-| Web favicon + share preview | `assets/favicon.png`, `assets/apple-touch-icon.png`, `assets/logo/wordkrush-lockup.png`, `scripts/patch-web-head.mjs` | [BUILT] — cache-busted tab icons in `dist/`; Open Graph / Twitter tags with the lockup at `/og-image.png` (not the favicon crop) |
+| Web favicon + share preview | `assets/favicon.png`, `assets/apple-touch-icon.png`, `assets/logo/wordkrush-lockup.png`, `scripts/patch-web-head.mjs` | [BUILT] — cache-busted tab icons in `dist/`; Open Graph / Twitter tags with the lockup at `/og-image.png`; Tuesday mail heroes at `/email/` from `assets/games/` + `assets/email/hub.png` |
 | Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] — audits git-visible changes; version-only `package.json` / `app.json` bumps are changelog (D-049); Finder `* 2.*` copies and `supabase/.temp/` are gitignored so they do not count as source |
 | Consent and product analytics | `src/analytics/`, `src/ui/AnalyticsConsentPrompt.tsx` | [BUILT] |
 | Player feedback (bugs + suggestions) | `src/userback/`, `@userback/widget`, drawer "Send feedback" | [BUILT: web] — launcher on every non-game screen, hidden during a run; signed-in players are identified, guests stay anonymous. Native is a documented no-op stub pending a Userback Mobile SDK key (D-046) |
@@ -543,6 +567,7 @@ Quick map of where each journey step lives:
 - `.env` gitignored + untracked; shape in `.env.example` (names only). History clean — the one committed `.env` was empty.
 - Finder duplicate names (`* 2.ts`, `* 2.png`, …) and `supabase/.temp/` are gitignored. They are local copies, not app source.
 - `SUPABASE_SECRET_KEY`: pipeline-only, loaded via `tsx --env-file=.env`. Never `EXPO_PUBLIC_`-prefixed — Expo embeds those in the shipped bundle.
+- `RESEND_API_KEY`: pipeline and GitHub Environment `best-games` only (Tuesday player Broadcast). Never `EXPO_PUBLIC_*`, never Railway.
 - Client bundles contain only publishable Supabase, PostHog and Userback project
   configuration under `EXPO_PUBLIC_*`; none grants privileged server access.
   `EXPO_PUBLIC_USERBACK_TOKEN` identifies the feedback project, not the
