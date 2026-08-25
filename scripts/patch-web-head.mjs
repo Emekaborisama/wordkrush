@@ -7,7 +7,7 @@
  * so the tab icon and share-link preview both show the real brand art.
  */
 import { createHash } from 'node:crypto';
-import { copyFileSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -40,6 +40,13 @@ const ogImagePng = readFileSync(join(root, 'assets/logo/wordkrush-lockup.png'));
 const ogStamp = createHash('sha1').update(ogImagePng).digest('hex').slice(0, 10);
 copyFileSync(join(root, 'assets/logo/wordkrush-lockup.png'), join(dist, 'og-image.png'));
 const ogImageUrl = `${SITE_URL}/og-image.png?v=${ogStamp}`;
+
+const emailDir = join(dist, 'email');
+mkdirSync(emailDir, { recursive: true });
+copyFileSync(join(root, 'assets/email/hub.png'), join(emailDir, 'hub.png'));
+for (const game of ['more-or-less', 'clueless', 'wordfall']) {
+  copyFileSync(join(root, `assets/games/${game}.png`), join(emailDir, `${game}.png`));
+}
 
 const meta = [
   `<meta name="description" content="${OG_DESCRIPTION}"/>`,

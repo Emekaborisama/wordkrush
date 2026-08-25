@@ -5,23 +5,32 @@
  * Send:  npm run email:weekly -- --send
  * CI:    npx tsx pipeline/player-email.ts --send
  *
- * Auth templates cannot broadcast. This syncs confirmed Auth emails into a
- * Resend segment named "WordKrush players" and creates a Broadcast. Resend
- * owns unsubscribe ({{{RESEND_UNSUBSCRIBE_URL}}}). Guests have no address.
+ * Copy is this week's changelog (player-facing bullets) plus the Monday
+ * Wordfall drop, drafted once by OpenAI. Quiet weeks skip. Auth templates
+ * cannot broadcast. Guests have no address.
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { pipelineDb } from './db';
 import { LEVELS } from '../src/data/wordfall/levels';
-import { isNewestRelease } from '../src/games/wordfall/schedule';
-import type { Level } from '../src/games/wordfall/types';
+import { draftWithOpenAI, fallbackDraft, renderDraftHtml, type EmailDraft } from './player-email-draft';
+import { PLAY_URL, UNSUBSCRIBE_TOKEN, escapeHtml } from './player-email-html';
+import {
+  collectWeekNews,
+  favoriteGamesByPlayer,
+  newsFacts,
+  thisWeekWordfall,
+  weekHasNews,
+  weeklyBroadcastName,
+  type WeekNews,
+} from './player-email-news';
+
+export { PLAY_URL, UNSUBSCRIBE_TOKEN, escapeHtml };
+export { thisWeekWordfall, weeklyBroadcastName };
 
 export const SEGMENT_NAME = 'WordKrush players';
-export const WHATS_NEW_BROADCAST_NAME = 'WordKrush whats-new';
 export const DEFAULT_FROM = 'WordKrush <noreply@wordkrush.com>';
-export const PLAY_URL =
-  'https://wordkrush.com/?utm_source=email&utm_medium=product-update';
-export const UNSUBSCRIBE_TOKEN = '{{{RESEND_UNSUBSCRIBE_URL}}}';
+export const GAME_PROPERTY_KEY = 'game';
 
 export type EmailMode = 'auto' | 'whats-new' | 'weekly';
 
@@ -48,67 +57,42 @@ export function parseMode(value: string): EmailMode {
   throw new Error(`Unknown --mode ${value}. Use auto, whats-new, or weekly.`);
 }
 
-export function thisWeekWordfall(
-  levels: readonly Pick<Level, 'number' | 'name' | 'description' | 'availableFrom'>[],
-  now: Date,
-): (typeof levels)[number] | null {
-  const fresh = levels.filter((level) => isNewestRelease(level, now));
-  if (fresh.length === 0) return null;
-  return fresh.reduce((best, level) => (level.number > best.number ? level : best));
+export function lookbackDays(mode: EmailMode): number {
+  return mode === 'whats-new' ? 14 : 7;
 }
 
-export function weeklyBroadcastName(availableFrom: string): string {
-  return `WordKrush weekly ${availableFrom}`;
+export function loadChangelog(): string {
+  return readFileSync(fileURLToPath(new URL('../docs/CHANGELOG.md', import.meta.url)), 'utf8');
 }
 
-export function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-export function renderWeeklyHtml(level: Pick<Level, 'name' | 'description' | 'number'>): string {
-  const name = escapeHtml(level.name);
-  const description = escapeHtml(level.description);
-  const href = escapeHtml(
-    `${PLAY_URL}&utm_campaign=wordfall-weekly&utm_content=level-${level.number}`,
-  );
-  return emailShell({
-    title: name,
-    preview: `${level.name}. Dropped Monday. Play it this week.`,
-    eyebrow: 'This week’s Wordfall',
-    headline: name,
-    intro: `${description} Dropped Monday. You’ve got until Sunday.`,
-    ctaHref: href,
-    ctaLabel: 'Play Wordfall',
-  });
-}
-
-export function loadWhatsNewHtml(): string {
-  const path = fileURLToPath(new URL('../supabase/templates/whats-new.html', import.meta.url));
-  return readFileSync(path, 'utf8');
-}
-
-export function planPlayerEmail(
-  mode: EmailMode,
-  levels: readonly Pick<Level, 'number' | 'name' | 'description' | 'availableFrom'>[],
-  now: Date,
-  whatsNewHtml: string,
-): PlayerEmailPlan {
-  const weekly = thisWeekWordfall(levels, now);
-  if (mode === 'weekly') {
-    if (!weekly || !weekly.availableFrom) {
-      throw new Error('No Wordfall drop this week — nothing to mail.');
-    }
-    return weeklyPlan(weekly);
+export function planPlayerEmail(mode: EmailMode, news: WeekNews, draft: EmailDraft): PlayerEmailPlan {
+  if (!weekHasNews(news)) {
+    if (mode === 'auto') return null;
+    throw new Error('No player-facing news this week — nothing to mail.');
   }
-  if (mode === 'whats-new') {
-    return whatsNewPlan(whatsNewHtml);
+  return {
+    name: weeklyBroadcastName(news.weekMonday),
+    subject: draft.subject,
+    html: renderDraftHtml(draft, news),
+  };
+}
+
+export async function resolveDraft(
+  news: WeekNews,
+  options: { send: boolean; fetchImpl?: typeof fetch },
+): Promise<EmailDraft> {
+  const key = process.env.OPENAI_API_KEY?.trim();
+  if (!key) {
+    if (options.send) throw new Error('OPENAI_API_KEY is missing.');
+    return fallbackDraft(news);
   }
-  if (weekly && weekly.availableFrom) return weeklyPlan(weekly);
-  return whatsNewPlan(whatsNewHtml);
+  try {
+    return await draftWithOpenAI(news, options.fetchImpl ?? fetch, key);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'OpenAI draft failed';
+    console.warn(`OpenAI draft failed (${message}); using the changelog fallback.`);
+    return fallbackDraft(news);
+  }
 }
 
 export function isSkippableRecipient(
@@ -127,90 +111,6 @@ export function usernameOf(metadata: Record<string, unknown> | undefined): strin
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
-function weeklyPlan(
-  level: Pick<Level, 'name' | 'description' | 'number' | 'availableFrom'>,
-): PlayerEmailPlan {
-  if (!level.availableFrom) return null;
-  return {
-    name: weeklyBroadcastName(level.availableFrom),
-    subject: `This week’s Wordfall: ${level.name}`,
-    html: renderWeeklyHtml(level),
-  };
-}
-
-function whatsNewPlan(html: string): PlayerEmailPlan {
-  return {
-    name: WHATS_NEW_BROADCAST_NAME,
-    subject: 'The games just got juicier',
-    html,
-  };
-}
-
-function emailShell(parts: {
-  title: string;
-  preview: string;
-  eyebrow: string;
-  headline: string;
-  intro: string;
-  ctaHref: string;
-  ctaLabel: string;
-}): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${parts.title}</title>
-  </head>
-  <body style="margin:0;padding:0;background-color:#0A0817;">
-    <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#0A0817;">
-      ${escapeHtml(parts.preview)}
-    </div>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0A0817;">
-      <tr>
-        <td align="center" style="padding:32px 16px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
-            <tr>
-              <td style="padding:0 8px 28px 8px;font-family:Arial,Helvetica,sans-serif;font-size:28px;line-height:1.15;font-weight:700;letter-spacing:-0.02em;">
-                <span style="color:#FFF9F6;">Word</span><span style="color:#FFB020;">Krush</span>
-              </td>
-            </tr>
-            <tr>
-              <td style="background-color:#1A1732;border:1px solid #332D55;border-radius:18px;padding:32px 28px;">
-                <p style="margin:0 0 8px 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#FFB020;">
-                  ${parts.eyebrow}
-                </p>
-                <h1 style="margin:0 0 12px 0;font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:1.25;color:#FFF9F6;">
-                  ${parts.headline}
-                </h1>
-                <p style="margin:0 0 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#C5BED8;">
-                  ${parts.intro}
-                </p>
-                <table role="presentation" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td style="border-radius:14px;background-color:#FFB020;">
-                      <a href="${parts.ctaHref}" style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;color:#0A0817;text-decoration:none;">
-                        ${escapeHtml(parts.ctaLabel)}
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:20px 8px 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#87809E;">
-                You’re getting this because you have a WordKrush account. <a href="${UNSUBSCRIBE_TOKEN}" style="color:#87809E;">Unsubscribe</a>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>
-`;
-}
-
 function flagValue(argv: string[], name: string): string | undefined {
   const index = argv.indexOf(name);
   if (index === -1) return undefined;
@@ -222,6 +122,13 @@ type ResendGroup = { id: string; name: string; kind: 'segment' | 'audience' };
 type ResendClient = {
   apiKey: string;
   from: string;
+};
+
+type Recipient = {
+  email: string;
+  playerId: string;
+  firstName: string | undefined;
+  game: string | undefined;
 };
 
 async function resendJson(
@@ -306,6 +213,28 @@ function readNamedList(body: Record<string, unknown>, kind: ResendGroup['kind'])
   return out;
 }
 
+async function ensureGameProperty(client: ResendClient): Promise<void> {
+  const listed = await resendJson(client, '/contact-properties');
+  const rows = Array.isArray(listed.body.data) ? listed.body.data : [];
+  for (const row of rows) {
+    if (row && typeof row === 'object' && (row as { key?: unknown }).key === GAME_PROPERTY_KEY) {
+      return;
+    }
+  }
+  const created = await resendJson(client, '/contact-properties', {
+    method: 'POST',
+    body: JSON.stringify({
+      key: GAME_PROPERTY_KEY,
+      type: 'string',
+      fallback_value: 'the games',
+    }),
+  });
+  if (created.status === 409) return;
+  if (created.status >= 400) {
+    console.warn(`could not create Resend contact property "${GAME_PROPERTY_KEY}": ${resendMessage(created.body)}`);
+  }
+}
+
 async function broadcastExists(client: ResendClient, name: string): Promise<boolean> {
   let path = '/broadcasts?limit=100';
   for (let page = 0; page < 10; page += 1) {
@@ -327,14 +256,10 @@ async function broadcastExists(client: ResendClient, name: string): Promise<bool
   return false;
 }
 
-async function upsertContact(
-  client: ResendClient,
-  group: ResendGroup,
-  email: string,
-  firstName: string | undefined,
-): Promise<void> {
-  const payload: Record<string, unknown> = { email };
-  if (firstName) payload.first_name = firstName;
+async function upsertContact(client: ResendClient, group: ResendGroup, recipient: Recipient): Promise<void> {
+  const payload: Record<string, unknown> = { email: recipient.email };
+  if (recipient.firstName) payload.first_name = recipient.firstName;
+  if (recipient.game) payload.properties = { [GAME_PROPERTY_KEY]: recipient.game };
   if (group.kind === 'segment') payload.segments = [{ id: group.id }];
 
   const created = await resendJson(client, group.kind === 'audience' ? `/audiences/${group.id}/contacts` : '/contacts', {
@@ -344,9 +269,18 @@ async function upsertContact(
   if (created.status >= 200 && created.status < 300) return;
   if (created.status !== 409) throw new Error(resendMessage(created.body));
 
-  const existing = await resendJson(client, `/contacts/${encodeURIComponent(email)}`);
+  const existing = await resendJson(client, `/contacts/${encodeURIComponent(recipient.email)}`);
   const id = typeof existing.body.id === 'string' ? existing.body.id : null;
   if (!id) return;
+  const patch: Record<string, unknown> = {};
+  if (recipient.firstName) patch.first_name = recipient.firstName;
+  if (recipient.game) patch.properties = { [GAME_PROPERTY_KEY]: recipient.game };
+  if (Object.keys(patch).length > 0) {
+    await resendJson(client, `/contacts/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    });
+  }
   if (group.kind === 'segment') {
     await resendJson(client, `/contacts/${id}/segments/${group.id}`, { method: 'POST' });
   }
@@ -389,10 +323,37 @@ async function createAndSendBroadcast(
   throw new Error(resendMessage(created.body));
 }
 
-async function listRecipientEmails(): Promise<{ email: string; firstName: string | undefined }[]> {
+async function latestGamesByPlayer(): Promise<Map<string, string>> {
+  const admin = pipelineDb();
+  const { data, error } = await admin
+    .from('global_scores')
+    .select('player_id, game_id, played_at')
+    .order('played_at', { ascending: false })
+    .limit(5000);
+  if (error || !data) return new Map();
+  const rows: { player_id: string; game_id: string; played_at: string }[] = [];
+  for (const row of data) {
+    if (
+      row &&
+      typeof row.player_id === 'string' &&
+      typeof row.game_id === 'string' &&
+      (typeof row.played_at === 'string' || row.played_at instanceof Date)
+    ) {
+      rows.push({
+        player_id: row.player_id,
+        game_id: row.game_id,
+        played_at: typeof row.played_at === 'string' ? row.played_at : row.played_at.toISOString(),
+      });
+    }
+  }
+  return favoriteGamesByPlayer(rows);
+}
+
+async function listRecipientEmails(): Promise<Recipient[]> {
   const admin = pipelineDb();
   const testPlayer = process.env.TEST_PLAYER_EMAIL;
-  const recipients: { email: string; firstName: string | undefined }[] = [];
+  const games = await latestGamesByPlayer();
+  const recipients: Recipient[] = [];
   let page = 1;
   for (;;) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
@@ -402,7 +363,9 @@ async function listRecipientEmails(): Promise<{ email: string; firstName: string
       if (isSkippableRecipient(user.email, testPlayer)) continue;
       recipients.push({
         email: user.email as string,
+        playerId: user.id,
         firstName: usernameOf(user.user_metadata as Record<string, unknown> | undefined),
+        game: games.get(user.id),
       });
     }
     if (data.users.length < 200) break;
@@ -412,14 +375,23 @@ async function listRecipientEmails(): Promise<{ email: string; firstName: string
 }
 
 export async function runPlayerEmail(options: { send: boolean; mode: EmailMode; now?: Date }): Promise<void> {
-  const plan = planPlayerEmail(options.mode, LEVELS, options.now ?? new Date(), loadWhatsNewHtml());
-  if (!plan) {
-    console.log('Nothing to send this week.');
-    return;
+  const now = options.now ?? new Date();
+  const news = collectWeekNews(loadChangelog(), LEVELS, now, lookbackDays(options.mode));
+  if (!weekHasNews(news)) {
+    if (options.mode === 'auto') {
+      console.log('No player-facing changelog or Wordfall drop this week — skipping.');
+      return;
+    }
+    throw new Error('No player-facing news this week — nothing to mail.');
   }
+
+  const draft = await resolveDraft(news, { send: options.send });
+  const plan = planPlayerEmail(options.mode, news, draft);
+  if (!plan) return;
 
   if (!options.send) {
     const recipients = await listRecipientEmails();
+    console.log(newsFacts(news));
     console.log(
       `dry-run: would send "${plan.subject}" as "${plan.name}" to ${recipients.length} confirmed accounts. Pass --send to create the Resend broadcast.`,
     );
@@ -439,9 +411,10 @@ export async function runPlayerEmail(options: { send: boolean; mode: EmailMode; 
   }
 
   const group = await ensureGroup(client, process.env.RESEND_SEGMENT_ID);
+  await ensureGameProperty(client);
   const recipients = await listRecipientEmails();
   for (const recipient of recipients) {
-    await upsertContact(client, group, recipient.email, recipient.firstName);
+    await upsertContact(client, group, recipient);
   }
   const id = await createAndSendBroadcast(client, group, plan);
   console.log(`sent "${plan.name}" to ${recipients.length} synced contacts (broadcast ${id}).`);

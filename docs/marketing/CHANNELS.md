@@ -162,7 +162,7 @@ already exists as shipped product behaviour. The ST-78 weekly gauntlet agent
 generates the levels, so the marginal cost of the hook is near zero.
 
 Use it as the spine of any social presence: a Monday post, a Tuesday player
-email (D-052), a Monday notification once mobile ships. It is an event, not
+email (D-053), a Monday notification once mobile ships. It is an event, not
 an ad, which is why it survives in communities that reject promotion.
 
 ---

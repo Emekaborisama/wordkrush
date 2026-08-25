@@ -29,6 +29,7 @@ describe('whats-new email template', () => {
     expect(template).toContain('Race your friends');
     expect(template).toContain('Clueless, three ways');
     expect(template).toContain('Wordfall hits harder');
+    expect(template).toContain('https://wordkrush.com/email/hub.png');
     expect(template).toContain('https://wordkrush.com/?utm_source=email&amp;utm_medium=product-update');
     expect(template).toContain('{{{RESEND_UNSUBSCRIBE_URL}}}');
     expect(template).not.toContain('{{ .ConfirmationURL }}');

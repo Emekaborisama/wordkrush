@@ -2,17 +2,16 @@ import { describe, expect, it } from 'vitest';
 import {
   escapeHtml,
   isSkippableRecipient,
+  lookbackDays,
   parseArgs,
   parseMode,
   planPlayerEmail,
-  renderWeeklyHtml,
-  thisWeekWordfall,
   usernameOf,
   weeklyBroadcastName,
-  WHATS_NEW_BROADCAST_NAME,
 } from './player-email';
+import { fallbackDraft, FIRST_NAME_TOKEN, GAME_TOKEN } from './player-email-draft';
+import { collectWeekNews, type WeekNews } from './player-email-news';
 
-const whatsNew = '<html>whats-new {{{RESEND_UNSUBSCRIBE_URL}}}</html>';
 const weekly = {
   number: 12,
   name: 'Gauntlet',
@@ -24,6 +23,24 @@ const launch = {
   name: 'First Words',
   description: 'Find six words.',
 };
+
+const changelog = `## [0.8.3] - 2026-08-25
+
+### Added
+- **Teams are now CRUD.** The owner can rename or disband the crew.
+
+### Fixed
+- **Phone chrome fills the phone.**
+
+## [0.8.2] - 2026-08-25
+
+### Changed
+- Wikipedia popularity snapshot refreshed (\`wikipedia-pageviews:20260201-20260731\`)
+`;
+
+function newsOn(now: Date, days = 7): WeekNews {
+  return collectWeekNews(changelog, [launch, weekly], now, days);
+}
 
 describe('parseArgs', () => {
   it('defaults to a dry auto run', () => {
@@ -40,49 +57,70 @@ describe('parseArgs', () => {
   it('rejects an unknown mode', () => {
     expect(() => parseMode('blast')).toThrow(/auto, whats-new, or weekly/);
   });
-});
 
-describe('thisWeekWordfall', () => {
-  it('returns only a dated drop whose Monday is this week', () => {
-    const now = new Date('2026-08-25T12:00:00');
-    expect(thisWeekWordfall([launch, weekly], now)).toEqual(weekly);
-    expect(thisWeekWordfall([launch, weekly], new Date('2026-08-23T12:00:00'))).toBeNull();
-    expect(thisWeekWordfall([launch, weekly], new Date('2026-08-31T12:00:00'))).toBeNull();
+  it('gives whats-new a longer lookback than the Tuesday job', () => {
+    expect(lookbackDays('auto')).toBe(7);
+    expect(lookbackDays('weekly')).toBe(7);
+    expect(lookbackDays('whats-new')).toBe(14);
   });
 });
 
 describe('planPlayerEmail', () => {
-  it('prefers this week’s Wordfall in auto mode', () => {
-    const plan = planPlayerEmail('auto', [launch, weekly], new Date('2026-08-25T12:00:00'), whatsNew);
+  it('mails this week’s Wordfall and changelog together, named by Monday', () => {
+    const now = new Date('2026-08-25T12:00:00');
+    const news = newsOn(now);
+    const plan = planPlayerEmail('auto', news, fallbackDraft(news));
     expect(plan?.name).toBe(weeklyBroadcastName('2026-08-24'));
     expect(plan?.subject).toContain('Gauntlet');
     expect(plan?.html).toContain('Gauntlet');
     expect(plan?.html).toContain('Clear eight crates before the board fills.');
-    expect(plan?.html).toContain('{{{RESEND_UNSUBSCRIBE_URL}}}');
+    expect(plan?.html).toContain(FIRST_NAME_TOKEN);
+    expect(plan?.html).toContain(GAME_TOKEN);
+    expect(plan?.html).toContain('https://wordkrush.com/email/wordfall.png');
+    expect(plan?.html).toContain('Teams are now CRUD.');
+    expect(plan?.html).not.toContain('Wikipedia popularity');
     expect(plan?.html).not.toContain('<script>');
   });
 
-  it('falls back to the product roundup when no drop is live this week', () => {
-    const plan = planPlayerEmail('auto', [launch], new Date('2026-08-25T12:00:00'), whatsNew);
-    expect(plan?.name).toBe(WHATS_NEW_BROADCAST_NAME);
-    expect(plan?.html).toBe(whatsNew);
+  it('skips a quiet auto week instead of repeating a static roundup', () => {
+    const news = collectWeekNews(
+      '## [0.8.2] - 2026-08-18\n\n### Changed\n- Wikipedia popularity snapshot refreshed\n',
+      [launch],
+      new Date('2026-08-25T12:00:00'),
+      7,
+    );
+    expect(planPlayerEmail('auto', news, fallbackDraft(news))).toBeNull();
   });
 
-  it('fails closed in weekly mode when the catalog has no drop', () => {
-    expect(() =>
-      planPlayerEmail('weekly', [launch], new Date('2026-08-25T12:00:00'), whatsNew),
-    ).toThrow(/No Wordfall drop this week/);
+  it('fails closed in weekly mode when there is nothing player-facing', () => {
+    const news = collectWeekNews(
+      '## [0.8.2] - 2026-08-18\n\n### Changed\n- Wikipedia popularity snapshot refreshed\n',
+      [launch],
+      new Date('2026-08-25T12:00:00'),
+      7,
+    );
+    expect(() => planPlayerEmail('weekly', news, fallbackDraft(news))).toThrow(
+      /No player-facing news this week/,
+    );
   });
 
-  it('escapes a hostile level name so it cannot break the HTML', () => {
-    const html = renderWeeklyHtml({
-      number: 12,
-      name: '<script>x</script>',
-      description: 'a & b',
-    });
+  it('escapes a hostile Wordfall name so it cannot break the HTML', () => {
+    const news: WeekNews = {
+      weekMonday: '2026-08-24',
+      lookbackDays: 7,
+      bullets: [],
+      wordfall: {
+        number: 12,
+        name: '<script>x</script>',
+        description: 'a & b',
+        availableFrom: '2026-08-24',
+      },
+    };
+    const html = planPlayerEmail('auto', news, fallbackDraft(news))?.html ?? '';
     expect(html).toContain('&lt;script&gt;x&lt;/script&gt;');
     expect(html).toContain('a &amp; b');
     expect(html).not.toContain('<script>x</script>');
+    expect(html).toContain(FIRST_NAME_TOKEN);
   });
 });
 
