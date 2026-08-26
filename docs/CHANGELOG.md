@@ -10,6 +10,7 @@ Rules:
 
 ### Added
 - **Clueless Daily Vault level 24: Stable Ground.** One reviewed future solo level extends the bundled Daily Vault buffer. No hint is shown; the theme stays sealed until players reach it. Native installs receive it with the next shipped build.
+- **Clueless Daily Vault level 25: Pressure Point.** One more reviewed future solo level extends the bundled Daily Vault buffer. No hint is shown; the theme stays sealed until players reach it. Native installs receive it with the next shipped build.
 
 ## [0.8.12] - 2026-08-25
 
