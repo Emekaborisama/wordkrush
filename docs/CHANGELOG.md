@@ -6,10 +6,18 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
-## [0.8.12] - 2026-08-25
+## [0.8.13] - 2026-08-26
 
 ### Added
 - **Clueless Daily Vault level 24: Stable Ground.** One reviewed future solo level extends the bundled Daily Vault buffer. No hint is shown; the theme stays sealed until players reach it. Native installs receive it with the next shipped build.
+
+## [0.8.12] - 2026-08-25
+
+### Changed
+- **CI-gated recurring content merges.** Non-draft Clueless Daily Vault and
+  Wordfall weekly PRs from their named content branches carry
+  `automation:auto-merge`; GitHub merges them only after CI succeeds for the
+  exact current head. Wikipedia content remains human-reviewed.
 
 ## [0.8.11] - 2026-08-25
 

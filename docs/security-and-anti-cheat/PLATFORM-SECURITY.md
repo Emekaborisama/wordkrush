@@ -90,6 +90,7 @@ not traded away in a refactor.
 | `TEST_PLAYER_*` | `.env` | An ordinary confirmed user, not a service-role stand-in (D-035). Real credentials — never printed, committed, or shipped. |
 | `OPENAI_API_KEY` | `.env`, GitHub Environment `best-games` | Offline validator **and** Tuesday player-email draft (`pipeline/player-email.ts`). Never called at game runtime (D-010, D-054). |
 | `RAILWAY_TOKEN` | GitHub Actions secrets | Deploy only (D-020). |
+| `CONTENT_AUTOMERGE_TOKEN` | GitHub Actions secrets | Fine-grained PAT or GitHub App token used only by `merge-labeled-content.yml`. It needs Actions read plus Contents and Pull requests write so its merge event starts the normal master CI/deploy/release workflows. Never `.env`, Railway, or `EXPO_PUBLIC_*` (D-059). |
 
 The load-bearing detail is the naming rule, stated in `.env.example` itself:
 **only `EXPO_PUBLIC_*` variables are inlined into the bundle, which is exactly
