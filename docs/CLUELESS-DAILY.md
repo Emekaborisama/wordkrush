@@ -38,11 +38,14 @@ An automation run is not a player unlock:
 ## Daily authoring contract
 
 The intended Cursor Automation schedule is **18:00 GMT+1**. Its committed
-`clueless-daily-path` skill creates or extends the standing review PR on
-`content/clueless-daily`; it must never auto-merge, push to `master`, call EAS,
-or submit an app-store build. The final schedule must be configured in the
-Cursor Automations editor; until then this document and the skill are the
-executable review contract, not an active cron.
+`clueless-daily-path` skill creates or extends the standing PR on
+`content/clueless-daily`, marks it non-draft, and applies the
+`automation:auto-merge` label. The GitHub merge workflow merges only that
+labelled branch after CI succeeds for the PR's current head. The automation
+must never push directly to `master`, override a failed or pending check, call
+EAS, or submit an app-store build. The final schedule must be configured in
+the Cursor Automations editor; until then this document and the skill are the
+executable automation contract, not an active cron.
 
 Every run must:
 
@@ -61,8 +64,8 @@ Every run must:
    copy. Daily Vault levels default to `none`; a deliberate Clue Drop may use
    `opening` or `guess_threshold`.
 4. Reject an exact answer duplicate, an ineligible answer, and a candidate
-   whose cosine similarity to a bundled answer is at least 0.70. The review PR
-   must state the intended non-spoiling theme and assistance policy.
+   whose cosine similarity to a bundled answer is at least 0.70. The PR must
+   state the intended non-spoiling theme and assistance policy.
 5. Update the manifest, changelog, and release version as required by
    `docs/WORKFLOW.md`, then run:
 
@@ -72,6 +75,9 @@ Every run must:
    npm run build:web
    ```
 
-Merge remains a human review decision. If an open standing PR already contains
-the next level, update that PR rather than creating a conflicting second level
-number.
+Merge is label- and CI-gated: the GitHub Action accepts only a non-draft
+`content/clueless-daily` PR labelled `automation:auto-merge`, then requires a
+successful `CI` run for its exact current head. A failed, cancelled, pending,
+or unmergeable PR, and any PR with requested changes, stays open rather than
+bypassing the failure. If an open standing PR already contains the next level,
+update that PR rather than creating a conflicting second level number.

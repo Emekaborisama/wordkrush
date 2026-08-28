@@ -50,10 +50,13 @@ If the card has no suggested name yet, still include the card ID in the branch (
 
 **Recurring content exceptions.** The documented content loops
 `content/wikipedia-popularity-weekly`, `content/clueless-daily`, and
-`content/wordfall-weekly` deliberately use a standing review branch and PR
+`content/wordfall-weekly` deliberately use a standing content branch and PR
 instead of a card per content item. They are limited automation exceptions to
-the branch-name rule: each run must keep human review, never push to `master`,
-and never auto-merge. All other work follows the card-derived branch contract.
+the branch-name rule. Wikipedia keeps human review and never auto-merges.
+Clueless and Wordfall use the `automation:auto-merge` label: the GitHub Action
+merges only their named content branches after a successful CI run for the
+current head. Neither loop pushes directly to `master` or bypasses a failed or
+pending check. All other work follows the card-derived branch contract.
 
 ## Development loop
 
@@ -111,18 +114,20 @@ The app only ever reads the bundled JSON. Changing game data = run pipeline, com
 
 **Weekly Wikipedia popularity** is automated: `.github/workflows/wikipedia-popularity-weekly.yml` runs Mondays at 09:00 UTC (and on `workflow_dispatch`). It calls `pipeline:rotate`, which re-measures the bundled items and appends a new unused label round sampled from the reservoir, runs `npm run check` on a material change, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. That branch is an automation exception to the Superthread-name rule (D-036, D-052); do not merge it without reading the JSON diff. The job never pushes to `master` and never changes the set a player is currently on. Until the factory path is live (ST-35), the file stays `provisional: true`.
 
-Wordfall weekly levels are a different path: append dated Monday rows to `src/data/wordfall/levels.ts`, then follow [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) Job B and the Cursor skill `.cursor/skills/wordfall-weekly-gauntlet/`. That loop maintains the four-week buffer through the standing `content/wordfall-weekly` review PR, an automation exception to the Superthread-name rule (D-058), so it does not need a card per drop. Rows still require a unique `taskFingerprint`, a seven-day featured window, then **local** `npm run check` → `build:web` → `serve:web` and a picker playtest before `git push`. Never auto-merge or push to `master`; do not run the Wikipedia ingest for a Wordfall drop. Monday does not fetch content; the catalog in git is the schedule.
+Wordfall weekly levels are a different path: append dated Monday rows to `src/data/wordfall/levels.ts`, then follow [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) Job B and the Cursor skill `.cursor/skills/wordfall-weekly-gauntlet/`. That loop maintains the four-week buffer through the standing `content/wordfall-weekly` PR, an automation exception to the Superthread-name rule (D-058, D-059), so it does not need a card per drop. Rows still require a unique `taskFingerprint`, a seven-day featured window, then **local** `npm run check` → `build:web` → `serve:web` and a picker playtest before `git push`. Its non-draft PR receives `automation:auto-merge`; the GitHub Action merges it only after CI passes for the current head. Never push directly to `master`; do not run the Wikipedia ingest for a Wordfall drop. Monday does not fetch content; the catalog in git is the schedule.
 
 Clueless Daily Vaults are a fourth content path: the player advances only after
 their current level is solved and their next local midnight arrives. The
 intended daily content authoring run is 18:00 GMT+1 and follows
 [CLUELESS-DAILY.md](CLUELESS-DAILY.md) plus
 `.cursor/skills/clueless-daily-path/`. It appends one cache-ranked future solo
-level to the standing `content/clueless-daily` review PR, never to `master`;
+level to the standing `content/clueless-daily` PR, never directly to `master`;
 that standing content branch is an automation exception to the Superthread-name
-rule (D-057). The automation never auto-merges, calls EAS, or fetches content
-at play time. Configure the final schedule in the Cursor Automations editor;
-the committed skill alone does not create a live cron.
+rule (D-057, D-059). Its non-draft PR receives `automation:auto-merge`; the
+GitHub Action merges it only after CI succeeds for the current head, never
+bypassing failed or pending checks. It does not call EAS or fetch content at
+play time. Configure the final schedule in the Cursor Automations editor; the
+committed skill alone does not create a live cron.
 
 The **Reddit app** is a third path, and not the same thing as Reddit ads. [`reddit/`](../reddit/README.md) is a Devvit project with its own `package.json`, its own dependency tree, and its own TypeScript build (D-042). It imports `src/games/more-or-less/engine.ts` and `src/data/categories/` rather than copying them, so:
 
@@ -174,6 +179,7 @@ analytics still starts opted out and requires the player's explicit consent.
 - `SUPABASE_SECRET_KEY` is pipeline/server-side only. **Never** give a secret an `EXPO_PUBLIC_` prefix — Expo embeds those in the shipped client bundle.
 - `RESEND_API_KEY` is pipeline/GitHub Environment `best-games` only (Tuesday player Broadcast, D-053 / D-054). Never Railway, never `EXPO_PUBLIC_*`.
 - `OPENAI_API_KEY` is pipeline/validator and GitHub Environment `best-games` only (content referee + Tuesday email draft). Never game runtime, never Railway, never `EXPO_PUBLIC_*`.
+- `CONTENT_AUTOMERGE_TOKEN` is a GitHub Actions secret only (D-059), never `.env`, Railway, or `EXPO_PUBLIC_*`. Use a fine-grained PAT or GitHub App token with Actions read plus Contents and Pull requests write so its merge event triggers the normal `master` workflows.
 - CI/EAS secrets go in GitHub/EAS secret stores, not in files.
 
 ## One-time human setup (blocked on the owner, not on code)
@@ -184,6 +190,8 @@ analytics still starts opted out and requires the player's explicit consent.
 - [ ] **Supabase Auth magic link (D-033):** Authentication → URL Configuration. Site URL must be exactly `https://wordkrush.com` (include `https://`; a bare `wordkrush.com` becomes the path `/wordkrush.com` on the API host). Redirect allow-list: `https://wordkrush.com/**`, `http://localhost:8081/**`, `http://localhost:8080/**`, `wordkrush://**`, `exp://**`. This free project cannot edit Auth email templates on the default mailer (June 2026). Enable custom SMTP only after a provider is ready — an empty host/user/pass breaks sending. Typical path is [Resend](https://resend.com/docs/send-with-supabase-smtp): verify `wordkrush.com`, then Host `smtp.resend.com`, Port `465`, Username `resend`, Password = Resend API key. Sender `noreply@wordkrush.com`, name `WordKrush`. Then Authentication → Email Templates → Magic Link: subject `Sign in to WordKrush`, body from `supabase/templates/magic-link.html` (keep `{{ .ConfirmationURL }}` and `{{ .Token }}`). SMTP credentials stay in the dashboard, never in `.env` or `EXPO_PUBLIC_*`. The Resend **API** key is a different secret: it is `RESEND_API_KEY` for Broadcasts (D-053), not the SMTP password.
 
 - [ ] **Player email (D-054):** In Resend, verify `wordkrush.com` and keep sender `WordKrush <noreply@wordkrush.com>`. Put `RESEND_API_KEY` and `OPENAI_API_KEY` in `.env` (already named in `.env.example`). The same names live as GitHub **Environment** secrets on `best-games` (`RESEND_API_KEY`, `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`) — the Tuesday job sets `environment: best-games` so it can read them. Optional: `RESEND_FROM`, `RESEND_SEGMENT_ID`, `OPENAI_EMAIL_MODEL`. Then **Actions → Player email weekly → Run workflow** once with `dry_run` on. Tuesday 09:00 UTC cron takes it from there. A week with no player-facing changelog and no Wordfall drop sends nothing. The keys must never go on Railway. Do not add required reviewers on `best-games` or the cron will sit waiting for approval.
+
+- [ ] **Content PR auto-merge (D-059):** In GitHub repository secrets, add `CONTENT_AUTOMERGE_TOKEN`: a fine-grained PAT or GitHub App installation token with **Actions: read**, **Contents: read and write**, and **Pull requests: read and write**. Do not use `GITHUB_TOKEN`: its merge event would not trigger the normal `master` CI, Railway deploy, or release workflow. After the workflow is on `master`, mark the standing Cursor PRs non-draft and apply `automation:auto-merge`.
 
 - [ ] **Reddit app (D-042):** `npm run reddit:install`, then `npm --prefix reddit run login` with the Reddit account that will own it. Playtest with `npm run reddit:dev` against a test subreddit, then `npm --prefix reddit run launch` for app review. **Pick the launch subreddit and talk to its moderators before installing** — an app dropped into a community that was not asked is a removal, not a launch. Confirm the 13:00 UTC cron hour suits that audience.
 

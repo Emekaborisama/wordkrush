@@ -238,6 +238,24 @@ export const CLUELESS_SOLO_LEVELS: readonly CluelessSoloLevel[] = [
     hintPolicy: 'none',
     hint: null,
   },
+  {
+    number: 24,
+    puzzleNumber: 54,
+    name: 'Daily Vault: Stable Ground',
+    description: 'Hold a steady pace toward the answer.',
+    phase: 'daily',
+    hintPolicy: 'none',
+    hint: null,
+  },
+  {
+    number: 25,
+    puzzleNumber: 55,
+    name: 'Daily Vault: Pressure Point',
+    description: 'Keep pressing toward the closest meaning.',
+    phase: 'daily',
+    hintPolicy: 'none',
+    hint: null,
+  },
 ] as const;
 
 const LEVEL_BY_NUMBER = new Map(CLUELESS_SOLO_LEVELS.map((level) => [level.number, level]));
