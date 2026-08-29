@@ -76,11 +76,10 @@ The PR title identifies the added Daily Vault level. Its body includes:
   build.
 
 Push only after the local verification loop is green. Create or update a
-**non-draft** PR targeting `master`, then ensure it carries the
-`automation:auto-merge` label (create that repository label if it is absent).
-The GitHub merge workflow owns the merge: it waits for a successful CI run on
-the PR's exact current head, rejects requested changes, and merges only this
-labelled content branch. If checks fail, are cancelled, or remain pending, or
-the PR is not mergeable, leave it open and report the result. Never
-force-push, use an administrative override, merge manually, or push directly
-to `master`.
+PR targeting `master`, then apply the `automation:auto-merge` label (create
+that repository label if it is absent). The GitHub merge workflow marks this
+eligible content branch ready if it is a draft, waits for a successful CI run
+on the PR's exact current head, rejects requested changes, and only then
+merges. If checks fail, are cancelled, or remain pending, or the PR is not
+mergeable, leave it open and report the result. Never force-push, use an
+administrative override, merge manually, or push directly to `master`.

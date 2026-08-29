@@ -16,8 +16,8 @@ jobs:
   merge:
     runs-on: ubuntu-latest
     steps:
-      - name: Merge eligible content PR
-        uses: actions/github-script@v7
+      - name: Ready or merge eligible content PR
+        uses: actions/github-script@v9
         env:
           CONTENT_AUTOMERGE_TOKEN: ${{ secrets.CONTENT_AUTOMERGE_TOKEN }}
         with:
@@ -66,16 +66,51 @@ jobs:
             });
 
             const labels = new Set(pull.labels.map(({ name }) => name));
-            const isEligible =
+            const isEligibleContentPull =
               pull.state === 'open' &&
-              !pull.draft &&
               pull.base.ref === 'master' &&
               pull.head.repo?.full_name === `${owner}/${repo}` &&
               eligibleHeadBranches.has(pull.head.ref) &&
               labels.has(autoMergeLabel);
 
-            if (!isEligible) {
+            if (!isEligibleContentPull) {
               core.info(`PR #${pull.number} is not an eligible labeled content PR.`);
+              return;
+            }
+
+            if (!process.env.CONTENT_AUTOMERGE_TOKEN) {
+              core.setFailed('Set CONTENT_AUTOMERGE_TOKEN before enabling content auto-merge.');
+              return;
+            }
+
+            if (pull.draft) {
+              if (
+                eventName !== 'pull_request_target' ||
+                context.payload.action !== 'labeled'
+              ) {
+                core.info(`PR #${pull.number} is still a draft.`);
+                return;
+              }
+
+              const result = await github.graphql(
+                `mutation MarkPullRequestReadyForReview($pullRequestId: ID!) {
+                  markPullRequestReadyForReview(
+                    input: { pullRequestId: $pullRequestId }
+                  ) {
+                    pullRequest {
+                      isDraft
+                    }
+                  }
+                }`,
+                { pullRequestId: pull.node_id },
+              );
+
+              if (result.markPullRequestReadyForReview.pullRequest.isDraft) {
+                core.setFailed(`PR #${pull.number} remained a draft.`);
+                return;
+              }
+
+              core.notice(`Marked eligible content PR #${pull.number} ready for review.`);
               return;
             }
 
@@ -128,11 +163,6 @@ jobs:
               [...latestReviewByAuthor.values()].includes('CHANGES_REQUESTED')
             ) {
               core.info(`PR #${pull.number} has requested changes.`);
-              return;
-            }
-
-            if (!process.env.CONTENT_AUTOMERGE_TOKEN) {
-              core.setFailed('Set CONTENT_AUTOMERGE_TOKEN to a fine-grained GitHub token before enabling content auto-merge.');
               return;
             }
 

@@ -170,15 +170,16 @@ Unlock persistence: `WordfallSave.unlocked` may already be `12` while this build
 `content/wordfall-weekly` is the standing content branch for recurring Wordfall
 content. It is a narrow automation exception to the normal Superthread
 card-derived branch rule (D-058): routine buffer refills do **not** need one
-card per level. Its non-draft PR carries `automation:auto-merge`, which the
-GitHub Action accepts only after CI succeeds for the exact current head.
+card per level. Its PR carries `automation:auto-merge`; the GitHub Action marks
+an eligible draft ready, then accepts it only after CI succeeds for the exact
+current head.
 
 Each authoring run first checks whether a PR from that branch is open:
 
 - If it is open, extend that one PR rather than creating a competing level or
   PR.
 - If it is not open, start the standing branch from current `master` and open a
-  new non-draft, labelled PR only after local verification passes.
+  new PR only after local verification passes, then apply the auto-merge label.
 - If the catalog already has four future Mondays, make no content change and
   open no PR.
 - Otherwise append as many independently designed rows as needed to restore
@@ -249,11 +250,11 @@ Follow the Cursor skill [wordfall-weekly-gauntlet](../.cursor/skills/wordfall-we
    - `npm run build:web`
    - `npm run serve:web` (local production deploy of `dist/` on port 8080 — not `npm run web`)
    - Playtest that export: hub loads, Wordfall start screen loads, picker shows the new row as **drops {Monday}**, launch 1–11 still play. Future rows are not playable today; the solver test is the winnability proof. Do not undate the row to sneak a playtest.
-9. Only then commit, push, and create or update the standing **non-draft** PR.
-   Add the `automation:auto-merge` label (creating it if absent). The GitHub
-   Action merges only that labelled branch after the current head's CI run
-   succeeds; failures, pending checks, merge conflicts, and requested changes
-   leave the PR open.
+9. Only then commit, push, and create or update the standing PR. Add the
+   `automation:auto-merge` label (creating it if absent). The GitHub Action
+   marks an eligible draft ready and merges only after the current head's CI
+   run succeeds; failures, pending checks, merge conflicts, and requested
+   changes leave the PR open.
 
 **PR title:** `Wordfall weekly buffer through <last Monday>`
 **PR body must state:** every new number and `availableFrom`, puzzle vs race,
