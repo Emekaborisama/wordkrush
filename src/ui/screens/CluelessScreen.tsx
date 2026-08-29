@@ -198,6 +198,16 @@ export function CluelessScreen({
   const accent = getGame(GAME_ID)?.accent ?? theme.violet;
   const hintVisible = isHintVisible(state);
   const hintRemaining = Math.max(0, STANDARD_HINT_GUESS_THRESHOLD - state.guesses.length);
+  const hasNextTutorial =
+    pathPhase === 'tutorial' && levelNumber !== undefined && levelNumber < 3;
+  const completionCopy =
+    pathPhase === 'daily'
+      ? 'You’ve cracked today’s Daily Vault. Come back tomorrow for the next one.'
+      : pathPhase === 'tutorial' && levelNumber === 3
+        ? 'You cleared the Spark path. Your first Daily Vault opens tomorrow.'
+        : hasNextTutorial
+          ? 'Next level unlocked. Keep following the path.'
+          : 'Puzzle complete. Head back to see what’s next.';
 
   return (
     <KeyboardAvoidingView
@@ -277,14 +287,27 @@ export function CluelessScreen({
           radius={radius.lg}
           style={styles.wonCard}
         >
-          <Mascot size={52} pose="celebrate" />
-          <View style={styles.wonCopy}>
-            <Text style={styles.wonEyebrow}>PUZZLE SOLVED</Text>
-            <Text style={styles.wonWord}>{puzzle.secret}</Text>
-            <Text style={styles.wonMeta}>
-              Found in {state.guesses.length} {state.guesses.length === 1 ? 'guess' : 'guesses'}
-            </Text>
+          <View style={styles.wonSummary}>
+            <Mascot size={52} pose="celebrate" />
+            <View style={styles.wonCopy}>
+              <Text style={styles.wonEyebrow}>PUZZLE SOLVED</Text>
+              <Text style={styles.wonWord}>{puzzle.secret}</Text>
+              <Text style={styles.wonMeta}>
+                Found in {state.guesses.length} {state.guesses.length === 1 ? 'guess' : 'guesses'}
+              </Text>
+            </View>
           </View>
+          {pathPhase !== 'team' ? (
+            <View style={styles.completion}>
+              <Text style={styles.completionCopy}>{completionCopy}</Text>
+              <Button
+                title={hasNextTutorial ? 'Continue path' : 'Back to Clueless'}
+                onPress={onExit}
+                color={accent}
+                accessibilityHint="Return to the Clueless path"
+              />
+            </View>
+          ) : null}
         </Surface>
       ) : (
         <TextField
@@ -408,6 +431,9 @@ const styles = StyleSheet.create({
   meterValue: { color: theme.text, fontFamily: font.bold, fontWeight: '700', fontVariant: ['tabular-nums'] },
 
   wonCard: {
+    gap: space.md,
+  },
+  wonSummary: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
@@ -416,6 +442,13 @@ const styles = StyleSheet.create({
   wonEyebrow: { ...type.overline, color: theme.success },
   wonWord: { ...type.title, color: theme.text, marginTop: 1 },
   wonMeta: { ...type.caption, color: theme.textMuted, marginTop: 1 },
+  completion: {
+    gap: space.sm,
+    paddingTop: space.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+  },
+  completionCopy: { ...type.body, color: theme.textMuted },
 
   list: { flex: 1 },
   listContent: { gap: 6, paddingBottom: space.lg },

@@ -183,6 +183,52 @@ export const LEVELS: Level[] = [
       { kind: 'length', minLength: 5, target: 3 },
     ],
   },
+  {
+    number: 12,
+    name: 'Vowel Vault',
+    description: 'Clear 18 A tiles while playing eight words.',
+    moves: 20,
+    crates: 0,
+    objectives: [
+      { kind: 'letter', letter: 'a', target: 18 },
+      { kind: 'words', target: 8 },
+    ],
+    availableFrom: '2026-08-31',
+  },
+  {
+    number: 13,
+    name: 'Sixth Sense',
+    description: 'Make four six-letter words while playing eight words.',
+    moves: 20,
+    crates: 0,
+    objectives: [
+      { kind: 'length', minLength: 6, target: 4 },
+      { kind: 'words', target: 8 },
+    ],
+    availableFrom: '2026-09-07',
+  },
+  {
+    number: 14,
+    name: 'Redline',
+    description: 'Clear 12 R tiles before the 90-second clock runs out.',
+    moves: UNLIMITED_MOVES,
+    timeLimitMs: seconds(90),
+    crates: 0,
+    objectives: [{ kind: 'letter', letter: 'r', target: 12 }],
+    availableFrom: '2026-09-14',
+  },
+  {
+    number: 15,
+    name: 'Cratework',
+    description: 'Break all 12 crates and make six four-letter words.',
+    moves: 20,
+    crates: 12,
+    objectives: [
+      { kind: 'crates', target: 12 },
+      { kind: 'length', minLength: 4, target: 6 },
+    ],
+    availableFrom: '2026-09-21',
+  },
 ];
 
 export function levelByNumber(n: number): Level | undefined {
