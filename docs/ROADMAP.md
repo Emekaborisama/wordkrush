@@ -122,7 +122,8 @@ Local contract: [reddit/README.md](../reddit/README.md).
   standing `content/wordfall-weekly` CI-gated PR maintains four future Mondays
   without a Superthread card per level. Every row still has a unique
   `taskFingerprint`, a seven-day featured window, and a local `serve:web`
-  picker playtest before GitHub (D-038, D-058, D-059).
+  picker playtest before GitHub. Its configured label flow marks drafts ready
+  and merges only after exact-head CI (D-038, D-058, D-059, D-060).
 - [ ] First TestFlight build ← blocked on Apple Developer + Expo login
 
 ## Suggested order

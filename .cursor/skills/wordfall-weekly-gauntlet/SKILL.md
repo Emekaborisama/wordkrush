@@ -50,10 +50,11 @@ exception to the normal Superthread card branch contract (D-058).
    already live).
 3. Use the standing `content/wordfall-weekly` content branch. If its PR is
    open, extend it; otherwise start it from current `master` and create a new
-   non-draft PR only after verification. Do not create a Superthread card or a
-   per-drop branch. An environment-created `cursor/...` branch is not the
-   delivery branch: before any GitHub write, ensure the change is on
-   `content/wordfall-weekly`. Never push directly to `master`.
+   PR only after verification. It may start as a draft: applying
+   `automation:auto-merge` makes this eligible branch ready. Do not create a
+   Superthread card or a per-drop branch. An environment-created `cursor/...`
+   branch is not the delivery branch: before any GitHub write, ensure the
+   change is on `content/wordfall-weekly`. Never push directly to `master`.
 4. Fingerprint every existing and newly planned row. Design one hard task per
    missing Monday, each with a new fingerprint.
 5. Append enough objects to `LEVELS` to restore the four-week buffer. Each has
@@ -91,12 +92,12 @@ If the solver cannot win seeds 11 / 4242 / 90210, loosen the target. If it
 wins on move one, tighten it. Re-run the whole verify loop.
 
 Then, and only then: commit, `git push` to `content/wordfall-weekly`, and
-create or update the **non-draft** PR `Wordfall weekly buffer through <last
-Monday>`. Ensure it carries the `automation:auto-merge` label (create that
-repository label if it is absent). Its body lists every number and
-`availableFrom`, puzzle vs race, fingerprint, solver seeds that won, and the
-native-release caveat. The GitHub merge workflow merges only that labelled
-branch after successful CI for its exact current head; never merge it manually.
+create or update the PR `Wordfall weekly buffer through <last Monday>`. Apply
+the `automation:auto-merge` label (create that repository label if it is
+absent); the GitHub workflow marks an eligible draft ready, then merges only
+after successful CI for its exact current head. Its body lists every number
+and `availableFrom`, puzzle vs race, fingerprint, solver seeds that won, and
+the native-release caveat. Never merge it manually.
 
 ## Forbidden
 

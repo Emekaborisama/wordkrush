@@ -13,6 +13,11 @@ Rules:
 - **Clueless Daily Vault level 27: Far Signal.** One reviewed future solo level extends the bundled Daily Vault buffer. No hint is shown; the theme stays sealed until players reach it. Native installs receive it with the next shipped build.
 - **Clueless Daily Vault level 28: Crossing Line.** One reviewed future solo level extends the bundled Daily Vault buffer. No hint is shown; the theme stays sealed until players reach it. Native installs receive it with the next shipped build.
 ## [0.8.15] - 2026-08-29
+## [0.8.17] - 2026-08-29
+
+### Changed
+- **Recurring content auto-merge** now treats `automation:auto-merge` as the readiness signal: eligible Clueless and Wordfall drafts are marked ready, then merge only after exact-head CI succeeds.
+- **GitHub Actions runtimes** use Node 24-native action releases instead of the deprecated Node 20 compatibility path.
 
 ### Fixed
 - **Clueless solved screens now show the next step.** Intro levels direct players back to their unlocked path, while the final Spark and Daily Vault confirm when tomorrow’s puzzle opens.

@@ -357,11 +357,11 @@ Before GitHub, Job B runs `npm run check`, `npm run build:web`, and
 `master` deploys web (D-020, D-029). iOS only sees the row after a store build
 that contains it is installed. That is why the weekly spec keeps a buffer of
 unpublished Mondays in the same catalog. An open standing PR is extended
-when the buffer falls below four; a healthy catalog creates no new PR. Its
-non-draft PR carries `automation:auto-merge`; the GitHub Action merges only
-after CI succeeds for the exact current head. This narrow content-branch
-exception never pushes directly to `master` or bypasses a failed or pending
-check.
+when the buffer falls below four; a healthy catalog creates no new PR.
+Applying `automation:auto-merge` validates the named content branch and marks
+an eligible draft ready. The resulting event merges only after CI succeeds for
+the exact current head. This narrow content-branch exception never pushes
+directly to `master` or bypasses a failed or pending check.
 
 **3. Monday unlocks locally.** [BUILT]
 [schedule.ts](../src/games/wordfall/schedule.ts) compares the player's local
@@ -564,7 +564,7 @@ Quick map of where each journey step lives:
 | Local scores | `src/scores/storage.ts`, `src/scores/types.ts` | [BUILT] |
 | Scores UI (global + local tabs) | `src/ui/screens/ScoresScreen.tsx` | [BUILT] |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both |
-| Content PR merge gate | `.github/workflows/merge-labeled-content.yml` | [BUILT: token setup pending] — labelled, non-draft `content/clueless-daily` and `content/wordfall-weekly` PRs merge only after their exact head passes CI; `CONTENT_AUTOMERGE_TOKEN` preserves the normal master release path (D-059) |
+| Content PR merge gate | `.github/workflows/merge-labeled-content.yml` | [BUILT] — the configured `CONTENT_AUTOMERGE_TOKEN` marks labelled drafts from `content/clueless-daily` and `content/wordfall-weekly` ready, then merges only after their exact head passes CI while preserving the normal master release path (D-059, D-060) |
 | Wikipedia popularity weekly | `.github/workflows/wikipedia-popularity-weekly.yml`, `pipeline/rotate-wikipedia-popularity.ts`, `pipeline/keywords/wikipedia-popularity-reservoir.json` | [BUILT] — Monday 09:00 UTC + `workflow_dispatch`; re-measures shipped items and enqueues a new label round; PR on `content/wikipedia-popularity-weekly`, never `master` (D-036, D-052) |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both, then `railway up --service wordcrush` |
 | GitHub Release | `.github/workflows/release.yml`, `scripts/changelog-notes.mjs` | [BUILT] — every PR is a version; publish `vX.Y.Z` from that changelog section on master merge or tag (D-039, D-041) |

@@ -39,13 +39,13 @@ An automation run is not a player unlock:
 
 The intended Cursor Automation schedule is **18:00 GMT+1**. Its committed
 `clueless-daily-path` skill creates or extends the standing PR on
-`content/clueless-daily`, marks it non-draft, and applies the
-`automation:auto-merge` label. The GitHub merge workflow merges only that
-labelled branch after CI succeeds for the PR's current head. The automation
-must never push directly to `master`, override a failed or pending check, call
-EAS, or submit an app-store build. The final schedule must be configured in
-the Cursor Automations editor; until then this document and the skill are the
-executable automation contract, not an active cron.
+`content/clueless-daily` and applies the `automation:auto-merge` label. The
+GitHub workflow validates that named content branch, marks it ready if it is a
+draft, and merges only after CI succeeds for the PR's current head. The
+automation must never push directly to `master`, override a failed or pending
+check, call EAS, or submit an app-store build. The final schedule must be
+configured in the Cursor Automations editor; until then this document and the
+skill are the executable automation contract, not an active cron.
 
 Every run must:
 
@@ -75,9 +75,10 @@ Every run must:
    npm run build:web
    ```
 
-Merge is label- and CI-gated: the GitHub Action accepts only a non-draft
-`content/clueless-daily` PR labelled `automation:auto-merge`, then requires a
-successful `CI` run for its exact current head. A failed, cancelled, pending,
-or unmergeable PR, and any PR with requested changes, stays open rather than
-bypassing the failure. If an open standing PR already contains the next level,
-update that PR rather than creating a conflicting second level number.
+Merge is label- and CI-gated: the GitHub Action accepts only a
+`content/clueless-daily` PR labelled `automation:auto-merge`, marks an eligible
+draft ready, then requires a successful `CI` run for its exact current head. A
+failed, cancelled, pending, or unmergeable PR, and any PR with requested
+changes, stays open rather than bypassing the failure. If an open standing PR
+already contains the next level, update that PR rather than creating a
+conflicting second level number.
