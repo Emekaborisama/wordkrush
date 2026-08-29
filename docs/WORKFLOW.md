@@ -54,9 +54,10 @@ If the card has no suggested name yet, still include the card ID in the branch (
 instead of a card per content item. They are limited automation exceptions to
 the branch-name rule. Wikipedia keeps human review and never auto-merges.
 Clueless and Wordfall use the `automation:auto-merge` label: the GitHub Action
-merges only their named content branches after a successful CI run for the
-current head. Neither loop pushes directly to `master` or bypasses a failed or
-pending check. All other work follows the card-derived branch contract.
+marks eligible drafts ready, then merges only their named content branches
+after a successful CI run for the current head. Neither loop pushes directly
+to `master` or bypasses a failed or pending check. All other work follows the
+card-derived branch contract.
 
 ## Development loop
 
@@ -114,7 +115,7 @@ The app only ever reads the bundled JSON. Changing game data = run pipeline, com
 
 **Weekly Wikipedia popularity** is automated: `.github/workflows/wikipedia-popularity-weekly.yml` runs Mondays at 09:00 UTC (and on `workflow_dispatch`). It calls `pipeline:rotate`, which re-measures the bundled items and appends a new unused label round sampled from the reservoir, runs `npm run check` on a material change, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. That branch is an automation exception to the Superthread-name rule (D-036, D-052); do not merge it without reading the JSON diff. The job never pushes to `master` and never changes the set a player is currently on. Until the factory path is live (ST-35), the file stays `provisional: true`.
 
-Wordfall weekly levels are a different path: append dated Monday rows to `src/data/wordfall/levels.ts`, then follow [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) Job B and the Cursor skill `.cursor/skills/wordfall-weekly-gauntlet/`. That loop maintains the four-week buffer through the standing `content/wordfall-weekly` PR, an automation exception to the Superthread-name rule (D-058, D-059), so it does not need a card per drop. Rows still require a unique `taskFingerprint`, a seven-day featured window, then **local** `npm run check` → `build:web` → `serve:web` and a picker playtest before `git push`. Its non-draft PR receives `automation:auto-merge`; the GitHub Action merges it only after CI passes for the current head. Never push directly to `master`; do not run the Wikipedia ingest for a Wordfall drop. Monday does not fetch content; the catalog in git is the schedule.
+Wordfall weekly levels are a different path: append dated Monday rows to `src/data/wordfall/levels.ts`, then follow [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) Job B and the Cursor skill `.cursor/skills/wordfall-weekly-gauntlet/`. That loop maintains the four-week buffer through the standing `content/wordfall-weekly` PR, an automation exception to the Superthread-name rule (D-058, D-059, D-060), so it does not need a card per drop. Rows still require a unique `taskFingerprint`, a seven-day featured window, then **local** `npm run check` → `build:web` → `serve:web` and a picker playtest before `git push`. Applying `automation:auto-merge` marks an eligible draft ready; the GitHub Action merges it only after CI passes for the current head. Never push directly to `master`; do not run the Wikipedia ingest for a Wordfall drop. Monday does not fetch content; the catalog in git is the schedule.
 
 Clueless Daily Vaults are a fourth content path: the player advances only after
 their current level is solved and their next local midnight arrives. The
@@ -123,11 +124,11 @@ intended daily content authoring run is 18:00 GMT+1 and follows
 `.cursor/skills/clueless-daily-path/`. It appends one cache-ranked future solo
 level to the standing `content/clueless-daily` PR, never directly to `master`;
 that standing content branch is an automation exception to the Superthread-name
-rule (D-057, D-059). Its non-draft PR receives `automation:auto-merge`; the
-GitHub Action merges it only after CI succeeds for the current head, never
-bypassing failed or pending checks. It does not call EAS or fetch content at
-play time. Configure the final schedule in the Cursor Automations editor; the
-committed skill alone does not create a live cron.
+rule (D-057, D-059, D-060). Applying `automation:auto-merge` marks an eligible
+draft ready; the GitHub Action merges it only after CI succeeds for the current
+head, never bypassing failed or pending checks. It does not call EAS or fetch
+content at play time. Configure the final schedule in the Cursor Automations
+editor; the committed skill alone does not create a live cron.
 
 The **Reddit app** is a third path, and not the same thing as Reddit ads. [`reddit/`](../reddit/README.md) is a Devvit project with its own `package.json`, its own dependency tree, and its own TypeScript build (D-042). It imports `src/games/more-or-less/engine.ts` and `src/data/categories/` rather than copying them, so:
 
@@ -191,7 +192,7 @@ analytics still starts opted out and requires the player's explicit consent.
 
 - [ ] **Player email (D-054):** In Resend, verify `wordkrush.com` and keep sender `WordKrush <noreply@wordkrush.com>`. Put `RESEND_API_KEY` and `OPENAI_API_KEY` in `.env` (already named in `.env.example`). The same names live as GitHub **Environment** secrets on `best-games` (`RESEND_API_KEY`, `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`) — the Tuesday job sets `environment: best-games` so it can read them. Optional: `RESEND_FROM`, `RESEND_SEGMENT_ID`, `OPENAI_EMAIL_MODEL`. Then **Actions → Player email weekly → Run workflow** once with `dry_run` on. Tuesday 09:00 UTC cron takes it from there. A week with no player-facing changelog and no Wordfall drop sends nothing. The keys must never go on Railway. Do not add required reviewers on `best-games` or the cron will sit waiting for approval.
 
-- [ ] **Content PR auto-merge (D-059):** In GitHub repository secrets, add `CONTENT_AUTOMERGE_TOKEN`: a fine-grained PAT or GitHub App installation token with **Actions: read**, **Contents: read and write**, and **Pull requests: read and write**. Do not use `GITHUB_TOKEN`: its merge event would not trigger the normal `master` CI, Railway deploy, or release workflow. After the workflow is on `master`, mark the standing Cursor PRs non-draft and apply `automation:auto-merge`.
+- [x] **Content PR auto-merge (D-059/D-060):** `CONTENT_AUTOMERGE_TOKEN` is configured as a fine-grained PAT with **Actions: read**, **Contents: read and write**, and **Pull requests: read and write**; PR #40 proved that its merge triggers normal `master` CI and release workflows. Applying `automation:auto-merge` now owns draft-to-ready. The current PAT expires on **2026-09-28** and must be rotated before then.
 
 - [ ] **Reddit app (D-042):** `npm run reddit:install`, then `npm --prefix reddit run login` with the Reddit account that will own it. Playtest with `npm run reddit:dev` against a test subreddit, then `npm --prefix reddit run launch` for app review. **Pick the launch subreddit and talk to its moderators before installing** — an app dropped into a community that was not asked is a removal, not a launch. Confirm the 13:00 UTC cron hour suits that audience.
 
