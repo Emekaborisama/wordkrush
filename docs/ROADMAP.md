@@ -71,7 +71,7 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 ## Track: Clueless
 
 - [x] **Daily difficulty modes** (ST-82) — **Superseded by D-057**; their score partitions remain as assistance contexts, but the player no longer selects a mode.
-- [ ] **Local-midnight solo path** (ST-90) — **Doing**; First Spark → Follow the Heat → No Map, then one completion-gated Daily Vault per local midnight. Solo and team answer streams are separate; validator and app tests cover policy, path, persistence, and spoiler separation.
+- [ ] **Local-midnight solo path** (ST-90) — **Doing**; First Spark → Follow the Heat → No Map, then one completion-gated Daily Vault per local midnight. Solo and team answer streams are separate; validator and app tests cover policy, path, persistence, and spoiler separation. A solved board directs the player to the next tutorial level or confirms that the next vault opens tomorrow.
 - [ ] **Cursor Daily Vault authoring Automation** — **Blocked on final editor and merge-token setup**; committed skill and cache-backed append guard are ready. Configure the 18:00 GMT+1 automation in Cursor to update the standing `content/clueless-daily` PR, make it non-draft, and apply `automation:auto-merge`; the GitHub Action merges it only after CI passes for its current head (D-059).
 - [x] **TextField Fredoka + no web focus ring** (ST-84) — typed text uses Fredoka; the orange UA outline on the inner input is suppressed.
 
