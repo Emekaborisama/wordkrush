@@ -6,6 +6,12 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.21] - 2026-08-30
+
+### Changed
+- **Judgment work is a named Grok-bot fleet catalogued in docs/AGENT-OS.md.** Cursor Cloud Agents plus `.cursor/skills/` own content authoring, organic X growth, QA, and product health. GitHub Actions still run CI, Railway deploy, GitHub Release, Wikipedia rotate, Resend send, and CI-gated content merge. A bot does not replace those jobs and does not push to master. Clueless and Wordfall bots (working skills today, schedules still owner-configured in the Agents Window) use `.cursor/skills/clueless-daily-path/` and `.cursor/skills/wordfall-weekly-gauntlet/`. Conductor (read-only daily pulse), QA, Product health, Development, and Growth marketer (organic X for @WordKrushGame) are catalogued; playbooks and Automations remain [PLANNED].
+- **Acquisition in this OS is organic X only (@WordKrushGame).** Reddit posting and Devvit launch are parked; `reddit/` app and `.cursor/skills/reddit-ad-posts/` remain in the repo and are not scheduled. Player email stays a Tuesday retention Broadcast (D-054), not a second campaign. No Reddit, no DMs, no paid ads.
+
 ## [0.8.20] - 2026-08-30
 
 ### Changed

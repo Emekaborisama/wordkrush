@@ -26,9 +26,12 @@ Read the documents relevant to your change before editing:
 | Visual identity, logo, and brand colour | `docs/branding/` |
 | Technology choices, constraints, and test strategy | `docs/STACK.md` |
 | Collaboration workflow and definition of done | `docs/WORKFLOW.md` |
+| Agent fleet operating contract and bot catalog | `docs/AGENT-OS.md` |
 | Wordfall Monday drops and weekly automation | `docs/WORDFALL-WEEKLY.md` and `.cursor/skills/wordfall-weekly-gauntlet/` |
+| Clueless daily path and vault authoring | `docs/CLUELESS-DAILY.md` and `.cursor/skills/clueless-daily-path/` |
 | The Reddit (Devvit) build of More or Less | `reddit/README.md` and STACK D-042 |
-| Reddit ads and GTM posting | `docs/marketing/reddits/` and `.cursor/skills/reddit-ad-posts/` |
+| Reddit ads and GTM posting (parked) | `docs/marketing/reddits/` and `.cursor/skills/reddit-ad-posts/` |
+| Organic X growth (X only, no Reddit) | `.claude/skills/wordkrush-x-growth/` (Cursor port planned) |
 | Local commands and dependency versions | `package.json` |
 | Secrets and environment-variable boundaries | `.env.example` and `.gitignore` |
 | Cross-agent working agreement | This file |
@@ -89,11 +92,14 @@ allowed; see `docs/WORKFLOW.md`.
 The narrowly documented recurring-content loops are exceptions to that branch
 rule: `content/wikipedia-popularity-weekly`, `content/clueless-daily`, and
 `content/wordfall-weekly`. They may update one standing PR without a card per
-content item. Wikipedia remains human-reviewed. Clueless and Wordfall use the
+content item. Wikipedia remains human-reviewed. Clueless and Wordfall bots
+(Grok Automations + `.cursor/skills/`, catalogued in `docs/AGENT-OS.md`) use the
 `automation:auto-merge` label; the GitHub Action merges only those named
 content branches after CI succeeds for the exact current head, never by direct
-push or by bypassing failed or pending checks. Every other feature or fix still
-needs its own Superthread branch.
+push or by bypassing failed or pending checks. A bot does not replace CI, does
+not push to master, and does not call EAS. Acquisition in this OS is organic X
+growth only (@WordKrushGame); Reddit posting and Devvit launch remain parked.
+Every other feature or fix still needs its own Superthread branch.
 
 ## Non-negotiable architecture
 

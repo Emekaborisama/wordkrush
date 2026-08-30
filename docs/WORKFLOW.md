@@ -13,9 +13,10 @@ For every collaborator on this repo — human or LLM. Read this before touching 
 | [BRAINSTORM.md](BRAINSTORM.md) | Game design, assumptions, corrections | Any design change or confirmed assumption |
 | [branding/](branding/README.md) | Name, logo use, brand colour | Identity, lockup, or palette changes |
 | [CHANGELOG.md](CHANGELOG.md) | What shipped, one `x.y.z` per PR | Every PR — new version heading, never an in-place edit |
+| [AGENT-OS.md](AGENT-OS.md) | Agent fleet operating contract: bot catalog, skills, triggers, caps, stops | Bot skill, schedule, or contract change |
 | [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md) | Monday Wordfall drops: catalog, buffer, authoring, automation contract | Cadence, schedule gate, or weekly-release automation |
 | [CLUELESS-DAILY.md](CLUELESS-DAILY.md) | Completion-gated Daily Vault content, buffer, and review-PR authoring contract | Clueless path, content cadence, or daily authoring automation |
-| [reddit/README.md](../reddit/README.md) | The Devvit build of More or Less: shared-engine boundary, server-owned run, daily post, launch checklist | Anything under `reddit/` |
+| [reddit/README.md](../reddit/README.md) | The Devvit build of More or Less: shared-engine boundary, server-owned run, daily post, launch checklist (parked) | Anything under `reddit/` |
 | WORKFLOW.md (this) | How we collaborate | Process changes |
 
 Decisions get **logged, never silently rewritten** — supersede old entries so the reasoning trail survives. If you're an LLM picking this repo up cold: read HOW-IT-WORKS → STACK → BRAINSTORM → CHANGELOG (latest version), in that order, before writing code.
@@ -36,7 +37,9 @@ Documentation impact:
 - Visual identity, logo, or brand colour → `docs/branding/`.
 - Task status or blockers → `ROADMAP.md` and the matching Superthread card.
 - Collaboration or release process → `WORKFLOW.md`.
+- Agent fleet operating contract, bot skill, schedule, caps, stops → `AGENT-OS.md`.
 - Wordfall Monday drops or their automation → `WORDFALL-WEEKLY.md`.
+- Clueless daily path or vault authoring → `CLUELESS-DAILY.md`.
 
 ## Branches and pull requests (non-negotiable)
 
@@ -53,10 +56,12 @@ If the card has no suggested name yet, still include the card ID in the branch (
 `content/wordfall-weekly` deliberately use a standing content branch and PR
 instead of a card per content item. They are limited automation exceptions to
 the branch-name rule. Wikipedia keeps human review and never auto-merges.
-Clueless and Wordfall use the `automation:auto-merge` label: the GitHub Action
+Clueless and Wordfall bots (Grok Automations + `.cursor/skills/`, catalogued
+in `docs/AGENT-OS.md`) use the `automation:auto-merge` label: the GitHub Action
 marks eligible drafts ready, then merges only their named content branches
-after a successful CI run for the current head. Neither loop pushes directly
-to `master` or bypasses a failed or pending check. All other work follows the
+after a successful CI run for the current head. A bot does not replace CI, does
+not push to master, and does not call EAS. Neither loop pushes directly to
+`master` or bypasses a failed or pending check. All other work follows the
 card-derived branch contract.
 
 ## Development loop

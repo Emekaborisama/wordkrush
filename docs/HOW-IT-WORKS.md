@@ -345,11 +345,12 @@ automation must read it rather than keep a second calendar. Working title
 **Gauntlet**. Each drop's `taskFingerprint` (puzzle vs race plus objective
 kinds) must be unique, including vs last week. Featured TTL is seven days
 (`isNewestRelease`); the row stays after Sunday so campaign numbering has no
-holes. Job B is the Cursor skill
+holes. Job B is the Wordfall bot (Grok Automation, once owner-configured) using
+the Cursor skill
 [wordfall-weekly-gauntlet](../.cursor/skills/wordfall-weekly-gauntlet/SKILL.md).
 It maintains the four-week queue on the standing
 `content/wordfall-weekly` content branch rather than needing a Superthread card
-for every Monday (D-058, D-059).
+for every Monday (D-038, D-058, D-059).
 
 **2. Local production check, then the row ships like code.** [BUILT: web · blocked on owner: iOS]
 Before GitHub, Job B runs `npm run check`, `npm run build:web`, and
@@ -382,7 +383,9 @@ D-004 trade: content updates are releases.
 The second surface. More or Less runs inside a Reddit post via Devvit — no
 link-out, no install, no App Store. One post a day, the same questions for
 everyone on it, and a board that a client cannot lie to. Decision and stated
-costs: D-042. Local contract: [reddit/README.md](../reddit/README.md).
+costs: D-042. Local contract: [reddit/README.md](../reddit/README.md). **This
+OS does not operate that channel**: no bot posts or publishes Devvit. Reddit
+remains product how-it-works; launch and posting are owner-manual.
 
 ```
  DEVVIT CRON            DEVVIT SERVER                 WEB VIEW (iframe)
@@ -531,6 +534,72 @@ solo Play works.
 
 ---
 
+## Journey 10 — A Grok bot runs a slice of the company
+
+Judgment work—content authoring, organic X growth, QA, product health—is a named Grok-bot fleet. GitHub Actions remain the deterministic hands: CI, Railway deploy, GitHub Release, Wikipedia rotate, Resend send, and CI-gated content merge. A bot does not replace those jobs and does not push to master.
+
+### 1. Catalog is the contract [BUILT]
+
+`docs/AGENT-OS.md` names each bot, skill path, trigger, write surface, and stop conditions. `agents.md` points here. A cold agent does not invent a parallel OS.
+
+| Bot | Skill | Status |
+|---|---|---|
+| Clueless | `.cursor/skills/clueless-daily-path/` | [BUILT] catalog + skill |
+| Wordfall | `.cursor/skills/wordfall-weekly-gauntlet/` | [BUILT] catalog + skill |
+| Conductor | `.cursor/skills/conductor/` | [PLANNED] catalog; skill not committed |
+| QA, Product health, Development | Human agent playbook | [PLANNED] catalog only |
+| Growth marketer (@WordKrushGame) | `.claude/skills/wordkrush-x-growth/` | [BUILT] Claude skill; Cursor port [PLANNED] |
+
+Automations are configured in the owner's Agents Window (Grok Bot app). The committed skill is the playbook; the schedule is owner-configured, not claimed live when it is not.
+
+### 2. Grok judges; Actions execute [BUILT]
+
+Clueless/Wordfall bots open or extend standing content PRs. `merge-labeled-content.yml` merges only those branches after exact-head CI. Wikipedia rotate and Resend stay cron Actions. Grok never becomes `npm run check`.
+
+```
+Bot writes code → git push to content/<name> → open/update PR → apply automation:auto-merge
+  → CI runs on PR head → merge-labeled-content.yml waits for success
+  → merge to master (if exact head + no requested changes) → Railway deploy
+```
+
+No bot pushes to `master`. No bot calls `gh pr merge`. No bot bypasses CI or uses an administrative merge override.
+
+### 3. Growth is organic X [BUILT: Claude skill; PLANNED: Cursor port]
+
+`.claude/skills/wordkrush-x-growth/` (then `.cursor/skills/wordkrush-x-growth/`) plus `~/.wordkrush-social/ledger.json`. Caps and abort beat autonomy: max 5 posts per rolling 7 days, no duplicate content hash, no post within 8 hours of last post. Bot drafts tweet and previews in Superthread; owner posts manually using logged-in browser; ledger records timestamp, content hash, tweet URL.
+
+**Out of scope:** Reddit posting, Devvit publishing, paid ads, DMs. The Devvit app (`reddit/`) and `.cursor/skills/reddit-ad-posts/` stay parked (G-004, D-042). Player email is a Tuesday Broadcast (D-054), not a second campaign.
+
+### 4. Owner-only work stops the bot [BUILT as policy]
+
+When a bot encounters Apple Developer, Expo login, migrations, [OPEN]/[DECIDE] in BRAINSTORM/ROADMAP, remote flags (D-024), Wikipedia merge (D-052), or secrets, it writes a Superthread card describing the need and stops instead of improvising.
+
+### 5. Conductor does not write src/ [PLANNED]
+
+Daily read of Superthread board, CI status, content buffers (`clueless-daily`, `wordfall-weekly` PRs), X ledger (`~/.wordkrush-social/ledger.json`), and PostHog retention floor (7-day opt-in rate). Output is an 8–12 line report card in a Superthread entry. Never writes application code, opens feature PRs, or changes product behavior.
+
+Example output:
+```
+Daily pulse 2026-08-30
+
+CI: green, master @ abc1234 (deployed 4h ago)
+Content: Clueless +1 merged, Wordfall buffer healthy (4 weeks)
+X: 2 posts this week, next slot Thu
+PostHog: D7 retention 18% (opt-in cohort), 340 opens yesterday
+Board: 3 open, 1 blocked (ST-42 needs Apple account), 0 stale
+
+Action: ST-42 remains owner-only blocker.
+```
+
+### Honesty and schedules
+
+- **[BUILT]**: Clueless skill, Wordfall skill, merge-labeled-content.yml, Wikipedia/email Actions, Claude X growth skill
+- **[PLANNED]**: Conductor skill, QA/Product health/Development playbooks, X growth Cursor port, Automation schedules in Agents Window
+
+Wave 1 lands the catalog and committed skills. Schedules are still owner-configured via Cursor's Agents Window UI. Do not claim Automations are live when the owner has not yet enabled them.
+
+---
+
 ## System reference
 
 Quick map of where each journey step lives:
@@ -578,6 +647,10 @@ Quick map of where each journey step lives:
 | Sound + haptics | `src/native/feedback.ts`, `src/native/sound.ts`, `src/native/haptics.ts`, `assets/sounds/`, `src/settings/` | [BUILT] — one `feedback(event)` table maps five game moments to a clip + haptic; both channels mutable from the drawer. See D-043 |
 | Wordfall match juice | `src/ui/wordfall/clearJuice.ts`, `src/ui/wordfall/BoardView.tsx` | [BUILT] — puff then fall on `lastPlay.cleared`; special-birth pop by tile id; Crush/Nova stamp on chain ≥ 2. RN `Animated`, not Lottie (ST-80, D-032) |
 | Wordfall weekly drops | `src/games/wordfall/schedule.ts` (`taskFingerprint`), `src/data/wordfall/levels.ts`, [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md), `.cursor/skills/wordfall-weekly-gauntlet/` | [BUILT] gate + unique-task + local `serve:web` before GitHub (D-038); standing `content/wordfall-weekly` PR maintains four future Mondays without a card per drop and merges through the content PR gate (D-058, D-059) |
+| Clueless daily path | `src/data/clueless/levels.ts`, [CLUELESS-DAILY.md](CLUELESS-DAILY.md), `.cursor/skills/clueless-daily-path/` | [BUILT] cache-backed append + standing `content/clueless-daily` PR (D-057); merges through content PR gate |
+| Agent OS catalog | [AGENT-OS.md](AGENT-OS.md) | [BUILT] Wave 1 catalog + skills; schedules [PLANNED] in Agents Window |
+| Conductor skill | `.cursor/skills/conductor/` | [PLANNED] read-only daily pulse; 8–12 line Superthread report |
+| X growth (organic @WordKrushGame) | `.claude/skills/wordkrush-x-growth/`, `~/.wordkrush-social/ledger.json` | [BUILT] Claude skill; Cursor port [PLANNED]; caps + ledger + owner posts manually |
 | Game Center | `src/native/` | [PLANNED] |
 
 ## Security model

@@ -96,11 +96,15 @@ problems are survivable. Treat it as a test, not a launch.
 
 ---
 
-## 3b. The game *inside* Reddit — Devvit — **[BUILT 2026-08-23]**
+## 3b. The game *inside* Reddit — Devvit — **[BUILT 2026-08-23; parked 2026-08-30]**
 
 Different from §3, and it should not be confused with it. §3 is a link posted to
 a community. This is the game running **in the post itself** — no link-out, no
 install, no download. [`reddit/`](../../reddit/README.md), decision STACK D-042.
+
+**This OS does not operate this channel (D-063).** The Devvit app and `reddit/`
+code remain in the repo as product how-it-works, not a scheduled campaign. No
+bot posts or publishes Devvit. Launch and posting stay owner-manual.
 
 **Why it is ranked this high despite being new:** it is the only channel on this
 list that does not wait for Phase 0. Every blocker in
