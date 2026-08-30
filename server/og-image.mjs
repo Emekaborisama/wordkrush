@@ -6,13 +6,55 @@
  * and aggregate stats — never answers, guessed words, or item labels.
  */
 
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import sharp from 'sharp';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const WIDTH = 1200;
 const HEIGHT = 630;
 const BG_COLOR = '#0A0817'; // brand.ink
 const TEXT_COLOR = '#F4F0FF'; // brand.text
 const ACCENT_COLOR = '#E8B840'; // brand.krush
+
+// Copy Fredoka font to a location fontconfig can find
+// librsvg (used by sharp for SVG) doesn't support data URI fonts in @font-face
+const FREDOKA_SRC = join(
+  __dirname,
+  '../node_modules/@expo-google-fonts/fredoka/600SemiBold/Fredoka_600SemiBold.ttf',
+);
+const FONT_DIR = join(tmpdir(), 'wordkrush-fonts');
+const FREDOKA_PATH = join(FONT_DIR, 'Fredoka-SemiBold.ttf');
+
+// Ensure font is installed for fontconfig/pango
+try {
+  mkdirSync(FONT_DIR, { recursive: true });
+  if (!readFileSync(FREDOKA_PATH, { flag: 'r' }).length) throw new Error('copy');
+} catch {
+  const font = readFileSync(FREDOKA_SRC);
+  writeFileSync(FREDOKA_PATH, font);
+}
+
+// Create fontconfig configuration
+const FONTCONFIG_FILE = join(FONT_DIR, 'fonts.conf');
+const fontconfigXml = `<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <dir>${FONT_DIR}</dir>
+  <cachedir>${FONT_DIR}/cache</cachedir>
+</fontconfig>`;
+try {
+  if (!readFileSync(FONTCONFIG_FILE, { encoding: 'utf-8' }).includes(FONT_DIR)) throw new Error('write');
+} catch {
+  writeFileSync(FONTCONFIG_FILE, fontconfigXml);
+}
+
+// Set environment variable for fontconfig
+process.env.FONTCONFIG_FILE = FONTCONFIG_FILE;
 
 /**
  * Generate a spoiler-free OG image PNG for a game result.
@@ -60,6 +102,8 @@ function generateOgImageSvg(data) {
 }
 
 function svgShell(content) {
+  // librsvg/pango will use the font installed via fontconfig
+  // Font family name matches the font's internal name
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
   <rect width="${WIDTH}" height="${HEIGHT}" fill="${BG_COLOR}"/>
@@ -105,10 +149,10 @@ function generateMoreOrLessImage(data) {
   }
 
   const content = `
-    <text x="${WIDTH / 2}" y="80" font-family="system-ui, sans-serif" font-size="48" font-weight="600" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(title)}</text>
+    <text x="${WIDTH / 2}" y="80" font-family="Fredoka SemiBold" font-size="48" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(title)}</text>
     ${grid.join('\n    ')}
-    <text x="${WIDTH / 2}" y="${y + squareSize + 80}" font-family="system-ui, sans-serif" font-size="36" font-weight="600" fill="${ACCENT_COLOR}" text-anchor="middle">${escapeXml(streak)}</text>
-    ${best ? `<text x="${WIDTH / 2}" y="${y + squareSize + 130}" font-family="system-ui, sans-serif" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(best)}</text>` : ''}
+    <text x="${WIDTH / 2}" y="${y + squareSize + 80}" font-family="Fredoka SemiBold" font-size="36" fill="${ACCENT_COLOR}" text-anchor="middle">${escapeXml(streak)}</text>
+    ${best ? `<text x="${WIDTH / 2}" y="${y + squareSize + 130}" font-family="Fredoka SemiBold" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(best)}</text>` : ''}
   `;
 
   return svgShell(content);
@@ -149,10 +193,10 @@ function generateCluelessImage(data) {
   }
 
   const content = `
-    <text x="${WIDTH / 2}" y="80" font-family="system-ui, sans-serif" font-size="48" font-weight="600" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(title)}</text>
-    ${subtitle ? `<text x="${WIDTH / 2}" y="140" font-family="system-ui, sans-serif" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${subtitle}</text>` : ''}
+    <text x="${WIDTH / 2}" y="80" font-family="Fredoka SemiBold" font-size="48" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(title)}</text>
+    ${subtitle ? `<text x="${WIDTH / 2}" y="140" font-family="Fredoka SemiBold" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${subtitle}</text>` : ''}
     ${grid.join('\n    ')}
-    <text x="${WIDTH / 2}" y="${y + squareSize + 80}" font-family="system-ui, sans-serif" font-size="36" font-weight="600" fill="${ACCENT_COLOR}" text-anchor="middle">${escapeXml(standing)}</text>
+    <text x="${WIDTH / 2}" y="${y + squareSize + 80}" font-family="Fredoka SemiBold" font-size="36" fill="${ACCENT_COLOR}" text-anchor="middle">${escapeXml(standing)}</text>
   `;
 
   return svgShell(content);
@@ -192,11 +236,11 @@ function generateWordfallImage(data) {
   }
 
   const content = `
-    <text x="${WIDTH / 2}" y="80" font-family="system-ui, sans-serif" font-size="48" font-weight="600" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(title)}</text>
-    <text x="${WIDTH / 2}" y="140" font-family="system-ui, sans-serif" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${subtitle}</text>
+    <text x="${WIDTH / 2}" y="80" font-family="Fredoka SemiBold" font-size="48" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(title)}</text>
+    <text x="${WIDTH / 2}" y="140" font-family="Fredoka SemiBold" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${subtitle}</text>
     ${grid.join('\n    ')}
-    <text x="${WIDTH / 2}" y="${y + squareSize + 80}" font-family="system-ui, sans-serif" font-size="32" font-weight="600" fill="${ACCENT_COLOR}" text-anchor="middle">${escapeXml(standing)}</text>
-    <text x="${WIDTH / 2}" y="${y + squareSize + 130}" font-family="system-ui, sans-serif" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(verdict)}</text>
+    <text x="${WIDTH / 2}" y="${y + squareSize + 80}" font-family="Fredoka SemiBold" font-size="32" fill="${ACCENT_COLOR}" text-anchor="middle">${escapeXml(standing)}</text>
+    <text x="${WIDTH / 2}" y="${y + squareSize + 130}" font-family="Fredoka SemiBold" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(verdict)}</text>
   `;
 
   return svgShell(content);

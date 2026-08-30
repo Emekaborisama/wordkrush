@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { SHARE_URL, composeShare, wrapSquares } from './share';
+import { composeShare, wrapSquares } from './share';
+
+const TEST_SHARE_URL = 'https://wordkrush.com/share/test123?utm_source=player&utm_medium=share';
 
 describe('composeShare', () => {
   it('joins title, grid, standing, and the tracked URL', () => {
@@ -8,8 +10,9 @@ describe('composeShare', () => {
         title: 'WordKrush · More or Less',
         grid: '🟩🟩🟥',
         standing: 'Streak 2',
+        url: TEST_SHARE_URL,
       }),
-    ).toBe(`WordKrush · More or Less\n🟩🟩🟥\nStreak 2\n${SHARE_URL}`);
+    ).toBe(`WordKrush · More or Less\n🟩🟩🟥\nStreak 2\n${TEST_SHARE_URL}`);
   });
 
   it('omits an empty grid rather than leaving a blank line', () => {
@@ -17,11 +20,12 @@ describe('composeShare', () => {
       title: 'WordKrush · Wordfall L1',
       grid: '',
       standing: '0 pts · 0 words · 0:00',
+      url: TEST_SHARE_URL,
     });
     expect(text.split('\n')).toEqual([
       'WordKrush · Wordfall L1',
       '0 pts · 0 words · 0:00',
-      SHARE_URL,
+      TEST_SHARE_URL,
     ]);
   });
 
@@ -31,8 +35,9 @@ describe('composeShare', () => {
       grid: '🟥',
       standing: 'Streak 0',
       verdict: 'Gone in one.',
+      url: TEST_SHARE_URL,
     });
-    expect(text.endsWith(`Gone in one.\n${SHARE_URL}`)).toBe(true);
+    expect(text.endsWith(`Gone in one.\n${TEST_SHARE_URL}`)).toBe(true);
   });
 });
 

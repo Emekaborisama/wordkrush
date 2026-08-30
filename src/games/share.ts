@@ -7,8 +7,6 @@
  * `entry_source: 'share'` in `src/analytics/attribution.ts`.
  */
 
-export const SHARE_URL = 'https://wordkrush.com/?utm_source=player&utm_medium=share';
-
 export const SHARE_SQUARES_PER_ROW = 10;
 
 /**
@@ -22,7 +20,7 @@ export type ShareBlocks = {
   grid: string;
   standing: string;
   verdict?: string;
-  url?: string;
+  url: string;
 };
 
 export function composeShare(blocks: ShareBlocks): string {
@@ -32,7 +30,7 @@ export function composeShare(blocks: ShareBlocks): string {
   if (blocks.verdict !== undefined && blocks.verdict.length > 0) {
     lines.push(blocks.verdict);
   }
-  lines.push(blocks.url ?? SHARE_URL);
+  lines.push(blocks.url);
   return lines.join('\n');
 }
 

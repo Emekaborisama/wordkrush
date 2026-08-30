@@ -6,6 +6,14 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.27] - 2026-08-30
+
+### Fixed
+- **Share result no longer crashes in the browser.** Replaced Node `Buffer` with browser-compatible APIs (`TextEncoder`/`TextDecoder` + `btoa`/`atob`) in `src/games/share-data.ts` so `encodeShareData` and `decodeShareData` work on web clients. Expo web has no Buffer; the ReferenceError left the clipboard empty. Server code (`og-image.mjs`, `serve.mjs`) still uses Buffer where appropriate.
+- **Share link Open Graph images now render readable Fredoka text.** The server installs Fredoka SemiBold TTF via fontconfig at startup (copied to `$TMPDIR/wordkrush-fonts` with fonts.conf) so librsvg/pango can render SVG text elements as "Fredoka SemiBold". All three games (More or Less, Clueless, Wordfall) show the correct title, stats, and standing instead of .notdef glyphs. Railway's sharp no longer depends on preinstalled system fonts.
+- **Share paste URLs are now dynamic `/share/:id` links, not the homepage.** Removed the homepage fallback in `composeShare()` so clipboard and native share always paste `https://wordkrush.com/share/:id?utm_source=player&utm_medium=share` with encoded result data. X/Twitter unfurls the per-result OG image instead of the generic lockup. `ShareBlocks.url` is now required.
+- **Share result HTML strips homepage Open Graph tags.** `/share/:id` HTML removes all `og:*`, `twitter:*`, and `canonical` tags from index.html before injecting per-result tags, so scrapers only see the 1200×630 result PNG (not the 1024×1024 homepage lockup). Invalid share IDs return HTTP 404 instead of falling through to the SPA homepage.
+
 ## [0.8.26] - 2026-08-30
 
 ### Changed
