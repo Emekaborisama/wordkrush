@@ -1,7 +1,7 @@
 # Monitoring and observability
 
 **Status:** Initial PostHog instrumentation implemented; dashboards and operational monitors are managed in their named source systems.
-**Last updated:** 2026-08-25
+**Last updated:** 2026-08-30
 **Owner:** Product and engineering
 
 This document is the source of truth for how WordKrush measures product
@@ -39,7 +39,7 @@ not secrets. They will use `EXPO_PUBLIC_POSTHOG_KEY` and
 
 | System | Use it for | Do not use it for |
 |---|---|---|
-| PostHog | Consented product events, identified sign-ups, funnels, retention, game-balance aggregates, web vitals, coarse client failure counters | Raw exceptions, guessed content, phone numbers, server uptime |
+| PostHog | Consented product events, identified sign-ups, funnels, retention, game-balance aggregates, web vitals, coarse client failure counters, user-initiated survey responses | Raw exceptions, guessed content, phone numbers, server uptime |
 | GitHub Actions | Type/tests, web export, bundle budget, content gates, validator tests, scheduled smoke tests | Player behavior or production latency |
 | Railway | Deploy health, process restarts, resource use, static-server logs, service health | Product funnels or native crashes |
 | External synthetic check | Public URL uptime and response-contract checks | In-app behavior |
@@ -339,6 +339,9 @@ Implemented:
    arrival attribution (including auth-callback exclusion).
 8. After consent, sign-up and sign-in create a PostHog person (D-040). Account
    deletion must also delete that person.
+9. Player feedback is a PostHog Surveys API prompt (`src/feedback/`,
+   `FeedbackPrompt`). `survey sent` posts to the capture endpoint even when
+   analytics is declined; guests use a one-shot distinct id (D-063).
 
 Still separate:
 

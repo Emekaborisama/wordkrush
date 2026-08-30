@@ -35,7 +35,7 @@ export default defineConfig({
       'src/streak/**/*.test.ts',
       'src/auth/**/*.test.ts',
       'src/analytics/**/*.test.ts',
-      'src/userback/**/*.test.ts',
+      'src/feedback/**/*.test.ts',
       'src/games/**/*.test.ts',
       'pipeline/**/*.test.ts',
       'scripts/**/*.test.mjs',
