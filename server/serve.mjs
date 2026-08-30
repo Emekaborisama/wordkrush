@@ -170,6 +170,7 @@ function decodeShareData(encoded) {
 
 /**
  * Handle /share/:id routes with dynamic OG tags.
+ * Returns null for non-share routes, '404' for invalid share IDs, or the HTML record.
  */
 function handleShareRoute(pathname) {
   const match = /^\/share\/([^/?]+)/.exec(pathname);
@@ -177,7 +178,8 @@ function handleShareRoute(pathname) {
 
   const encoded = match[1];
   const shareData = decodeShareData(encoded);
-  if (!shareData || !indexHtml) return null;
+  // Invalid share ID should 404, not fall through to SPA homepage
+  if (!shareData || !indexHtml) return '404';
 
   // Generate OG image URL (PNG for X/Twitter compatibility)
   const ogImageUrl = `https://wordkrush.com/share/${encoded}/og.png`;
@@ -190,7 +192,17 @@ function handleShareRoute(pathname) {
   const title = `WordKrush · ${gameTitle}`;
   const description = generateOgDescription(shareData);
 
-  // Inject OG tags into index.html
+  // Strip ALL homepage OG tags (og:*, twitter:*) and canonical so scrapers only see the share result
+  // Homepage has og:image pointing to the 1024×1024 lockup; we want the 1200×630 result PNG
+  let html = indexHtml
+    // Remove all og: meta tags (multiline-safe with [\s\S])
+    .replace(/<meta\s+property="og:[^"]*"[^>]*>/gi, '')
+    // Remove all twitter: meta tags
+    .replace(/<meta\s+name="twitter:[^"]*"[^>]*>/gi, '')
+    // Remove canonical link (points to homepage)
+    .replace(/<link\s+rel="canonical"[^>]*>/gi, '');
+
+  // Inject per-result OG tags
   const ogTags = `
     <title>${escapeHtml(title)}</title>
     <meta property="og:type" content="website"/>
@@ -207,7 +219,8 @@ function handleShareRoute(pathname) {
     <meta name="twitter:image" content="${ogImageUrl}"/>
   `;
 
-  const html = indexHtml.replace(/<title>[^<]*<\/title>/, ogTags);
+  html = html.replace(/<title>[^<]*<\/title>/, ogTags);
+
   const body = Buffer.from(html, 'utf-8');
 
   return {
@@ -221,6 +234,7 @@ function handleShareRoute(pathname) {
 
 /**
  * Handle /share/:id/og.png routes for OG images.
+ * Returns null for non-OG routes, '404' for invalid share IDs, or the PNG record.
  */
 async function handleOgImageRoute(pathname) {
   const match = /^\/share\/([^/]+)\/og\.png$/.exec(pathname);
@@ -228,7 +242,8 @@ async function handleOgImageRoute(pathname) {
 
   const encoded = match[1];
   const shareData = decodeShareData(encoded);
-  if (!shareData) return null;
+  // Invalid share ID should 404
+  if (!shareData) return '404';
 
   const pngBuffer = await generateOgImagePng(shareData);
 
@@ -260,6 +275,13 @@ const server = createServer(async (req, res) => {
   // Try dynamic routes first
   let record = await handleOgImageRoute(pathname);
   if (!record) record = handleShareRoute(pathname);
+  
+  // Invalid share ID returns '404' sentinel, not null
+  if (record === '404') {
+    res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }).end('Share not found');
+    return;
+  }
+  
   if (!record) record = lookup(req.url ?? '/');
 
   if (!record) {

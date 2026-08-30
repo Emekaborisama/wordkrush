@@ -47,22 +47,36 @@ export type ShareData = MoreOrLessShareData | CluelessShareData | WordfallShareD
 
 /**
  * Encode share data to a URL-safe base64 string.
+ * Uses browser-compatible APIs (TextEncoder + btoa) instead of Node Buffer.
  */
 export function encodeShareData(data: ShareData): string {
   const json = JSON.stringify(data);
-  const base64 = Buffer.from(json, 'utf-8').toString('base64');
+  // TextEncoder is available in browsers and Node 11+
+  const bytes = new TextEncoder().encode(json);
+  // Convert bytes to binary string
+  const binaryString = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
+  // btoa is available in browsers; for Node (server/tests) we use global polyfill if needed
+  const base64 = typeof btoa !== 'undefined' ? btoa(binaryString) : Buffer.from(json, 'utf-8').toString('base64');
   // Make it URL-safe: replace +/= with -_~ for cleaner URLs
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '~');
 }
 
 /**
  * Decode a URL-safe base64 string back to share data.
+ * Uses browser-compatible APIs (atob + TextDecoder) instead of Node Buffer.
  */
 export function decodeShareData(encoded: string): ShareData | null {
   try {
     // Restore base64 padding and characters
     const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/').replace(/~/g, '=');
-    const json = Buffer.from(base64, 'base64').toString('utf-8');
+    // atob is available in browsers; for Node (server/tests) we use global polyfill if needed
+    const binaryString = typeof atob !== 'undefined' ? atob(base64) : Buffer.from(base64, 'base64').toString('utf-8');
+    // Convert binary string to bytes
+    const bytes = typeof atob !== 'undefined' 
+      ? Uint8Array.from(binaryString, (char) => char.charCodeAt(0))
+      : new TextEncoder().encode(binaryString);
+    // TextDecoder is available in browsers and Node 11+
+    const json = new TextDecoder().decode(bytes);
     const data = JSON.parse(json) as ShareData;
 
     // Validate structure
