@@ -19,6 +19,7 @@ Rules:
 ## [0.8.19] - 2026-08-30
 
 ### Added
+- **Spoiler-free result share** on More or Less game over, Clueless solve, and Wordfall win or loss. Each paste is an emoji grid plus a standing line and `wordkrush.com` with `utm_medium=share`. Native uses the system share sheet; web uses Web Share with a clipboard fallback and a “Copied to clipboard” note. No new dependency. `result_shared` records only a completed share or copy.
 - **Clueless Daily Vault level 29: Departure Board.** One reviewed future solo level extends the bundled Daily Vault buffer. No hint is shown; the theme stays sealed until players reach it. Native installs receive it with the next shipped build.
 - **Branded search surface.** `build:web` now writes `robots.txt`, `sitemap.xml`, a crawler-readable title and JSON-LD, and hub copy inside `#root` / `<noscript>`, so Google can index wordkrush.com as the word-game hub rather than a JS shell. Search Console’s HTML verification file is served at `/googled8072618779c67b2.html`.
 

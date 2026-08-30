@@ -107,7 +107,8 @@ expose a typed event map so names and property shapes cannot drift.
 | `level_completed` | P1 | Wordfall won transition | `level_number`, `score`, `duration_ms`, `words_played`, `moves_left_bucket` | Level pass rate and tuning |
 | `level_failed` | P1 | Wordfall lost transition | `level_number`, `score`, `duration_ms`, `failure_mode: time \| moves` | Difficulty cliffs |
 | `daily_puzzle_viewed` | P1 | Clueless after path restore resolves | `puzzle_number`, optional `level_number`, `already_completed`, bounded assistance, hint, and path context | Path participation |
-| `game_over_action` | P1 | WordKrush comparison result-screen action | `action: play_again \| scores \| home`, `streak_bucket`, `is_new_best` | Replay and post-run intent |
+| `game_over_action` | P1 | WordKrush comparison result-screen action | `action: play_again \| scores \| home \| share`, `streak_bucket`, `is_new_best` | Replay, share tap, and post-run intent |
+| `result_shared` | P1 | Share sheet resolved or clipboard wrote | `game_id`, `outcome`, `score_kind`, `method: share_sheet \| clipboard`, `is_new_best` | Whether a result actually left the app |
 | `scores_viewed` | P2 | Scores screen mount | `game_id`, `run_count_bucket`, `has_highlight`, `auth_status` | Score-surface value |
 | `auth_prompt_viewed` | P1 | Scores screen shows eligible account prompt | `game_id`, `run_count_bucket` | Account CTA reach |
 | `auth_submitted` | P1 | Auth form after local validation (magic-link send or OTP code) | `mode: sign_in \| sign_up`, `validation_result`, `error_category?` | Form friction |

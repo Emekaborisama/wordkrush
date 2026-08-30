@@ -61,7 +61,7 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 - [ ] Home screen — game logo, Play, best streak, category picker
 - [ ] Game screen — comparison panels, MORE/LESS controls, current streak
 - [ ] Count-up reveal — animate the hidden value after the answer
-- [ ] Game over screen — final streak, best streak, replay/share
+- [x] Game over screen — final streak, best streak, replay/share — **Done** in 0.8.19; per-game emoji grid, clipboard/share sheet, no live-race or scores-row share yet
 - [ ] **Show data provenance** — "Source: X, month year" on the reveal; the claim on screen must match the snapshot
 - [ ] **Lottie celebration kit** (ST-72) — remaining deer poses, streak flame, result bursts; owner shares lottie.host *file* URLs. Hub idle deer + player already exist locally (`src/ui/lottie/`, D-032). Not on Wordfall tiles or text pills.
 - [ ] **Wordfall match juice** (ST-80) — **Doing**; puff-then-fall on `lastPlay.cleared`, special-birth pop, Crush/Nova stamp. RN `Animated`, not Lottie.

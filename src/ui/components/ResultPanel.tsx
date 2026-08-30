@@ -10,6 +10,17 @@ type Action = {
   onPress: () => void;
 };
 
+/**
+ * Sharing the result, which needs somewhere to confirm itself.
+ *
+ * A share sheet reports its own outcome, but a clipboard write is silent — with
+ * no note the button looks broken. `note` is that line; the screen clears it
+ * after a moment.
+ */
+type ShareAction = Action & {
+  note?: string | null;
+};
+
 type Props = {
   eyebrow: string;
   title: string;
@@ -22,6 +33,7 @@ type Props = {
   primary: Action;
   secondary?: Action;
   tertiary?: Action;
+  share?: ShareAction;
 };
 
 export function ResultPanel({
@@ -36,6 +48,7 @@ export function ResultPanel({
   primary,
   secondary,
   tertiary,
+  share,
 }: Props) {
   const tokens = gameAccentTokens(accent);
   return (
@@ -56,6 +69,25 @@ export function ResultPanel({
       {body ? <Text style={styles.body}>{body}</Text> : null}
       {children}
       <View style={styles.actions}>
+        {/* Above the primary because this is the moment the result is worth
+            showing off, but tonal rather than filled so it never outweighs the
+            action that keeps the player playing. */}
+        {share ? (
+          <>
+            <Button
+              title={share.label}
+              onPress={share.onPress}
+              variant="tonal"
+              color={accent}
+              accessibilityHint="Copies a spoiler-free result you can paste anywhere"
+            />
+            {share.note ? (
+              <Text style={styles.shareNote} accessibilityLiveRegion="polite">
+                {share.note}
+              </Text>
+            ) : null}
+          </>
+        ) : null}
         <Button title={primary.label} onPress={primary.onPress} color={accent} size="lg" />
         {secondary ? (
           <Button title={secondary.label} onPress={secondary.onPress} variant="tonal" color={accent} />
@@ -82,4 +114,5 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   actions: { alignSelf: 'stretch', gap: space.sm, marginTop: space.xl },
+  shareNote: { ...type.caption, color: theme.textMuted, textAlign: 'center' },
 });

@@ -1,6 +1,6 @@
 # Go-To-Market Strategy
 
-**Last updated:** 2026-08-22
+**Last updated:** 2026-08-30
 **Status:** Strategy. Marked **[DECIDE]** where the owner's call is needed.
 **Related:** [BRAINSTORM.md](BRAINSTORM.md) (what the games are) · [ROADMAP.md](ROADMAP.md) (what is being built) · [OBSERVABILITY.md](OBSERVABILITY.md) (how we measure) · [branding/](branding/) (name, voice, logo) · [security-and-anti-cheat/](security-and-anti-cheat/) (why the leaderboard is a launch gate)
 
@@ -32,7 +32,7 @@ And then nothing that turns a played session into a new player:
 
 | Missing | Evidence | Consequence |
 |---|---|---|
-| **Any share mechanic** | No `Share`, `Clipboard`, or share-sheet code anywhere in `App.tsx` or `src/ui/`. ROADMAP lists "replay/share" as unbuilt. | A finished daily puzzle produces nothing a player can send to anyone. The genre's primary growth channel is absent. |
+| **Any share mechanic** | **[BUILT] 0.8.19** — spoiler-free grid on More or Less / Clueless / Wordfall; RN `Share` + Web Share / clipboard. Cross-game streak card still open. | A finished run can travel. Link previews are still site-wide, so the paste carries the grid and a generic card. |
 | **Link previews** | `scripts/patch-web-head.mjs` sets favicons only. No `og:` or `twitter:` tags. | Every wordkrush.com link posted anywhere renders as a blank grey card. |
 | **A page that is not the app** | Single ~3 MB JS bundle, no server-rendered HTML (D-006, which names the weak-SEO cost explicitly) | Nothing to rank, nothing to link to, nothing to read before installing. |
 | **iOS** | Blocked on the $99 Apple Developer Program (ROADMAP) | An entire distribution channel is closed for less than the price of a dinner. |
@@ -150,8 +150,8 @@ Three properties make this loop work, and all three are cheap:
    is a two-rhythm retention system that needs no push notifications and no new
    content decisions.
 
-**The loop is not live.** Arc 2 (share) does not exist and arc 3 (click) has no
-preview. §5 closes both.
+**Arc 2 (share) shipped in 0.8.19.** Arc 3 (click) still has a site-wide preview,
+not a per-result card. §5.2 is the remaining close.
 
 ---
 
@@ -159,23 +159,21 @@ preview. §5 closes both.
 
 Nothing in §6 should start before these ship. Ordered by leverage per hour.
 
-### 5.1 The share card · **highest leverage in this document**
+### 5.1 The share card · **[BUILT] 0.8.19**
 
 A spoiler-free result grid per game, copied to clipboard and offered to the
 native share sheet, on every game-over screen.
 
-- Clueless: the heat trail of guess ranks — cold to warm to solved.
-- Wordfall: level, score, and the cascade chain shape.
-- More or Less: streak length and where it broke.
+- Clueless: heat spread of guess ranks — cold to warm to solved. Never the secret.
+- Wordfall: level, score, duration, and one square per word by length. Never `played[]`.
+- More or Less: streak length and the miss that broke it. Never the pair.
 
-Include the puzzle number, the streak, and the bare URL. Never the answer.
+The paste includes the puzzle or level number, the standing, and
+`https://wordkrush.com/?utm_source=player&utm_medium=share`. Never the answer.
 
-Constraint: this belongs in the UI layer only. Pure reducers under
-`src/games/<id>/` stay untouched (agents.md), and the grid is derived from
-state the engines already expose — `guesses`, `lastPlay`, `played`.
-
-**Without this, the product has no organic growth mechanism at all.** It is one
-component and three small formatters.
+Formatters are pure and tested in `src/games/<id>/share.ts`. The UI maps engine
+state to those inputs; reducers are untouched. Remaining: the cross-game daily
+streak card, live-race share, and per-result Open Graph (still §5.2).
 
 ### 5.2 Open Graph and Twitter card tags
 
@@ -363,14 +361,12 @@ this — most of the funnel is already covered:
 | Did they finish one? | `run_completed` | **[BUILT]** |
 | Did they play a second? | `run_started` (count per session) | **[BUILT]** |
 | Did they come back tomorrow? | `app_opened` + streak state | **[BUILT]** |
-| Did they share? | — | **Missing. Add `result_shared` with §5.1.** |
-| Did a share bring anyone? | `landing_viewed` / `app_opened.entry_source` | **[BUILT]** — bounded `share` / `paid` / `search` / `social` / `direct`. Still needs `utm_medium=share` on the share URL. |
+| Did they share? | `result_shared` | **[BUILT]** — fires on a completed share sheet or clipboard copy, not a dismiss. `game_over_action=share` is the tap. |
+| Did a share bring anyone? | `landing_viewed` / `app_opened.entry_source` | **[BUILT]** — share URL carries `utm_medium=share`, which resolves to `entry_source: 'share'`. |
 
-One addition still required before a share-channel claim can be evaluated: a
-`result_shared` event (game, surface, streak bucket). Bounded `entry_source`
-on `app_opened` / `landing_viewed` is built — it distinguishes shared link,
-paid, search, social, and direct **without** sending URLs, in keeping with
-D-022. Share links still need `utm_medium=share` to land in that bucket.
+Bounded `entry_source` on `app_opened` / `landing_viewed` distinguishes shared
+link, paid, search, social, and direct **without** sending URLs, in keeping
+with D-022.
 
 ### The consent problem — read this before trusting any number
 

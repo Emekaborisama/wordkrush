@@ -37,7 +37,9 @@ import {
 } from '../../games/wordfall/schedule';
 import type { Level, SpecialKind, WordfallState } from '../../games/wordfall/types';
 import { getGame } from '../../games/registry';
+import { buildShareText } from '../../games/wordfall/share';
 import { feedback } from '../../native/feedback';
+import { shareResult } from '../../native/share';
 import { HowToPlay } from '../HowToPlay';
 import {
   Badge,
@@ -585,6 +587,41 @@ function LevelOutcome({
   const won = state.status === 'won';
   const latest = lastReleasedNumber(LEVELS, new Date());
   const finished = won && level.number >= latest;
+  const [shareNote, setShareNote] = useState<string | null>(null);
+  const shareNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (shareNoteTimer.current !== null) clearTimeout(shareNoteTimer.current);
+    };
+  }, []);
+
+  async function onShare() {
+    const outcome = await shareResult(
+      buildShareText({
+        levelNumber: level.number,
+        levelName: level.name,
+        score: state.score,
+        wordLengths: state.played.map((word) => word.length),
+        elapsedMs: state.elapsedMs,
+        won,
+      }),
+    );
+    if (outcome === 'copied') {
+      setShareNote('Copied to clipboard');
+      if (shareNoteTimer.current !== null) clearTimeout(shareNoteTimer.current);
+      shareNoteTimer.current = setTimeout(() => setShareNote(null), 2000);
+    }
+    if (outcome === 'shared' || outcome === 'copied') {
+      captureAnalytics('result_shared', {
+        game_id: 'wordfall',
+        outcome: won ? 'win' : 'loss',
+        score_kind: 'points',
+        method: outcome === 'shared' ? 'share_sheet' : 'clipboard',
+        is_new_best: false,
+      });
+    }
+  }
 
   return (
     <View style={styles.outcomeScrim}>
@@ -610,6 +647,7 @@ function LevelOutcome({
         }`}
         accent={won ? ACCENT : theme.danger}
         art={<Mascot size={64} pose={won ? 'celebrate' : 'wince'} />}
+        share={{ label: 'Share result', onPress: () => void onShare(), note: shareNote }}
         primary={{
           label: won && !finished ? 'Next level' : won ? 'Replay level' : 'Try again',
           onPress: won && !finished ? onNext : onRetry,
