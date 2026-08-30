@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { SHARE_URL } from '../share';
 import { buildShareText } from './share';
 
 describe('buildShareText', () => {
@@ -15,9 +14,11 @@ describe('buildShareText', () => {
         { rank: null },
       ],
     });
-    expect(text).toBe(
-      `WordKrush · Clueless #23\n⬛⬛🟥🟧🟨🟩\nFound it in 6\n3 cold shots, one clean hit.\n${SHARE_URL}`,
-    );
+    expect(text).toContain('WordKrush · Clueless #23');
+    expect(text).toContain('⬛⬛🟥🟧🟨🟩');
+    expect(text).toContain('Found it in 6');
+    expect(text).toContain('3 cold shots, one clean hit.');
+    expect(text).toMatch(/https:\/\/wordkrush\.com\/share\/.+\?utm_source=player&utm_medium=share/);
   });
 
   it('appends the level name when one is supplied', () => {

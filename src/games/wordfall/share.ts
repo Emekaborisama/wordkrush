@@ -7,6 +7,7 @@
  */
 import { wordLengthBucket } from '../../analytics/events';
 import { composeShare, wrapSquares } from '../share';
+import { buildShareUrl, type WordfallShareData } from '../share-data';
 
 const LENGTH_SQUARE = {
   under_3: '🟦',
@@ -26,11 +27,35 @@ export type WordfallShareInput = {
 
 export function buildShareText(input: WordfallShareInput): string {
   const words = input.wordLengths.length;
+
+  // Count length buckets for share data (no spoilers)
+  const lengthBuckets = {
+    under_3: 0,
+    '3_4': 0,
+    '5_7': 0,
+    '8_plus': 0,
+  };
+  for (const length of input.wordLengths) {
+    const bucket = wordLengthBucket(length);
+    lengthBuckets[bucket]++;
+  }
+
+  const shareData: WordfallShareData = {
+    game: 'wordfall',
+    levelNumber: input.levelNumber,
+    levelName: input.levelName,
+    score: input.score,
+    wordCount: words,
+    lengthBuckets,
+    won: input.won,
+  };
+
   return composeShare({
-    title: `WordKrush · Wordfall L${input.levelNumber} “${input.levelName}”`,
+    title: `WordKrush · Wordfall L${input.levelNumber} "${input.levelName}"`,
     grid: wrapSquares(input.wordLengths.map(squareForLength).join('')),
     standing: `${formatScore(input.score)} pts · ${words} ${words === 1 ? 'word' : 'words'} · ${formatShareDuration(input.elapsedMs)}`,
     verdict: input.won ? undefined : 'Almost there.',
+    url: buildShareUrl(shareData),
   });
 }
 

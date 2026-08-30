@@ -6,6 +6,7 @@
  * pair on screen; a public paste must not.
  */
 import { SHARE_MAX_SQUARES, composeShare, wrapSquares } from '../share';
+import { buildShareUrl, type MoreOrLessShareData } from '../share-data';
 
 const CORRECT = '🟩';
 const WRONG = '🟥';
@@ -17,11 +18,18 @@ export type MoreOrLessShareInput = {
 };
 
 export function buildShareText(input: MoreOrLessShareInput): string {
+  const shareData: MoreOrLessShareData = {
+    game: 'more-or-less',
+    streak: input.streak,
+    bestStreak: input.bestStreak,
+  };
+
   return composeShare({
     title: 'WordKrush · More or Less',
     grid: moreOrLessGrid(input.streak),
     standing: moreOrLessStanding(input),
     verdict: moreOrLessVerdict(input.streak),
+    url: buildShareUrl(shareData),
   });
 }
 
