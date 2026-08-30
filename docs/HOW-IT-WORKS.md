@@ -544,13 +544,15 @@ Judgment work—content authoring, organic X growth, QA, product health—is a n
 
 | Bot | Skill | Status |
 |---|---|---|
-| Clueless | `.cursor/skills/clueless-daily-path/` | [BUILT] catalog + skill |
-| Wordfall | `.cursor/skills/wordfall-weekly-gauntlet/` | [BUILT] catalog + skill |
-| Conductor | `.cursor/skills/conductor/` | [PLANNED] catalog; skill not committed |
-| QA, Product health, Development | Human agent playbook | [PLANNED] catalog only |
-| Growth marketer (@WordKrushGame) | `.claude/skills/wordkrush-x-growth/` | [BUILT] Claude skill; Cursor port [PLANNED] |
+| Clueless | `.cursor/skills/clueless-daily-path/` | [BUILT] catalog + skill; Grok 8:55 daily |
+| Wordfall | `.cursor/skills/wordfall-weekly-gauntlet/` | [BUILT] catalog + skill; Grok Mon 10:55 London |
+| Conductor | `.cursor/skills/conductor/` | [PLANNED] skill; Grok weekdays 9:55 |
+| WordKrush QA | Human agent playbook | [PLANNED] catalog only |
+| Product Health | Human agent playbook | [PLANNED] catalog only |
+| WordKrush Dev | Human agent playbook | [PLANNED] catalog only |
+| WordKrush X (@WordKrushGame) | `.claude/skills/wordkrush-x-growth/` | [BUILT] Claude skill; Cursor port [PLANNED] |
 
-Automations are configured in the owner's Agents Window (Grok Bot app). The committed skill is the playbook; the schedule is owner-configured, not claimed live when it is not.
+Grok-side schedules are live. Repo-side Cursor Automations in the Agents Window remain owner-configured. The committed skill is the playbook.
 
 ### 2. Grok judges; Actions execute [BUILT]
 
@@ -593,10 +595,12 @@ Action: ST-42 remains owner-only blocker.
 
 ### Honesty and schedules
 
-- **[BUILT]**: Clueless skill, Wordfall skill, merge-labeled-content.yml, Wikipedia/email Actions, Claude X growth skill
-- **[PLANNED]**: Conductor skill, QA/Product health/Development playbooks, X growth Cursor port, Automation schedules in Agents Window
+- **[BUILT]**: Clueless skill, Wordfall skill, merge-labeled-content.yml, Wikipedia/email Actions, Claude X skill
+- **Grok-side schedules live**: Clueless 8:55 daily, Conductor 9:55 weekdays, Wordfall Monday 10:55 London
+- **[PLANNED]**: Conductor skill, WordKrush QA/Product Health/WordKrush Dev playbooks, WordKrush X Cursor port
+- **Agents Window**: Repo-side Cursor Automations still owner-configured
 
-Wave 1 lands the catalog and committed skills. Schedules are still owner-configured via Cursor's Agents Window UI. Do not claim Automations are live when the owner has not yet enabled them.
+Wave 1 lands the catalog and committed skills. Grok-side schedules are live; repo-side Cursor Automations in the Agents Window remain owner-configured.
 
 ---
 
@@ -648,9 +652,9 @@ Quick map of where each journey step lives:
 | Wordfall match juice | `src/ui/wordfall/clearJuice.ts`, `src/ui/wordfall/BoardView.tsx` | [BUILT] — puff then fall on `lastPlay.cleared`; special-birth pop by tile id; Crush/Nova stamp on chain ≥ 2. RN `Animated`, not Lottie (ST-80, D-032) |
 | Wordfall weekly drops | `src/games/wordfall/schedule.ts` (`taskFingerprint`), `src/data/wordfall/levels.ts`, [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md), `.cursor/skills/wordfall-weekly-gauntlet/` | [BUILT] gate + unique-task + local `serve:web` before GitHub (D-038); standing `content/wordfall-weekly` PR maintains four future Mondays without a card per drop and merges through the content PR gate (D-058, D-059) |
 | Clueless daily path | `src/data/clueless/levels.ts`, [CLUELESS-DAILY.md](CLUELESS-DAILY.md), `.cursor/skills/clueless-daily-path/` | [BUILT] cache-backed append + standing `content/clueless-daily` PR (D-057); merges through content PR gate |
-| Agent OS catalog | [AGENT-OS.md](AGENT-OS.md) | [BUILT] Wave 1 catalog + skills; schedules [PLANNED] in Agents Window |
-| Conductor skill | `.cursor/skills/conductor/` | [PLANNED] read-only daily pulse; 8–12 line Superthread report |
-| X growth (organic @WordKrushGame) | `.claude/skills/wordkrush-x-growth/`, `~/.wordkrush-social/ledger.json` | [BUILT] Claude skill; Cursor port [PLANNED]; caps + ledger + owner posts manually |
+| Agent OS catalog | [AGENT-OS.md](AGENT-OS.md) | [BUILT] Wave 1 catalog + skills; Grok schedules live; Agents Window owner-configured |
+| Conductor skill | `.cursor/skills/conductor/` | [PLANNED] read-only daily pulse; Grok weekdays 9:55; 8–12 line Superthread report |
+| WordKrush X (organic @WordKrushGame) | `.claude/skills/wordkrush-x-growth/`, `~/.wordkrush-social/ledger.json` | [BUILT] Claude skill; Cursor port [PLANNED]; caps + ledger + owner posts manually |
 | Game Center | `src/native/` | [PLANNED] |
 
 ## Security model

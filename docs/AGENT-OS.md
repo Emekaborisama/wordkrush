@@ -9,17 +9,17 @@ This is the operating contract for the Grok-bot fleet that runs content authorin
 
 ## The fleet
 
-Every bot in the table is a Cursor Cloud Agent backed by a `.cursor/skills/` playbook. Grok bots are configured and scheduled in the owner's Grok Bot app via the Agents Window. The skill catalog is the contract; an agent reading the repo cold does not invent a parallel OS.
+Every bot in the table is a Cursor Cloud Agent backed by a `.cursor/skills/` playbook. Grok-side schedules are live (Clueless 8:55 daily, Conductor 9:55 weekdays, Wordfall Monday 10:55 London). Repo-side Cursor Automations in the Agents Window remain owner-configured. The skill catalog is the contract; an agent reading the repo cold does not invent a parallel OS.
 
 | Bot name | Skill path | Trigger | Write surface | Stop condition |
 |---|---|---|---|---|
-| **Clueless** | `.cursor/skills/clueless-daily-path/` | Daily (owner-configured) | `content/clueless-daily` PR | CI-gated merge |
-| **Wordfall** | `.cursor/skills/wordfall-weekly-gauntlet/` | Weekly (owner-configured) | `content/wordfall-weekly` PR | CI-gated merge |
-| **Conductor** | `.cursor/skills/conductor/` [PLANNED] | Daily (owner-configured) | Superthread card (read-only) | 8–12 line report |
-| **QA** | Human agent [PLANNED] | On demand | Feature branch PR | Test pass + owner review |
-| **Product health** | Human agent [PLANNED] | On demand | Superthread card + ROADMAP | Report to owner |
-| **Development** | Human agent [PLANNED] | On demand | Feature branch PR | CI pass + owner review |
-| **Growth marketer** | `.claude/skills/wordkrush-x-growth/` [PLANNED: Cursor port] | On demand | Superthread card | Caps + ledger + owner review |
+| **Clueless** | `.cursor/skills/clueless-daily-path/` | Daily 8:55 (Grok-side live) | `content/clueless-daily` PR | CI-gated merge |
+| **Wordfall** | `.cursor/skills/wordfall-weekly-gauntlet/` | Mon 10:55 London (Grok-side live) | `content/wordfall-weekly` PR | CI-gated merge |
+| **Conductor** | `.cursor/skills/conductor/` [PLANNED] | Weekdays 9:55 (Grok-side live) | Superthread card (read-only) | 8–12 line report |
+| **WordKrush QA** | Human agent [PLANNED] | On demand | Feature branch PR | Test pass + owner review |
+| **Product Health** | Human agent [PLANNED] | On demand | Superthread card + ROADMAP | Report to owner |
+| **WordKrush Dev** | Human agent [PLANNED] | On demand | Feature branch PR | CI pass + owner review |
+| **WordKrush X** | `.claude/skills/wordkrush-x-growth/` [PLANNED: Cursor port] | On demand | Superthread card | Caps + ledger + owner review |
 
 ---
 
@@ -171,7 +171,7 @@ Action: ST-42 remains owner-only blocker.
 
 ---
 
-### QA
+### WordKrush QA
 
 **Purpose:** Reproduce reported bugs, write regression tests, verify fixes.
 
@@ -193,7 +193,7 @@ Action: ST-42 remains owner-only blocker.
 
 ---
 
-### Product health
+### Product Health
 
 **Purpose:** Analyze PostHog funnels, retention cohorts, session replays; surface insights to owner.
 
@@ -214,7 +214,7 @@ Action: ST-42 remains owner-only blocker.
 
 ---
 
-### Development
+### WordKrush Dev
 
 **Purpose:** Implement designed features, follow Superthread acceptance criteria, land PR.
 
@@ -238,9 +238,9 @@ Action: ST-42 remains owner-only blocker.
 
 ---
 
-### Growth marketer (organic X)
+### WordKrush X (organic X)
 
-**Purpose:** Draft and post @WordKrushGame tweets; enforce caps and ledger-based deduplication.
+**Purpose:** Draft and post @WordKrushGame tweets for organic growth; enforce caps and ledger-based deduplication.
 
 **Skill:** `.claude/skills/wordkrush-x-growth/` (Cursor port to `.cursor/skills/wordkrush-x-growth/` [PLANNED])
 
@@ -275,15 +275,15 @@ Action: ST-42 remains owner-only blocker.
 
 ## Automation schedule summary
 
-| Bot | Frequency | Time (UTC unless noted) | Status |
+| Bot | Frequency | Time | Status |
 |---|---|---|---|
-| Clueless | Daily | 18:00 GMT+1 | Owner-configured in Agents Window |
-| Wordfall | Weekly | Wed 09:00 | Owner-configured in Agents Window |
-| Conductor | Daily | 09:00 | [PLANNED], then owner-configured |
-| QA | On demand | — | [PLANNED] |
-| Product health | On demand | — | [PLANNED] |
-| Development | On demand | — | [PLANNED] |
-| Growth marketer | On demand | — | [PLANNED], Cursor port of Claude skill |
+| Clueless | Daily | 8:55 | Grok-side live; Agents Window owner-configured |
+| Wordfall | Weekly | Mon 10:55 London | Grok-side live; Agents Window owner-configured |
+| Conductor | Weekdays | 9:55 | Grok-side live; skill [PLANNED]; Agents Window owner-configured |
+| WordKrush QA | On demand | — | [PLANNED] |
+| Product Health | On demand | — | [PLANNED] |
+| WordKrush Dev | On demand | — | [PLANNED] |
+| WordKrush X | On demand | — | [PLANNED] Cursor port of Claude skill; Agents Window owner-configured |
 
 **GitHub Actions (unchanged):**
 - CI (`ci.yml`): every push and PR
@@ -346,10 +346,12 @@ Bots do not close cards, merge PRs that are not content branches, or change card
 
 ### What is live vs planned
 
-- **[BUILT]**: Clueless skill, Wordfall skill, merge-labeled-content.yml, Wikipedia/email Actions
-- **[PLANNED]**: Conductor skill, QA/Product health/Development agent playbooks, X growth Cursor port, Automation schedules in Agents Window
+- **[BUILT]**: Clueless skill, Wordfall skill, merge-labeled-content.yml, Wikipedia/email Actions, Claude X skill
+- **Grok-side schedules live**: Clueless 8:55 daily, Conductor 9:55 weekdays, Wordfall Monday 10:55 London
+- **[PLANNED]**: Conductor skill, WordKrush QA/Product Health/WordKrush Dev playbooks, WordKrush X Cursor port
+- **Agents Window**: Repo-side Cursor Automations still owner-configured
 
-Wave 1 lands the catalog and committed skills. Schedules are still owner-configured via Cursor's Agents Window UI. Do not claim Automations are live when the owner has not yet enabled them.
+Wave 1 lands the catalog and committed skills. Grok-side schedules are live; repo-side Cursor Automations in the Agents Window remain owner-configured.
 
 ### How to verify a bot ran
 
