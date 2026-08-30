@@ -6,6 +6,14 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.25] - 2026-08-30
+
+### Changed
+- **Teams are now disposable race rooms.** The team loop is simplified to Create/Join → select game → open lobby → race → results → back to create/join. Rooms are single-use: after a race finishes, players return to the entry screen to create or join a new room. Persistent crew homes, rename team, and disband/leave operations are removed. The invite code is displayed prominently after room creation to make inviting teammates the primary action. Game selection shows only titles without level pickers.
+- **Race-intent sign-in path.** "Race with team" on game start screens and the "Sign in" button on the Teams wall both show "SIGN IN TO RACE" copy, explaining that racing requires an account so teammates can see who they're racing with. "Back to solo play" returns to the game start screen instead of dumping to hub. After completing sign-in, players land directly in the create/join room screen.
+- **Closed drawer no longer intercepts clicks.** Fixed pointer events so a closed navigation drawer does not capture taps or offset the hub layout.
+- **"Race with team" button is now scrollable on start screens.** The button is no longer clipped under the fold on More or Less and Clueless game start screens.
+
 ## [0.8.24] - 2026-08-30
 
 ### Added

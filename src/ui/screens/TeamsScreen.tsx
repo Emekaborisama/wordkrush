@@ -3,22 +3,12 @@ import { Platform, ScrollView, Share, StyleSheet, Text, useWindowDimensions, Vie
 import { captureAnalytics } from '../../analytics/client';
 import type { Profile } from '../../auth/auth';
 import { isBackendConfigured } from '../../auth/client';
-import { levelByNumber } from '../../data/wordfall';
-import {
-  LIVE_ROSTER_LABEL,
-  PATH_GAME_IDS,
-  pickerStatus,
-  type PathGameId,
-} from '../../games/campaign';
-import { loadPersonalUnlocked } from '../../games/campaignStorage';
+import { LIVE_ROSTER_LABEL, PATH_GAME_IDS, type PathGameId } from '../../games/campaign';
 import { GAMES, getGame } from '../../games/registry';
-import { isLevelReleased } from '../../games/wordfall/schedule';
 import { createMatch, loadActiveMatch } from '../../live/api';
-import { pathRowByNumber, pathRows } from '../../live/catalog';
-import { createTeam, joinTeam, loadMyTeam, teamUnlocked } from '../../teams/api';
+import { createTeam, joinTeam } from '../../teams/api';
 import { teamInviteUrl } from '../../teams/codes';
 import type { TeamSnapshot } from '../../teams/types';
-import { CampaignPicker } from '../CampaignPicker';
 import {
   Badge,
   Button,
@@ -48,8 +38,6 @@ export function TeamsScreen({
 }: Props) {
   const [snapshot, setSnapshot] = useState<TeamSnapshot | null>(null);
   const [gameId, setGameId] = useState<PathGameId>('wordfall');
-  const [selected, setSelected] = useState<number | null>(null);
-  const [personalUnlocked, setPersonalUnlocked] = useState(1);
   const [name, setName] = useState('');
   const [code, setCode] = useState(pendingInviteCode ?? '');
   const [error, setError] = useState<string | null>(null);
@@ -58,21 +46,12 @@ export function TeamsScreen({
   const wide = isWideLayout(useWindowDimensions().width);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      if (!profile || !isBackendConfigured) {
-        setReady(true);
-        return;
-      }
-      const result = await loadMyTeam();
-      if (cancelled) return;
-      if (!result.ok) setError(result.error);
-      else setSnapshot(result.value);
+    if (!profile || !isBackendConfigured) {
       setReady(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
+      return;
+    }
+    // Room ends after race - no crew revival
+    setReady(true);
   }, [profile]);
 
   useEffect(() => {
@@ -97,18 +76,7 @@ export function TeamsScreen({
     };
   }, [profile, pendingInviteCode, snapshot, onInviteConsumed]);
 
-  useEffect(() => {
-    let cancelled = false;
-    void loadPersonalUnlocked(gameId).then((unlocked) => {
-      if (!cancelled) setPersonalUnlocked(unlocked);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [gameId, snapshot]);
 
-  const rows = pathRows(gameId);
-  const teamPath = snapshot ? teamUnlocked(snapshot, gameId) : 1;
   const accent = getGame(gameId)?.accent ?? theme.accent;
 
   async function handleCreate() {
@@ -137,16 +105,7 @@ export function TeamsScreen({
     setSnapshot(result.value);
   }
 
-  async function handleHost() {
-    if (selected == null) return;
-    const row = pathRowByNumber(gameId, selected);
-    if (!row) return;
-    const status = pickerStatus(selected, personalUnlocked, teamPath);
-    if (status === 'locked' || !row.released || row.dailySpoiler) return;
-    if (gameId === 'wordfall') {
-      const level = levelByNumber(selected);
-      if (!level || !isLevelReleased(level, new Date())) return;
-    }
+  async function handleOpenLobby() {
     setBusy(true);
     setError(null);
     const existing = await loadActiveMatch(gameId);
@@ -155,7 +114,8 @@ export function TeamsScreen({
       onOpenLobby(existing.value.match.id);
       return;
     }
-    const created = await createMatch(gameId, selected);
+    // No open lobby - create level 1
+    const created = await createMatch(gameId, 1);
     setBusy(false);
     if (!created.ok) {
       setError(created.error);
@@ -163,25 +123,9 @@ export function TeamsScreen({
     }
     captureAnalytics('match_created', {
       game_id: gameId,
-      level_number: selected,
+      level_number: 1,
     });
     onOpenLobby(created.value.match.id);
-  }
-
-  async function handleJoinOpen() {
-    setBusy(true);
-    setError(null);
-    const existing = await loadActiveMatch(gameId);
-    setBusy(false);
-    if (!existing.ok) {
-      setError(existing.error);
-      return;
-    }
-    if (!existing.value) {
-      setError('No open lobby for this game.');
-      return;
-    }
-    onOpenLobby(existing.value.match.id);
   }
 
   async function shareInvite() {
@@ -258,29 +202,20 @@ export function TeamsScreen({
   const raceActions = (
     <View style={styles.actions}>
       <Button
-        title="Host race"
-        onPress={() => void handleHost()}
+        title="Open lobby"
+        onPress={() => void handleOpenLobby()}
         color={accent}
-        disabled={busy || selected == null}
-      />
-      <Button
-        title="Join open lobby"
-        variant="tonal"
-        color={accent}
-        onPress={() => void handleJoinOpen()}
         disabled={busy}
       />
     </View>
   );
 
   return (
-    <View style={[styles.root, wide && styles.rootWide]}>
-      <ScrollView
-        style={wide ? styles.sidebar : styles.topScroll}
-        contentContainerStyle={styles.top}
-        keyboardShouldPersistTaps="handled"
-        nestedScrollEnabled
-      >
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+    >
         <ScreenHeader
           eyebrow="TEAM"
           title={snapshot.team.name}
@@ -326,32 +261,13 @@ export function TeamsScreen({
                 style={styles.gameChip}
                 onPress={() => {
                   setGameId(id);
-                  setSelected(null);
                 }}
               />
             );
           })}
         </View>
-        <Text style={styles.hint} numberOfLines={2}>
-          Team path {teamPath} · your path {personalUnlocked}. A race needs {LIVE_ROSTER_LABEL}{' '}
-          ready players.
-        </Text>
-        {wide ? raceActions : null}
-      </ScrollView>
-
-      <View style={styles.main}>
-        <CampaignPicker
-          style={styles.picker}
-          rows={rows}
-          personalUnlocked={personalUnlocked}
-          teamUnlocked={teamPath}
-          selected={selected}
-          accent={accent}
-          onSelect={setSelected}
-        />
-        {wide ? null : raceActions}
-      </View>
-    </View>
+        {raceActions}
+    </ScrollView>
   );
 }
 
@@ -362,13 +278,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingTop: space.md,
   },
-  rootWide: { flexDirection: 'row', gap: space.lg, minHeight: 0 },
   empty: { justifyContent: 'center' },
   content: { paddingBottom: space.md, gap: space.md },
-  top: { gap: space.sm, paddingBottom: space.sm },
-  topScroll: { flexGrow: 0, flexShrink: 1, maxHeight: 320 },
-  sidebar: { width: 340, flexShrink: 0, alignSelf: 'stretch' },
-  main: { flex: 1, minHeight: 0 },
   card: { gap: space.sm },
   cardTitle: { ...type.subtitle, color: theme.text, fontSize: 16 },
   inviteCard: { gap: space.md, alignItems: 'center', padding: space.lg },
@@ -379,8 +290,6 @@ const styles = StyleSheet.create({
   section: { ...type.overline, color: theme.textDim },
   gameRow: { flexDirection: 'row', gap: space.xs },
   gameChip: { flex: 1, minWidth: 0 },
-  hint: { ...type.caption, color: theme.textMuted },
-  picker: { flex: 1, minHeight: 0, height: 0, overflow: 'hidden' },
-  actions: { gap: space.xs, paddingTop: space.sm, paddingBottom: space.md, flexShrink: 0 },
+  actions: { gap: space.xs },
 });
 
