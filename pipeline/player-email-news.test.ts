@@ -60,6 +60,7 @@ describe('isPlayerFacing', () => {
     expect(isPlayerFacing('Tuesday Resend Broadcast (`pipeline/player-email.ts`).')).toBe(false);
     expect(isPlayerFacing('Wikipedia popularity snapshot refreshed')).toBe(false);
     expect(isPlayerFacing('OpenAI drafts copy (D-054).')).toBe(false);
+    expect(isPlayerFacing('OpenRouter drafts copy.')).toBe(false);
   });
 });
 

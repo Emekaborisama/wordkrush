@@ -1,6 +1,6 @@
 # Way of Working
 
-**Last updated:** 2026-08-25
+**Last updated:** 2026-08-30
 For every collaborator on this repo — human or LLM. Read this before touching code.
 
 ## The docs are the shared brain
@@ -167,7 +167,7 @@ railway variable set --service wordcrush EXPO_PUBLIC_POSTHOG_KEY=...
 railway variable set --service wordcrush EXPO_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
 ```
 
-Without them the site still works — `isBackendConfigured` is false, and the game runs offline as guest. **Never import `.env` and never set `SUPABASE_SECRET_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `SUPERTHREAD_API`, or `TEST_PLAYER_*` on this service**: Nixpacks bakes every service variable into the image as `ENV`, and this is a public client bundle. Set the four `EXPO_PUBLIC_*` names individually. `CI=true` is required so Expo's `getenv` does not crash on Railway's empty `CI`.
+Without them the site still works — `isBackendConfigured` is false, and the game runs offline as guest. **Never import `.env` and never set `SUPABASE_SECRET_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `RESEND_API_KEY`, `SUPERTHREAD_API`, or `TEST_PLAYER_*` on this service**: Nixpacks bakes every service variable into the image as `ENV`, and this is a public client bundle. Set the four `EXPO_PUBLIC_*` names individually. `CI=true` is required so Expo's `getenv` does not crash on Railway's empty `CI`.
 
 The PostHog project token is also public client configuration, not a secret.
 Without it analytics is a no-op and no consent prompt appears. With it,
@@ -178,8 +178,9 @@ analytics still starts opted out and requires the player's explicit consent.
 - `.env` is gitignored and must stay untracked. New secrets → add the *name* to `.env.example`, never the value.
 - `TEST_PLAYER_*` is a confirmed local Auth user for agent API tests (`npm run auth:ensure-test-player`). It is not a service-role superuser. Agents may read those names from `.env` locally; they must not print the values, commit them, or put them on Railway/EAS/`EXPO_PUBLIC_*`.
 - `SUPABASE_SECRET_KEY` is pipeline/server-side only. **Never** give a secret an `EXPO_PUBLIC_` prefix — Expo embeds those in the shipped client bundle.
-- `RESEND_API_KEY` is pipeline/GitHub Environment `best-games` only (Tuesday player Broadcast, D-053 / D-054). Never Railway, never `EXPO_PUBLIC_*`.
-- `OPENAI_API_KEY` is pipeline/validator and GitHub Environment `best-games` only (content referee + Tuesday email draft). Never game runtime, never Railway, never `EXPO_PUBLIC_*`.
+- `RESEND_API_KEY` is pipeline/GitHub Environment `best-games` only (Tuesday player Broadcast, D-053 / D-054 / D-062). Never Railway, never `EXPO_PUBLIC_*`.
+- `OPENAI_API_KEY` is validator-only (content referee). Never game runtime, never Railway, never `EXPO_PUBLIC_*`, never the Tuesday email job.
+- `OPENROUTER_API_KEY` is pipeline/GitHub Environment `best-games` only (Tuesday email draft, D-062). Never game runtime, never Railway, never `EXPO_PUBLIC_*`.
 - `CONTENT_AUTOMERGE_TOKEN` is a GitHub Actions secret only (D-059), never `.env`, Railway, or `EXPO_PUBLIC_*`. Use a fine-grained PAT or GitHub App token with Actions read plus Contents and Pull requests write so its merge event triggers the normal `master` workflows.
 - CI/EAS secrets go in GitHub/EAS secret stores, not in files.
 
@@ -190,7 +191,7 @@ analytics still starts opted out and requires the player's explicit consent.
 - [ ] Apply `supabase/migrations/0001_init.sql`, `0002_leaderboard.sql`, `0003_global_scores.sql`, `0004_unique_username.sql`, `0005_clueless_difficulty_leaderboards.sql`, `0006_teams_and_live_matches.sql`, and `0007_team_crud.sql` in the Supabase SQL editor
 - [ ] **Supabase Auth magic link (D-033):** Authentication → URL Configuration. Site URL must be exactly `https://wordkrush.com` (include `https://`; a bare `wordkrush.com` becomes the path `/wordkrush.com` on the API host). Redirect allow-list: `https://wordkrush.com/**`, `http://localhost:8081/**`, `http://localhost:8080/**`, `wordkrush://**`, `exp://**`. This free project cannot edit Auth email templates on the default mailer (June 2026). Enable custom SMTP only after a provider is ready — an empty host/user/pass breaks sending. Typical path is [Resend](https://resend.com/docs/send-with-supabase-smtp): verify `wordkrush.com`, then Host `smtp.resend.com`, Port `465`, Username `resend`, Password = Resend API key. Sender `noreply@wordkrush.com`, name `WordKrush`. Then Authentication → Email Templates → Magic Link: subject `Sign in to WordKrush`, body from `supabase/templates/magic-link.html` (keep `{{ .ConfirmationURL }}` and `{{ .Token }}`). SMTP credentials stay in the dashboard, never in `.env` or `EXPO_PUBLIC_*`. The Resend **API** key is a different secret: it is `RESEND_API_KEY` for Broadcasts (D-053), not the SMTP password.
 
-- [ ] **Player email (D-054):** In Resend, verify `wordkrush.com` and keep sender `WordKrush <noreply@wordkrush.com>`. Put `RESEND_API_KEY` and `OPENAI_API_KEY` in `.env` (already named in `.env.example`). The same names live as GitHub **Environment** secrets on `best-games` (`RESEND_API_KEY`, `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`) — the Tuesday job sets `environment: best-games` so it can read them. Optional: `RESEND_FROM`, `RESEND_SEGMENT_ID`, `OPENAI_EMAIL_MODEL`. Then **Actions → Player email weekly → Run workflow** once with `dry_run` on. Tuesday 09:00 UTC cron takes it from there. A week with no player-facing changelog and no Wordfall drop sends nothing. The keys must never go on Railway. Do not add required reviewers on `best-games` or the cron will sit waiting for approval.
+- [ ] **Player email (D-062):** In Resend, verify `wordkrush.com` and keep sender `WordKrush <noreply@wordkrush.com>`. Put `RESEND_API_KEY` and `OPENROUTER_API_KEY` in `.env` (already named in `.env.example`). The same names live as GitHub **Environment** secrets on `best-games` (`RESEND_API_KEY`, `OPENROUTER_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`) — the Tuesday job sets `environment: best-games` so it can read them. Optional: `RESEND_FROM`, `RESEND_SEGMENT_ID`, `OPENROUTER_BASE_URL` (defaults to `https://openrouter.ai/api/v1`), `OPENROUTER_EMAIL_MODEL`. Then **Actions → Player email weekly → Run workflow** once with `dry_run` on. Tuesday 09:00 UTC cron takes it from there. A week with no player-facing changelog and no Wordfall drop sends nothing. The keys must never go on Railway. Do not add required reviewers on `best-games` or the cron will sit waiting for approval.
 
 - [x] **Content PR auto-merge (D-059/D-060):** `CONTENT_AUTOMERGE_TOKEN` is configured as a fine-grained PAT with **Actions: read**, **Contents: read and write**, and **Pull requests: read and write**; PR #40 proved that its merge triggers normal `master` CI and release workflows. Applying `automation:auto-merge` now owns draft-to-ready. The current PAT expires on **2026-09-28** and must be rotated before then.
 

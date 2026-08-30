@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.20] - 2026-08-30
+
+### Changed
+- **Tuesday player-email draft uses OpenRouter.** The weekly job posts once to `OPENROUTER_BASE_URL` (default `https://openrouter.ai/api/v1`) with `OPENROUTER_API_KEY` instead of failing closed on a missing `OPENAI_API_KEY`. A failed model call still falls back to the deterministic changelog draft. Validator OpenAI use is unchanged.
+
 ## [0.8.19] - 2026-08-30
 
 ### Added

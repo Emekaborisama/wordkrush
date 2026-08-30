@@ -1,6 +1,6 @@
 # Platform Security
 
-**Last updated:** 2026-08-22
+**Last updated:** 2026-08-30
 **Covers:** everything that is not leaderboard integrity — data access, accounts, secrets, the web deployment, trust & safety, and supply chain. Leaderboard integrity is [ANTI-CHEAT.md](ANTI-CHEAT.md).
 
 ---
@@ -88,7 +88,8 @@ not traded away in a refactor.
 | `SUPABASE_PUBLISHABLE_KEY` | Bundle | Public by design. Safe only because RLS is correct. |
 | `EXPO_PUBLIC_POSTHOG_KEY` | Bundle | Public by design (D-024). |
 | `TEST_PLAYER_*` | `.env` | An ordinary confirmed user, not a service-role stand-in (D-035). Real credentials — never printed, committed, or shipped. |
-| `OPENAI_API_KEY` | `.env`, GitHub Environment `best-games` | Offline validator **and** Tuesday player-email draft (`pipeline/player-email.ts`). Never called at game runtime (D-010, D-054). |
+| `OPENAI_API_KEY` | `.env` | Offline validator only. Never called at game runtime (D-010). |
+| `OPENROUTER_API_KEY` | `.env`, GitHub Environment `best-games` | Tuesday player-email draft (`pipeline/player-email.ts`). Never called at game runtime (D-062). |
 | `RAILWAY_TOKEN` | GitHub Actions secrets | Deploy only (D-020). |
 | `CONTENT_AUTOMERGE_TOKEN` | GitHub Actions secrets | Fine-grained PAT or GitHub App token used only by `merge-labeled-content.yml`. It needs Actions read plus Contents and Pull requests write so its merge event starts the normal master CI/deploy/release workflows. Never `.env`, Railway, or `EXPO_PUBLIC_*` (D-059). |
 
