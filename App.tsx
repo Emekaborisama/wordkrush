@@ -1153,6 +1153,7 @@ export default function App() {
         {screen.name === 'auth' && (
           <AuthScreen
             profile={profile}
+            isRaceIntent={screen.returnTo === 'teams'}
             onAuthed={(p) => {
               identifyAnalytics(p);
               identifiedProfileId.current = p.id;
@@ -1162,7 +1163,11 @@ export default function App() {
             }}
             onSkip={
               screen.returnTo === 'teams'
-                ? undefined
+                ? () => {
+                    captureAnalytics('auth_skipped', {});
+                    // Back to the game start screen they came from
+                    setScreen({ name: 'home', gameId: screen.returnGameId ?? 'wordfall' });
+                  }
                 : () => {
                     captureAnalytics('auth_skipped', {});
                     setScreen({ name: 'hub' });
