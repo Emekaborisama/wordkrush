@@ -108,7 +108,7 @@ import { toFeedbackIdentity } from './src/feedback/identity';
 import { isFeedbackConfigured } from './src/feedback/submit';
 import { joinMatch, postMatchScore } from './src/live/api';
 import type { LiveMatchSnapshot } from './src/live/types';
-import { disbandTeam, leaveTeam, loadMyTeam } from './src/teams/api';
+import { clearExistingMembership } from './src/teams/api';
 import { parseTeamInviteUrl } from './src/teams/codes';
 import { Drawer, type DrawerDestination } from './src/ui/Drawer';
 import { AnalyticsConsentPrompt } from './src/ui/AnalyticsConsentPrompt';
@@ -1074,13 +1074,7 @@ export default function App() {
             personalAdvanced={screen.personalAdvanced}
             teamAdvanced={screen.teamAdvanced}
             onDone={async () => {
-              const teamResult = await loadMyTeam();
-              const isOwner = teamResult.ok && teamResult.value?.team.ownerId === profile.id;
-              if (isOwner) {
-                await disbandTeam();
-              } else {
-                await leaveTeam();
-              }
+              await clearExistingMembership(profile.id);
               setScreen({ name: 'teams' });
             }}
           />

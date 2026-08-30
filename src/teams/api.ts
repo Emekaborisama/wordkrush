@@ -166,6 +166,23 @@ export async function disbandTeam(): Promise<TeamApiResult<true>> {
   return rpcEmpty('disband_team');
 }
 
+/**
+ * Release the crew the player is still on so create and join cannot be trapped
+ * on "Already on a team". The owner has to disband, because the server rejects
+ * a leave from the owner with error 0007; everyone else leaves. Shared with the
+ * results screen, which releases the roster the same way after a race.
+ */
+export async function clearExistingMembership(profileId: string): Promise<void> {
+  const teamResult = await loadMyTeam();
+  if (!teamResult.ok || !teamResult.value) return;
+  const isOwner = teamResult.value.team.ownerId === profileId;
+  if (isOwner) {
+    await disbandTeam();
+  } else {
+    await leaveTeam();
+  }
+}
+
 export function teamUnlocked(snapshot: TeamSnapshot, gameId: PathGameId): number {
   return snapshot.progress.find((row) => row.gameId === gameId)?.unlocked ?? 1;
 }

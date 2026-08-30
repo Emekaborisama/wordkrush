@@ -6,7 +6,7 @@ import { isBackendConfigured } from '../../auth/client';
 import { LIVE_ROSTER_LABEL, PATH_GAME_IDS, type PathGameId } from '../../games/campaign';
 import { GAMES, getGame } from '../../games/registry';
 import { createMatch, loadActiveMatch } from '../../live/api';
-import { createTeam, joinTeam } from '../../teams/api';
+import { clearExistingMembership, createTeam, joinTeam } from '../../teams/api';
 import { teamInviteUrl } from '../../teams/codes';
 import type { TeamSnapshot } from '../../teams/types';
 import {
@@ -59,6 +59,7 @@ export function TeamsScreen({
     let cancelled = false;
     void (async () => {
       setBusy(true);
+      await clearExistingMembership(profile.id);
       const result = await joinTeam(pendingInviteCode);
       if (cancelled) return;
       setBusy(false);
@@ -80,8 +81,10 @@ export function TeamsScreen({
   const accent = getGame(gameId)?.accent ?? theme.accent;
 
   async function handleCreate() {
+    if (!profile) return;
     setError(null);
     setBusy(true);
+    await clearExistingMembership(profile.id);
     const result = await createTeam(name);
     setBusy(false);
     if (!result.ok) {
@@ -93,8 +96,10 @@ export function TeamsScreen({
   }
 
   async function handleJoin() {
+    if (!profile) return;
     setError(null);
     setBusy(true);
+    await clearExistingMembership(profile.id);
     const result = await joinTeam(code);
     setBusy(false);
     if (!result.ok) {
