@@ -125,8 +125,10 @@ export function GameScreen({
   }, [state.streak, targetStreak, onScore]);
 
   useEffect(() => {
-    if (state.status === 'over') {
-      onDone?.(state.streak, targetStreak != null ? state.streak >= targetStreak : false);
+    const hitTarget = targetStreak != null && state.streak >= targetStreak;
+    const shouldSignalDone = state.status === 'over' || (state.status === 'revealed' && hitTarget);
+    if (shouldSignalDone) {
+      onDone?.(state.streak, hitTarget);
     }
   }, [state.status, state.streak, targetStreak, onDone]);
 
@@ -150,14 +152,22 @@ export function GameScreen({
   // Hold the reveal briefly, then either advance or end the run.
   useEffect(() => {
     if (state.status === 'revealed') {
+      // In team races with a target, hitting the target completes the game
+      const hitTarget = targetStreak != null && state.streak >= targetStreak;
+      if (hitTarget) {
+        if (!persist) return; // Live runs stay here and wait for teammates; LivePlayShell manages the transition
+        const t = setTimeout(() => onGameOver(state), 1600);
+        return () => clearTimeout(t);
+      }
       const t = setTimeout(() => dispatch({ type: 'next' }), 1250);
       return () => clearTimeout(t);
     }
     if (state.status === 'over') {
+      if (!persist) return; // Live runs stay here and wait for teammates
       const t = setTimeout(() => onGameOver(state), 1600);
       return () => clearTimeout(t);
     }
-  }, [state.status, state.right.id]);
+  }, [state.status, state.right.id, state.streak, targetStreak, onGameOver, persist]);
 
   const correct = state.lastGuessCorrect;
 
@@ -270,8 +280,20 @@ export function GameScreen({
         <View style={styles.actions}>
           <FeedbackBanner
             tone={correct ? 'success' : 'danger'}
-            title={correct ? 'Nice call!' : 'Not this time'}
-            body={correct ? 'Streak saved. Next matchup incoming…' : 'The final values are revealed above.'}
+            title={
+              correct
+                ? targetStreak != null && state.streak >= targetStreak
+                  ? 'Target reached!'
+                  : 'Nice call!'
+                : 'Not this time'
+            }
+            body={
+              correct
+                ? targetStreak != null && state.streak >= targetStreak
+                  ? 'Race complete. Waiting for teammates…'
+                  : 'Streak saved. Next matchup incoming…'
+                : 'The final values are revealed above.'
+            }
           />
         </View>
       )}

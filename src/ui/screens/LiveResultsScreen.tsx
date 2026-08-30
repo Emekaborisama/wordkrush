@@ -37,7 +37,11 @@ export function LiveResultsScreen({
       <ScreenHeader
         eyebrow="RACE OVER"
         title={game?.name ?? match.gameId}
-        subtitle={`Level ${match.levelNumber}`}
+        subtitle={
+          ranked.length > 0 && match.gameId === 'more-or-less'
+            ? `${players.find((p) => p.playerId === ranked[0].playerId)?.username ?? 'Player'} won · ${ranked[0].score} streak.`
+            : `Level ${match.levelNumber}`
+        }
       />
       <Surface style={styles.card}>
         {ranked.map((row) => {
