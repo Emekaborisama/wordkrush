@@ -346,10 +346,11 @@ automation must read it rather than keep a second calendar. Working title
 kinds) must be unique, including vs last week. Featured TTL is seven days
 (`isNewestRelease`); the row stays after Sunday so campaign numbering has no
 holes. Job B is the Cursor skill
-[wordfall-weekly-gauntlet](../.cursor/skills/wordfall-weekly-gauntlet/SKILL.md).
+[wordfall-weekly-gauntlet](../.cursor/skills/wordfall-weekly-gauntlet/SKILL.md);
+it will run as a Grok Automation once configured in the Cursor Agents Window.
 It maintains the four-week queue on the standing
 `content/wordfall-weekly` content branch rather than needing a Superthread card
-for every Monday (D-058, D-059).
+for every Monday (D-058, D-059, D-060).
 
 **2. Local production check, then the row ships like code.** [BUILT: web · blocked on owner: iOS]
 Before GitHub, Job B runs `npm run check`, `npm run build:web`, and
@@ -383,6 +384,11 @@ The second surface. More or Less runs inside a Reddit post via Devvit — no
 link-out, no install, no App Store. One post a day, the same questions for
 everyone on it, and a board that a client cannot lie to. Decision and stated
 costs: D-042. Local contract: [reddit/README.md](../reddit/README.md).
+
+**This operating system does not operate this channel.** The `reddit/` app and
+its Devvit deployment remain in the repo as product how-it-works, but no bot
+posts to Reddit or publishes the Devvit app. Acquisition in this OS is organic
+X only (constitutional rule #4).
 
 ```
  DEVVIT CRON            DEVVIT SERVER                 WEB VIEW (iframe)
@@ -531,6 +537,31 @@ solo Play works.
 
 ---
 
+## Journey 10 — The Grok-bot fleet runs the product
+
+WordKrush judgment work (deciding what to build, what content to drop, when to act) is delegated to a specialist Grok-bot fleet: Cursor Cloud Agents plus `.cursor/skills/`. GitHub Actions remain the deterministic hands: CI, deploy, content merge, email send, and Wikipedia rotate.
+
+**1. The catalog is the contract.** [BUILT]
+`docs/AGENT-OS.md` names each bot, its skill path, trigger, write surface, and stop conditions. When a bot's behavior changes, that document changes in the same PR. The architecture is a constitutional operating system: bots judge within hard limits, and Actions execute.
+
+**2. Grok judges; Actions execute.** [BUILT for the split]
+Bots read the board, the repo, the logs, the metrics, and the X account. They draft content, propose experiments, review PRs, author Superthread cards, and write reports. They never become `npm run check`, never replace CI, and never push to `master`. Actions run `check` + `web` on every push, merge content PRs only after exact-head CI passes, send the Tuesday Resend Broadcast, rotate Wikipedia, and publish GitHub Release `vX.Y.Z` from the changelog.
+
+**3. Growth is organic X.** [PLANNED: prior autonomous playbook REJECTED; replacement is ship-led skill]
+Acquisition in this operating system is organic X (@WordKrushGame) only. No Reddit posts, no Devvit launch, no DMs, no paid. The x-growth bot will maintain `~/.wordkrush-social/ledger.json` and post on ship-led triggers: account is the game; originals are drops/vaults/self-played share cards; quotes are real player shares or playable More or Less hooks; replies inbound only. No NYT reply-guy. No autonomous 3×/day posting. First spend is a ship moment or a real player share, else hold. The prior autonomous reply-bot playbook was REJECTED; replacement is ship-led skill to be written, then implemented. Caps and abort conditions still bind. The `reddit/` app and `.cursor/skills/reddit-ad-posts/` remain in the repo, unscheduled. Player email stays a Tuesday retention Broadcast (D-053, D-054, D-062), not a second acquisition campaign.
+
+**4. Owner-only work stops the bot.** [BUILT as policy]
+Apple Developer, Expo login, EAS submit, Supabase migrations, [OPEN]/[DECIDE] cards, PostHog remote flags (D-024), Wikipedia PR merge, money, captchas, `.env` secrets, force-merge, and administrative CI override are human gates. A bot writes a Superthread card and stops. Remote flags stay off (D-024 constitutional rule); the experimentation bot proposes [DECIDE] cards only.
+
+**5. Conductor does not write `src/`.** [PLANNED until the skill lands]
+The wordkrush-conductor bot reads the board, CI, content buffers, X ledger, and PostHog floor metrics daily (8–12 GMT+1 window). It writes an 8–12 line report plus Superthread ops cards for anomalies (stale PR, failing CI, empty buffer). It does NOT write `src/`, does NOT dispatch content bots, does NOT push to `master`, and does NOT dispatch Reddit (Reddit posting is parked per constitutional rule #4).
+
+**Honesty tags:**
+- **[BUILT]** — AGENT-OS.md exists; clueless-daily and wordfall-weekly skills exist; merge-labeled-content.yml auto-merges after CI; split is documented; PostHog Surveys triage path exists (v0.8.21 replaced Userback).
+- **[PLANNED]** — Automations are not yet configured in Cursor (owner setup required); x-growth prior autonomous playbook REJECTED by owner (replacement is ship-led skill to be written, then implemented); conductor, product-health, experimentation, feature-dev, qa-playtest, code-review, wikipedia-reviewer, posthog-surveys-triage schedule, security-watch, growth-seo, and ad-creative skills are not yet committed.
+
+---
+
 ## System reference
 
 Quick map of where each journey step lives:
@@ -572,8 +603,9 @@ Quick map of where each journey step lives:
 | Web favicon + share preview | `assets/favicon.png`, `assets/apple-touch-icon.png`, `assets/logo/wordkrush-lockup.png`, `scripts/patch-web-head.mjs` | [BUILT] — cache-busted tab icons in `dist/`; Open Graph / Twitter tags with the lockup at `/og-image.png`; Tuesday mail heroes at `/email/` from `assets/games/` + `assets/email/hub.png` |
 | Web search surface | `scripts/patch-web-head.mjs`, `server/serve.mjs`, `assets/googled8072618779c67b2.html`, `dist/robots.txt`, `dist/sitemap.xml` | [BUILT] — homepage title, canonical, JSON-LD, and hub copy in `#root` / `<noscript>`; sitemap lists `https://wordkrush.com/` only; `.xml` is `application/xml`. Search Console HTML verification is copied to `/googled8072618779c67b2.html` (not in the sitemap). After Railway deploy: confirm that URL in [Search Console](https://search.google.com/search-console), submit `/sitemap.xml`, then URL Inspection → Request indexing (D-061) |
 | Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] — audits git-visible changes; version-only `package.json` / `app.json` bumps are changelog (D-049); Finder `* 2.*` copies and `supabase/.temp/` are gitignored so they do not count as source |
+| Agent operating system | `docs/AGENT-OS.md` | [BUILT] catalog + merge gate; [PLANNED] Automations not configured — clueless-daily skill, wordfall-weekly skill, wordkrush-conductor, x-growth (prior autonomous playbook REJECTED; ship-led replacement to be written), player-email, product-health, experimentation, feature-dev, qa-playtest, code-review, wikipedia-reviewer, posthog-surveys-triage schedule, security-watch, growth-seo, ad-creative |
 | Consent and product analytics | `src/analytics/`, `src/ui/AnalyticsConsentPrompt.tsx` | [BUILT] |
-| Player feedback (bugs + suggestions) | `src/feedback/`, `src/ui/FeedbackPrompt.tsx`, drawer "Send feedback" | [BUILT] — PostHog Surveys API prompt on web and native; signed-in players attach id/username/email on the event, guests stay anonymous. Independent of analytics consent. See D-063 |
+| Player feedback (bugs + suggestions) | `src/feedback/`, `src/ui/FeedbackPrompt.tsx`, drawer "Send feedback" | [BUILT] — PostHog Surveys API prompt on web and native; signed-in players attach id/username/email on the event, guests stay anonymous. Independent of analytics consent. |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |
 | Sound + haptics | `src/native/feedback.ts`, `src/native/sound.ts`, `src/native/haptics.ts`, `assets/sounds/`, `src/settings/` | [BUILT] — one `feedback(event)` table maps five game moments to a clip + haptic; both channels mutable from the drawer. See D-043 |
 | Result share | `src/games/share.ts`, `src/games/<id>/share.ts`, `src/native/share.ts`, `src/native/share.native.ts` | [BUILT] — spoiler-free emoji grid per game; RN `Share` on native, `navigator.share` then clipboard on web; `utm_medium=share` on the pasted URL |
