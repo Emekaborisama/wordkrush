@@ -135,7 +135,7 @@ A bot stops and writes a Superthread card when:
 | **clueless-daily** | `.cursor/skills/clueless-daily-path/` | 18:00 GMT+1 daily | `content/clueless-daily` PR | CI + `automation:auto-merge` | **[BUILT]** skill + merge; schedule [PLANNED] |
 | **wordfall-weekly** | `.cursor/skills/wordfall-weekly-gauntlet/` | Weekly (e.g. Wed) | `content/wordfall-weekly` PR | CI + `automation:auto-merge` after local `serve:web` playtest | **[BUILT]** skill + merge; schedule [PLANNED] |
 | **wikipedia-reviewer** | *Cursor ad-hoc, no committed skill* | Monday after `wikipedia-popularity-weekly.yml` | PR comments only | Owner merges after review | **[PLANNED]** automation |
-| **x-growth** | `.claude/skills/wordkrush-x-growth/` → Cursor port [PLANNED] | 3×/day | `~/.wordkrush-social/ledger.json` + X via browser | n/a (social posts, not code) | **[PLANNED]** — Claude skill spec exists; not yet in tree; Grok port needed |
+| **x-growth** | Ship-led playbook to be written, then implement | On shipped drop/vault, real player share, or inbound reply | `~/.wordkrush-social/ledger.json` + X via browser | n/a (social posts, not code) | **[PLANNED]** — prior autonomous 3×/day reply-bot playbook REJECTED; replacement is ship-led skill |
 | **player-email** | *Cursor ad-hoc, pipeline draft* | Monday after Wordfall merge | Draft into `pipeline/` or PR | Action `player-email-weekly.yml` sends Tuesday 09:00 UTC | **[PLANNED]** draft automation; Action [BUILT] |
 | **product-health** | *Cursor ad-hoc* | Weekly | Superthread health cards + `OBSERVABILITY.md` notes | No code merge; owner acts on cards | **[PLANNED]** |
 | **experimentation** | *Cursor ad-hoc* | Weekly after health | Superthread [DECIDE] cards proposing tests from PostHog | Owner decides; no flag ships until D-024 flips | **[PLANNED]** |
@@ -241,16 +241,16 @@ A bot stops and writes a Superthread card when:
 
 ### 4. x-growth
 
-**Job:** Organic @WordKrushGame X presence: caps from CHANNELS/METRICS, listen for viral quote opportunities, announce shipped versions, maintain the reuse ledger.
+**Job:** Organic @WordKrushGame X presence. Ship-led: account is the game; originals are drops/vaults/self-played share cards; quotes are real player shares or a playable More or Less hook; replies inbound only. No NYT reply-guy. First spend is a ship moment or a real player share, else hold.
 
-**Trigger:** 3×/day Cursor Automation (editor setup [PLANNED]).
+**Trigger:** On shipped drop/vault, real player share detected, or inbound reply (Cursor Automation editor setup [PLANNED]).
 
-**Skill:** Specified at `.claude/skills/wordkrush-x-growth/SKILL.md` with ledger at `~/.wordkrush-social/ledger.json` and prompt stub `sk.md`. **Status: NOT YET IN TREE** — skill file absent from current checkout. Catalogued path is correct; Grok port of the Claude X skill is [PLANNED].
+**Skill:** Ship-led playbook to be written, then implement as `.cursor/skills/x-growth/`. **Status: REJECTED** — the prior autonomous 3×/day reply-bot playbook was rejected by owner. Replacement is ship-led skill: post on ship moments or real player shares, not autonomous daily loops.
 
-**Context:** Acquisition in this OS is organic X only (constitutional rule #4). No Reddit posts, no Devvit launch, no DMs, no paid (G-004). The bot reads `docs/marketing/CHANNELS.md`, `METRICS.md`, `CHANGELOG.md` (shipped versions), and the ledger (previously posted content), then decides whether to post, quote-tweet viral word-game threads, or stay quiet.
+**Context:** Acquisition in this OS is organic X only (constitutional rule #4). No Reddit posts, no Devvit launch, no DMs, no paid (G-004). The bot reads `docs/marketing/CHANNELS.md`, `METRICS.md`, `CHANGELOG.md` (shipped versions), and the ledger (previously posted content). Caps and abort conditions still bind.
 
 **Writes:**
-- X posts via browser (needs logged-in session and MCP or browser-use)
+- X posts via browser (needs logged-in session and browser-use)
 - `~/.wordkrush-social/ledger.json` (append-only log of posted content to avoid repeats)
 - Does NOT write `src/` or documentation
 - Does NOT open PRs
@@ -262,10 +262,11 @@ A bot stops and writes a Superthread card when:
 **Stop conditions:**
 - X session expired or unavailable
 - Ledger file corrupted or inaccessible
-- Caps exhausted (e.g., already posted 3× today per plan)
+- No ship moment and no real player share (hold rather than post filler)
+- Caps exhausted
 - Owner-only decision needed (e.g., responding to a brand crisis or legal question)
 
-**Owner vs auto-merge:** Bot posts autonomously within caps and brand voice. Owner intervenes for crisis, legal, or off-brand content.
+**Owner vs auto-merge:** Bot posts on ship-led triggers (drops, vaults, real player shares, inbound replies). Owner intervenes for crisis, legal, or off-brand content.
 
 ---
 
@@ -580,7 +581,7 @@ Never `EXPO_PUBLIC_*`, never Railway (D-053, D-054, D-062).
 
 `~/.wordkrush-social/ledger.json` is the append-only log of posted X content. The x-growth bot reads it to avoid repeats and writes new posts to it. The file is NOT in the repo (it would leak posted content and grow indefinitely). The bot creates it on first run if missing.
 
-**Status: [PLANNED]** — Claude skill spec exists; Grok port and ledger setup needed.
+**Status: [PLANNED]** — prior autonomous 3×/day playbook REJECTED; replacement is ship-led skill to be written, then implemented with ledger.
 
 ---
 
