@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.19] - 2026-08-30
+
+### Added
+- **Branded search surface.** `build:web` now writes `robots.txt`, `sitemap.xml`, a crawler-readable title and JSON-LD, and hub copy inside `#root` / `<noscript>`, so Google can index wordkrush.com as the word-game hub rather than a JS shell. Search Console’s HTML verification file is served at `/googled8072618779c67b2.html`.
+
 ## [0.8.18] - 2026-08-28
 
 ### Added
