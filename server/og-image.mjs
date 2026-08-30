@@ -1,13 +1,12 @@
 /**
  * Server-side OG image generation for share links.
  *
- * Generates 1200×630 spoiler-free Open Graph images as SVG (converted to PNG
- * would require additional dependencies). Social platforms accept SVG for
- * og:image, and it's perfect for our text-heavy, emoji-based previews.
- *
- * The images show the game name, the emoji grid, and aggregate stats — never
- * answers, guessed words, or item labels.
+ * Generates 1200×630 spoiler-free Open Graph images as PNG (X/Twitter requires
+ * rasterized images, not SVG). The images show the game name, the emoji grid,
+ * and aggregate stats — never answers, guessed words, or item labels.
  */
+
+import sharp from 'sharp';
 
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -16,9 +15,40 @@ const TEXT_COLOR = '#F4F0FF'; // brand.text
 const ACCENT_COLOR = '#E8B840'; // brand.krush
 
 /**
+ * Generate a spoiler-free OG image PNG for a game result.
+ */
+export async function generateOgImagePng(data) {
+  const svg = generateOgImageSvg(data);
+  // Convert SVG to PNG using sharp
+  const pngBuffer = await sharp(Buffer.from(svg))
+    .png()
+    .toBuffer();
+  return pngBuffer;
+}
+
+/**
+ * Generate the standing line for og:description.
+ */
+export function generateOgDescription(data) {
+  switch (data.game) {
+    case 'more-or-less': {
+      const parts = [`Streak ${data.streak}`];
+      if (data.bestStreak > 0) parts.push(`best ${data.bestStreak}`);
+      return parts.join(' · ');
+    }
+    case 'clueless':
+      return `Found it in ${data.guessCount}`;
+    case 'wordfall': {
+      const words = data.wordCount;
+      return `${data.score.toLocaleString('en-US')} pts · ${words} ${words === 1 ? 'word' : 'words'}`;
+    }
+  }
+}
+
+/**
  * Generate a spoiler-free OG image SVG for a game result.
  */
-export function generateOgImageSvg(data) {
+function generateOgImageSvg(data) {
   switch (data.game) {
     case 'more-or-less':
       return generateMoreOrLessImage(data);

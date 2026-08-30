@@ -28,7 +28,7 @@ import { extname, join, posix, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { brotliCompress, constants, gzip } from 'node:zlib';
-import { generateOgImageSvg } from './og-image.mjs';
+import { generateOgImagePng, generateOgDescription } from './og-image.mjs';
 
 const brotli = promisify(brotliCompress);
 const gzipped = promisify(gzip);
@@ -179,8 +179,8 @@ function handleShareRoute(pathname) {
   const shareData = decodeShareData(encoded);
   if (!shareData || !indexHtml) return null;
 
-  // Generate OG image URL
-  const ogImageUrl = `https://wordkrush.com/share/${encoded}/og.svg`;
+  // Generate OG image URL (PNG for X/Twitter compatibility)
+  const ogImageUrl = `https://wordkrush.com/share/${encoded}/og.png`;
   const gameTitle = {
     'more-or-less': 'More or Less',
     clueless: 'Clueless',
@@ -188,7 +188,7 @@ function handleShareRoute(pathname) {
   }[shareData.game];
 
   const title = `WordKrush · ${gameTitle}`;
-  const description = 'Check out my game result!';
+  const description = generateOgDescription(shareData);
 
   // Inject OG tags into index.html
   const ogTags = `
@@ -220,24 +220,23 @@ function handleShareRoute(pathname) {
 }
 
 /**
- * Handle /share/:id/og.svg routes for OG images.
+ * Handle /share/:id/og.png routes for OG images.
  */
-function handleOgImageRoute(pathname) {
-  const match = /^\/share\/([^/]+)\/og\.svg$/.exec(pathname);
+async function handleOgImageRoute(pathname) {
+  const match = /^\/share\/([^/]+)\/og\.png$/.exec(pathname);
   if (!match) return null;
 
   const encoded = match[1];
   const shareData = decodeShareData(encoded);
   if (!shareData) return null;
 
-  const svg = generateOgImageSvg(shareData);
-  const body = Buffer.from(svg, 'utf-8');
+  const pngBuffer = await generateOgImagePng(shareData);
 
   return {
-    body,
-    type: 'image/svg+xml',
+    body: pngBuffer,
+    type: 'image/png',
     cacheControl: 'public, max-age=86400',
-    etag: `"${createHash('sha1').update(body).digest('base64url').slice(0, 22)}"`,
+    etag: `"${createHash('sha1').update(pngBuffer).digest('base64url').slice(0, 22)}"`,
     encodings: new Map(),
   };
 }
@@ -249,7 +248,7 @@ function escapeHtml(text) {
   });
 }
 
-const server = createServer((req, res) => {
+const server = createServer(async (req, res) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405, { allow: 'GET, HEAD' }).end();
     return;
@@ -259,7 +258,7 @@ const server = createServer((req, res) => {
   const pathname = url.pathname;
 
   // Try dynamic routes first
-  let record = handleOgImageRoute(pathname);
+  let record = await handleOgImageRoute(pathname);
   if (!record) record = handleShareRoute(pathname);
   if (!record) record = lookup(req.url ?? '/');
 
