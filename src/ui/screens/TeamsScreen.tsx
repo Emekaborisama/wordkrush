@@ -15,7 +15,7 @@ import { GAMES, getGame } from '../../games/registry';
 import { isLevelReleased } from '../../games/wordfall/schedule';
 import { createMatch, loadActiveMatch } from '../../live/api';
 import { pathRowByNumber, pathRows } from '../../live/catalog';
-import { createTeam, disbandTeam, joinTeam, leaveTeam, loadMyTeam, renameTeam, teamUnlocked } from '../../teams/api';
+import { createTeam, joinTeam, loadMyTeam, teamUnlocked } from '../../teams/api';
 import { teamInviteUrl } from '../../teams/codes';
 import type { TeamSnapshot } from '../../teams/types';
 import { CampaignPicker } from '../CampaignPicker';
@@ -51,12 +51,10 @@ export function TeamsScreen({
   const [selected, setSelected] = useState<number | null>(null);
   const [personalUnlocked, setPersonalUnlocked] = useState(1);
   const [name, setName] = useState('');
-  const [editName, setEditName] = useState('');
   const [code, setCode] = useState(pendingInviteCode ?? '');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
-  const [confirm, setConfirm] = useState<'leave' | 'disband' | null>(null);
   const wide = isWideLayout(useWindowDimensions().width);
 
   useEffect(() => {
@@ -69,10 +67,7 @@ export function TeamsScreen({
       const result = await loadMyTeam();
       if (cancelled) return;
       if (!result.ok) setError(result.error);
-      else {
-        setSnapshot(result.value);
-        if (result.value) setEditName(result.value.team.name);
-      }
+      else setSnapshot(result.value);
       setReady(true);
     })();
     return () => {
@@ -96,7 +91,6 @@ export function TeamsScreen({
       }
       captureAnalytics('team_joined', { via: 'invite' });
       setSnapshot(result.value);
-      setEditName(result.value.team.name);
     })();
     return () => {
       cancelled = true;
@@ -128,7 +122,6 @@ export function TeamsScreen({
     }
     captureAnalytics('team_created', {});
     setSnapshot(result.value);
-    setEditName(result.value.team.name);
   }
 
   async function handleJoin() {
@@ -142,7 +135,6 @@ export function TeamsScreen({
     }
     captureAnalytics('team_joined', { via: 'code' });
     setSnapshot(result.value);
-    setEditName(result.value.team.name);
   }
 
   async function handleHost() {
@@ -203,58 +195,6 @@ export function TeamsScreen({
     }
   }
 
-  async function handleRename() {
-    setError(null);
-    setBusy(true);
-    const result = await renameTeam(editName);
-    setBusy(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    captureAnalytics('team_renamed', {});
-    setSnapshot(result.value);
-    setEditName(result.value.team.name);
-  }
-
-  async function handleLeave() {
-    if (confirm !== 'leave') {
-      setConfirm('leave');
-      return;
-    }
-    setError(null);
-    setBusy(true);
-    const result = await leaveTeam();
-    setBusy(false);
-    setConfirm(null);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    captureAnalytics('team_left', {});
-    setSnapshot(null);
-    setSelected(null);
-  }
-
-  async function handleDisband() {
-    if (confirm !== 'disband') {
-      setConfirm('disband');
-      return;
-    }
-    setError(null);
-    setBusy(true);
-    const result = await disbandTeam();
-    setBusy(false);
-    setConfirm(null);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    captureAnalytics('team_disbanded', {});
-    setSnapshot(null);
-    setSelected(null);
-  }
-
   if (!isBackendConfigured) {
     return (
       <View style={[styles.root, styles.empty]}>
@@ -290,15 +230,15 @@ export function TeamsScreen({
       >
         <ScreenHeader
           eyebrow="TEAMS"
-          title="Start a crew"
+          title="Create or join a race room"
           size={wide ? 'display' : 'title'}
           subtitle={`Private invite only. Race with ${LIVE_ROSTER_LABEL} people on More or Less, Clueless, or Wordfall.`}
         />
         {error ? <FeedbackBanner title="Couldn’t continue" body={error} tone="danger" /> : null}
         <Surface style={styles.card}>
-          <Text style={styles.cardTitle}>Create a team</Text>
-          <TextField label="Team name" value={name} onChangeText={setName} autoCapitalize="words" />
-          <Button title="Create team" onPress={() => void handleCreate()} disabled={busy || name.trim().length < 2} />
+          <Text style={styles.cardTitle}>Create a room</Text>
+          <TextField label="Room name" value={name} onChangeText={setName} autoCapitalize="words" />
+          <Button title="Create room" onPress={() => void handleCreate()} disabled={busy || name.trim().length < 2} />
         </Surface>
         <Surface style={styles.card}>
           <Text style={styles.cardTitle}>Join with a code</Text>
@@ -309,13 +249,12 @@ export function TeamsScreen({
             autoCapitalize="characters"
             autoCorrect={false}
           />
-          <Button title="Join team" variant="tonal" onPress={() => void handleJoin()} disabled={busy} />
+          <Button title="Join room" variant="tonal" onPress={() => void handleJoin()} disabled={busy} />
         </Surface>
       </ScrollView>
     );
   }
 
-  const isOwner = snapshot.team.ownerId === profile.id;
   const raceActions = (
     <View style={styles.actions}>
       <Button
@@ -350,60 +289,28 @@ export function TeamsScreen({
         />
         {error ? <FeedbackBanner title="Couldn’t continue" body={error} tone="danger" /> : null}
 
+        <Surface style={styles.inviteCard}>
+          <Text style={styles.inviteTitle}>Invite players</Text>
+          <Text style={styles.inviteCode}>{snapshot.team.inviteCode}</Text>
+          <Button 
+            title="Share invite link" 
+            size="lg"
+            onPress={() => void shareInvite()} 
+            color={accent}
+          />
+        </Surface>
+
         <Surface style={styles.card}>
-          <View style={styles.rosterHead}>
-            <Text style={styles.cardTitle}>Roster</Text>
-            <Button title="Share invite" variant="ghost" size="sm" onPress={() => void shareInvite()} />
-          </View>
+          <Text style={styles.cardTitle}>Roster</Text>
           {snapshot.members.map((member) => (
             <View key={member.playerId} style={styles.member}>
               <Text style={styles.memberName}>{member.username}</Text>
-              <Badge label={member.role === 'owner' ? 'OWNER' : 'MEMBER'} />
+              <Badge label={member.role === 'owner' ? 'HOST' : 'PLAYER'} />
             </View>
           ))}
         </Surface>
 
-        <Surface style={styles.card}>
-          {isOwner ? (
-            <>
-              <Text style={styles.cardTitle}>Manage</Text>
-              <TextField
-                label="Team name"
-                value={editName}
-                onChangeText={(next) => {
-                  setEditName(next);
-                  setConfirm(null);
-                }}
-                autoCapitalize="words"
-              />
-              <Button
-                title="Save name"
-                size="sm"
-                onPress={() => void handleRename()}
-                disabled={busy || editName.trim().length < 2 || editName.trim() === snapshot.team.name}
-              />
-              <Button
-                title={confirm === 'disband' ? 'Disband for good' : 'Disband team'}
-                variant={confirm === 'disband' ? 'primary' : 'ghost'}
-                color={theme.danger}
-                size="sm"
-                onPress={() => void handleDisband()}
-                disabled={busy}
-              />
-            </>
-          ) : (
-            <Button
-              title={confirm === 'leave' ? 'Leave for good' : 'Leave team'}
-              variant={confirm === 'leave' ? 'primary' : 'ghost'}
-              color={theme.danger}
-              size="sm"
-              onPress={() => void handleLeave()}
-              disabled={busy}
-            />
-          )}
-        </Surface>
-
-        <Text style={styles.section}>RACE A TITLE</Text>
+        <Text style={styles.section}>SELECT GAME</Text>
         <View style={styles.gameRow}>
           {PATH_GAME_IDS.map((id) => {
             const game = GAMES.find((item) => item.id === id);
@@ -412,7 +319,7 @@ export function TeamsScreen({
               <Button
                 key={id}
                 title={game?.name ?? id}
-                size="sm"
+                size="md"
                 variant={active ? 'primary' : 'tonal'}
                 color={game?.accent ?? theme.accent}
                 fullWidth={false}
@@ -464,7 +371,9 @@ const styles = StyleSheet.create({
   main: { flex: 1, minHeight: 0 },
   card: { gap: space.sm },
   cardTitle: { ...type.subtitle, color: theme.text, fontSize: 16 },
-  rosterHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  inviteCard: { gap: space.md, alignItems: 'center', padding: space.lg },
+  inviteTitle: { ...type.subtitle, color: theme.text, fontSize: 18 },
+  inviteCode: { ...type.display, color: theme.accent, fontSize: 32, letterSpacing: 4 },
   member: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   memberName: { ...type.bodyStrong, color: theme.text },
   section: { ...type.overline, color: theme.textDim },

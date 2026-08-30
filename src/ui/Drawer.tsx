@@ -87,11 +87,11 @@ export function Drawer({
     <View style={styles.host} pointerEvents={open ? 'auto' : 'none'}>
       {/* Backdrop doubles as the dismiss target — tapping outside a drawer to
           close it is the behaviour people already expect. */}
-      <Animated.View style={[styles.backdrop, { opacity: fade }]}>
+      <Animated.View style={[styles.backdrop, { opacity: fade }]} pointerEvents={open ? 'auto' : 'none'}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close menu" />
       </Animated.View>
 
-      <Animated.View style={[styles.panel, { transform: [{ translateX: slide }] }]}>
+      <Animated.View style={[styles.panel, { transform: [{ translateX: slide }] }]} pointerEvents="auto">
         <View style={styles.panelHeader}>
           <View style={styles.brandRow}>
             <BrandArtwork size={46} />
