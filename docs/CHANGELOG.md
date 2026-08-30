@@ -6,6 +6,12 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.29] - 2026-09-02
+
+### Fixed
+- **A share-card render fix is now visible the same day instead of a day later.** `og:image` and `twitter:image` on `/share/:id` point at `/share/:id/og.png?v=<package version>`, and the PNG is served `public, max-age=300` instead of `public, max-age=86400`. A scraper caches an unfurled image against its URL, so 0.8.27's font fix could not reach anyone who had already unfurled a share link — X kept serving the 17 KB tofu render for 24 hours. Every PR bumps the version, so shipping a render fix now also moves every card onto a URL no scraper has seen, and the short TTL means the next fix does not need the bust at all. The image route still matches on path alone, so any stamp (or none) resolves to the current render. `og:url` stays unstamped, invalid share ids still return 404, images stay 1200×630 and spoiler-free, and share HTML still strips the homepage `og:*` / `twitter:*` / `canonical` tags.
+- **The `/share/:id` routes now have tests.** `server/serve.mjs` exports `warm` and `handleRequest` behind the same entrypoint guard the `scripts/` tools use, so `server/serve.test.mjs` warms the real server over loopback and asserts the OG contract: stamped image URLs, short image TTL, 1200×630 PNGs for all three games, 404 for an unparseable or gameless share id, and homepage tags stripped from share HTML. `node server/serve.mjs` still listens exactly as before. `server/**` joins the `vitest.config.ts` include allowlist 0.8.28 documented.
+
 ## [0.8.28] - 2026-08-30
 
 ### Fixed
