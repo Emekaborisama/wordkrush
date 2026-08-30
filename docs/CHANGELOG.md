@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.28] - 2026-08-30
+
+### Fixed
+- **Leftover crew memberships no longer block create or join.** C-94 dropped the crew-home screen, so `TeamsScreen` stopped loading the player's crew — but existing memberships stayed on the backend. A player who already owned or belonged to a crew hit "Already on a team" on Create room with no UI left to leave or disband. Create and join now clear the stale membership first through `clearExistingMembership`, the same owner-disbands / member-leaves rule the results screen already applied on rematch. Owners disband because the server rejects a leave from the owner (error 0007); members leave. The escape covers all three entry points: Create room, Join with a code, and auto-join from an invite link. No crew-home screen returns and `TeamsScreen` still does not load a crew on mount.
+
 ## [0.8.27] - 2026-08-30
 
 ### Fixed

@@ -3,8 +3,9 @@ import { isInviteCode, normalizeInviteCode, parseTeamInviteUrl, teamInviteUrl } 
 
 describe('invite codes', () => {
   it('normalizes case and whitespace', () => {
-    expect(normalizeInviteCode(' ab12cd ')).toBe('AB12CD');
-    expect(isInviteCode('AB12CD')).toBe(true);
+    expect(normalizeInviteCode(' ab23cd ')).toBe('AB23CD');
+    expect(isInviteCode('AB23CD')).toBe(true);
+    // The alphabet drops 0/O/1/I so a spoken code still types.
     expect(isInviteCode('AB1OCD')).toBe(false);
     expect(isInviteCode('SHORT')).toBe(false);
   });

@@ -34,6 +34,9 @@ export default defineConfig({
       // the suite existed but had not run since it was written.
       'src/streak/**/*.test.ts',
       'src/auth/**/*.test.ts',
+      // `src/teams/**` was missing here, so the team suites never ran despite
+      // existing — same gap `src/streak` had above.
+      'src/teams/**/*.test.ts',
       'src/analytics/**/*.test.ts',
       'src/feedback/**/*.test.ts',
       'src/games/**/*.test.ts',

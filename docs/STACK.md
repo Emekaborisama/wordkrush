@@ -75,6 +75,8 @@ Four rungs, cheapest and fastest first. Most work happens on rungs 1–2.
 3. **iOS Simulator** — screen sizes we don't own, safe-area/notch behavior. Requires Xcode.
 4. **TestFlight** — real testers, real builds, real devices.
 
+Rung 1 collects suites from an explicit `include` allowlist in `vitest.config.ts`, not a repo-wide glob, so a test file under a directory that is not listed is silently never run. Add the directory when a new area gains tests: `src/teams/**` was listed on 0.8.28 after its suites sat uncollected, the same gap the `src/streak` comment records.
+
 Xcode is deliberately *not* on the critical path: EAS builds run in Expo's cloud, and day-to-day testing runs through Expo Go.
 
 ## Constraints that shape the stack
