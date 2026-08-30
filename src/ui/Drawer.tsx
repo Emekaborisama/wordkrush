@@ -91,7 +91,7 @@ export function Drawer({
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close menu" />
       </Animated.View>
 
-      <Animated.View style={[styles.panel, { transform: [{ translateX: slide }] }]} pointerEvents="auto">
+      <Animated.View style={[styles.panel, { transform: [{ translateX: slide }] }]} pointerEvents={open ? 'auto' : 'none'}>
         <View style={styles.panelHeader}>
           <View style={styles.brandRow}>
             <BrandArtwork size={46} />
