@@ -149,8 +149,13 @@ describe('/share/:id/og.png', () => {
   it('caches for minutes, not a day, so a render fix lands the same day', async () => {
     const id = shareId(RESULTS['more-or-less']);
     const response = await fetch(`${origin}/share/${id}/og.png?v=${version}`);
+    const maxAge = maxAgeOf(response);
 
-    expect(maxAgeOf(response)).toBeLessThanOrEqual(300);
+    // A missing directive would satisfy `<= 300` by coercion, and max-age=0
+    // would re-render on every scrape, so pin both ends.
+    expect(maxAge).toBeTypeOf('number');
+    expect(maxAge).toBeGreaterThan(0);
+    expect(maxAge).toBeLessThanOrEqual(300);
   });
 
   it('serves the same render whatever the cache-bust stamp says', async () => {
