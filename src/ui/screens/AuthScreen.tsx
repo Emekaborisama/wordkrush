@@ -33,7 +33,7 @@ type Mode = 'signin' | 'signup';
 type Props = {
   profile: Profile | null;
   onAuthed: (profile: Profile) => void;
-  onSkip: () => void;
+  onSkip?: () => void;
 };
 
 export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
@@ -233,12 +233,14 @@ export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
           </>
         )}
 
-        <Button
-          title="Keep playing as guest"
-          variant="ghost"
-          size="sm"
-          onPress={onSkip}
-        />
+        {onSkip && (
+          <Button
+            title="Keep playing as guest"
+            variant="ghost"
+            size="sm"
+            onPress={onSkip}
+          />
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );

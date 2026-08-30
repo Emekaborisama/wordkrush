@@ -1160,10 +1160,14 @@ export default function App() {
               if (screen.returnTo === 'teams') setScreen({ name: 'teams' });
               else setScreen({ name: 'scores', gameId: screen.returnGameId ?? MORE_OR_LESS });
             }}
-            onSkip={() => {
-              captureAnalytics('auth_skipped', {});
-              setScreen({ name: 'hub' });
-            }}
+            onSkip={
+              screen.returnTo === 'teams'
+                ? undefined
+                : () => {
+                    captureAnalytics('auth_skipped', {});
+                    setScreen({ name: 'hub' });
+                  }
+            }
           />
         )}
 
