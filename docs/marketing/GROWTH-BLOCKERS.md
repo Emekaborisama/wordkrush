@@ -1,6 +1,6 @@
 # Growth Blockers
 
-**Last updated:** 2026-08-22
+**Last updated:** 2026-08-30
 **Status:** Audit of commit `5ca2a6b`. Every gap below was verified in the code, not assumed.
 **Read first:** [README.md](README.md), then [GTM-STRATEGY.md](GTM-STRATEGY.md).
 
@@ -144,28 +144,30 @@ aggressively.
 
 **Severity: high, and it is the only channel that keeps paying after you stop working.**
 
-`app.json` sets `web.output: "single"`, so wordkrush.com is a client-rendered
-SPA. The complete text a crawler receives today:
+`app.json` still sets `web.output: "single"`, so wordkrush.com is a
+client-rendered SPA. **[BUILT 2026-08-30 — ST-92 / D-061]** The homepage is no
+longer a JS-only shell: `scripts/patch-web-head.mjs` writes a game-named title,
+canonical, description, WebSite/WebApplication JSON-LD, hub copy in `#root` and
+`<noscript>`, `robots.txt`, and a one-URL `sitemap.xml`. `server/serve.mjs`
+serves `.xml` as `application/xml`. The playable hub still mounts at `/`.
 
-> `You need to enable JavaScript to run this app.`
-
-There is no `robots.txt`, no `sitemap.xml`, and no meta description. Google
-cannot rank a page whose content it cannot see, so **"wordle alternative",
-"games like semantle", "daily word games" — the highest-intent, highest-volume
-queries in this category — are structurally unreachable.**
+That opens branded search (`wordkrush.com`, `wordkrush`). **"wordle
+alternative", "games like semantle", "daily word games"** still need real
+per-game HTML — those queries remain unreachable until item 3 ships.
 
 This is the difference between a launch that decays and one that compounds.
 Listicle and community traffic spikes and fades within days; search traffic
 arrives every day for years and costs nothing per visit.
 
-**Work — the minimum that opens the channel:**
+**Work:**
 
-1. **A real static landing page** at `/` or `/about` with crawlable HTML: what
-   the three games are, how the streak works, and the positioning line. This can
-   be a hand-written static file served by `server/serve.mjs` before the SPA
-   takes over — it does not require converting the app to static rendering.
-2. **`robots.txt` and `sitemap.xml`**, emitted into `dist/` by the same
-   `scripts/patch-web-head.mjs` step that handles icons and OG tags.
+1. **[BUILT]** Crawlable homepage copy at `/` — the three games, the streak
+   line, and the hub taglines from `src/games/registry.ts`, injected into the
+   Expo `index.html` rather than a separate marketing page.
+2. **[BUILT]** `robots.txt` and `sitemap.xml`, emitted into `dist/` by
+   `scripts/patch-web-head.mjs`. The Search Console HTML file is served at
+   `/googled8072618779c67b2.html`. After deploy, confirm verification, submit
+   the sitemap, and request indexing (see `docs/HOW-IT-WORKS.md`).
 3. **A page per game** (`/clueless`, `/wordfall`, `/more-or-less`) with a real
    description and how-to-play text. These are the pages that rank for
    "games like semantle", and `src/ui/HowToPlay.tsx` already has the copy.
@@ -173,10 +175,6 @@ arrives every day for years and costs nothing per visit.
 **Do not** convert the whole app to static rendering for this. The games are
 client-side by design and should stay that way; this is about giving crawlers a
 few real HTML documents that link into the app.
-
-**Effort:** a day or two, mostly copywriting. `server/serve.mjs` already serves
-arbitrary files from `dist/` with correct MIME types and caching, so the
-plumbing is done.
 
 ---
 
@@ -223,7 +221,7 @@ question, and a hub whose games all feel exhausted is worse than one good game.
 | 0 | Clueless content to 90+ days | Content review | **All promotion** (G-002) |
 | 1 | Share loop + share formatter + events | ~1 day | The primary growth channel |
 | 2 | Open Graph tags (re-apply) | ~30 min | Every share and listicle link |
-| 3 | Landing page, robots.txt, sitemap, per-game pages | 1–2 days | The durable channel |
+| 3 | Per-game ranking pages (`/clueless`, `/wordfall`, `/more-or-less`) | 1 day | Alternatives-intent SEO (homepage + robots + sitemap: **built**) |
 | 4 | — measurement plan, no code — | — | Interpreting Phase 1 |
 | 5 | More categories / more Wordfall levels | Ongoing | Phase 2 retention |
 
