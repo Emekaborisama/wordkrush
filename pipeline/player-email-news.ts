@@ -12,7 +12,7 @@ const VERSION_HEADING = /^## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})\s*$/;
 const BULLET = /^- (.+)$/;
 
 const INFRA =
-  /\b(check:docs|github actions?|workflow|migration|tsconfig|typecheck|vitest|reducer|no-op|nixpacks|railway|docs audit|version-only|expo_public_|d-\d{3}|st-\d+|resend|broadcast|auth templates?|pipeline\/|npm run check|wikipedia popularity snapshot|player .what.s new. email|openapi|openai)\b/i;
+  /\b(check:docs|github actions?|workflow|migration|tsconfig|typecheck|vitest|reducer|no-op|nixpacks|railway|docs audit|version-only|expo_public_|d-\d{3}|st-\d+|resend|broadcast|auth templates?|pipeline\/|npm run check|wikipedia popularity snapshot|player .what.s new. email|openapi|openai|openrouter)\b/i;
 
 export const GAME_LABELS = {
   'more-or-less': 'More or Less',

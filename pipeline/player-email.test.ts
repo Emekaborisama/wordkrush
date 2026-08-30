@@ -6,6 +6,7 @@ import {
   parseArgs,
   parseMode,
   planPlayerEmail,
+  resolveDraft,
   usernameOf,
   weeklyBroadcastName,
 } from './player-email';
@@ -141,5 +142,21 @@ describe('recipients', () => {
 describe('escapeHtml', () => {
   it('escapes quotes as well as tags', () => {
     expect(escapeHtml('"hi"')).toBe('&quot;hi&quot;');
+  });
+});
+
+describe('resolveDraft', () => {
+  const now = new Date('2026-08-25T12:00:00');
+
+  it('fails a real send when OPENROUTER_API_KEY is missing', async () => {
+    await expect(resolveDraft(newsOn(now), { send: true, env: {} })).rejects.toThrow(
+      /OPENROUTER_API_KEY is missing/,
+    );
+  });
+
+  it('uses the changelog fallback on a dry run without a key', async () => {
+    const draft = await resolveDraft(newsOn(now), { send: false, env: {} });
+    expect(draft.subject).toContain('Gauntlet');
+    expect(draft.intro).toContain(FIRST_NAME_TOKEN);
   });
 });

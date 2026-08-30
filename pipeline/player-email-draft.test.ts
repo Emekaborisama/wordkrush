@@ -1,9 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  draftWithOpenAI,
+  DEFAULT_OPENROUTER_BASE_URL,
+  DEFAULT_OPENROUTER_EMAIL_MODEL,
+  draftWithOpenRouter,
   fallbackDraft,
   FIRST_NAME_TOKEN,
   GAME_TOKEN,
+  openRouterBaseUrl,
+  openRouterChatCompletionsUrl,
   parseEmailDraft,
   renderDraftHtml,
 } from './player-email-draft';
@@ -94,8 +98,18 @@ describe('renderDraftHtml', () => {
   });
 });
 
-describe('draftWithOpenAI', () => {
-  it('parses a structured-output response without inventing a second call', async () => {
+describe('openRouterBaseUrl', () => {
+  it('defaults empty GitHub secrets to the OpenRouter v1 root', () => {
+    expect(openRouterBaseUrl({})).toBe(DEFAULT_OPENROUTER_BASE_URL);
+    expect(openRouterBaseUrl({ OPENROUTER_BASE_URL: '  ' })).toBe(DEFAULT_OPENROUTER_BASE_URL);
+    expect(openRouterBaseUrl({ OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1/' })).toBe(
+      DEFAULT_OPENROUTER_BASE_URL,
+    );
+  });
+});
+
+describe('draftWithOpenRouter', () => {
+  it('posts once to OpenRouter chat completions', async () => {
     const payload = {
       subject: 'Gauntlet dropped',
       preview: 'Play it',
@@ -110,9 +124,17 @@ describe('draftWithOpenAI', () => {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       }),
-    ) as unknown as typeof fetch;
-    const draft = await draftWithOpenAI(news, fetchImpl, 'sk-test');
+    );
+    const draft = await draftWithOpenRouter(news, fetchImpl as unknown as typeof fetch, 'sk-test', {});
     expect(draft.subject).toBe('Gauntlet dropped');
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(openRouterChatCompletionsUrl({}));
+    expect(url).toBe('https://openrouter.ai/api/v1/chat/completions');
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer sk-test');
+    expect(headers['HTTP-Referer']).toBe('https://wordkrush.com');
+    const body = JSON.parse(String(init.body)) as { model: string };
+    expect(body.model).toBe(DEFAULT_OPENROUTER_EMAIL_MODEL);
   });
 });

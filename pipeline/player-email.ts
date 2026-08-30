@@ -6,14 +6,21 @@
  * CI:    npx tsx pipeline/player-email.ts --send
  *
  * Copy is this week's changelog (player-facing bullets) plus the Monday
- * Wordfall drop, drafted once by OpenAI. Quiet weeks skip. Auth templates
- * cannot broadcast. Guests have no address.
+ * Wordfall drop, drafted once by OpenRouter. Quiet weeks skip. Auth
+ * templates cannot broadcast. Guests have no address.
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { pipelineDb } from './db';
 import { LEVELS } from '../src/data/wordfall/levels';
-import { draftWithOpenAI, fallbackDraft, renderDraftHtml, type EmailDraft } from './player-email-draft';
+import {
+  draftWithOpenRouter,
+  fallbackDraft,
+  optionalEnv,
+  renderDraftHtml,
+  type EmailDraft,
+  type OpenRouterEnv,
+} from './player-email-draft';
 import { PLAY_URL, UNSUBSCRIBE_TOKEN, escapeHtml } from './player-email-html';
 import {
   collectWeekNews,
@@ -79,18 +86,19 @@ export function planPlayerEmail(mode: EmailMode, news: WeekNews, draft: EmailDra
 
 export async function resolveDraft(
   news: WeekNews,
-  options: { send: boolean; fetchImpl?: typeof fetch },
+  options: { send: boolean; fetchImpl?: typeof fetch; env?: OpenRouterEnv },
 ): Promise<EmailDraft> {
-  const key = process.env.OPENAI_API_KEY?.trim();
+  const env = options.env ?? process.env;
+  const key = optionalEnv(env, 'OPENROUTER_API_KEY');
   if (!key) {
-    if (options.send) throw new Error('OPENAI_API_KEY is missing.');
+    if (options.send) throw new Error('OPENROUTER_API_KEY is missing.');
     return fallbackDraft(news);
   }
   try {
-    return await draftWithOpenAI(news, options.fetchImpl ?? fetch, key);
+    return await draftWithOpenRouter(news, options.fetchImpl ?? fetch, key, env);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'OpenAI draft failed';
-    console.warn(`OpenAI draft failed (${message}); using the changelog fallback.`);
+    const message = error instanceof Error ? error.message : 'OpenRouter draft failed';
+    console.warn(`OpenRouter draft failed (${message}); using the changelog fallback.`);
     return fallbackDraft(news);
   }
 }

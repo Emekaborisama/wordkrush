@@ -1,15 +1,19 @@
 /**
  * Turn week news into branded HTML.
  *
- * OpenAI writes player voice from the facts. A deterministic fallback is used
- * when the key is missing or the model returns junk. Merge tags stay exact so
- * Resend can fill the player's name and favorite game.
+ * OpenRouter writes player voice from the facts. A deterministic fallback is
+ * used when the key is missing or the model returns junk. Merge tags stay
+ * exact so Resend can fill the player's name and favorite game.
  */
 import { PLAY_URL, UNSUBSCRIBE_TOKEN, emailHeroUrl, escapeHtml, pickEmailHero } from './player-email-html';
 import { newsFacts, stripMd, type WeekNews } from './player-email-news';
 
 export const FIRST_NAME_TOKEN = '{{{contact.first_name|there}}}';
 export const GAME_TOKEN = '{{{game|the games}}}';
+export const DEFAULT_OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+export const DEFAULT_OPENROUTER_EMAIL_MODEL = 'openai/gpt-4o-mini';
+export const OPENROUTER_HTTP_REFERER = 'https://wordkrush.com';
+export const OPENROUTER_APP_TITLE = 'WordKrush';
 
 export type EmailDraft = {
   subject: string;
@@ -205,28 +209,54 @@ export function renderDraftHtml(draft: EmailDraft, news: WeekNews): string {
 `;
 }
 
-export function openaiUserPrompt(news: WeekNews): string {
+export function draftUserPrompt(news: WeekNews): string {
   return `Write this week's player email from these facts only:\n${newsFacts(news)}`;
 }
 
-export async function draftWithOpenAI(
+export type OpenRouterEnv = object;
+
+export function optionalEnv(env: object, name: string): string | undefined {
+  const value = (env as Record<string, unknown>)[name];
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+export function openRouterBaseUrl(env: OpenRouterEnv = process.env): string {
+  return (optionalEnv(env, 'OPENROUTER_BASE_URL') ?? DEFAULT_OPENROUTER_BASE_URL).replace(
+    /\/$/,
+    '',
+  );
+}
+
+export function openRouterEmailModel(env: OpenRouterEnv = process.env): string {
+  return optionalEnv(env, 'OPENROUTER_EMAIL_MODEL') ?? DEFAULT_OPENROUTER_EMAIL_MODEL;
+}
+
+export function openRouterChatCompletionsUrl(env: OpenRouterEnv = process.env): string {
+  return `${openRouterBaseUrl(env)}/chat/completions`;
+}
+
+export async function draftWithOpenRouter(
   news: WeekNews,
   fetchImpl: typeof fetch,
   apiKey: string,
-  model = process.env.OPENAI_EMAIL_MODEL ?? 'gpt-4o-mini',
+  env: OpenRouterEnv = process.env,
 ): Promise<EmailDraft> {
-  const response = await fetchImpl('https://api.openai.com/v1/chat/completions', {
+  const response = await fetchImpl(openRouterChatCompletionsUrl(env), {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
+      'HTTP-Referer': OPENROUTER_HTTP_REFERER,
+      'X-Title': OPENROUTER_APP_TITLE,
     },
     body: JSON.stringify({
-      model,
+      model: openRouterEmailModel(env),
       temperature: 0.4,
       messages: [
         { role: 'system', content: EMAIL_SYSTEM_PROMPT },
-        { role: 'user', content: openaiUserPrompt(news) },
+        { role: 'user', content: draftUserPrompt(news) },
       ],
       response_format: {
         type: 'json_schema',
@@ -239,10 +269,10 @@ export async function draftWithOpenAI(
     choices?: { message?: { content?: string } }[];
   };
   if (!response.ok) {
-    throw new Error(body.error?.message ?? 'OpenAI draft failed');
+    throw new Error(body.error?.message ?? 'OpenRouter draft failed');
   }
   const content = body.choices?.[0]?.message?.content;
-  if (!content) throw new Error('OpenAI returned an empty draft.');
+  if (!content) throw new Error('OpenRouter returned an empty draft.');
   return parseEmailDraft(JSON.parse(content) as unknown);
 }
 

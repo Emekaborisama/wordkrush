@@ -261,7 +261,7 @@ app). Skip remains a guest path; a missing backend still plays offline.
 Player-facing weekly mail is not an Auth template — those only cover sign-in,
 recovery, and invite. [player-email.ts](../pipeline/player-email.ts) reads
 player-facing bullets from [CHANGELOG.md](CHANGELOG.md) (last 7 days; 14 in
-`whats-new` mode) plus this week’s Wordfall drop, asks OpenAI once for
+`whats-new` mode) plus this week’s Wordfall drop, asks OpenRouter once for
 player-voice copy from those facts, and skips the week when both are empty.
 It lists confirmed Auth users with the secret key, upserts them into the
 Resend segment `WordKrush players` (username → `first_name`, latest
@@ -277,7 +277,7 @@ load `https://wordkrush.com/email/<file>`. The Tuesday 09:00 UTC job
 uses GitHub Environment `best-games`. The play button is
 `https://wordkrush.com` with `utm_source=email` / `utm_medium=product-update`.
 Resend’s `{{{RESEND_UNSUBSCRIBE_URL}}}` is the opt-out. Guests have no
-address. `RESEND_API_KEY` and `OPENAI_API_KEY` are pipeline-only (D-054).
+address. `RESEND_API_KEY` and `OPENROUTER_API_KEY` are pipeline-only (D-062).
 [whats-new.html](../supabase/templates/whats-new.html) is a branded one-off
 shell, not the weekly send.
 
@@ -556,7 +556,7 @@ Quick map of where each journey step lives:
 | Content DB schema | `supabase/migrations/0001_init.sql` | [BUILT: apply on the owner project] |
 | Accounts + first leaderboard tables | `supabase/migrations/0002_leaderboard.sql` | [BUILT: apply on the owner project] |
 | Optional auth (email magic link) | `src/auth/` (`redirect-url.ts` `webAuthRedirectUrl`), `src/ui/screens/AuthScreen.tsx`, `supabase/templates/magic-link.html` | [BUILT] — email-only magic link; unique username; web origin (scheme required) / native deep-link restore. Template keeps `{{ .ConfirmationURL }}` + `{{ .Token }}`. Custom SMTP required to save it on this free project (D-033, D-037) |
-| Player weekly email | `pipeline/player-email.ts`, `pipeline/player-email-news.ts`, `pipeline/player-email-draft.ts`, `assets/email/`, `.github/workflows/player-email-weekly.yml` | [BUILT] — Tuesday 09:00 UTC Resend Broadcast from this week’s changelog + Wordfall; OpenAI drafts player copy once; hero is in-game art/hub screenshot at `/email/`; quiet weeks skip; `{{{contact.first_name|there}}}` / `{{{game|the games}}}`; job uses GitHub Environment `best-games`. Never on Railway (D-054) |
+| Player weekly email | `pipeline/player-email.ts`, `pipeline/player-email-news.ts`, `pipeline/player-email-draft.ts`, `assets/email/`, `.github/workflows/player-email-weekly.yml` | [BUILT] — Tuesday 09:00 UTC Resend Broadcast from this week’s changelog + Wordfall; OpenRouter drafts player copy once; hero is in-game art/hub screenshot at `/email/`; quiet weeks skip; `{{{contact.first_name|there}}}` / `{{{game|the games}}}`; job uses GitHub Environment `best-games`. Never on Railway (D-054, D-062) |
 | Unique leaderboard username | `supabase/migrations/0004_unique_username.sql`, `src/auth/validation.ts` `usernameKey` | [BUILT: apply on the owner project] — unique index on `username_key(display_name)`; duplicate maps to "That username is taken." |
 | Cross-game global board | `supabase/migrations/0003_global_scores.sql`, `src/scores/global.ts` | [BUILT] |
 | Clueless local path + assistance boards | `src/games/clueless/{path,path-storage}.ts`, `src/data/clueless/levels.ts`, `src/games/clueless/scoring.ts` | [BUILT] — local-midnight Daily Vault gate, level-owned assistance, and stable score partitions under `clueless` id |
