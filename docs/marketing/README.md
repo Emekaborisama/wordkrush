@@ -29,11 +29,10 @@ Three gaps, all verified in the codebase on 2026-08-22:
 2. **Link preview.** `scripts/patch-web-head.mjs` now ships
    `reddits/assets/og-share.png` as `/og.png` with absolute Open Graph tags.
    Still blank on the live site until that build deploys and the URL is re-scraped.
-3. **No search surface.** `app.json` sets `web.output: "single"`, so a crawler
-   fetching wordkrush.com receives exactly one sentence: *"You need to enable
-   JavaScript to run this app."* There is no `robots.txt` and no `sitemap.xml`.
-   "Wordle alternative" search intent — the largest durable channel in this
-   category — is completely closed.
+3. **Thin search surface.** The homepage now ships crawlable title, JSON-LD,
+   hub copy, `robots.txt`, and `sitemap.xml` (ST-92 / D-061). Branded search
+   can index. **"Wordle alternative"** intent is still closed until per-game
+   pages exist — see [GROWTH-BLOCKERS §3](GROWTH-BLOCKERS.md).
 
 And one clock, which sets the whole schedule:
 
@@ -126,3 +125,4 @@ Append whenever reality overturns something here. Never delete a row.
 | Date | Item | Change |
 |---|---|---|
 | 2026-08-22 | — | Directory created. Strategy derived from a codebase audit at commit `5ca2a6b`; no market testing, no analytics data, and no launch has occurred. Every projection is a benchmark from category convention, not a forecast. |
+| 2026-08-30 | No search surface | Homepage + robots.txt + sitemap.xml shipped (ST-92 / D-061). Gap 3 is now “thin search surface”: branded queries can be indexed; alternatives-intent pages are still missing. |

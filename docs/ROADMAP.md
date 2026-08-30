@@ -1,6 +1,6 @@
 # Roadmap & Task List
 
-**Last updated:** 2026-08-25
+**Last updated:** 2026-08-30
 **Board of record:** Superthread → *My Private Space* → **BestGame** board (team `tbJ3qEwK`, board `2`, lists: To do `8` / Doing `9` / Done `10`).
 
 Live status lives on the board, not here. This file exists so an LLM reading the repo cold knows what the work *is*, what blocks it, and what order it goes in — without needing board access.
@@ -124,6 +124,7 @@ Local contract: [reddit/README.md](../reddit/README.md).
   `taskFingerprint`, a seven-day featured window, and a local `serve:web`
   picker playtest before GitHub. Its configured label flow marks drafts ready
   and merges only after exact-head CI (D-038, D-058, D-059, D-060).
+- [ ] **Own the wordkrush.com search result** (ST-92) — **Doing**; robots, sitemap, JSON-LD, and crawlable hub copy from `patch-web-head.mjs` (D-061). Per-game ranking pages and the Search Console indexing request remain open.
 - [ ] First TestFlight build ← blocked on Apple Developer + Expo login
 
 ## Suggested order
