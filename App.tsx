@@ -104,18 +104,14 @@ import {
   type FeedbackChannel,
   type FeedbackSettings,
 } from './src/settings/types';
-import { toUserbackIdentity } from './src/userback/identity';
-import {
-  isUserbackConfigured,
-  openUserback,
-  setUserbackLauncherVisible,
-  syncUserback,
-} from './src/userback/widget';
+import { toFeedbackIdentity } from './src/feedback/identity';
+import { isFeedbackConfigured } from './src/feedback/submit';
 import { joinMatch, postMatchScore } from './src/live/api';
 import type { LiveMatchSnapshot } from './src/live/types';
 import { parseTeamInviteUrl } from './src/teams/codes';
 import { Drawer, type DrawerDestination } from './src/ui/Drawer';
 import { AnalyticsConsentPrompt } from './src/ui/AnalyticsConsentPrompt';
+import { FeedbackPrompt } from './src/ui/FeedbackPrompt';
 import { TopBar } from './src/ui/TopBar';
 import { AuthScreen } from './src/ui/screens/AuthScreen';
 import { CluelessScreen } from './src/ui/screens/CluelessScreen';
@@ -335,6 +331,7 @@ export default function App() {
     useState<FeedbackSettings>(DEFAULT_FEEDBACK_SETTINGS);
   const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent>('unknown');
   const [showAnalyticsPrompt, setShowAnalyticsPrompt] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [boardsReady, setBoardsReady] = useState(false);
   const [arrivalReady, setArrivalReady] = useState(false);
   const [profileReady, setProfileReady] = useState(false);
@@ -468,16 +465,6 @@ export default function App() {
       links.remove();
     };
   }, []);
-
-  // The feedback widget waits for auth to resolve rather than loading on
-  // mount: a restored session is then attached to the very first report,
-  // instead of the widget being briefly anonymous and re-identifying a beat
-  // later. Guests get the widget too — anonymous feedback is still feedback,
-  // and inventing an id for them would turn a support tool into a tracker.
-  useEffect(() => {
-    if (!profileReady) return;
-    syncUserback(toUserbackIdentity(profile));
-  }, [profileReady, profile]);
 
   const boardFor = (gameId: string) => boards[gameId] ?? EMPTY_BOARD;
   const labelResolved = resolveRound(snapshot, labelProgress);
@@ -697,10 +684,6 @@ export default function App() {
     : activeTeamCluelessLevel
       ? puzzleForCluelessTeamLevel(activeTeamCluelessLevel)
       : undefined;
-  // Userback's floating launcher is chrome too, so it follows the same rule.
-  useEffect(() => {
-    setUserbackLauncherVisible(showChrome);
-  }, [showChrome]);
   const activeGameId = 'gameId' in screen ? screen.gameId : undefined;
   const activeKind: DrawerDestination['kind'] =
     screen.name === 'hub'
@@ -1186,8 +1169,8 @@ export default function App() {
           signedInAs={profile?.username ?? null}
           feedbackSettings={feedbackSettings}
           onToggleFeedback={toggleFeedback}
-          canSendFeedback={isUserbackConfigured}
-          onSendFeedback={openUserback}
+          canSendFeedback={isFeedbackConfigured()}
+          onSendFeedback={() => setShowFeedback(true)}
           analyticsConsent={analyticsConsent}
           onAnalyticsPress={() => {
             if (!isAnalyticsConfigured) return;
@@ -1199,6 +1182,11 @@ export default function App() {
               setShowAnalyticsPrompt(true);
             }
           }}
+        />
+        <FeedbackPrompt
+          visible={showFeedback}
+          identity={toFeedbackIdentity(profile)}
+          onClose={() => setShowFeedback(false)}
         />
         <AnalyticsConsentPrompt
           visible={showAnalyticsPrompt}

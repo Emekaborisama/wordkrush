@@ -573,7 +573,7 @@ Quick map of where each journey step lives:
 | Web search surface | `scripts/patch-web-head.mjs`, `server/serve.mjs`, `assets/googled8072618779c67b2.html`, `dist/robots.txt`, `dist/sitemap.xml` | [BUILT] — homepage title, canonical, JSON-LD, and hub copy in `#root` / `<noscript>`; sitemap lists `https://wordkrush.com/` only; `.xml` is `application/xml`. Search Console HTML verification is copied to `/googled8072618779c67b2.html` (not in the sitemap). After Railway deploy: confirm that URL in [Search Console](https://search.google.com/search-console), submit `/sitemap.xml`, then URL Inspection → Request indexing (D-061) |
 | Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] — audits git-visible changes; version-only `package.json` / `app.json` bumps are changelog (D-049); Finder `* 2.*` copies and `supabase/.temp/` are gitignored so they do not count as source |
 | Consent and product analytics | `src/analytics/`, `src/ui/AnalyticsConsentPrompt.tsx` | [BUILT] |
-| Player feedback (bugs + suggestions) | `src/userback/`, `@userback/widget`, drawer "Send feedback" | [BUILT: web] — launcher on every non-game screen, hidden during a run; signed-in players are identified, guests stay anonymous. Native is a documented no-op stub pending a Userback Mobile SDK key (D-046) |
+| Player feedback (bugs + suggestions) | `src/feedback/`, `src/ui/FeedbackPrompt.tsx`, drawer "Send feedback" | [BUILT] — PostHog Surveys API prompt on web and native; signed-in players attach id/username/email on the event, guests stay anonymous. Independent of analytics consent. See D-063 |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |
 | Sound + haptics | `src/native/feedback.ts`, `src/native/sound.ts`, `src/native/haptics.ts`, `assets/sounds/`, `src/settings/` | [BUILT] — one `feedback(event)` table maps five game moments to a clip + haptic; both channels mutable from the drawer. See D-043 |
 | Wordfall match juice | `src/ui/wordfall/clearJuice.ts`, `src/ui/wordfall/BoardView.tsx` | [BUILT] — puff then fall on `lastPlay.cleared`; special-birth pop by tile id; Crush/Nova stamp on chain ≥ 2. RN `Animated`, not Lottie (ST-80, D-032) |
@@ -586,10 +586,8 @@ Quick map of where each journey step lives:
 - Finder duplicate names (`* 2.ts`, `* 2.png`, …) and `supabase/.temp/` are gitignored. They are local copies, not app source.
 - `SUPABASE_SECRET_KEY`: pipeline-only, loaded via `tsx --env-file=.env`. Never `EXPO_PUBLIC_`-prefixed — Expo embeds those in the shipped bundle.
 - `RESEND_API_KEY`: pipeline and GitHub Environment `best-games` only (Tuesday player Broadcast). Never `EXPO_PUBLIC_*`, never Railway.
-- Client bundles contain only publishable Supabase, PostHog and Userback project
+- Client bundles contain only publishable Supabase and PostHog project
   configuration under `EXPO_PUBLIC_*`; none grants privileged server access.
-  `EXPO_PUBLIC_USERBACK_TOKEN` identifies the feedback project, not the
-  Userback account, and is unset in builds that ship without the widget.
 - Supabase access is constrained by Row Level Security (`players`,
   `leaderboard_entries`, `global_scores`, `teams`, `matches`, `match_players`).
   Clients insert only their own scores and cannot update or delete a submitted

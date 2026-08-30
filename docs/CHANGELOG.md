@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.21] - 2026-08-30
+
+### Changed
+- **In-app feedback now goes to PostHog Surveys.** The drawer **Send feedback** entry opens a WordKrush prompt (bug / suggestion / other plus a short note) on web and native. Responses land on the existing PostHog project as `survey sent`. Signed-in reports still carry account id, username, and email so a reply can reach them; guests stay anonymous. Sending feedback does not require analytics consent. Userback and its floating launcher are gone, including screenshot annotation.
+
 ## [0.8.20] - 2026-08-30
 
 ### Changed

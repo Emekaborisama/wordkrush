@@ -27,8 +27,7 @@ type Props = {
   /** Sound/vibration switches — the game's *feel*, not the player's report. */
   feedbackSettings: FeedbackSettings;
   onToggleFeedback: (channel: FeedbackChannel) => void;
-  /** False when the feedback widget is unavailable on this build (native, or
-      no Userback token configured) — the entry is hidden rather than dead. */
+  /** False when PostHog is not configured — the entry is hidden rather than dead. */
   canSendFeedback: boolean;
   onSendFeedback: () => void;
 };
@@ -164,9 +163,9 @@ export function Drawer({
               icon={<Text style={styles.itemGlyph}>✎</Text>}
               accent={theme.accent}
               onPress={() => {
-                // Closed first: the widget renders its own full-screen form
-                // outside the React tree, and leaving the drawer open behind it
-                // means dismissing two things to get back to the game.
+                // Closed first: the prompt is its own modal, and leaving the
+                // drawer open behind it means dismissing two things to get
+                // back to the game.
                 onClose();
                 onSendFeedback();
               }}
