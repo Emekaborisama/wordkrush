@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { SHARE_URL } from '../share';
 import { buildShareText } from './share';
 
 describe('buildShareText', () => {
   it('closes a short run with the miss that ended it', () => {
-    expect(
-      buildShareText({ streak: 2, bestStreak: 15 }),
-    ).toBe(
-      `WordKrush · More or Less\n🟩🟩🟥\nStreak 2 · best 15\nA start. Then one miss.\n${SHARE_URL}`,
-    );
+    const text = buildShareText({ streak: 2, bestStreak: 15 });
+    expect(text).toContain('WordKrush · More or Less');
+    expect(text).toContain('🟩🟩🟥');
+    expect(text).toContain('Streak 2 · best 15');
+    expect(text).toContain('A start. Then one miss.');
+    expect(text).toMatch(/https:\/\/wordkrush\.com\/share\/.+\?utm_source=player&utm_medium=share/);
   });
 
   it('is just the miss at streak zero', () => {

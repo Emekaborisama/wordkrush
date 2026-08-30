@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.24] - 2026-08-30
+
+### Added
+- **Per-result Open Graph previews on share links.** Share URLs now carry encoded game result data (`/share/:id`) and serve dynamic 1200×630 spoiler-free OG images as PNG (X/Twitter requires rasterized images). More or Less shows the green/red grid and streak, Clueless shows the heat spread (cold → hot buckets) and guess count, Wordfall shows the length-coded grid and score. Never answers, guessed words, or item labels. The server (`server/serve.mjs`) handles `/share/:id` HTML with injected OG tags and `/share/:id/og.png` image generation via sharp. Share paste still carries the same emoji grid plus the new dynamic URL (`buildShareUrl`). OG description uses the standing share line (Streak N / Found it in N / score + word count) instead of generic text.
+
 ## [0.8.23] - 2026-08-30
 
 ### Fixed

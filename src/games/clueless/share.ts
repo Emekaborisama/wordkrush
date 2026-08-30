@@ -8,6 +8,7 @@
  */
 import { rankBucket } from '../../analytics/events';
 import { composeShare, wrapSquares } from '../share';
+import { buildShareUrl, type CluelessShareData } from '../share-data';
 
 const HEAT = {
   unranked: { emoji: '⬛', order: 0 },
@@ -29,11 +30,34 @@ export type CluelessShareInput = {
 
 export function buildShareText(input: CluelessShareInput): string {
   const count = input.guesses.length;
+
+  // Count heat buckets for share data (no spoilers)
+  const heatBuckets = {
+    unranked: 0,
+    cold: 0,
+    top_100: 0,
+    top_10: 0,
+    win: 0,
+  };
+  for (const guess of input.guesses) {
+    const bucket = rankBucket(guess.rank);
+    heatBuckets[bucket]++;
+  }
+
+  const shareData: CluelessShareData = {
+    game: 'clueless',
+    puzzleNumber: input.puzzleNumber,
+    levelName: input.levelName,
+    guessCount: count,
+    heatBuckets,
+  };
+
   return composeShare({
     title: cluelessTitle(input),
     grid: cluelessGrid(input.guesses),
     standing: `Found it in ${count}`,
     verdict: cluelessVerdict(input.guesses),
+    url: buildShareUrl(shareData),
   });
 }
 

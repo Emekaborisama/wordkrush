@@ -1,21 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { SHARE_URL } from '../share';
 import { buildShareText } from './share';
 
 describe('buildShareText', () => {
   it('tiers squares by word length and names the level', () => {
-    expect(
-      buildShareText({
-        levelNumber: 7,
-        levelName: 'Tidewrack',
-        score: 2340,
-        wordLengths: [4, 4, 6, 4, 8, 6, 4, 8],
-        elapsedMs: 102_000,
-        won: true,
-      }),
-    ).toBe(
-      `WordKrush · Wordfall L7 “Tidewrack”\n🟦🟦🟨🟦🟩🟨🟦🟩\n2,340 pts · 8 words · 1:42\n${SHARE_URL}`,
-    );
+    const text = buildShareText({
+      levelNumber: 7,
+      levelName: 'Tidewrack',
+      score: 2340,
+      wordLengths: [4, 4, 6, 4, 8, 6, 4, 8],
+      elapsedMs: 102_000,
+      won: true,
+    });
+    expect(text).toContain('WordKrush · Wordfall L7 "Tidewrack"');
+    expect(text).toContain('🟦🟦🟨🟦🟩🟨🟦🟩');
+    expect(text).toContain('2,340 pts · 8 words · 1:42');
+    expect(text).toMatch(/https:\/\/wordkrush\.com\/share\/.+\?utm_source=player&utm_medium=share/);
   });
 
   it('marks a loss without listing the words that fell short', () => {

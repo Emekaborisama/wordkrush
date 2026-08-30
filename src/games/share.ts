@@ -22,6 +22,7 @@ export type ShareBlocks = {
   grid: string;
   standing: string;
   verdict?: string;
+  url?: string;
 };
 
 export function composeShare(blocks: ShareBlocks): string {
@@ -31,7 +32,7 @@ export function composeShare(blocks: ShareBlocks): string {
   if (blocks.verdict !== undefined && blocks.verdict.length > 0) {
     lines.push(blocks.verdict);
   }
-  lines.push(SHARE_URL);
+  lines.push(blocks.url ?? SHARE_URL);
   return lines.join('\n');
 }
 
