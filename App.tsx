@@ -985,6 +985,13 @@ export default function App() {
                   }
                 : undefined
             }
+            onDone={
+              screen.live
+                ? (score, complete) => {
+                    void postMatchScore(screen.live!.matchId, score, complete, true);
+                  }
+                : undefined
+            }
             onExit={() =>
               screen.live ? setScreen({ name: 'teams' }) : setScreen({ name: 'home', gameId: screen.gameId })
             }

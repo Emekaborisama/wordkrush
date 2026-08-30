@@ -41,6 +41,7 @@ type Props = {
   band?: RatioBand;
   targetStreak?: number;
   onScore?: (score: number, complete: boolean) => void;
+  onDone?: (score: number, complete: boolean) => void;
   labelRound?: {
     seenCount: number;
     total: number;
@@ -59,6 +60,7 @@ export function GameScreen({
   band,
   targetStreak,
   onScore,
+  onDone,
   labelRound,
 }: Props) {
   const poolRef = useRef(category.items);
@@ -121,6 +123,12 @@ export function GameScreen({
   useEffect(() => {
     onScore?.(state.streak, targetStreak != null ? state.streak >= targetStreak : false);
   }, [state.streak, targetStreak, onScore]);
+
+  useEffect(() => {
+    if (state.status === 'over') {
+      onDone?.(state.streak, targetStreak != null ? state.streak >= targetStreak : false);
+    }
+  }, [state.status, state.streak, targetStreak, onDone]);
 
   useEffect(() => {
     onSeenRef.current?.([state.left.id, state.right.id]);
