@@ -22,13 +22,14 @@ Read the documents relevant to your change before editing:
 
 | Need | Source of truth |
 |---|---|
+| Agent operating system and bot fleet | `docs/AGENT-OS.md` |
 | Product mechanics, unknowns, and data rules | `docs/BRAINSTORM.md` |
 | Visual identity, logo, and brand colour | `docs/branding/` |
 | Technology choices, constraints, and test strategy | `docs/STACK.md` |
 | Collaboration workflow and definition of done | `docs/WORKFLOW.md` |
 | Wordfall Monday drops and weekly automation | `docs/WORDFALL-WEEKLY.md` and `.cursor/skills/wordfall-weekly-gauntlet/` |
 | The Reddit (Devvit) build of More or Less | `reddit/README.md` and STACK D-042 |
-| Reddit ads and GTM posting | `docs/marketing/reddits/` and `.cursor/skills/reddit-ad-posts/` |
+| Reddit ads and GTM posting | `docs/marketing/reddits/` and `.cursor/skills/reddit-ad-posts/` (PARKED — not scheduled) |
 | Local commands and dependency versions | `package.json` |
 | Secrets and environment-variable boundaries | `.env.example` and `.gitignore` |
 | Cross-agent working agreement | This file |

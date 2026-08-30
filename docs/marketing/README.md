@@ -127,3 +127,4 @@ Append whenever reality overturns something here. Never delete a row.
 |---|---|---|
 | 2026-08-22 | — | Directory created. Strategy derived from a codebase audit at commit `5ca2a6b`; no market testing, no analytics data, and no launch has occurred. Every projection is a benchmark from category convention, not a forecast. |
 | 2026-08-30 | No search surface | Homepage + robots.txt + sitemap.xml shipped (ST-92 / D-061). Gap 3 is now “thin search surface”: branded queries can be indexed; alternatives-intent pages are still missing. |
+| 2026-08-30 | Acquisition channel | Grok-bot operating system will NOT run Reddit listicle campaigns or Devvit posting. Acquisition in this OS is organic X (@WordKrushGame) only. The `reddit/` app and `.cursor/skills/reddit-ad-posts/` remain in repo, unscheduled. G-004 (no paid) stands; listicles (CHANNELS.md §3) and Reddit app launch (§3b) are parked. See STACK.md D-063 and docs/AGENT-OS.md constitutional rule #4. |
