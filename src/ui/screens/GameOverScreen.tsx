@@ -1,9 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { captureAnalytics } from '../../analytics/client';
+import { streakBucket } from '../../analytics/events';
 import type { GameState } from '../../games/more-or-less/engine';
+import { buildShareText } from '../../games/more-or-less/share';
 import type { Category } from '../../games/more-or-less/types';
 import { getGame } from '../../games/registry';
 import { feedback } from '../../native/feedback';
+import { shareResult } from '../../native/share';
 import { rankOf, type ScoreBoard } from '../../scores/types';
 import { Badge, ResultPanel, Stat, Surface } from '../components';
 import { Mascot } from '../lottie/Mascot';
@@ -46,6 +50,40 @@ export function GameOverScreen({
   // rankOf counts strictly-better runs, and this run is already saved, so its
   // own entry never inflates the rank.
   const rank = rankOf(board, state.streak);
+  const [shareNote, setShareNote] = useState<string | null>(null);
+  const shareNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (shareNoteTimer.current !== null) clearTimeout(shareNoteTimer.current);
+    };
+  }, []);
+
+  async function onShare() {
+    captureAnalytics('game_over_action', {
+      game_id: 'more-or-less',
+      action: 'share',
+      streak_bucket: streakBucket(state.streak),
+      is_new_best: isBest,
+    });
+    const outcome = await shareResult(
+      buildShareText({ streak: state.streak, bestStreak: board.bestStreak, rank }),
+    );
+    if (outcome === 'copied') {
+      setShareNote('Copied to clipboard');
+      if (shareNoteTimer.current !== null) clearTimeout(shareNoteTimer.current);
+      shareNoteTimer.current = setTimeout(() => setShareNote(null), 2000);
+    }
+    if (outcome === 'shared' || outcome === 'copied') {
+      captureAnalytics('result_shared', {
+        game_id: 'more-or-less',
+        outcome: 'loss',
+        score_kind: 'streak',
+        method: outcome === 'shared' ? 'share_sheet' : 'clipboard',
+        is_new_best: isBest,
+      });
+    }
+  }
 
   return (
     <View style={styles.root}>
@@ -65,6 +103,7 @@ export function GameOverScreen({
             ) : null}
           </View>
         }
+        share={{ label: 'Share result', onPress: () => void onShare(), note: shareNote }}
         primary={{ label: 'Play again', onPress: onPlayAgain }}
         secondary={{ label: 'View scores', onPress: onScores }}
         tertiary={{ label: 'All games', onPress: onHome }}

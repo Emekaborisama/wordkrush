@@ -1,6 +1,6 @@
 # How It Works
 
-**Last updated:** 2026-08-25
+**Last updated:** 2026-08-30
 **What this is:** the living explainer for the whole system, told as **end-to-end journeys** — from the user, down through every layer, and back to the user. Each step names the code that handles it, the logic behind it, and the risk it carries. When a workflow changes, this doc changes in the same PR.
 
 Doc boundaries: [STACK.md](STACK.md) = *what we chose* (decision log) · [BRAINSTORM.md](BRAINSTORM.md) = *what we're designing* · [WORKFLOW.md](WORKFLOW.md) = *how we collaborate* · [marketing/](marketing/README.md) = *how we reach players* (GTM decision log, G-00x) · this doc = *how the built system behaves*. Decisions are referenced by STACK id (D-00x), never re-argued here.
@@ -62,7 +62,7 @@ The reducer compares the two bundled values. Note what "correct" means here: **B
 The hidden value counts up to its real number — the emotional beat of the whole game — then the judgement's feedback fires: `feedback('correct')` or `feedback('wrong')`, which plays a clip and a haptic together (`src/native/feedback.ts`). The haptic half runs through the `haptics.ts` / `haptics.native.ts` twins — `expo-haptics` on native, the browser Vibration API on a capable touch device, nothing on Safari or a laptop (D-044); the clip plays everywhere. Correct → streak++, winning card slides left, new challenger enters (carry-over chain — genre standard, still [OPEN] vs the reference game). Wrong → run over.
 
 **7. Back to the player: game over.** [BUILT]
-The run is written to the local board first (`src/scores/storage.ts`). Game over shows the streak, the pair that ended it, and Play Again / scores / all-games. Solo More or Less also shows **rounds passed** and how many names remain in the current set. Scores open a two-tab surface: **On this device** is the offline history; **Global** is each signed-in player's best run for that game (Journey 5). Game Center remains a later native 4.2 extra, not this board.
+The run is written to the local board first (`src/scores/storage.ts`). Game over shows the streak, the pair that ended it, Play Again / scores / all-games, and **Share result**. The share is a spoiler-free emoji grid from a pure formatter in `src/games/<id>/share.ts`; the platform twin in `src/native/share.ts` / `share.native.ts` offers the system sheet or copies to the clipboard. Clueless and Wordfall attach the same control to their in-place result cards. Solo More or Less also shows **rounds passed** and how many names remain in the current set. Scores open a two-tab surface: **On this device** is the offline history; **Global** is each signed-in player's best run for that game (Journey 5). Game Center remains a later native 4.2 extra, not this board.
 
 ---
 
@@ -575,6 +575,7 @@ Quick map of where each journey step lives:
 | Player feedback (bugs + suggestions) | `src/userback/`, `@userback/widget`, drawer "Send feedback" | [BUILT: web] — launcher on every non-game screen, hidden during a run; signed-in players are identified, guests stay anonymous. Native is a documented no-op stub pending a Userback Mobile SDK key (D-046) |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |
 | Sound + haptics | `src/native/feedback.ts`, `src/native/sound.ts`, `src/native/haptics.ts`, `assets/sounds/`, `src/settings/` | [BUILT] — one `feedback(event)` table maps five game moments to a clip + haptic; both channels mutable from the drawer. See D-043 |
+| Result share | `src/games/share.ts`, `src/games/<id>/share.ts`, `src/native/share.ts`, `src/native/share.native.ts` | [BUILT] — spoiler-free emoji grid per game; RN `Share` on native, `navigator.share` then clipboard on web; `utm_medium=share` on the pasted URL |
 | Wordfall match juice | `src/ui/wordfall/clearJuice.ts`, `src/ui/wordfall/BoardView.tsx` | [BUILT] — puff then fall on `lastPlay.cleared`; special-birth pop by tile id; Crush/Nova stamp on chain ≥ 2. RN `Animated`, not Lottie (ST-80, D-032) |
 | Wordfall weekly drops | `src/games/wordfall/schedule.ts` (`taskFingerprint`), `src/data/wordfall/levels.ts`, [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md), `.cursor/skills/wordfall-weekly-gauntlet/` | [BUILT] gate + unique-task + local `serve:web` before GitHub (D-038); standing `content/wordfall-weekly` PR maintains four future Mondays without a card per drop and merges through the content PR gate (D-058, D-059) |
 | Game Center | `src/native/` | [PLANNED] |

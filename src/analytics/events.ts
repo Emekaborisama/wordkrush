@@ -104,8 +104,26 @@ export type AnalyticsEvents = {
     already_completed: boolean;
   };
   game_over_action: CommonGameProperties & {
-    action: 'play_again' | 'scores' | 'home';
+    action: 'play_again' | 'scores' | 'home' | 'share';
     streak_bucket: '0_4' | '5_9' | '10_19' | '20_plus';
+    is_new_best: boolean;
+  };
+  /**
+   * A result actually left the app — the share loop's only real number.
+   *
+   * Fired on a completed share, not on the button press: a dismissed share
+   * sheet is a decision, not a share, and counting it would flatter the rate.
+   * `method` separates the two paths because they convert differently — a share
+   * sheet lands the result in a conversation, while a clipboard copy still
+   * needs the player to paste it somewhere.
+   *
+   * Pairs with `entry_source: 'share'` on the arrival side (see
+   * `resolveAttribution`), which is what closes the loop.
+   */
+  result_shared: CommonGameProperties & {
+    outcome: 'win' | 'loss';
+    score_kind: 'streak' | 'guesses_used' | 'points';
+    method: 'share_sheet' | 'clipboard';
     is_new_best: boolean;
   };
   scores_viewed: {
@@ -187,6 +205,7 @@ export const ANALYTICS_EVENT_NAMES: ReadonlySet<string> = new Set<AnalyticsEvent
   'level_failed',
   'daily_puzzle_viewed',
   'game_over_action',
+  'result_shared',
   'scores_viewed',
   'auth_prompt_viewed',
   'auth_submitted',

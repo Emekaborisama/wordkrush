@@ -1,6 +1,6 @@
 # Marketing & GTM
 
-**Last updated:** 2026-08-22
+**Last updated:** 2026-08-30
 **Status:** Strategy drafted, nothing executed. No launch has happened.
 **Audience:** Whoever (human or LLM) runs growth for WordKrush. Read this file first.
 
@@ -23,10 +23,9 @@ None of the machinery that turns a player into two players exists.
 
 Three gaps, all verified in the codebase on 2026-08-22:
 
-1. **No share.** `game_over_action` in `src/analytics/events.ts` tracks
-   `play_again | scores | home`. There is no share action, and no share control
-   in `src/ui/screens/GameOverScreen.tsx`. For a daily word game, the
-   spoiler-free result share is the primary acquisition loop. It is absent.
+1. **Share loop (per-game) shipped in 0.8.19.** Spoiler-free emoji grids on
+   More or Less, Clueless, and Wordfall. `result_shared` measures completed
+   shares. The cross-game daily streak card is still open.
 2. **Link preview.** `scripts/patch-web-head.mjs` now ships
    `reddits/assets/og-share.png` as `/og.png` with absolute Open Graph tags.
    Still blank on the live site until that build deploys and the URL is re-scraped.

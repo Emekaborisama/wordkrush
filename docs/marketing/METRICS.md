@@ -101,12 +101,10 @@ back. This rule exists to be honoured when it's inconvenient.
 Small additions, all consistent with the existing privacy policy — bucketed,
 bounded play properties, no guessed content.
 
-- [ ] **`'share'` added to `game_over_action.action`** — currently
-      `'play_again' | 'scores' | 'home'`. Without it, share rate is unmeasurable
-      on the day the loop ships.
-- [ ] **`share_completed` event** — `{ game_id, surface: 'result' | 'streak', method: 'native' | 'clipboard' }`.
-      Distinguishing native-sheet from clipboard matters because they behave
-      very differently on web vs mobile.
+- [x] **`'share'` added to `game_over_action.action`** — tap on Share result.
+- [x] **`result_shared` event** — `{ game_id, outcome, score_kind, method: 'share_sheet' | 'clipboard', is_new_best }`.
+      Fires on a completed share or copy, not a dismissed sheet. Named
+      `result_shared` rather than the earlier `share_completed` draft.
 - [x] **`landing_viewed`** on first web paint (and native deep links that are
       not auth callbacks), with a bounded `entry_source` so paid / search /
       social / share / direct can be distinguished. Static marketing pages can

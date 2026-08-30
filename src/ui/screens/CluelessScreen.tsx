@@ -21,6 +21,7 @@ import {
   type Action,
 } from '../../games/clueless/engine';
 import { isCluelessState, rehydrate } from '../../games/clueless/persistence';
+import { buildShareText } from '../../games/clueless/share';
 import {
   assistanceContextForHintPolicy,
   type CluelessAssistanceContext,
@@ -30,6 +31,7 @@ import {
 import { loadProgress, saveProgress } from '../../games/progress';
 import { getGame } from '../../games/registry';
 import { feedback } from '../../native/feedback';
+import { shareResult } from '../../native/share';
 import { GuessRow } from '../GuessRow';
 import { ExampleRow, HowToPlay } from '../HowToPlay';
 import {
@@ -87,7 +89,9 @@ export function CluelessScreen({
   );
   const [input, setInput] = useState('');
   const [help, setHelp] = useState(showHelpInitially);
+  const [shareNote, setShareNote] = useState<string | null>(null);
   const reported = useRef(false);
+  const shareNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Nothing may be written until the restore attempt finishes, or the empty
   // initial state would overwrite the saved session before it loads.
   const restored = useRef(false);
@@ -189,6 +193,36 @@ export function CluelessScreen({
     }
     if (!next.rejection) {
       onScore?.(next.guesses.length, next.status === 'won');
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (shareNoteTimer.current !== null) clearTimeout(shareNoteTimer.current);
+    };
+  }, []);
+
+  async function onShare() {
+    const outcome = await shareResult(
+      buildShareText({
+        puzzleNumber,
+        levelName,
+        guesses: state.guesses.map((guess) => ({ rank: guess.rank })),
+      }),
+    );
+    if (outcome === 'copied') {
+      setShareNote('Copied to clipboard');
+      if (shareNoteTimer.current !== null) clearTimeout(shareNoteTimer.current);
+      shareNoteTimer.current = setTimeout(() => setShareNote(null), 2000);
+    }
+    if (outcome === 'shared' || outcome === 'copied') {
+      captureAnalytics('result_shared', {
+        game_id: 'clueless',
+        outcome: 'win',
+        score_kind: 'guesses_used',
+        method: outcome === 'shared' ? 'share_sheet' : 'clipboard',
+        is_new_best: false,
+      });
     }
   }
 
@@ -297,17 +331,31 @@ export function CluelessScreen({
               </Text>
             </View>
           </View>
-          {pathPhase !== 'team' ? (
-            <View style={styles.completion}>
-              <Text style={styles.completionCopy}>{completionCopy}</Text>
-              <Button
-                title={hasNextTutorial ? 'Continue path' : 'Back to Clueless'}
-                onPress={onExit}
-                color={accent}
-                accessibilityHint="Return to the Clueless path"
-              />
-            </View>
-          ) : null}
+          <View style={styles.completion}>
+            <Button
+              title="Share result"
+              onPress={() => void onShare()}
+              variant="tonal"
+              color={accent}
+              accessibilityHint="Copies a spoiler-free result you can paste anywhere"
+            />
+            {shareNote ? (
+              <Text style={styles.shareNote} accessibilityLiveRegion="polite">
+                {shareNote}
+              </Text>
+            ) : null}
+            {pathPhase !== 'team' ? (
+              <>
+                <Text style={styles.completionCopy}>{completionCopy}</Text>
+                <Button
+                  title={hasNextTutorial ? 'Continue path' : 'Back to Clueless'}
+                  onPress={onExit}
+                  color={accent}
+                  accessibilityHint="Return to the Clueless path"
+                />
+              </>
+            ) : null}
+          </View>
         </Surface>
       ) : (
         <TextField
@@ -449,6 +497,7 @@ const styles = StyleSheet.create({
     borderTopColor: theme.border,
   },
   completionCopy: { ...type.body, color: theme.textMuted },
+  shareNote: { ...type.caption, color: theme.textMuted },
 
   list: { flex: 1 },
   listContent: { gap: 6, paddingBottom: space.lg },

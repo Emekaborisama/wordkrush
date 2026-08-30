@@ -54,16 +54,24 @@ small change and it converts a trust-breaking bug into an honest message.
 
 ---
 
-## 1. No share loop
+## 1. Share loop — shipped (0.8.19); cross-game streak share still open
 
-**Severity: highest leverage. This is the acquisition channel, and it does not exist.**
+**Severity: was highest leverage. Per-game share is live; the cross-game streak card is not.**
 
-Verified absent:
+Shipped:
 
-- `src/analytics/events.ts` — `game_over_action.action` is
-  `'play_again' | 'scores' | 'home'`. No share.
-- `src/ui/screens/GameOverScreen.tsx` — no share control, no clipboard call.
-- Nothing anywhere in `src/` calls a share or clipboard API.
+- Pure formatters in `src/games/<id>/share.ts` plus `src/games/share.ts` for the
+  URL (`utm_source=player&utm_medium=share`) and row wrap.
+- Platform twin `src/native/share.ts` / `share.native.ts` — RN `Share` on
+  native, `navigator.share` then clipboard on web. TeamsScreen already used
+  `Share.share` for invites; result share reuses that API, not a new dependency.
+- Share control on More or Less game over, Clueless solve, and Wordfall win or
+  loss. A dismissed sheet is silent; a clipboard write shows “Copied to clipboard”.
+- `game_over_action.action` includes `'share'`. `result_shared` fires only when
+  the text actually left the app (`method: share_sheet | clipboard`).
+
+Still open: the **cross-game daily streak** paste. A single-game grid cannot say
+“three games, one habit.” That card is a follow-up, not a blocker for the button.
 
 For daily word games the spoiler-free result share is not *a* growth tactic, it
 is *the* growth model — it is how Wordle went from 90 players to millions
@@ -109,16 +117,11 @@ Someone reading that learns there are multiple games and a streak, from a
 message their friend chose to send. That is the whole pitch delivered by a
 trusted source, for free. A single-game share cannot say that.
 
-**Implementation notes:** React Native ships a `Share` API and the web has
-`navigator.share` with a `navigator.clipboard` fallback — no new dependency
-needed, which matters under the house convention in `agents.md`. Keep the
-formatting function **pure and tested** in `src/games/<id>/` alongside the other
-reducers; it takes a result and returns a string, and it should never import
-React. Add `'share'` to `game_over_action.action` and a `share_completed` event
-so the rate is measurable from day one — see [METRICS.md](METRICS.md).
+Clueless v1 is a sorted heat *spread* (guesses are re-ordered by rank before
+the win card), not a chronological journey. Adding an `order` field for a
+true trail is a follow-up that touches the reducer and stored saves.
 
-**Effort:** small. A pure formatter, a button, one analytics event. This is
-probably a day of work for the largest single growth lever in the product.
+**Effort remaining:** the cross-game streak card, not another per-game button.
 
 ---
 

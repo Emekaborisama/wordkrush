@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.19] - 2026-08-30
+
+### Added
+- **Spoiler-free result share** on More or Less game over, Clueless solve, and Wordfall win or loss. Each paste is an emoji grid plus a standing line and `wordkrush.com` with `utm_medium=share`. Native uses the system share sheet; web uses Web Share with a clipboard fallback and a “Copied to clipboard” note. No new dependency. `result_shared` records only a completed share or copy.
+
 ## [0.8.18] - 2026-08-28
 
 ### Added
