@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     maxWidth: 340,
     marginTop: space.xxs,
   },
-  bottom: { flex: 1, justifyContent: 'flex-end', gap: space.md, paddingTop: space.lg },
+  bottom: { gap: space.md, paddingTop: space.lg },
   status: { gap: space.md },
   hairline: { height: 1, backgroundColor: theme.border },
   stats: { flexDirection: 'row' },

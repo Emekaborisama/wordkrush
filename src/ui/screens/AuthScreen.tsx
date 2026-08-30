@@ -33,10 +33,12 @@ type Mode = 'signin' | 'signup';
 type Props = {
   profile: Profile | null;
   onAuthed: (profile: Profile) => void;
-  onSkip: () => void;
+  onSkip?: () => void;
+  /** True when coming from race intent (Race with team / Teams wall) */
+  isRaceIntent?: boolean;
 };
 
-export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
+export function AuthScreen({ profile, onAuthed, onSkip, isRaceIntent = false }: Props) {
   const [mode, setMode] = useState<Mode>('signup');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -135,12 +137,18 @@ export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <BrandArtwork variant="lockup" size={168} />
-          <Text style={styles.eyebrow}>OPTIONAL ACCOUNT</Text>
-          <Text style={styles.title}>{isSignup ? 'Keep your scores with you' : 'Welcome back'}</Text>
+          <Text style={styles.eyebrow}>{isRaceIntent ? 'SIGN IN TO RACE' : 'OPTIONAL ACCOUNT'}</Text>
+          <Text style={styles.title}>
+            {isRaceIntent
+              ? 'Racing requires an account'
+              : isSignup
+                ? 'Keep your scores with you'
+                : 'Welcome back'}
+          </Text>
           <Text style={styles.subtitle}>
-            Scores already save offline on this device. Sign in with email to
-            post your best run to the global board. One username per person. No
-            password.
+            {isRaceIntent
+              ? 'Live races need an account so teammates can see who they\'re racing with. Solo play stays offline and does not need sign-in. One username per person. No password.'
+              : 'Scores already save offline on this device. Sign in with email to post your best run to the global board. One username per person. No password.'}
           </Text>
         </View>
 
@@ -233,12 +241,14 @@ export function AuthScreen({ profile, onAuthed, onSkip }: Props) {
           </>
         )}
 
-        <Button
-          title="Keep playing as guest"
-          variant="ghost"
-          size="sm"
-          onPress={onSkip}
-        />
+        {onSkip && (
+          <Button
+            title={isRaceIntent ? 'Back to solo play' : 'Keep playing as guest'}
+            variant="ghost"
+            size="sm"
+            onPress={onSkip}
+          />
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
