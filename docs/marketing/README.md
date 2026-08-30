@@ -126,3 +126,4 @@ Append whenever reality overturns something here. Never delete a row.
 |---|---|---|
 | 2026-08-22 | — | Directory created. Strategy derived from a codebase audit at commit `5ca2a6b`; no market testing, no analytics data, and no launch has occurred. Every projection is a benchmark from category convention, not a forecast. |
 | 2026-08-30 | No search surface | Homepage + robots.txt + sitemap.xml shipped (ST-92 / D-061). Gap 3 is now “thin search surface”: branded queries can be indexed; alternatives-intent pages are still missing. |
+| 2026-08-30 | Reddit / Devvit launch | The Grok-bot operating system will not run Reddit listicle campaigns or Devvit posting. Acquisition in this OS is organic X (@WordKrushGame) only. The `reddit/` app remains in the repo as product how-it-works; no bot posts to Reddit or publishes the Devvit app. |

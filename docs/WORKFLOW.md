@@ -7,6 +7,7 @@ For every collaborator on this repo — human or LLM. Read this before touching 
 
 | Doc | What lives there | Update when |
 |---|---|---|
+| [AGENT-OS.md](AGENT-OS.md) | Agent operating system: specialist Grok-bot fleet catalog, triggers, write surfaces, stop conditions | Agent behavior, bot addition/removal, OS-level change |
 | [HOW-IT-WORKS.md](HOW-IT-WORKS.md) | How each built system works: workflow, logic, risks | Same PR as any system/workflow change |
 | [ROADMAP.md](ROADMAP.md) | Task breakdown, blockers, ordering, and the card contract (mirrors the Superthread *BestGame* board) | When work is planned, started, or finished |
 | [STACK.md](STACK.md) | Tech choices + decision log | Any stack/tooling change |
@@ -29,6 +30,7 @@ process) requires `CHANGELOG.md` and does not require HOW-IT-WORKS or STACK.
 Any other edit to those manifests still does.
 
 Documentation impact:
+- Agent behavior, bot addition/removal, or OS-level change → `AGENT-OS.md`.
 - Player-visible or runtime behavior → `CHANGELOG.md`.
 - Built-system, pipeline, infrastructure, or workflow behavior → `HOW-IT-WORKS.md`.
 - Stack, dependency, build, deployment, or CI decisions → `STACK.md`.
@@ -137,7 +139,7 @@ The **Reddit app** is a third path, and not the same thing as Reddit ads. [`redd
 - Adding an import to the shared engine will fail `reddit:types` with TS6307 until `reddit/tools/tsconfig.shared.json` lists the new file. That is the boundary working, not a bug.
 - There is no CI job for it yet. Until there is, `npm run reddit:types` before merging anything that touches the shared engine is a manual step.
 
-Reddit ads are a different path again: drafts, the reuse ledger, and the link card live in [marketing/reddits/](marketing/reddits/README.md). The Cursor skill `.cursor/skills/reddit-ad-posts/` reads that ledger, checks each sub's rules in the browser, and only submits when the owner names the sub. No Reddit MCP. Do not invent a `docs/gtm/` tree — GTM strategy stays in [marketing/](marketing/README.md).
+Reddit ads are a different path again: drafts, the reuse ledger, and the link card live in [marketing/reddits/](marketing/reddits/README.md). The Cursor skill `.cursor/skills/reddit-ad-posts/` reads that ledger, checks each sub's rules in the browser, and only submits when the owner names the sub. **This skill is PARKED and not scheduled** — acquisition in this operating system is organic X (@WordKrushGame) only. No Reddit posts, no Devvit launch, no DMs, no paid. The `reddit/` app and `.cursor/skills/reddit-ad-posts/` remain in the repo but are not operated by the bot fleet. No Reddit MCP. Do not invent a `docs/gtm/` tree — GTM strategy stays in [marketing/](marketing/README.md).
 
 ## Release process
 
