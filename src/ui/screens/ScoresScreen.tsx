@@ -41,7 +41,6 @@ type Props = {
   profile: Profile | null;
   backendConfigured: boolean;
   onSignIn: () => void;
-  onSignOut: () => void;
   scoreContexts?: {
     id: string;
     label: string;
@@ -66,7 +65,6 @@ export function ScoresScreen({
   profile,
   backendConfigured,
   onSignIn,
-  onSignOut,
   scoreContexts,
   initialScoreContext,
   roundsPassed,
@@ -196,17 +194,7 @@ export function ScoresScreen({
       )}
 
       <View style={styles.footer}>
-        {profile ? (
-          <Surface level={1} borderColor={theme.border} radius={radius.md} style={styles.accountRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.accountName}>{profile.username}</Text>
-              <Text style={styles.accountNote}>Signed in · eligible runs sync globally</Text>
-            </View>
-            <Pressable onPress={onSignOut} hitSlop={8} accessibilityRole="button">
-              <Text style={styles.signOut}>Sign out</Text>
-            </Pressable>
-          </Surface>
-        ) : backendConfigured ? (
+        {profile ? null : backendConfigured ? (
           <Button title="Sign in to join the global board" variant="tonal" color={accent} onPress={onSignIn} />
         ) : null}
 
@@ -484,9 +472,5 @@ const styles = StyleSheet.create({
   loadingText: { ...type.caption, color: theme.textMuted },
 
   footer: { gap: space.sm },
-  accountRow: { flexDirection: 'row', alignItems: 'center' },
-  accountName: { color: theme.text, fontFamily: font.bold, fontSize: 14, fontWeight: '700' },
-  accountNote: { color: theme.textDim, fontFamily: font.medium, fontSize: 10, marginTop: 2 },
-  signOut: { color: theme.danger, fontFamily: font.semibold, fontSize: 12, fontWeight: '600' },
   footerNote: { color: theme.textDim, fontFamily: font.medium, fontSize: 11, textAlign: 'center', lineHeight: 16, opacity: 0.8 },
 });

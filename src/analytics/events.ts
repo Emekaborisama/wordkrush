@@ -1,7 +1,7 @@
 import type { PlayerCountBucket } from '../games/campaign';
 import type { ArrivalAttribution, EntrySource, UtmMedium, UtmSource } from './attribution';
 
-export type AnalyticsConsent = 'unknown' | 'granted' | 'denied';
+export type AnalyticsConsent = 'granted' | 'denied';
 export type AuthStatus = 'guest' | 'signed_in';
 export type GameId = 'more-or-less' | 'clueless' | 'wordfall';
 export type { ArrivalAttribution, EntrySource, UtmMedium, UtmSource };
@@ -21,7 +21,7 @@ type CluelessLevelProperties = {
 export type AnalyticsEvents = {
   analytics_consent_changed: {
     choice: 'opted_in';
-    surface: 'prompt' | 'settings';
+    surface: 'settings';
   };
   app_opened: ArrivalProperties & {
     backend_configured: boolean;

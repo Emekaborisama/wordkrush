@@ -158,7 +158,7 @@ lifecycle autocapture, remote flags, push capture, and session replay. Person
 profiles are `identified_only`.
 
 **2. The player decides.** [BUILT]
-`AnalyticsConsentPrompt` explains that guests stay anonymous and that a
+The `AccountScreen` explains that guests stay anonymous and that a
 consented account is linked by id, username, and email. The choice is stored in
 AsyncStorage (`wordkrush.analytics-consent.v2`) and can be reviewed or revoked
 from the drawer. Declining does not change gameplay, persistence, accounts, or
@@ -604,7 +604,7 @@ Quick map of where each journey step lives:
 | Web search surface | `scripts/patch-web-head.mjs`, `server/serve.mjs`, `assets/googled8072618779c67b2.html`, `dist/robots.txt`, `dist/sitemap.xml` | [BUILT] — homepage title, canonical, JSON-LD, and hub copy in `#root` / `<noscript>`; sitemap lists `https://wordkrush.com/` only; `.xml` is `application/xml`. Search Console HTML verification is copied to `/googled8072618779c67b2.html` (not in the sitemap). After Railway deploy: confirm that URL in [Search Console](https://search.google.com/search-console), submit `/sitemap.xml`, then URL Inspection → Request indexing (D-061) |
 | Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] — audits git-visible changes; version-only `package.json` / `app.json` bumps are changelog (D-049); Finder `* 2.*` copies and `supabase/.temp/` are gitignored so they do not count as source |
 | Agent operating system | `docs/AGENT-OS.md` | [BUILT] catalog + merge gate; [PLANNED] Automations not configured — clueless-daily skill, wordfall-weekly skill, wordkrush-conductor, x-growth (prior autonomous playbook REJECTED; ship-led replacement to be written), player-email, product-health, experimentation, feature-dev, qa-playtest, code-review, wikipedia-reviewer, posthog-surveys-triage schedule, security-watch, growth-seo, ad-creative |
-| Consent and product analytics | `src/analytics/`, `src/ui/AnalyticsConsentPrompt.tsx` | [BUILT] |
+| Consent and product analytics | `src/analytics/` | [BUILT] |
 | Player feedback (bugs + suggestions) | `src/feedback/`, `src/ui/FeedbackPrompt.tsx`, drawer "Send feedback" | [BUILT] — PostHog Surveys API prompt on web and native; signed-in players attach id/username/email on the event, guests stay anonymous. Independent of analytics consent. |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |
 | Sound + haptics | `src/native/feedback.ts`, `src/native/sound.ts`, `src/native/haptics.ts`, `assets/sounds/`, `src/settings/` | [BUILT] — one `feedback(event)` table maps five game moments to a clip + haptic; both channels mutable from the drawer. See D-043 |
