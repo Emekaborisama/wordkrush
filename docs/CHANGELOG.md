@@ -9,7 +9,7 @@ Rules:
 ## [0.8.29] - 2026-08-31
 
 ### Added
-- **Clueless Daily Vault levels 30–31: Measured Moment and Turning Point.** Two reviewed future solo levels extend the bundled Daily Vault buffer. Neither shows a hint; each theme stays sealed until players reach it. Native installs receive them with the next shipped build.
+- **Clueless Daily Vault levels 30–32: Measured Moment, Turning Point, and Clean Slate.** Three reviewed future solo levels extend the bundled Daily Vault buffer. None shows a hint; each theme stays sealed until players reach it. Native installs receive them with the next shipped build.
 
 ## [0.8.28] - 2026-08-30
 
