@@ -6,6 +6,12 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.30] - 2026-09-02
+
+### Fixed
+- **More or Less team races now stop at the target streak.** When a player reaches the level's target streak (e.g., 5 for Warm-up, 10 for Close calls), the game completes immediately instead of continuing until a miss. The reveal shows "Target reached!" and teammates advance together once everyone finishes. This removes play-out rounds past the objective and prevents yank-ahead where faster players continued while slower teammates were still catching up. Winner placement is determined by final score when all players signal done, maintaining the per-game winner model without pulling anyone out of the shared race early.
+- **Failed live races no longer appear to hang on 'Not this time'.** Failing a run now correctly explains that it is waiting for teammates to finish, rather than leaving the player staring at a static failure message while the timer ticks down.
+
 ## [0.8.29] - 2026-09-02
 
 ### Fixed

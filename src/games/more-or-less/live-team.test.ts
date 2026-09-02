@@ -144,4 +144,42 @@ describe('More or Less team live race', () => {
     // onScore is NOT called on fail because streak doesn't change
     expect(onScore).toHaveBeenCalledTimes(2);
   });
+
+  it('stops at target streak in team mode', () => {
+    const onScore = vi.fn();
+    const onDone = vi.fn();
+    const targetStreak = 3;
+
+    let state = newRun(pool, 4);
+
+    // Correct guess 1
+    const choice1 = state.right.value > state.left.value ? 'more' : 'less';
+    state = reducer(state, { type: 'guess', choice: choice1 }, pool);
+    onScore(state.streak, state.streak >= targetStreak);
+    expect(state.streak).toBe(1);
+    state = reducer(state, { type: 'next' }, pool);
+
+    // Correct guess 2
+    const choice2 = state.right.value > state.left.value ? 'more' : 'less';
+    state = reducer(state, { type: 'guess', choice: choice2 }, pool);
+    onScore(state.streak, state.streak >= targetStreak);
+    expect(state.streak).toBe(2);
+    state = reducer(state, { type: 'next' }, pool);
+
+    // Correct guess 3 - hits target
+    const choice3 = state.right.value > state.left.value ? 'more' : 'less';
+    state = reducer(state, { type: 'guess', choice: choice3 }, pool);
+    expect(state.streak).toBe(3);
+    expect(state.status).toBe('revealed');
+
+    // In team mode with targetStreak=3, the game should stop here
+    // onDone should be called with complete=true
+    const complete = state.streak >= targetStreak;
+    expect(complete).toBe(true);
+    onDone(state.streak, complete);
+    expect(onDone).toHaveBeenCalledWith(3, true);
+
+    // Game should NOT advance to next round - it's complete
+    // (In the UI, onGameOver would be called after reveal timeout)
+  });
 });

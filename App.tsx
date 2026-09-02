@@ -982,14 +982,16 @@ export default function App() {
             onScore={
               screen.live
                 ? (score, complete) => {
-                    void postMatchScore(screen.live!.matchId, score, complete, false);
+                    const target = moreOrLessLevelByNumber(screen.live!.levelNumber)?.targetStreak ?? 0;
+                    void postMatchScore(screen.live!.matchId, score, target > 0 && score >= target, false);
                   }
                 : undefined
             }
             onDone={
               screen.live
                 ? (score, complete) => {
-                    void postMatchScore(screen.live!.matchId, score, complete, true);
+                    const target = moreOrLessLevelByNumber(screen.live!.levelNumber)?.targetStreak ?? 0;
+                    void postMatchScore(screen.live!.matchId, score, target > 0 && score >= target, true);
                   }
                 : undefined
             }
@@ -998,13 +1000,7 @@ export default function App() {
             }
             onGameOver={async (state) => {
               if (screen.live) {
-                const target = moreOrLessLevelByNumber(screen.live.levelNumber)?.targetStreak ?? 0;
-                await postMatchScore(
-                  screen.live.matchId,
-                  state.streak,
-                  state.streak >= target,
-                  true,
-                );
+                // Should not reach here for live mode if we properly intercepted it, but just in case:
                 return;
               }
               const entryId = makeEntryId();
@@ -1074,7 +1070,6 @@ export default function App() {
             personalAdvanced={screen.personalAdvanced}
             teamAdvanced={screen.teamAdvanced}
             onDone={async () => {
-              await clearExistingMembership(profile.id);
               setScreen({ name: 'teams' });
             }}
           />
