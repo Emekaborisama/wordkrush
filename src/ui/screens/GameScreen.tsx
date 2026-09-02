@@ -292,7 +292,9 @@ export function GameScreen({
                 ? targetStreak != null && state.streak >= targetStreak
                   ? 'Race complete. Waiting for teammates…'
                   : 'Streak saved. Next matchup incoming…'
-                : 'The final values are revealed above.'
+                : !persist
+                  ? 'Race complete. Waiting for teammates…'
+                  : 'The final values are revealed above.'
             }
           />
         </View>

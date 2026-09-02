@@ -10,9 +10,34 @@ Rules:
 
 ### Fixed
 - **More or Less team races now stop at the target streak.** When a player reaches the level's target streak (e.g., 5 for Warm-up, 10 for Close calls), the game completes immediately instead of continuing until a miss. The reveal shows "Target reached!" and teammates advance together once everyone finishes. This removes play-out rounds past the objective and prevents yank-ahead where faster players continued while slower teammates were still catching up. Winner placement is determined by final score when all players signal done, maintaining the per-game winner model without pulling anyone out of the shared race early.
-- **Failed live races no longer hang on 'Not this time'.** Failing a run now correctly waits in the game view for teammates to finish and then transitions to the result screen together, properly registering the fail instead of hanging.
+- **Failed live races no longer appear to hang on 'Not this time'.** Failing a run now correctly explains that it is waiting for teammates to finish, rather than leaving the player staring at a static failure message while the timer ticks down.
 
 ## [0.8.29] - 2026-09-02
+
+### Fixed
+- **A share-card render fix is now visible the same day instead of a day later.** `og:image` and `twitter:image` on `/share/:id` point at `/share/:id/og.png?v=<package version>`, and the PNG is served `public, max-age=300` instead of `public, max-age=86400`. A scraper caches an unfurled image against its URL, so 0.8.27's font fix could not reach anyone who had already unfurled a share link — X kept serving the 17 KB tofu render for 24 hours. Every PR bumps the version, so shipping a render fix now also moves every card onto a URL no scraper has seen, and the short TTL means the next fix does not need the bust at all. The image route still matches on path alone, so any stamp (or none) resolves to the current render. `og:url` stays unstamped, invalid share ids still return 404, images stay 1200×630 and spoiler-free, and share HTML still strips the homepage `og:*` / `twitter:*` / `canonical` tags.
+- **The `/share/:id` routes now have tests.** `server/serve.mjs` exports `warm` and `handleRequest` behind the same entrypoint guard the `scripts/` tools use, so `server/serve.test.mjs` warms the real server over loopback and asserts the OG contract: stamped image URLs, short image TTL, 1200×630 PNGs for all three games, 404 for an unparseable or gameless share id, and homepage tags stripped from share HTML. `node server/serve.mjs` still listens exactly as before. `server/**` joins the `vitest.config.ts` include allowlist 0.8.28 documented.
+
+## [0.8.28] - 2026-08-30
+
+### Fixed
+- **Leftover crew memberships no longer block create or join.** C-94 dropped the crew-home screen, so `TeamsScreen` stopped loading the player's crew — but existing memberships stayed on the backend. A player who already owned or belonged to a crew hit "Already on a team" on Create room with no UI left to leave or disband. Create and join now clear the stale membership first through `clearExistingMembership`, the same owner-disbands / member-leaves rule the results screen already applied on rematch. Owners disband because the server rejects a leave from the owner (error 0007); members leave. The escape covers all three entry points: Create room, Join with a code, and auto-join from an invite link. No crew-home screen returns and `TeamsScreen` still does not load a crew on mount.
+
+## [0.8.27] - 2026-08-30
+
+### Fixed
+- **Share result no longer crashes in the browser.** Replaced Node `Buffer` with browser-compatible APIs (`TextEncoder`/`TextDecoder` + `btoa`/`atob`) in `src/games/share-data.ts` so `encodeShareData` and `decodeShareData` work on web clients. Expo web has no Buffer; the ReferenceError left the clipboard empty. Server code (`og-image.mjs`, `serve.mjs`) still uses Buffer where appropriate.
+- **Share link Open Graph images now render readable Fredoka text.** The server installs Fredoka SemiBold TTF via fontconfig at startup (copied to `$TMPDIR/wordkrush-fonts` with fonts.conf) so librsvg/pango can render SVG text elements as "Fredoka SemiBold". All three games (More or Less, Clueless, Wordfall) show the correct title, stats, and standing instead of .notdef glyphs. Railway's sharp no longer depends on preinstalled system fonts.
+- **Share paste URLs are now dynamic `/share/:id` links, not the homepage.** Removed the homepage fallback in `composeShare()` so clipboard and native share always paste `https://wordkrush.com/share/:id?utm_source=player&utm_medium=share` with encoded result data. X/Twitter unfurls the per-result OG image instead of the generic lockup. `ShareBlocks.url` is now required.
+- **Share result HTML strips homepage Open Graph tags.** `/share/:id` HTML removes all `og:*`, `twitter:*`, and `canonical` tags from index.html before injecting per-result tags, so scrapers only see the 1200×630 result PNG (not the 1024×1024 homepage lockup). Invalid share IDs return HTTP 404 instead of falling through to the SPA homepage.
+
+## [0.8.26] - 2026-08-30
+
+### Changed
+- **Teams are now disposable race rooms.** The team loop is simplified to Create/Join → select game → open lobby → race → results → back to create/join. Rooms are single-use: after a race finishes, the entire team roster is released. When any player taps "Back to team" on results, the code loads the current team and checks if the player is the team owner (`team.ownerId === profile.id`). The team owner calls `disbandTeam()` (which removes all members), while non-owners call `leaveTeam()`. This ensures the next create/join operation for any finisher starts fresh without "Already on a team" errors, even after joiner-hosted races. Rematch always creates a new room. Persistent crew homes, rename team, and disband/leave operations are removed from the UI. The invite code is displayed prominently after room creation to make inviting teammates the primary action. Game selection shows only titles without level pickers.
+- **Race-intent sign-in path.** "Race with team" on game start screens and the "Sign in" button on the Teams wall both show "SIGN IN TO RACE" copy, explaining that racing requires an account so teammates can see who they're racing with. "Back to solo play" returns to the game start screen (using the active game instead of always defaulting to Wordfall). After completing sign-in, players land directly in the create/join room screen.
+- **Closed drawer no longer intercepts clicks.** Fixed pointer events so a closed navigation drawer does not capture taps or offset the hub layout.
+- **"Race with team" button is now scrollable on start screens.** The button is no longer clipped under the fold on More or Less and Clueless game start screens.
 
 ## [0.8.24] - 2026-08-30
 

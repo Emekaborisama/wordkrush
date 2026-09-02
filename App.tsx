@@ -1000,13 +1000,7 @@ export default function App() {
             }
             onGameOver={async (state) => {
               if (screen.live) {
-                const target = moreOrLessLevelByNumber(screen.live.levelNumber)?.targetStreak ?? 0;
-                await postMatchScore(
-                  screen.live.matchId,
-                  state.streak,
-                  target > 0 && state.streak >= target,
-                  true,
-                );
+                // Should not reach here for live mode if we properly intercepted it, but just in case:
                 return;
               }
               const entryId = makeEntryId();
@@ -1076,7 +1070,6 @@ export default function App() {
             personalAdvanced={screen.personalAdvanced}
             teamAdvanced={screen.teamAdvanced}
             onDone={async () => {
-              await clearExistingMembership(profile.id);
               setScreen({ name: 'teams' });
             }}
           />
