@@ -6,6 +6,12 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.32] - 2026-09-02
+
+### Changed
+- **Analytics is now default on, with an opt-out toggle.** The blocking consent modal on first launch has been removed, reducing friction. Users can now turn analytics off (or on) at any time from the Account screen.
+- **$pageview allowlisted for web.** PostHog web analytics now correctly captures `$pageview` events to track visitor counts, which was previously blocked by the strict event allowlist.
+
 ## [0.8.30] - 2026-09-02
 
 ### Fixed

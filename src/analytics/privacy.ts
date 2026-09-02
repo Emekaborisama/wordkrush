@@ -2,10 +2,10 @@ import type { BeforeSendFn } from '@posthog/core';
 import { ANALYTICS_EVENT_NAMES, type AnalyticsConsent } from './events';
 
 /** SDK identity events required for PostHog person profiles after sign-up. */
-export const ANALYTICS_IDENTITY_EVENTS: ReadonlySet<string> = new Set(['$identify']);
+export const ANALYTICS_IDENTITY_EVENTS: ReadonlySet<string> = new Set(['$identify', '$pageview']);
 
 export function parseAnalyticsConsent(value: string | null): AnalyticsConsent {
-  return value === 'granted' || value === 'denied' ? value : 'unknown';
+  return value === 'denied' ? 'denied' : 'granted';
 }
 
 export const allowlistedCapture: BeforeSendFn = (capture) =>
