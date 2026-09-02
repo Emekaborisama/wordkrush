@@ -42,6 +42,11 @@ export default defineConfig({
       'src/games/**/*.test.ts',
       'pipeline/**/*.test.ts',
       'scripts/**/*.test.mjs',
+      // The Railway server owns the `/share/:id` Open Graph contract — status
+      // codes, injected tags, and cache headers. That is response-level
+      // behaviour, so its suite warms the real server and drives it over
+      // loopback rather than unit-testing a string builder.
+      'server/**/*.test.mjs',
       // The Reddit app is its own npm project, but its pure layer wraps this
       // repo's engine and data. Running it here keeps `npm test` the single
       // answer to "did I break More or Less?" on either surface.
