@@ -145,24 +145,31 @@ export const MORE_OR_LESS_BUTTON_SLOTS = [
  */
 export async function generateOgImagePng(data, shareId = '') {
   const svg = generateOgImageSvg(data, shareId);
-  // Convert SVG to PNG using sharp.
+
+  // TRUECOLOUR, NOT INDEXED. This card was palettised for weight: two
+  // photographs encode to ~1 MB lossless and to ~300 KB through the quantiser.
+  // X's composer would not build a card from the paletted render — HTML and
+  // PNG both 200, Twitterbot served, spinner for 42 seconds and no card — and
+  // the homepage lockup it does unfurl is a truecolour PNG. IHDR colour type 3
+  // was the only thing left separating the two, so the card is now colour type
+  // 2 and stays there. `palette: false` is explicit because sharp turns the
+  // quantiser back on for anyone who adds `quality`, `effort`, `colours` or
+  // `dither` to these options.
   //
-  // Palettised, because the board card carries two photographs and a lossless
-  // PNG of those is around 1 MB — past the size where a scraper is happy and
-  // several times what X keeps after re-encoding the card anyway.
+  // `flatten` is what makes it colour type 2 rather than 6: the rasteriser
+  // hands back RGBA, and an alpha channel the card never varies is a channel
+  // of 255s for a scraper to decode. The SVG opens on a full-bleed `BG_COLOR`
+  // rect, so compositing onto that same colour cannot move a pixel.
   //
-  // `dither: 0` is not a size tweak. The quantiser spends its 256 entries on
-  // the photographs, so the flat translucent fill of the LESS button is left
-  // to be approximated — and dithered, that approximation is not noise but
-  // large structured blotches, a dark chevron across the button that reads as
-  // a rendering fault on the one element the card is judged on. Turned off,
-  // the flat fills round to a single palette entry and stay flat, while the
-  // photographs are dense enough that no banding shows at card size.
-  //
-  // `effort` stays low: above 1 it buys single-digit percentages for several
-  // times the CPU, on a path a crawler waits on.
+  // `adaptiveFiltering` is the whole size story now that the quantiser is
+  // gone: per-scanline filters take the photographs from ~910 KB to ~700 KB.
+  // `compressionLevel` stays at sharp's default 6 — with those filters in
+  // front of it, 9 buys under 5% for three times the CPU, on a path a crawler
+  // waits on. ~400–770 KB is well inside what X accepts for a large summary
+  // card, and one paste only pays for the first render (`serve.mjs` caches).
   const pngBuffer = await sharp(Buffer.from(svg))
-    .png({ compressionLevel: 9, palette: true, quality: 100, effort: 1, dither: 0 })
+    .flatten({ background: BG_COLOR })
+    .png({ palette: false, adaptiveFiltering: true, compressionLevel: 6 })
     .toBuffer();
   return pngBuffer;
 }

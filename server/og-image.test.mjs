@@ -70,6 +70,27 @@ function drawnText(svg) {
 }
 
 /**
+ * The PNG's own IHDR header, read from the bytes.
+ *
+ * `sharp().metadata()` reports three channels for an indexed card as readily
+ * as for a truecolour one, so "is this paletted?" cannot be asked through a
+ * decoder — it is a property of the encoded file. IHDR is the first chunk
+ * after the 8-byte signature and has a fixed layout, so the fields are read
+ * where the format puts them.
+ */
+function ihdr(png) {
+  expect([...png.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  expect(png.subarray(12, 16).toString('ascii')).toBe('IHDR');
+
+  return {
+    width: png.readUInt32BE(16),
+    height: png.readUInt32BE(20),
+    bitDepth: png.readUInt8(24),
+    colorType: png.readUInt8(25),
+  };
+}
+
+/**
  * Statistics for one region of a rendered card.
  *
  * The crop is materialised before `stats()` because `stats()` reads its input
@@ -183,11 +204,13 @@ describe('the More or Less card', () => {
     await preloadCardPhotos({ fetchImpl: fetchServing((url) => photoLike(url.length)) });
     const png = await generateOgImagePng(RESULT, 'flat-buttons');
 
-    // The palette quantiser spends its 256 entries on the photographs, so the
-    // tonal button's translucent fill gets approximated — and dithered, that
-    // approximation is large structured blotches, a chevron across the button
-    // that reads as a rendering fault. Sampled clear of the rounded corners,
-    // the arrow and the label, a button fill has to have no variance at all.
+    // The tonal LESS button is a translucent fill over a flat page, and the
+    // palette encode this card used to ship approximated it — dithered, into
+    // large structured blotches that read as a rendering fault on one of the
+    // two elements the card exists to show. Truecolour has no quantiser to
+    // approximate anything, but the requirement is the render, not the
+    // encoder: sampled clear of the rounded corners, the arrow and the label,
+    // a button fill has to have no variance at all.
     for (const slot of MORE_OR_LESS_BUTTON_SLOTS) {
       const { maxStdev } = await regionStats(png, {
         left: slot.left + 40,
@@ -214,6 +237,57 @@ describe('the More or Less card', () => {
 
     expect(svg).not.toMatch(/[\u2191\u2193]/);
     expect(svg.match(/<polygon /g)).toHaveLength(2);
+  });
+});
+
+/**
+ * How the card is encoded, as opposed to what it draws.
+ *
+ * X's composer would not build a card from the indexed render this card used
+ * to ship — the share HTML and the PNG both answered 200 to Twitterbot, the
+ * composer span 42 seconds and produced nothing — while the truecolour
+ * homepage lockup unfurled from the same account. Colour type is therefore a
+ * shipped property of the card, not an encoder detail, and it is asserted on
+ * the bytes.
+ */
+describe('the card PNG', () => {
+  const CARDS = {
+    'more-or-less': RESULT,
+    clueless: {
+      game: 'clueless',
+      puzzleNumber: 29,
+      levelName: 'Departure Board',
+      guessCount: 4,
+      heatBuckets: { unranked: 1, cold: 1, top_100: 1, top_10: 0, win: 1 },
+    },
+    wordfall: {
+      game: 'wordfall',
+      levelNumber: 6,
+      levelName: 'Tide Line',
+      score: 4820,
+      wordCount: 9,
+      lengthBuckets: { under_3: 0, '3_4': 4, '5_7': 4, '8_plus': 1 },
+      won: true,
+    },
+  };
+
+  it.each(Object.keys(CARDS))('encodes %s as 8-bit truecolour RGB at 1200×630', async (game) => {
+    await preloadCardPhotos({ fetchImpl: fetchServing((url) => photoLike(url.length)) });
+    const png = await generateOgImagePng(CARDS[game], `truecolour-${game}`);
+
+    // PNG colour type 2. Not 3 (indexed), which is the render X refused; not
+    // 0 or 4 (greyscale); not 6, which would ship an alpha channel the card
+    // never varies. Bit depth 8, so "truecolour" is not 16-bit either.
+    expect(ihdr(png)).toEqual({ width: 1200, height: 630, bitDepth: 8, colorType: 2 });
+  });
+
+  it('stays truecolour when the photo pool is cold', async () => {
+    // A cold pool draws flat surfaces, which is exactly the card a quantiser
+    // would be cheapest on. The encode must not depend on what was drawn.
+    const png = await generateOgImagePng(RESULT, 'cold-truecolour');
+
+    expect(cardPhotoPair('cold-truecolour')).toBeNull();
+    expect(ihdr(png).colorType).toBe(2);
   });
 });
 

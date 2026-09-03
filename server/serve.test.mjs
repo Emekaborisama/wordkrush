@@ -219,15 +219,20 @@ describe('share ids as they actually arrive', () => {
 });
 
 describe('/share/:id/og.png', () => {
-  it.each(Object.keys(RESULTS))('renders %s as a 1200×630 PNG', async (game) => {
+  it.each(Object.keys(RESULTS))('renders %s as a 1200×630 truecolour PNG', async (game) => {
     const id = shareId(RESULTS[game]);
     const response = await fetch(`${origin}/share/${id}/og.png?v=${version}`);
     const png = Buffer.from(await response.arrayBuffer());
 
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toBe('image/png');
+    // IHDR, read off the wire: width, height, bit depth, then colour type.
+    // 2 is truecolour RGB. 3 is the indexed render X's composer would not
+    // build a card from — see `server/og-image.mjs`.
     expect(png.readUInt32BE(16)).toBe(1200);
     expect(png.readUInt32BE(20)).toBe(630);
+    expect(png.readUInt8(24)).toBe(8);
+    expect(png.readUInt8(25)).toBe(2);
   });
 
   it('caches for minutes, not a day, so a render fix lands the same day', async () => {
