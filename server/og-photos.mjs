@@ -27,9 +27,12 @@ import sharp from 'sharp';
 /**
  * Stored size of one card photo. Matches the card slot in `og-image.mjs`;
  * change them together or the photo is rescaled a second time on the way out.
+ *
+ * Two full-width rows inside 1200×630 make this a 4.8:1 slot, which is the
+ * shape the signed board has and is not negotiable — see `og-image.mjs`.
  */
-export const PHOTO_WIDTH = 573;
-export const PHOTO_HEIGHT = 484;
+export const PHOTO_WIDTH = 1164;
+export const PHOTO_HEIGHT = 242;
 
 /**
  * Licences that carry no attribution requirement. Anything else is credited on
@@ -42,13 +45,15 @@ const ATTRIBUTION_FREE = /^(?:public domain|pd|cc0)$/i;
  *
  * A category's lead images are whatever Wikipedia leads with, which is a
  * photograph for a person or a place but a flat vector for a country or a
- * brand. Two national flags side by side is not the board anyone signed off,
- * and the set rotates weekly, so the filter has to be a property of the image
+ * brand. Two national flags stacked is not the board anyone signed off, and
+ * the set rotates weekly, so the filter has to be a property of the image
  * rather than a hand-kept list of ids.
  *
- * Measured over the attribution-free set at card size: flags and logos land
- * between 0.6 and 2.1, app screenshots between 4.5 and 5.4, and photographs
- * between 6.4 and 7.7. 6 sits in the gap with room on both sides.
+ * Measured over the attribution-free set at this slot size: flags and logos
+ * land between 0.8 and 2.2, app screenshots at 3.4 and 5.6, and photographs
+ * between 6.1 and 7.6. 6 sits in that gap. The margin below it is the thinner
+ * side (an app screenshot at 5.6), and the cost of a wrong call there is one
+ * cosmetically dull card, not a broken one.
  */
 const MIN_PHOTO_ENTROPY = 6;
 
@@ -81,10 +86,15 @@ async function attributionFreeSources() {
  * for a flat graphic so the caller can drop it from the pool.
  */
 async function toCardPhoto(bytes) {
-  // `position: top` because a Wikipedia lead image puts its subject high in the
-  // frame — a centred crop of a portrait is a torso with the head cut off.
+  // The slot is a 4.8:1 sliver of a mostly-portrait source, so which band of
+  // the frame survives decides whether the photo is recognisable at all.
+  // `attention` picks the most salient one, which on a Wikipedia lead portrait
+  // is the face. A fixed band does not work: cropping from the top leaves hair
+  // and background, and it collapses the entropy separation this filter needs
+  // — the Titanic and a blue whale drop to 4.2 and 4.9, below an app
+  // screenshot, and photographs stop being distinguishable from flat graphics.
   const cropped = await sharp(bytes)
-    .resize(PHOTO_WIDTH, PHOTO_HEIGHT, { fit: 'cover', position: 'top' })
+    .resize(PHOTO_WIDTH, PHOTO_HEIGHT, { fit: 'cover', position: sharp.strategy.attention })
     .toBuffer();
 
   const { entropy } = await sharp(cropped).stats();
@@ -150,11 +160,11 @@ export function cardPhotoPair(shareId) {
   if (loaded.length < 2) return null;
 
   const seed = seedOf(shareId);
-  const left = seed % loaded.length;
+  const top = seed % loaded.length;
   // The offset is at least 1, so the two slots never draw the same photo.
   const step = 1 + (Math.floor(seed / loaded.length) % (loaded.length - 1));
 
-  return { left: loaded[left], right: loaded[(left + step) % loaded.length] };
+  return { top: loaded[top], bottom: loaded[(top + step) % loaded.length] };
 }
 
 /** Test seam: drop the pool so a suite can assert the cold-start render. */

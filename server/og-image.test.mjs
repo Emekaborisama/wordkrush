@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import sharp from 'sharp';
 
 import {
+  MORE_OR_LESS_BUTTON_SLOTS,
   MORE_OR_LESS_CARD_SLOTS,
   generateOgImagePng,
   generateOgImageSvg,
@@ -68,13 +69,59 @@ function drawnText(svg) {
   return [...svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((match) => match[1]);
 }
 
-async function meanOf(png, region) {
-  const { channels } = await sharp(png).extract(region).stats();
-  return channels.slice(0, 3).reduce((total, channel) => total + channel.mean, 0) / 3;
+/**
+ * Statistics for one region of a rendered card.
+ *
+ * The crop is materialised before `stats()` because `stats()` reads its input
+ * and ignores queued operations — chaining `.extract(...).stats()` silently
+ * measures the whole 1200×630 card instead of the region asked for.
+ */
+async function regionStats(png, region) {
+  const crop = await sharp(png).extract(region).png().toBuffer();
+  const { channels } = await sharp(crop).stats();
+  const rgb = channels.slice(0, 3);
+  return {
+    mean: rgb.reduce((total, channel) => total + channel.mean, 0) / 3,
+    maxStdev: Math.max(...rgb.map((channel) => channel.stdev)),
+  };
 }
 
 afterEach(() => {
   resetCardPhotos();
+});
+
+describe('the More or Less board layout', () => {
+  it('stacks the two photo cards, one above the other', () => {
+    const [top, bottom] = MORE_OR_LESS_CARD_SLOTS;
+
+    // The signed board is stacked, as the phone plays it. Side by side was
+    // rejected: it is a different board, whatever it does for the crop.
+    expect(bottom.left).toBe(top.left);
+    expect(bottom.top).toBeGreaterThan(top.top + top.height);
+    expect(top.width).toBe(bottom.width);
+    expect(top.height).toBe(bottom.height);
+  });
+
+  it('runs each photo card full-bleed across the card', () => {
+    const [top] = MORE_OR_LESS_CARD_SLOTS;
+    const margin = top.left;
+
+    expect(top.width).toBe(1200 - margin * 2);
+    expect(margin).toBeLessThanOrEqual(24);
+    // Stacking two full-width rows is what makes each slot a wide sliver.
+    // Asserted, not lamented: it is the shape of the board that was signed.
+    expect(top.width / top.height).toBeGreaterThan(4);
+  });
+
+  it('puts MORE and LESS side by side underneath both photo cards', () => {
+    const [, bottomCard] = MORE_OR_LESS_CARD_SLOTS;
+    const [more, less] = MORE_OR_LESS_BUTTON_SLOTS;
+
+    expect(more.top).toBeGreaterThanOrEqual(bottomCard.top + bottomCard.height);
+    expect(less.top).toBe(more.top);
+    expect(less.left).toBeGreaterThan(more.left + more.width);
+    expect(more.top + more.height).toBeLessThanOrEqual(630);
+  });
 });
 
 describe('the More or Less card', () => {
@@ -118,16 +165,38 @@ describe('the More or Less card', () => {
     expect(embedded[0]).not.toBe(embedded[1]);
   });
 
-  it('rasterises those photos into the slots rather than leaving them empty', async () => {
+  it('rasterises those photos into both stacked slots rather than leaving them empty', async () => {
     let nth = 0;
     await preloadCardPhotos({ fetchImpl: fetchServing(() => photoLike(++nth * 7919)) });
 
     const png = await generateOgImagePng(RESULT, 'two-photos');
-    const means = await Promise.all(MORE_OR_LESS_CARD_SLOTS.map((slot) => meanOf(png, slot)));
+    const slots = await Promise.all(
+      MORE_OR_LESS_CARD_SLOTS.map((slot) => regionStats(png, slot)),
+    );
 
     // An empty slot is `theme.card` (#1A1732, mean ~34) on a #0A0817 page.
     // Anything drawn into it and scrimmed sits well above that.
-    for (const mean of means) expect(mean).toBeGreaterThan(60);
+    for (const { mean } of slots) expect(mean).toBeGreaterThan(60);
+  });
+
+  it('keeps the MORE and LESS fills flat', async () => {
+    await preloadCardPhotos({ fetchImpl: fetchServing((url) => photoLike(url.length)) });
+    const png = await generateOgImagePng(RESULT, 'flat-buttons');
+
+    // The palette quantiser spends its 256 entries on the photographs, so the
+    // tonal button's translucent fill gets approximated — and dithered, that
+    // approximation is large structured blotches, a chevron across the button
+    // that reads as a rendering fault. Sampled clear of the rounded corners,
+    // the arrow and the label, a button fill has to have no variance at all.
+    for (const slot of MORE_OR_LESS_BUTTON_SLOTS) {
+      const { maxStdev } = await regionStats(png, {
+        left: slot.left + 40,
+        top: slot.top + 30,
+        width: 140,
+        height: 26,
+      });
+      expect(maxStdev).toBeLessThan(0.5);
+    }
   });
 
   it('still draws the board at 1200×630 when the pool is cold', async () => {
@@ -172,11 +241,15 @@ describe('the card photo pool', () => {
     expect(cardPhotoPair('anything')).toBeNull();
   });
 
-  it('stores photos at the card slot size', async () => {
+  it('stores photos at the stacked card slot size', async () => {
     await preloadCardPhotos({ fetchImpl: fetchServing((url) => photoLike(url.length)) });
     const pair = cardPhotoPair('sized');
+    const [slot] = MORE_OR_LESS_CARD_SLOTS;
 
-    for (const photo of [pair.left, pair.right]) {
+    // The pool crops to the slot exactly, so nothing is rescaled a second time
+    // on the way out. Drift between the two modules is a boot-time throw.
+    expect([PHOTO_WIDTH, PHOTO_HEIGHT]).toEqual([slot.width, slot.height]);
+    for (const photo of [pair.top, pair.bottom]) {
       const { width, height } = await sharp(photo).metadata();
       expect([width, height]).toEqual([PHOTO_WIDTH, PHOTO_HEIGHT]);
     }
@@ -197,8 +270,8 @@ describe('the card photo pool', () => {
     await preloadCardPhotos({ fetchImpl: reversed });
     const second = cardPhotoPair('stable-link');
 
-    expect(second.left.equals(first.left)).toBe(true);
-    expect(second.right.equals(first.right)).toBe(true);
+    expect(second.top.equals(first.top)).toBe(true);
+    expect(second.bottom.equals(first.bottom)).toBe(true);
   });
 
   it('never draws the same photo into both slots', async () => {
@@ -207,7 +280,7 @@ describe('the card photo pool', () => {
 
     for (const id of ['a', 'bb', 'ccc', 'dddd', 'eeeee', 'ffffff', 'ggggggg']) {
       const pair = cardPhotoPair(id);
-      expect(pair.left.equals(pair.right)).toBe(false);
+      expect(pair.top.equals(pair.bottom)).toBe(false);
     }
   });
 });

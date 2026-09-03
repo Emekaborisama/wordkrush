@@ -32,22 +32,24 @@ const ACCENT_COLOR = '#E8B840'; // brand.krush
  * Board geometry for the More or Less card, and the tokens it borrows from
  * `src/ui/theme.ts` / `src/games/registry.ts`.
  *
- * The board runs side by side rather than stacked as the phone does. On a
- * 1.91:1 card two full-width rows are 4.8:1 slots, and a Wikipedia lead image
- * cropped that flat is a necktie or a slice of a flag — the photos stop being
- * recognisable, which is the one thing this card exists to show. Turning the
- * pair sideways gives each photo a near-square slot and keeps the prompt the
- * game actually asks: this one, or that one.
+ * The board is STACKED, as the phone plays it and as the signed crop shows it:
+ * one full-width photo card above another, MORE and LESS underneath. The
+ * measurements here trace that crop — cards ending around y=260 and y=514 on a
+ * 1200×630 ground, an ~86px button row beneath them.
  *
- * Everything lands inside the 2:1 band X centre-crops a `summary_large_image`
- * to. `CARD_W` / `CARD_H` are the photo size in `og-photos.mjs`; change them
+ * That makes each photo slot 4.8:1, and cropping a mostly-portrait Wikipedia
+ * lead image that flat costs real detail. It is an accepted cost, not a
+ * trade-off to reopen: the stacked pair is the product bar. `og-photos.mjs`
+ * spends its crop budget on keeping the subject in the band that survives.
+ *
+ * `CARD_W` / `CARD_H` are the photo size in `og-photos.mjs`; change them
  * together or a card photo is rescaled a second time on the way out.
  */
 const BOARD = {
-  pad: 20,
-  gap: 14,
+  pad: 18,
+  gap: 12,
   cardRadius: 28,
-  buttonHeight: 92,
+  buttonHeight: 86,
   buttonRadius: 28,
   /** `theme.bg` — dark-on-bright label for the filled button. */
   ink: '#0A0817',
@@ -65,9 +67,9 @@ const BOARD = {
   surface: '#1A1732',
 };
 
-const CARD_W = Math.round((WIDTH - BOARD.pad * 2 - BOARD.gap) / 2);
-const CARD_H = HEIGHT - BOARD.pad * 2 - BOARD.buttonHeight - BOARD.gap;
-const BUTTON_W = CARD_W;
+const CARD_W = WIDTH - BOARD.pad * 2;
+const CARD_H = Math.round((HEIGHT - BOARD.pad * 2 - BOARD.buttonHeight - BOARD.gap * 2) / 2);
+const BUTTON_W = Math.round((CARD_W - BOARD.gap) / 2);
 
 // Copy Fredoka font to a location fontconfig can find
 // librsvg (used by sharp for SVG) doesn't support data URI fonts in @font-face
@@ -110,10 +112,29 @@ if (CARD_W !== PHOTO_WIDTH || CARD_H !== PHOTO_HEIGHT) {
   );
 }
 
-/** Where the two photo cards land, so a suite can read the rendered slots. */
+/**
+ * Where the two photo cards land, top row first, so a suite can read the
+ * rendered slots and hold the stacked layout.
+ */
 export const MORE_OR_LESS_CARD_SLOTS = [
   { left: BOARD.pad, top: BOARD.pad, width: CARD_W, height: CARD_H },
-  { left: BOARD.pad + CARD_W + BOARD.gap, top: BOARD.pad, width: CARD_W, height: CARD_H },
+  { left: BOARD.pad, top: BOARD.pad + CARD_H + BOARD.gap, width: CARD_W, height: CARD_H },
+];
+
+/** Where the MORE / LESS row lands, left button first. */
+export const MORE_OR_LESS_BUTTON_SLOTS = [
+  {
+    left: BOARD.pad,
+    top: BOARD.pad + (CARD_H + BOARD.gap) * 2,
+    width: BUTTON_W,
+    height: BOARD.buttonHeight,
+  },
+  {
+    left: BOARD.pad + BUTTON_W + BOARD.gap,
+    top: BOARD.pad + (CARD_H + BOARD.gap) * 2,
+    width: BUTTON_W,
+    height: BOARD.buttonHeight,
+  },
 ];
 
 /**
@@ -127,13 +148,21 @@ export async function generateOgImagePng(data, shareId = '') {
   // Convert SVG to PNG using sharp.
   //
   // Palettised, because the board card carries two photographs and a lossless
-  // PNG of those is around 900 KB — past the size where a scraper is happy and
-  // three times what X will keep after it re-encodes the card anyway. 256
-  // colours over a dark scrim shows no banding at card size, and the grid
-  // cards were already flat colour. `effort` stays low: above 1 it buys single
-  // -digit percentages for several times the CPU, on a path a crawler waits on.
+  // PNG of those is around 1 MB — past the size where a scraper is happy and
+  // several times what X keeps after re-encoding the card anyway.
+  //
+  // `dither: 0` is not a size tweak. The quantiser spends its 256 entries on
+  // the photographs, so the flat translucent fill of the LESS button is left
+  // to be approximated — and dithered, that approximation is not noise but
+  // large structured blotches, a dark chevron across the button that reads as
+  // a rendering fault on the one element the card is judged on. Turned off,
+  // the flat fills round to a single palette entry and stay flat, while the
+  // photographs are dense enough that no banding shows at card size.
+  //
+  // `effort` stays low: above 1 it buys single-digit percentages for several
+  // times the CPU, on a path a crawler waits on.
   const pngBuffer = await sharp(Buffer.from(svg))
-    .png({ compressionLevel: 9, palette: true, quality: 100, effort: 1 })
+    .png({ compressionLevel: 9, palette: true, quality: 100, effort: 1, dither: 0 })
     .toBuffer();
   return pngBuffer;
 }
@@ -234,7 +263,7 @@ function boardButton({ x, y, fill, fillOpacity, stroke, strokeOpacity, label, la
 }
 
 /**
- * The board a player just left: two photo cards over MORE and LESS.
+ * The board a player just left: two stacked photo cards over MORE and LESS.
  *
  * Nothing else is on it. No item names or values, because a share card is
  * public and the pair that ended a run is a spoiler; no streak, best, rank or
@@ -242,24 +271,22 @@ function boardButton({ x, y, fill, fillOpacity, stroke, strokeOpacity, label, la
  * already reads in the paste line above the link.
  */
 function generateMoreOrLessImage(shareId) {
-  const { pad, gap, cardRadius, ink, label, more, less } = BOARD;
+  const { pad, cardRadius, ink, label, more, less } = BOARD;
   const photos = cardPhotoPair(shareId);
+  const [topSlot, bottomSlot] = MORE_OR_LESS_CARD_SLOTS;
+  const [moreSlot, lessSlot] = MORE_OR_LESS_BUTTON_SLOTS;
 
-  const leftX = pad;
-  const rightX = pad + CARD_W + gap;
-  const buttonY = pad + CARD_H + gap;
+  const clip = (id, y) =>
+    `<clipPath id="${id}"><rect x="${pad}" y="${y}" width="${CARD_W}" height="${CARD_H}" rx="${cardRadius}"/></clipPath>`;
 
-  const clip = (id, x) =>
-    `<clipPath id="${id}"><rect x="${x}" y="${pad}" width="${CARD_W}" height="${CARD_H}" rx="${cardRadius}"/></clipPath>`;
-
-  const defs = `<defs>${clip('wk-card-left', leftX)}${clip('wk-card-right', rightX)}</defs>`;
+  const defs = `<defs>${clip('wk-card-top', topSlot.top)}${clip('wk-card-bottom', bottomSlot.top)}</defs>`;
 
   const content = `
-    ${boardCard('wk-card-left', leftX, pad, photos?.left)}
-    ${boardCard('wk-card-right', rightX, pad, photos?.right)}
+    ${boardCard('wk-card-top', topSlot.left, topSlot.top, photos?.top)}
+    ${boardCard('wk-card-bottom', bottomSlot.left, bottomSlot.top, photos?.bottom)}
     ${boardButton({
-      x: leftX,
-      y: buttonY,
+      x: moreSlot.left,
+      y: moreSlot.top,
       fill: more,
       fillOpacity: 1,
       stroke: '#FFFFFF',
@@ -269,8 +296,8 @@ function generateMoreOrLessImage(shareId) {
       up: true,
     })}
     ${boardButton({
-      x: rightX,
-      y: buttonY,
+      x: lessSlot.left,
+      y: lessSlot.top,
       fill: less,
       fillOpacity: 0.16,
       stroke: less,

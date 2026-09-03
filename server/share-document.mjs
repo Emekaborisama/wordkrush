@@ -42,7 +42,7 @@ const GAME_TITLES = {
  */
 const IMAGE_ALT = {
   'more-or-less':
-    'A More or Less board: two photo cards side by side above the More and Less buttons',
+    'A More or Less board: two stacked photo cards above the More and Less buttons',
   clueless: 'A Clueless result: the spread of guesses from cold to found',
   wordfall: 'A Wordfall result: the word lengths cleared, longest last',
 };
