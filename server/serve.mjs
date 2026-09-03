@@ -37,6 +37,27 @@ const ROOT = resolve(process.env.STATIC_ROOT ?? 'dist');
 const PORT = Number(process.env.PORT ?? 8080);
 const HOST = '0.0.0.0';
 
+/**
+ * Stamp appended to the generated OG image URL.
+ *
+ * A scraper caches an unfurled image against its URL, so a rendering fix that
+ * changes the bytes behind an unchanged URL stays invisible to everyone who has
+ * already unfurled that link — X served the pre-font tofu render for a day.
+ * Every PR bumps this version (docs/WORKFLOW.md), so shipping a render fix also
+ * moves every share card onto a URL no scraper has seen.
+ */
+const OG_IMAGE_VERSION = JSON.parse(
+  await readFile(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf-8'),
+).version;
+
+/**
+ * The OG image is rendered per request, so the old 24-hour TTL is what pinned a
+ * bad render in scraper caches for a day. Five minutes still absorbs the burst
+ * of scrapers that follow one paste, and it keeps the window between deploying a
+ * render fix and seeing it short enough to check the same day.
+ */
+const OG_IMAGE_CACHE_CONTROL = 'public, max-age=300';
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -80,7 +101,7 @@ function cacheControl(urlPath, type) {
   return 'public, max-age=3600';
 }
 
-async function warm() {
+export async function warm() {
   const paths = await walk(ROOT);
   let raw = 0;
   let sent = 0;
@@ -182,7 +203,7 @@ function handleShareRoute(pathname) {
   if (!shareData || !indexHtml) return '404';
 
   // Generate OG image URL (PNG for X/Twitter compatibility)
-  const ogImageUrl = `https://wordkrush.com/share/${encoded}/og.png`;
+  const ogImageUrl = `https://wordkrush.com/share/${encoded}/og.png?v=${OG_IMAGE_VERSION}`;
   const gameTitle = {
     'more-or-less': 'More or Less',
     clueless: 'Clueless',
@@ -235,6 +256,9 @@ function handleShareRoute(pathname) {
 /**
  * Handle /share/:id/og.png routes for OG images.
  * Returns null for non-OG routes, '404' for invalid share IDs, or the PNG record.
+ *
+ * Matches on the path alone, so the `?v=` cache-bust stamp never has to be a
+ * known value — any stamp resolves to the current render of that share id.
  */
 async function handleOgImageRoute(pathname) {
   const match = /^\/share\/([^/]+)\/og\.png$/.exec(pathname);
@@ -250,7 +274,7 @@ async function handleOgImageRoute(pathname) {
   return {
     body: pngBuffer,
     type: 'image/png',
-    cacheControl: 'public, max-age=86400',
+    cacheControl: OG_IMAGE_CACHE_CONTROL,
     etag: `"${createHash('sha1').update(pngBuffer).digest('base64url').slice(0, 22)}"`,
     encodings: new Map(),
   };
@@ -263,7 +287,7 @@ function escapeHtml(text) {
   });
 }
 
-const server = createServer(async (req, res) => {
+export async function handleRequest(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405, { allow: 'GET, HEAD' }).end();
     return;
@@ -308,27 +332,39 @@ const server = createServer(async (req, res) => {
   res.writeHead(200, headers);
   if (req.method === 'HEAD') res.end();
   else res.end(body);
-});
-
-try {
-  await stat(ROOT);
-} catch {
-  console.error(`No build output at ${ROOT}. Run \`npm run build:web\` first.`);
-  process.exit(1);
 }
 
-const { count, raw, sent } = await warm();
-const mb = (n) => `${(n / 1024 / 1024).toFixed(2)} MB`;
-console.log(`prepared ${count} files — ${mb(raw)} raw, ${mb(sent)} over the wire (brotli)`);
+async function main() {
+  try {
+    await stat(ROOT);
+  } catch {
+    console.error(`No build output at ${ROOT}. Run \`npm run build:web\` first.`);
+    process.exit(1);
+  }
 
-server.listen(PORT, HOST, () => {
-  console.log(`serving ${ROOT} on http://${HOST}:${PORT}`);
-});
+  const { count, raw, sent } = await warm();
+  const mb = (n) => `${(n / 1024 / 1024).toFixed(2)} MB`;
+  console.log(`prepared ${count} files — ${mb(raw)} raw, ${mb(sent)} over the wire (brotli)`);
 
-for (const signal of ['SIGTERM', 'SIGINT']) {
-  process.on(signal, () => {
-    console.log(`${signal} received, closing`);
-    server.close(() => process.exit(0));
-    setTimeout(() => process.exit(0), 5000).unref();
+  const server = createServer(handleRequest);
+
+  server.listen(PORT, HOST, () => {
+    console.log(`serving ${ROOT} on http://${HOST}:${PORT}`);
   });
+
+  for (const signal of ['SIGTERM', 'SIGINT']) {
+    process.on(signal, () => {
+      console.log(`${signal} received, closing`);
+      server.close(() => process.exit(0));
+      setTimeout(() => process.exit(0), 5000).unref();
+    });
+  }
+}
+
+// `node server/serve.mjs` (railway.json, `npm run serve:web`) starts listening;
+// importing this module to exercise the share routes must not. Same entrypoint
+// guard as `scripts/check-docs.mjs` and `scripts/patch-web-head.mjs`, compared
+// through the filesystem so a relative `argv[1]` still matches.
+if (fileURLToPath(import.meta.url) === resolve(process.argv[1] ?? '')) {
+  await main();
 }

@@ -22,8 +22,6 @@ type Props = {
   activeGameId?: string;
   activeKind?: DrawerDestination['kind'];
   signedInAs?: string | null;
-  analyticsConsent: AnalyticsConsent;
-  onAnalyticsPress: () => void;
   /** Sound/vibration switches — the game's *feel*, not the player's report. */
   feedbackSettings: FeedbackSettings;
   onToggleFeedback: (channel: FeedbackChannel) => void;
@@ -52,8 +50,6 @@ export function Drawer({
   activeGameId,
   activeKind,
   signedInAs,
-  analyticsConsent,
-  onAnalyticsPress,
   feedbackSettings,
   onToggleFeedback,
   canSendFeedback,
@@ -202,24 +198,6 @@ export function Drawer({
             onPress={() => onToggleFeedback('vibration')}
           />
         )}
-
-        <Text style={styles.sectionLabel}>PRIVACY</Text>
-        <Item
-          label={
-            analyticsConsent === 'granted'
-              ? 'Analytics on'
-              : analyticsConsent === 'denied'
-                ? 'Analytics off'
-                : 'Review analytics choice'
-          }
-          icon={<Text style={styles.itemGlyph}>◉</Text>}
-          accent={theme.success}
-          trailing={analyticsConsent === 'granted' ? 'ON' : analyticsConsent === 'denied' ? 'OFF' : undefined}
-          onPress={() => {
-            onAnalyticsPress();
-            onClose();
-          }}
-        />
 
         <View style={styles.spacer} />
         <Text style={styles.footer}>Data: Wikipedia pageviews</Text>

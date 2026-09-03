@@ -12,24 +12,27 @@ import { allowlistedCapture, parseAnalyticsConsent, shouldCapture } from './priv
 import { captureRuntimeAnalytics, configureAnalyticsSink } from './runtime';
 
 describe('analytics privacy boundary', () => {
-  it('defaults missing or malformed consent to unknown', () => {
-    expect(parseAnalyticsConsent(null)).toBe('unknown');
-    expect(parseAnalyticsConsent('yes')).toBe('unknown');
+  it('defaults missing or malformed consent to granted (default on)', () => {
+    expect(parseAnalyticsConsent(null)).toBe('granted');
+    expect(parseAnalyticsConsent('yes')).toBe('granted');
+    expect(parseAnalyticsConsent('denied')).toBe('denied');
   });
 
-  it('captures only when configured and explicitly granted', () => {
-    expect(shouldCapture('unknown', true)).toBe(false);
+  it('captures only when configured and not explicitly denied (opt-out)', () => {
     expect(shouldCapture('denied', true)).toBe(false);
     expect(shouldCapture('granted', false)).toBe(false);
     expect(shouldCapture('granted', true)).toBe(true);
   });
 
-  it('drops events outside the documented event dictionary', () => {
+  it('drops events outside the documented event dictionary, but allows $pageview', () => {
     expect(allowlistedCapture({ event: 'run_completed' })).toEqual({
       event: 'run_completed',
     });
     expect(allowlistedCapture({ event: '$identify' })).toEqual({
       event: '$identify',
+    });
+    expect(allowlistedCapture({ event: '$pageview' })).toEqual({
+      event: '$pageview',
     });
     expect(allowlistedCapture({ event: '$autocapture' })).toBeNull();
     expect(allowlistedCapture({ event: '$exception' })).toBeNull();

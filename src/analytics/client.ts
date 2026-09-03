@@ -16,13 +16,12 @@ const host = process.env.EXPO_PUBLIC_POSTHOG_HOST;
 
 export const isAnalyticsConfigured = Boolean(apiKey && host);
 
-let consent: AnalyticsConsent = 'unknown';
+let consent: AnalyticsConsent = 'granted';
 
 const posthog =
   apiKey && host
     ? new PostHog(apiKey, {
         host,
-        defaultOptIn: false,
         personProfiles: 'identified_only',
         captureAppLifecycleEvents: false,
         enableSessionReplay: false,
@@ -59,7 +58,7 @@ export async function initializeAnalytics(): Promise<AnalyticsConsent> {
   try {
     consent = parseAnalyticsConsent(await AsyncStorage.getItem(CONSENT_KEY));
   } catch {
-    consent = 'unknown';
+    consent = 'granted';
   }
 
   if (!posthog) return consent;
@@ -72,8 +71,8 @@ export async function initializeAnalytics(): Promise<AnalyticsConsent> {
 }
 
 export async function setAnalyticsConsent(
-  next: Exclude<AnalyticsConsent, 'unknown'>,
-  surface: 'prompt' | 'settings',
+  next: AnalyticsConsent,
+  surface: 'settings',
 ): Promise<void> {
   consent = next;
   try {

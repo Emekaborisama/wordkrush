@@ -111,10 +111,9 @@ import type { LiveMatchSnapshot } from './src/live/types';
 import { clearExistingMembership } from './src/teams/api';
 import { parseTeamInviteUrl } from './src/teams/codes';
 import { Drawer, type DrawerDestination } from './src/ui/Drawer';
-import { AnalyticsConsentPrompt } from './src/ui/AnalyticsConsentPrompt';
 import { FeedbackPrompt } from './src/ui/FeedbackPrompt';
 import { TopBar } from './src/ui/TopBar';
-import { AuthScreen } from './src/ui/screens/AuthScreen';
+import { AccountScreen } from './src/ui/screens/AccountScreen';
 import { CluelessScreen } from './src/ui/screens/CluelessScreen';
 import { GameOverScreen } from './src/ui/screens/GameOverScreen';
 import { GameScreen } from './src/ui/screens/GameScreen';
@@ -330,8 +329,7 @@ export default function App() {
   const [streak, setStreak] = useState<DailyStreak>(EMPTY_STREAK);
   const [feedbackSettings, setFeedbackSettings] =
     useState<FeedbackSettings>(DEFAULT_FEEDBACK_SETTINGS);
-  const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent>('unknown');
-  const [showAnalyticsPrompt, setShowAnalyticsPrompt] = useState(false);
+  const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent>('granted');
   const [showFeedback, setShowFeedback] = useState(false);
   const [boardsReady, setBoardsReady] = useState(false);
   const [arrivalReady, setArrivalReady] = useState(false);
@@ -423,7 +421,6 @@ export default function App() {
     });
     void initializeAnalytics().then((storedConsent) => {
       setAnalyticsConsent(storedConsent);
-      setShowAnalyticsPrompt(storedConsent === 'unknown' && isAnalyticsConfigured);
     });
   }, []);
 
@@ -982,14 +979,16 @@ export default function App() {
             onScore={
               screen.live
                 ? (score, complete) => {
-                    void postMatchScore(screen.live!.matchId, score, complete, false);
+                    const target = moreOrLessLevelByNumber(screen.live!.levelNumber)?.targetStreak ?? 0;
+                    void postMatchScore(screen.live!.matchId, score, target > 0 && score >= target, false);
                   }
                 : undefined
             }
             onDone={
               screen.live
                 ? (score, complete) => {
-                    void postMatchScore(screen.live!.matchId, score, complete, true);
+                    const target = moreOrLessLevelByNumber(screen.live!.levelNumber)?.targetStreak ?? 0;
+                    void postMatchScore(screen.live!.matchId, score, target > 0 && score >= target, true);
                   }
                 : undefined
             }
@@ -998,13 +997,7 @@ export default function App() {
             }
             onGameOver={async (state) => {
               if (screen.live) {
-                const target = moreOrLessLevelByNumber(screen.live.levelNumber)?.targetStreak ?? 0;
-                await postMatchScore(
-                  screen.live.matchId,
-                  state.streak,
-                  state.streak >= target,
-                  true,
-                );
+                // Should not reach here for live mode if we properly intercepted it, but just in case:
                 return;
               }
               const entryId = makeEntryId();
@@ -1074,7 +1067,6 @@ export default function App() {
             personalAdvanced={screen.personalAdvanced}
             teamAdvanced={screen.teamAdvanced}
             onDone={async () => {
-              await clearExistingMembership(profile.id);
               setScreen({ name: 'teams' });
             }}
           />
@@ -1143,19 +1135,11 @@ export default function App() {
             roundsPassed={screen.gameId === MORE_OR_LESS ? labelProgress.roundsPassed : undefined}
             onBack={() => setScreen({ name: 'hub' })}
             onSignIn={() => setScreen({ name: 'auth', returnGameId: screen.gameId })}
-            onSignOut={async () => {
-              await signOut();
-              captureAnalytics('signed_out', {});
-              resetAnalytics();
-              identifiedProfileId.current = null;
-              setProfile(null);
-              registerAnalyticsContext('guest');
-            }}
           />
         )}
 
         {screen.name === 'auth' && (
-          <AuthScreen
+          <AccountScreen
             profile={profile}
             isRaceIntent={screen.returnTo === 'teams'}
             onAuthed={(p) => {
@@ -1164,6 +1148,20 @@ export default function App() {
               setProfile(p);
               if (screen.returnTo === 'teams') setScreen({ name: 'teams' });
               else setScreen({ name: 'scores', gameId: screen.returnGameId ?? MORE_OR_LESS });
+            }}
+            onSignOut={async () => {
+              await signOut();
+              captureAnalytics('signed_out', {});
+              resetAnalytics();
+              identifiedProfileId.current = null;
+              setProfile(null);
+              registerAnalyticsContext('guest');
+            }}
+            analyticsConsent={analyticsConsent}
+            onToggleAnalytics={(consent) => {
+              void persistAnalyticsConsent(consent, 'settings').then(() =>
+                setAnalyticsConsent(consent),
+              );
             }}
             onSkip={
               screen.returnTo === 'teams'
@@ -1191,37 +1189,11 @@ export default function App() {
           onToggleFeedback={toggleFeedback}
           canSendFeedback={isFeedbackConfigured()}
           onSendFeedback={() => setShowFeedback(true)}
-          analyticsConsent={analyticsConsent}
-          onAnalyticsPress={() => {
-            if (!isAnalyticsConfigured) return;
-            if (analyticsConsent === 'granted') {
-              void persistAnalyticsConsent('denied', 'settings').then(() =>
-                setAnalyticsConsent('denied'),
-              );
-            } else {
-              setShowAnalyticsPrompt(true);
-            }
-          }}
         />
         <FeedbackPrompt
           visible={showFeedback}
           identity={toFeedbackIdentity(profile)}
           onClose={() => setShowFeedback(false)}
-        />
-        <AnalyticsConsentPrompt
-          visible={showAnalyticsPrompt}
-          onAllow={() => {
-            setShowAnalyticsPrompt(false);
-            void persistAnalyticsConsent('granted', 'prompt').then(() =>
-              setAnalyticsConsent('granted'),
-            );
-          }}
-          onDecline={() => {
-            setShowAnalyticsPrompt(false);
-            void persistAnalyticsConsent('denied', 'prompt').then(() =>
-              setAnalyticsConsent('denied'),
-            );
-          }}
         />
       </View>
     </SafeAreaView>
