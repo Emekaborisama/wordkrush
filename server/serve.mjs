@@ -29,6 +29,8 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { brotliCompress, constants, gzip } from 'node:zlib';
 import { generateOgImagePng, generateOgDescription } from './og-image.mjs';
+import { preloadCardPhotos } from './og-photos.mjs';
+import { hasShareMarkers, shareDocument } from './share-document.mjs';
 
 const brotli = promisify(brotliCompress);
 const gzipped = promisify(gzip);
@@ -57,6 +59,21 @@ const OG_IMAGE_VERSION = JSON.parse(
  * render fix and seeing it short enough to check the same day.
  */
 const OG_IMAGE_CACHE_CONTROL = 'public, max-age=300';
+
+/**
+ * Rendered cards, keyed by share id.
+ *
+ * A card is a rasterise plus a palettised PNG encode, and a scraper fetches it
+ * once and renders whatever comes back — spending that on every scrape of the
+ * same link is latency in the one request that must not be slow. One paste
+ * brings a burst of scrapers to a single id, so the first pays and the rest
+ * read memory.
+ *
+ * Bounded because share ids are unbounded: oldest out once full, which is the
+ * right eviction order when the traffic is bursts around freshly pasted links.
+ */
+const ogImageCache = new Map();
+const OG_IMAGE_CACHE_MAX = 256;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -105,6 +122,7 @@ export async function warm() {
   const paths = await walk(ROOT);
   let raw = 0;
   let sent = 0;
+  indexHtml = null;
 
   for (const absolute of paths) {
     const body = await readFile(absolute);
@@ -136,6 +154,15 @@ export async function warm() {
 
     raw += body.length;
     sent += record.encodings.get('br')?.length ?? body.length;
+  }
+
+  // A shell without the delimiters means `scripts/patch-web-head.mjs` and
+  // `server/share-document.mjs` have drifted apart. Fail here rather than
+  // quietly serving every share page the homepage's description again.
+  if (indexHtml !== null && !hasShareMarkers(indexHtml)) {
+    throw new Error(
+      'index.html is missing the share-document markers — rebuild with `npm run build:web`',
+    );
   }
 
   return { count: paths.length, raw, sent };
@@ -173,11 +200,34 @@ function chooseEncoding(record, acceptEncoding = '') {
 }
 
 /**
+ * Canonical form of a share id taken from a raw request path.
+ *
+ * `url.pathname` keeps its percent-escapes, and `~` is legal but unreserved,
+ * so a client, proxy or crawler that normalises it to `%7E` was asking for a
+ * share id this server had never heard of and getting a 404 — for the image as
+ * readily as for the page. Decoding first means one id has one meaning
+ * whichever spelling arrives, and the tags the page declares use this form.
+ */
+function canonicalShareId(segment) {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
+/**
  * Decode share data from URL-safe base64.
+ *
+ * Padding is restored rather than assumed: `twitter-text`, the library X's own
+ * composer uses to find links in a draft, treats `~` as a character a URL may
+ * contain but never end with, so roughly half of all share links reach a
+ * scraper with their trailing padding — and everything after it — cut off.
  */
 function decodeShareData(encoded) {
   try {
-    const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/').replace(/~/g, '=');
+    const unpadded = encoded.replace(/-/g, '+').replace(/_/g, '/').replace(/[=~]+$/, '');
+    const base64 = unpadded.padEnd(Math.ceil(unpadded.length / 4) * 4, '=');
     const json = Buffer.from(base64, 'base64').toString('utf-8');
     const data = JSON.parse(json);
     if (!data || typeof data !== 'object' || !('game' in data)) {
@@ -197,50 +247,17 @@ function handleShareRoute(pathname) {
   const match = /^\/share\/([^/?]+)/.exec(pathname);
   if (!match) return null;
 
-  const encoded = match[1];
-  const shareData = decodeShareData(encoded);
+  const shareId = canonicalShareId(match[1]);
+  const shareData = decodeShareData(shareId);
   // Invalid share ID should 404, not fall through to SPA homepage
   if (!shareData || !indexHtml) return '404';
 
-  // Generate OG image URL (PNG for X/Twitter compatibility)
-  const ogImageUrl = `https://wordkrush.com/share/${encoded}/og.png?v=${OG_IMAGE_VERSION}`;
-  const gameTitle = {
-    'more-or-less': 'More or Less',
-    clueless: 'Clueless',
-    wordfall: 'Wordfall',
-  }[shareData.game];
-
-  const title = `WordKrush · ${gameTitle}`;
-  const description = generateOgDescription(shareData);
-
-  // Strip ALL homepage OG tags (og:*, twitter:*) and canonical so scrapers only see the share result
-  // Homepage has og:image pointing to the 1024×1024 lockup; we want the 1200×630 result PNG
-  let html = indexHtml
-    // Remove all og: meta tags (multiline-safe with [\s\S])
-    .replace(/<meta\s+property="og:[^"]*"[^>]*>/gi, '')
-    // Remove all twitter: meta tags
-    .replace(/<meta\s+name="twitter:[^"]*"[^>]*>/gi, '')
-    // Remove canonical link (points to homepage)
-    .replace(/<link\s+rel="canonical"[^>]*>/gi, '');
-
-  // Inject per-result OG tags
-  const ogTags = `
-    <title>${escapeHtml(title)}</title>
-    <meta property="og:type" content="website"/>
-    <meta property="og:site_name" content="WordKrush"/>
-    <meta property="og:title" content="${escapeHtml(title)}"/>
-    <meta property="og:description" content="${escapeHtml(description)}"/>
-    <meta property="og:url" content="https://wordkrush.com/share/${encoded}"/>
-    <meta property="og:image" content="${ogImageUrl}"/>
-    <meta property="og:image:width" content="1200"/>
-    <meta property="og:image:height" content="630"/>
-    <meta name="twitter:card" content="summary_large_image"/>
-    <meta name="twitter:title" content="${escapeHtml(title)}"/>
-    <meta name="twitter:description" content="${escapeHtml(description)}"/>
-    <meta name="twitter:image" content="${ogImageUrl}"/>
-  `;
-
-  html = html.replace(/<title>[^<]*<\/title>/, ogTags);
+  const html = shareDocument(indexHtml, {
+    shareId,
+    shareData,
+    description: generateOgDescription(shareData),
+    imageVersion: OG_IMAGE_VERSION,
+  });
 
   const body = Buffer.from(html, 'utf-8');
 
@@ -264,27 +281,34 @@ async function handleOgImageRoute(pathname) {
   const match = /^\/share\/([^/]+)\/og\.png$/.exec(pathname);
   if (!match) return null;
 
-  const encoded = match[1];
-  const shareData = decodeShareData(encoded);
+  const shareId = canonicalShareId(match[1]);
+  const shareData = decodeShareData(shareId);
   // Invalid share ID should 404
   if (!shareData) return '404';
 
-  const pngBuffer = await generateOgImagePng(shareData);
+  const cached = ogImageCache.get(shareId);
+  if (cached) return cached;
 
-  return {
+  const pngBuffer = await generateOgImagePng(shareData, shareId);
+
+  const record = {
     body: pngBuffer,
     type: 'image/png',
     cacheControl: OG_IMAGE_CACHE_CONTROL,
     etag: `"${createHash('sha1').update(pngBuffer).digest('base64url').slice(0, 22)}"`,
     encodings: new Map(),
+    // Nothing about this response varies on the request: it is one PNG, served
+    // uncompressed. Claiming otherwise tells every cache between here and the
+    // scraper to key on a header that changes nothing.
+    vary: null,
   };
-}
 
-function escapeHtml(text) {
-  return text.replace(/[&<>"']/g, (char) => {
-    const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-    return entities[char];
-  });
+  if (ogImageCache.size >= OG_IMAGE_CACHE_MAX) {
+    ogImageCache.delete(ogImageCache.keys().next().value);
+  }
+  ogImageCache.set(shareId, record);
+
+  return record;
 }
 
 export async function handleRequest(req, res) {
@@ -324,9 +348,9 @@ export async function handleRequest(req, res) {
     'content-length': body.length,
     'cache-control': record.cacheControl,
     etag: record.etag,
-    vary: 'Accept-Encoding',
     'x-content-type-options': 'nosniff',
   };
+  if (record.vary !== null) headers.vary = 'Accept-Encoding';
   if (encoding) headers['content-encoding'] = encoding;
 
   res.writeHead(200, headers);
@@ -345,6 +369,14 @@ async function main() {
   const { count, raw, sent } = await warm();
   const mb = (n) => `${(n / 1024 / 1024).toFixed(2)} MB`;
   console.log(`prepared ${count} files — ${mb(raw)} raw, ${mb(sent)} over the wire (brotli)`);
+
+  // Card photos are fetched here, not on the request that needs them: a
+  // scraper reads a card once and renders whatever came back, so a Wikimedia
+  // round trip inside that request is the difference between a card and a
+  // blank one. Same reason the bundle is compressed before this port opens.
+  // A cold pool still draws the board, so this never blocks the boot.
+  const pool = await preloadCardPhotos();
+  console.log(`card photos — ${pool.loaded}/${pool.eligible} attribution-free photographs ready`);
 
   const server = createServer(handleRequest);
 

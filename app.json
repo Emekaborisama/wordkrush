@@ -3,7 +3,7 @@
     "name": "WordKrush",
     "slug": "wordkrush",
     "scheme": "wordkrush",
-    "version": "0.8.32",
+    "version": "0.8.33",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",

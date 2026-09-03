@@ -16,13 +16,20 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { applySearchSurface } from '../scripts/patch-web-head.mjs';
+import {
+  PAGE_DESCRIPTION,
+  PAGE_TITLE,
+  applySearchSurface,
+  applyViewportCss,
+} from '../scripts/patch-web-head.mjs';
 
 const HOMEPAGE_OG_IMAGE = 'https://wordkrush.com/og-image.png?v=deadbeef01';
 
-const INDEX_HTML = applySearchSurface(
-  '<!DOCTYPE html><html><head><title>wordkrush</title></head><body><div id="root"></div></body></html>',
-  { ogImageUrl: HOMEPAGE_OG_IMAGE },
+const INDEX_HTML = applyViewportCss(
+  applySearchSurface(
+    '<!DOCTYPE html><html><head><title>wordkrush</title></head><body><div id="root"></div></body></html>',
+    { ogImageUrl: HOMEPAGE_OG_IMAGE },
+  ),
 );
 
 /** URL-safe base64 the same way `src/games/share-data.ts` encodes it. */
@@ -106,23 +113,55 @@ describe('/share/:id Open Graph tags', () => {
     );
   });
 
-  it('strips the homepage image, canonical, and title from share HTML', async () => {
+  it('leaves nothing on the page that describes the homepage', async () => {
     const id = shareId(RESULTS.wordfall);
     const html = await (await fetch(`${origin}/share/${id}`)).text();
 
+    // Removing the `og:*` tags by pattern left the hub's description, its
+    // JSON-LD (`url: https://wordkrush.com/`) and its "Choose your game" copy
+    // in place, so one document described both a result and the whole site.
     expect(html).not.toContain(HOMEPAGE_OG_IMAGE);
     expect(html).not.toContain('og-image.png');
-    expect(html).not.toContain('rel="canonical"');
-    expect(html).toContain('<title>WordKrush · Wordfall</title>');
+    expect(html).not.toContain(PAGE_TITLE);
+    expect(html).not.toContain(PAGE_DESCRIPTION);
+    expect(html).not.toContain('application/ld+json');
+    expect(html).not.toContain('Choose your game');
+    expect(html).not.toContain('https://wordkrush.com/"');
   });
 
-  it('describes the result with the standing line only', async () => {
+  it('describes the result, in the head and in the crawler-readable copy', async () => {
     const id = shareId(RESULTS.clueless);
     const html = await (await fetch(`${origin}/share/${id}`)).text();
 
-    expect(html).toContain(
-      '<meta property="og:description" content="Found it in 4"/>',
-    );
+    expect(html).toContain('<title>WordKrush · Clueless</title>');
+    expect(html).toContain('<meta property="og:description" content="Found it in 4"/>');
+    expect(html).toContain('<meta name="description" content="Found it in 4"/>');
+    expect(html).toContain(`<link rel="canonical" href="https://wordkrush.com/share/${id}"/>`);
+    expect(html).toContain('<h1>WordKrush · Clueless</h1>');
+  });
+
+  it('declares the card X needs: a large summary, sized, typed and described', async () => {
+    const id = shareId(RESULTS['more-or-less']);
+    const html = await (await fetch(`${origin}/share/${id}`)).text();
+
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image"/>');
+    expect(html).toContain('<meta name="twitter:site" content="@WordKrushGame"/>');
+    expect(html).toContain('<meta property="og:image:type" content="image/png"/>');
+    expect(html).toContain('<meta property="og:image:width" content="1200"/>');
+    expect(html).toContain('<meta property="og:image:height" content="630"/>');
+    expect(html).toMatch(/<meta property="og:image:alt" content="A More or Less board[^"]*"\/>/);
+    expect(html).toMatch(/<meta name="twitter:image:alt" content="A More or Less board[^"]*"\/>/);
+  });
+
+  it('still serves the playable page, so a player who clicks lands in the game', async () => {
+    const id = shareId(RESULTS['more-or-less']);
+    const html = await (await fetch(`${origin}/share/${id}`)).text();
+
+    // Only the parts that make a claim about this page are rewritten. Sweeping
+    // out the layout CSS or the bundle with them would trade a dead card for a
+    // dead link.
+    expect(html).toContain('id="wk-web-viewport"');
+    expect(html).toContain('<div id="root">');
   });
 
   it('404s an unparseable share id instead of serving the SPA', async () => {
@@ -131,6 +170,51 @@ describe('/share/:id Open Graph tags', () => {
 
   it('404s a share id whose payload names no game', async () => {
     expect((await fetch(`${origin}/share/${shareId({ streak: 3 })}`)).status).toBe(404);
+  });
+});
+
+describe('share ids as they actually arrive', () => {
+  /** A payload whose base64 needs `=` padding, so its id carries `~`. */
+  const PADDED = { game: 'more-or-less', streak: 0, bestStreak: 0 };
+
+  it('resolves an id whose ~ arrived percent-encoded', async () => {
+    const id = shareId(PADDED);
+    expect(id).toContain('~');
+    const escaped = id.replaceAll('~', '%7E');
+
+    // `~` is legal but unreserved, and anything that normalises it to `%7E`
+    // was asking for an id this server had never heard of.
+    const [page, image] = await Promise.all([
+      fetch(`${origin}/share/${escaped}`),
+      fetch(`${origin}/share/${escaped}/og.png`),
+    ]);
+
+    expect(page.status).toBe(200);
+    expect(image.status).toBe(200);
+  });
+
+  it('resolves an id whose padding was cut off in a composer', async () => {
+    const id = shareId(PADDED);
+    const clipped = id.replace(/~+$/, '');
+
+    // `twitter-text`, the library X's own composer uses to find links in a
+    // draft, allows `~` inside a URL but not at the end of one, so a padded
+    // id reaches a scraper with its tail — and its query string — removed.
+    const [page, image] = await Promise.all([
+      fetch(`${origin}/share/${clipped}`),
+      fetch(`${origin}/share/${clipped}/og.png`),
+    ]);
+
+    expect(page.status).toBe(200);
+    expect(image.status).toBe(200);
+  });
+
+  it('declares the canonical id whatever spelling was requested', async () => {
+    const id = shareId(PADDED);
+    const html = await (await fetch(`${origin}/share/${id.replaceAll('~', '%7E')}`)).text();
+
+    expect(html).toContain(`<meta property="og:url" content="https://wordkrush.com/share/${id}"/>`);
+    expect(html).not.toContain('%7E');
   });
 });
 
@@ -168,6 +252,28 @@ describe('/share/:id/og.png', () => {
 
     expect(stamped.headers.get('etag')).toBe(bare.headers.get('etag'));
     expect(stale.headers.get('etag')).toBe(bare.headers.get('etag'));
+  });
+
+  it('does not claim to vary on a header it never reads', async () => {
+    const id = shareId(RESULTS.clueless);
+    const response = await fetch(`${origin}/share/${id}/og.png`);
+
+    // One PNG, served uncompressed. `Vary: Accept-Encoding` on it tells every
+    // cache between here and the scraper to key on nothing.
+    expect(response.headers.get('vary')).toBeNull();
+    expect(response.headers.get('content-encoding')).toBeNull();
+  });
+
+  it('keeps the card in memory so a burst of scrapers does not re-render it', async () => {
+    const id = shareId(RESULTS.wordfall);
+    const first = await fetch(`${origin}/share/${id}/og.png`);
+    const firstBody = Buffer.from(await first.arrayBuffer());
+
+    const second = await fetch(`${origin}/share/${id}/og.png`);
+    const secondBody = Buffer.from(await second.arrayBuffer());
+
+    expect(second.headers.get('etag')).toBe(first.headers.get('etag'));
+    expect(secondBody.equals(firstBody)).toBe(true);
   });
 
   it('404s an invalid share id even with a valid stamp', async () => {
