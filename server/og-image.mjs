@@ -2,8 +2,14 @@
  * Server-side OG image generation for share links.
  *
  * Generates 1200×630 spoiler-free Open Graph images as PNG (X/Twitter requires
- * rasterized images, not SVG). The images show the game name, the emoji grid,
- * and aggregate stats — never answers, guessed words, or item labels.
+ * rasterized images, not SVG). The images never carry answers, guessed words,
+ * or item labels.
+ *
+ * More or Less draws the board a player just left: two photo cards above MORE
+ * and LESS, and nothing else. A share card is an advertisement for the game, so
+ * it has to look like the game — a scoreboard of counters reads as a generic
+ * stats blob at timeline size, and the streak already has a home in the paste
+ * line above the link. Clueless and Wordfall still draw their result grid.
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -11,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
+import { PHOTO_HEIGHT, PHOTO_WIDTH, cardPhotoPair } from './og-photos.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,6 +27,49 @@ const HEIGHT = 630;
 const BG_COLOR = '#0A0817'; // brand.ink
 const TEXT_COLOR = '#F4F0FF'; // brand.text
 const ACCENT_COLOR = '#E8B840'; // brand.krush
+
+/**
+ * Board geometry for the More or Less card, and the tokens it borrows from
+ * `src/ui/theme.ts` / `src/games/registry.ts`.
+ *
+ * The board is STACKED, as the phone plays it and as the signed crop shows it:
+ * one full-width photo card above another, MORE and LESS underneath. The
+ * measurements here trace that crop — cards ending around y=260 and y=514 on a
+ * 1200×630 ground, an ~86px button row beneath them.
+ *
+ * That makes each photo slot 4.8:1, and cropping a mostly-portrait Wikipedia
+ * lead image that flat costs real detail. It is an accepted cost, not a
+ * trade-off to reopen: the stacked pair is the product bar. `og-photos.mjs`
+ * spends its crop budget on keeping the subject in the band that survives.
+ *
+ * `CARD_W` / `CARD_H` are the photo size in `og-photos.mjs`; change them
+ * together or a card photo is rescaled a second time on the way out.
+ */
+const BOARD = {
+  pad: 18,
+  gap: 12,
+  cardRadius: 28,
+  buttonHeight: 86,
+  buttonRadius: 28,
+  /** `theme.bg` — dark-on-bright label for the filled button. */
+  ink: '#0A0817',
+  /** `theme.text`. */
+  label: '#FFF9F6',
+  /** `registry` accent for More or Less. */
+  more: '#32E487',
+  /** `theme.accentSecondary`, drawn tonal exactly as `Button` does. */
+  less: '#8B6BFF',
+  /** `theme.edge` — the hairline that stops a dark card reading as a hole. */
+  edge: 'rgba(255,255,255,0.10)',
+  /** `GameScreen`'s flat card scrim. No bottom band: this card carries no text. */
+  scrim: 'rgba(8,6,20,0.34)',
+  /** `theme.card` — the surface a card keeps when it has no photo. */
+  surface: '#1A1732',
+};
+
+const CARD_W = WIDTH - BOARD.pad * 2;
+const CARD_H = Math.round((HEIGHT - BOARD.pad * 2 - BOARD.buttonHeight - BOARD.gap * 2) / 2);
+const BUTTON_W = Math.round((CARD_W - BOARD.gap) / 2);
 
 // Copy Fredoka font to a location fontconfig can find
 // librsvg (used by sharp for SVG) doesn't support data URI fonts in @font-face
@@ -56,14 +106,63 @@ try {
 // Set environment variable for fontconfig
 process.env.FONTCONFIG_FILE = FONTCONFIG_FILE;
 
+if (CARD_W !== PHOTO_WIDTH || CARD_H !== PHOTO_HEIGHT) {
+  throw new Error(
+    `Board card slot is ${CARD_W}×${CARD_H} but og-photos stores ${PHOTO_WIDTH}×${PHOTO_HEIGHT}`,
+  );
+}
+
+/**
+ * Where the two photo cards land, top row first, so a suite can read the
+ * rendered slots and hold the stacked layout.
+ */
+export const MORE_OR_LESS_CARD_SLOTS = [
+  { left: BOARD.pad, top: BOARD.pad, width: CARD_W, height: CARD_H },
+  { left: BOARD.pad, top: BOARD.pad + CARD_H + BOARD.gap, width: CARD_W, height: CARD_H },
+];
+
+/** Where the MORE / LESS row lands, left button first. */
+export const MORE_OR_LESS_BUTTON_SLOTS = [
+  {
+    left: BOARD.pad,
+    top: BOARD.pad + (CARD_H + BOARD.gap) * 2,
+    width: BUTTON_W,
+    height: BOARD.buttonHeight,
+  },
+  {
+    left: BOARD.pad + BUTTON_W + BOARD.gap,
+    top: BOARD.pad + (CARD_H + BOARD.gap) * 2,
+    width: BUTTON_W,
+    height: BOARD.buttonHeight,
+  },
+];
+
 /**
  * Generate a spoiler-free OG image PNG for a game result.
+ *
+ * `shareId` picks which photo pair the More or Less board draws, so one share
+ * link always renders the same board however many times it is scraped.
  */
-export async function generateOgImagePng(data) {
-  const svg = generateOgImageSvg(data);
-  // Convert SVG to PNG using sharp
+export async function generateOgImagePng(data, shareId = '') {
+  const svg = generateOgImageSvg(data, shareId);
+  // Convert SVG to PNG using sharp.
+  //
+  // Palettised, because the board card carries two photographs and a lossless
+  // PNG of those is around 1 MB — past the size where a scraper is happy and
+  // several times what X keeps after re-encoding the card anyway.
+  //
+  // `dither: 0` is not a size tweak. The quantiser spends its 256 entries on
+  // the photographs, so the flat translucent fill of the LESS button is left
+  // to be approximated — and dithered, that approximation is not noise but
+  // large structured blotches, a dark chevron across the button that reads as
+  // a rendering fault on the one element the card is judged on. Turned off,
+  // the flat fills round to a single palette entry and stay flat, while the
+  // photographs are dense enough that no banding shows at card size.
+  //
+  // `effort` stays low: above 1 it buys single-digit percentages for several
+  // times the CPU, on a path a crawler waits on.
   const pngBuffer = await sharp(Buffer.from(svg))
-    .png()
+    .png({ compressionLevel: 9, palette: true, quality: 100, effort: 1, dither: 0 })
     .toBuffer();
   return pngBuffer;
 }
@@ -89,11 +188,15 @@ export function generateOgDescription(data) {
 
 /**
  * Generate a spoiler-free OG image SVG for a game result.
+ *
+ * Exported for the suite: this string is the whole description of what a card
+ * shows, so "the board carries no counters" is a claim to make here rather
+ * than by diffing rasterised pixels.
  */
-function generateOgImageSvg(data) {
+export function generateOgImageSvg(data, shareId = '') {
   switch (data.game) {
     case 'more-or-less':
-      return generateMoreOrLessImage(data);
+      return generateMoreOrLessImage(shareId);
     case 'clueless':
       return generateCluelessImage(data);
     case 'wordfall':
@@ -101,12 +204,13 @@ function generateOgImageSvg(data) {
   }
 }
 
-function svgShell(content) {
+function svgShell(content, defs = '') {
   // librsvg/pango will use the font installed via fontconfig
   // Font family name matches the font's internal name
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+<svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <rect width="${WIDTH}" height="${HEIGHT}" fill="${BG_COLOR}"/>
+  ${defs}
   ${content}
 </svg>`;
 }
@@ -120,42 +224,91 @@ function escapeXml(text) {
     .replace(/'/g, '&apos;');
 }
 
-function generateMoreOrLessImage(data) {
-  const title = 'WordKrush · More or Less';
-  const streak = `Streak ${data.streak}`;
-  const best = data.bestStreak > 0 ? `Best ${data.bestStreak}` : '';
+/** One photo card: the picture, the flat scrim over it, and the hairline edge. */
+function boardCard(id, x, y, photo) {
+  const { cardRadius, edge, scrim, surface } = BOARD;
+  const frame = `x="${x}" y="${y}" width="${CARD_W}" height="${CARD_H}" rx="${cardRadius}"`;
 
-  // Generate grid of green squares (correct) + one red (wrong)
-  const gridSize = Math.min(data.streak + 1, 50);
-  const correct = data.streak;
-  const grid = [];
-  const squareSize = 40;
-  const spacing = 8;
-  const gridWidth = 10 * (squareSize + spacing) - spacing;
-  const startX = (WIDTH - gridWidth) / 2;
-  let x = startX;
-  let y = 180;
+  // A photo is a bonus, never a requirement — exactly as on the board itself,
+  // where a failed image load leaves the card the same shape. Without one the
+  // slot stays an elevated surface rather than a hole in the layout.
+  const picture = photo
+    ? `<image clip-path="url(#${id})" x="${x}" y="${y}" width="${CARD_W}" height="${CARD_H}" preserveAspectRatio="xMidYMid slice" xlink:href="data:image/jpeg;base64,${photo.toString('base64')}"/>
+    <rect ${frame} fill="${scrim}"/>`
+    : `<rect ${frame} fill="${surface}"/>`;
 
-  for (let i = 0; i < gridSize; i++) {
-    if (i > 0 && i % 10 === 0) {
-      x = startX;
-      y += squareSize + spacing;
-    }
-    const color = i < correct ? '#22C55E' : '#EF4444'; // green : red
-    grid.push(
-      `<rect x="${x}" y="${y}" width="${squareSize}" height="${squareSize}" fill="${color}" rx="4"/>`,
-    );
-    x += squareSize + spacing;
-  }
+  return `${picture}
+    <rect ${frame} fill="none" stroke="${edge}" stroke-width="1"/>`;
+}
+
+/**
+ * One MORE / LESS button.
+ *
+ * Fredoka is a Latin display face with no U+2191 / U+2193 (`src/ui/theme.ts`
+ * says as much), so the arrow is drawn as a triangle. Setting it as text is how
+ * the grid emoji ended up as `.notdef` boxes.
+ */
+function boardButton({ x, y, fill, fillOpacity, stroke, strokeOpacity, label, labelColor, up }) {
+  const { buttonHeight, buttonRadius } = BOARD;
+  const midY = y + buttonHeight / 2;
+  const arrowX = x + BUTTON_W / 2 - 62;
+  const arm = 11;
+  const arrow = up
+    ? `${arrowX},${midY - arm} ${arrowX - arm},${midY + arm} ${arrowX + arm},${midY + arm}`
+    : `${arrowX},${midY + arm} ${arrowX - arm},${midY - arm} ${arrowX + arm},${midY - arm}`;
+
+  return `<rect x="${x}" y="${y}" width="${BUTTON_W}" height="${buttonHeight}" rx="${buttonRadius}" fill="${fill}" fill-opacity="${fillOpacity}" stroke="${stroke}" stroke-opacity="${strokeOpacity}" stroke-width="1"/>
+    <polygon points="${arrow}" fill="${labelColor}"/>
+    <text x="${x + BUTTON_W / 2 - 34}" y="${midY}" font-family="Fredoka SemiBold" font-size="38" fill="${labelColor}" text-anchor="start" dominant-baseline="central">${escapeXml(label)}</text>`;
+}
+
+/**
+ * The board a player just left: two stacked photo cards over MORE and LESS.
+ *
+ * Nothing else is on it. No item names or values, because a share card is
+ * public and the pair that ended a run is a spoiler; no streak, best, rank or
+ * seen counters, because they are chrome at timeline size and the standing
+ * already reads in the paste line above the link.
+ */
+function generateMoreOrLessImage(shareId) {
+  const { pad, cardRadius, ink, label, more, less } = BOARD;
+  const photos = cardPhotoPair(shareId);
+  const [topSlot, bottomSlot] = MORE_OR_LESS_CARD_SLOTS;
+  const [moreSlot, lessSlot] = MORE_OR_LESS_BUTTON_SLOTS;
+
+  const clip = (id, y) =>
+    `<clipPath id="${id}"><rect x="${pad}" y="${y}" width="${CARD_W}" height="${CARD_H}" rx="${cardRadius}"/></clipPath>`;
+
+  const defs = `<defs>${clip('wk-card-top', topSlot.top)}${clip('wk-card-bottom', bottomSlot.top)}</defs>`;
 
   const content = `
-    <text x="${WIDTH / 2}" y="80" font-family="Fredoka SemiBold" font-size="48" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(title)}</text>
-    ${grid.join('\n    ')}
-    <text x="${WIDTH / 2}" y="${y + squareSize + 80}" font-family="Fredoka SemiBold" font-size="36" fill="${ACCENT_COLOR}" text-anchor="middle">${escapeXml(streak)}</text>
-    ${best ? `<text x="${WIDTH / 2}" y="${y + squareSize + 130}" font-family="Fredoka SemiBold" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(best)}</text>` : ''}
+    ${boardCard('wk-card-top', topSlot.left, topSlot.top, photos?.top)}
+    ${boardCard('wk-card-bottom', bottomSlot.left, bottomSlot.top, photos?.bottom)}
+    ${boardButton({
+      x: moreSlot.left,
+      y: moreSlot.top,
+      fill: more,
+      fillOpacity: 1,
+      stroke: '#FFFFFF',
+      strokeOpacity: 0.2,
+      label: 'More',
+      labelColor: ink,
+      up: true,
+    })}
+    ${boardButton({
+      x: lessSlot.left,
+      y: lessSlot.top,
+      fill: less,
+      fillOpacity: 0.16,
+      stroke: less,
+      strokeOpacity: 0.7,
+      label: 'Less',
+      labelColor: label,
+      up: false,
+    })}
   `;
 
-  return svgShell(content);
+  return svgShell(content, defs);
 }
 
 function generateCluelessImage(data) {

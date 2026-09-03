@@ -17,6 +17,21 @@ import { fileURLToPath } from 'node:url';
 
 export const SITE_URL = 'https://wordkrush.com';
 export const CANONICAL_URL = `${SITE_URL}/`;
+
+/**
+ * Delimiters around everything on this page that describes the WordKrush hub.
+ *
+ * `/share/:id` serves this same document with the hub's story swapped for one
+ * result's, and doing that by pattern-matching the tags to remove is how the
+ * homepage description and JSON-LD survived on every share page while the
+ * `og:*` tags around them were replaced. A crawler then read one document
+ * making two different claims. Marking the block instead means the server
+ * replaces the hub's copy wholesale and cannot leave any of it behind.
+ *
+ * `server/share-document.mjs` is the only consumer.
+ */
+export const HEAD_MARKERS = ['<!--wk:head-->', '<!--/wk:head-->'];
+export const COPY_MARKERS = ['<!--wk:copy-->', '<!--/wk:copy-->'];
 export const PAGE_TITLE =
   'WordKrush — free word games (More or Less, Clueless, Wordfall)';
 export const PAGE_DESCRIPTION =
@@ -104,7 +119,9 @@ export function landingHtml() {
     (game) =>
       `<li><h3>${escapeHtml(game.name)}</h3><p>${escapeHtml(game.tagline)}</p></li>`,
   ).join('');
+  const [start, end] = COPY_MARKERS;
   return [
+    start,
     '<main id="wk-seo">',
     '<h1>WordKrush</h1>',
     `<p>${escapeHtml(HUB_SUBTITLE)}</p>`,
@@ -112,6 +129,7 @@ export function landingHtml() {
     '<h2>Choose your game</h2>',
     `<ul>${games}</ul>`,
     '</main>',
+    end,
   ].join('');
 }
 
@@ -126,7 +144,9 @@ export function googleVerificationMeta(token) {
 
 export function documentMeta({ ogImageUrl, googleSiteVerification } = {}) {
   const verification = googleVerificationMeta(googleSiteVerification);
+  const [start, end] = HEAD_MARKERS;
   return [
+    start,
     `<title>${escapeHtml(PAGE_TITLE)}</title>`,
     `<meta name="description" content="${escapeHtml(PAGE_DESCRIPTION)}"/>`,
     `<link rel="canonical" href="${CANONICAL_URL}"/>`,
@@ -144,6 +164,7 @@ export function documentMeta({ ogImageUrl, googleSiteVerification } = {}) {
     `<meta name="twitter:description" content="${escapeHtml(PAGE_DESCRIPTION)}"/>`,
     ogImageUrl ? `<meta name="twitter:image" content="${ogImageUrl}"/>` : '',
     `<script type="application/ld+json">${JSON.stringify(jsonLdGraph())}</script>`,
+    end,
   ]
     .filter(Boolean)
     .join('');
@@ -174,8 +195,24 @@ export function applySearchSurface(html, { ogImageUrl, googleSiteVerification } 
   return html;
 }
 
+/** Keep in sync with `WEB_VIEWPORT_CSS` in `src/ui/webViewport.ts`. */
 const viewportCss =
   '<style id="wk-web-viewport">html,body{height:100%;height:100dvh;margin:0;background-color:#0A0817;overflow:hidden}body>div{height:100%}#wk-seo{color:#F4F0FF;padding:24px;font-family:system-ui,sans-serif}#wk-mascot canvas,#wk-mascot svg{max-width:100%!important;max-height:100%!important}#wk-wordfall-board,#wk-wordfall-board *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}#wk-wordfall-board{touch-action:none!important}</style>';
+
+/**
+ * Attach the layout CSS the web build needs.
+ *
+ * Anchored after the marked head block, not after `</title>`: the title lives
+ * inside that block, and a share page replaces the block whole, so anchoring
+ * inside it would let the server sweep the layout out with the hub's tags.
+ */
+export function applyViewportCss(html) {
+  if (html.includes('id="wk-web-viewport"')) return html;
+
+  const patched = html.replace(HEAD_MARKERS[1], `${HEAD_MARKERS[1]}${viewportCss}`);
+  if (patched.includes('id="wk-web-viewport"')) return patched;
+  return html.replace('</head>', `${viewportCss}</head>`);
+}
 
 function patchDist() {
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -220,13 +257,7 @@ function patchDist() {
     ogImageUrl,
     googleSiteVerification: process.env.GOOGLE_SITE_VERIFICATION,
   });
-  // Keep in sync with `WEB_VIEWPORT_CSS` in `src/ui/webViewport.ts`.
-  if (!html.includes('id="wk-web-viewport"')) {
-    html = html.replace('</title>', `</title>${viewportCss}`);
-    if (!html.includes('id="wk-web-viewport"')) {
-      html = html.replace('</head>', `${viewportCss}</head>`);
-    }
-  }
+  html = applyViewportCss(html);
 
   writeFileSync(htmlPath, html);
   writeFileSync(join(dist, 'robots.txt'), robotsTxt());
