@@ -63,7 +63,7 @@ const OG_IMAGE_CACHE_CONTROL = 'public, max-age=300';
 /**
  * Rendered cards, keyed by share id.
  *
- * A card is a rasterise plus a palettised PNG encode, and a scraper fetches it
+ * A card is a rasterise plus a truecolour PNG encode, and a scraper fetches it
  * once and renders whatever comes back — spending that on every scrape of the
  * same link is latency in the one request that must not be slow. One paste
  * brings a burst of scrapers to a single id, so the first pays and the rest
