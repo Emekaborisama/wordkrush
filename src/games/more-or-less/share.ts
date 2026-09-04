@@ -7,6 +7,7 @@
  */
 import { SHARE_MAX_SQUARES, composeShare, wrapSquares } from '../share';
 import { buildShareUrl, type MoreOrLessShareData } from '../share-data';
+import { pickCardPhotos } from './card-photos';
 
 const CORRECT = '🟩';
 const WRONG = '🟥';
@@ -23,6 +24,13 @@ export function buildShareText(input: MoreOrLessShareInput): string {
     streak: input.streak,
     bestStreak: input.bestStreak,
   };
+
+  // The card the link unfurls to is two photographs, and naming them here is
+  // what pins one share to one board. They are decoration, seeded by the
+  // standing rather than drawn from the run: the pair that ended it is a
+  // spoiler, and this link is public.
+  const photos = pickCardPhotos(`${input.streak}:${input.bestStreak}`);
+  if (photos) shareData.photos = photos;
 
   return composeShare({
     title: 'WordKrush · More or Less',

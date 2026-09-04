@@ -10,6 +10,7 @@
  *   card deliberately carries no text at all. Only items whose licence needs
  *   no credit are eligible, so a wordless card cannot ship a licence breach at
  *   share scale. `GameScreen` still credits every photo it shows on screen.
+ *   `og-card.mjs` owns that eligible list; this module owns the bytes.
  *
  *   LATENCY — a scraper fetches a card once and renders whatever comes back. A
  *   Wikimedia round trip inside that request is the difference between a card
@@ -17,12 +18,12 @@
  *   same pre-warming `serve.mjs` already does for the bundle — and serving a
  *   card only ever reads memory.
  *
- * A pair is chosen from the share id, so one link always renders the same
- * board however many times it is scraped.
+ * Which pair a card draws is decided by the share, not here: the ids travel in
+ * the share token and then in the card id, so one link is one board.
  */
-import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+
+import { CARD_PHOTO_IDS, cardPhotoSource, pickCardPhotoIds } from './og-card.mjs';
 
 /**
  * Stored size of one card photo. Matches the card slot in `og-image.mjs`;
@@ -33,12 +34,6 @@ import sharp from 'sharp';
  */
 export const PHOTO_WIDTH = 1164;
 export const PHOTO_HEIGHT = 242;
-
-/**
- * Licences that carry no attribution requirement. Anything else is credited on
- * screen by `GameScreen` and must not appear on a card that shows no text.
- */
-const ATTRIBUTION_FREE = /^(?:public domain|pd|cc0)$/i;
 
 /**
  * Minimum image entropy for a card photo.
@@ -62,24 +57,8 @@ const USER_AGENT = 'WordKrushShareCard/1.0 (https://wordkrush.com; share-card re
 
 const FETCH_TIMEOUT_MS = 4000;
 
-const CATEGORY_PATH = fileURLToPath(
-  new URL('../src/data/categories/wikipedia-popularity.json', import.meta.url),
-);
-
-/** Resized photo bytes, keyed by source URL. Filled by `preloadCardPhotos`. */
+/** Resized photo bytes, keyed by photo id. Filled by `preloadCardPhotos`. */
 const photos = new Map();
-
-/** Source URLs that survived the licence filter, in dataset order. */
-let sources = null;
-
-async function attributionFreeSources() {
-  if (sources) return sources;
-  const category = JSON.parse(await readFile(CATEGORY_PATH, 'utf-8'));
-  sources = category.items
-    .filter((item) => item.imageUrl && ATTRIBUTION_FREE.test(item.imageLicense ?? ''))
-    .map((item) => item.imageUrl);
-  return sources;
-}
 
 /**
  * Crop to the card slot and keep it only if it is a photograph. Returns `null`
@@ -114,20 +93,18 @@ export async function preloadCardPhotos({
   fetchImpl = fetch,
   timeoutMs = FETCH_TIMEOUT_MS,
 } = {}) {
-  const urls = await attributionFreeSources();
-
   const results = await Promise.all(
-    urls.map(async (url) => {
-      if (photos.has(url)) return true;
+    CARD_PHOTO_IDS.map(async (id) => {
+      if (photos.has(id)) return true;
       try {
-        const response = await fetchImpl(url, {
+        const response = await fetchImpl(cardPhotoSource(id), {
           headers: { 'user-agent': USER_AGENT },
           signal: AbortSignal.timeout(timeoutMs),
         });
         if (!response.ok) return false;
         const photo = await toCardPhoto(Buffer.from(await response.arrayBuffer()));
         if (!photo) return false;
-        photos.set(url, photo);
+        photos.set(id, photo);
         return true;
       } catch {
         return false;
@@ -135,40 +112,39 @@ export async function preloadCardPhotos({
     }),
   );
 
-  return { loaded: results.filter(Boolean).length, eligible: urls.length };
+  return { loaded: results.filter(Boolean).length, eligible: CARD_PHOTO_IDS.length };
 }
 
-/** Stable index from a share id, so one link keeps one board. */
-function seedOf(shareId) {
-  let hash = 2166136261;
-  for (let i = 0; i < shareId.length; i++) {
-    hash ^= shareId.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-/**
- * Two different card photos for a share id, or `null` while the pool is cold.
- * The caller draws the board either way.
- */
-export function cardPhotoPair(shareId) {
+/** Ids whose bytes are in hand, in dataset order. */
+function loadedPhotoIds() {
   // Dataset order, not insertion order: the pool is filled concurrently, so
   // reading the Map directly would hand the same link a different board on
   // every restart depending on which fetch returned first.
-  const loaded = (sources ?? []).filter((url) => photos.has(url)).map((url) => photos.get(url));
+  return CARD_PHOTO_IDS.filter((id) => photos.has(id));
+}
+
+/**
+ * The two photos a card draws, or `null` while the pool is cold. The caller
+ * draws the board either way.
+ *
+ * `photoIds` is the pair the card id named. A photo the pool never loaded —
+ * dropped by the entropy filter, or a Wikimedia fetch that failed — falls back
+ * to a seeded stand-in rather than an empty slot, and the two slots are always
+ * different photos.
+ */
+export function cardPhotoPair(seed, photoIds = []) {
+  const loaded = loadedPhotoIds();
   if (loaded.length < 2) return null;
 
-  const seed = seedOf(shareId);
-  const top = seed % loaded.length;
-  // The offset is at least 1, so the two slots never draw the same photo.
-  const step = 1 + (Math.floor(seed / loaded.length) % (loaded.length - 1));
+  const [seededTop, seededBottom] = pickCardPhotoIds(seed, loaded);
+  const top = loaded.includes(photoIds[0]) ? photoIds[0] : seededTop;
+  const wanted = loaded.includes(photoIds[1]) ? photoIds[1] : seededBottom;
+  const bottom = wanted === top ? loaded[(loaded.indexOf(top) + 1) % loaded.length] : wanted;
 
-  return { top: loaded[top], bottom: loaded[(top + step) % loaded.length] };
+  return { top: photos.get(top), bottom: photos.get(bottom) };
 }
 
 /** Test seam: drop the pool so a suite can assert the cold-start render. */
 export function resetCardPhotos() {
   photos.clear();
-  sources = null;
 }

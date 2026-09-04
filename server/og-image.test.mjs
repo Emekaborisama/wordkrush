@@ -18,6 +18,7 @@ import {
   generateOgImagePng,
   generateOgImageSvg,
 } from './og-image.mjs';
+import { CARD_PHOTO_IDS, cardPhotoSource } from './og-card.mjs';
 import {
   PHOTO_HEIGHT,
   PHOTO_WIDTH,
@@ -57,6 +58,17 @@ function fetchServing(bodyFor) {
 }
 
 const RESULT = { game: 'more-or-less', streak: 7, bestStreak: 12 };
+
+/** Which photo id a pool fetch is for, so a suite can serve one image per id. */
+const ID_BY_SOURCE = new Map(CARD_PHOTO_IDS.map((id) => [cardPhotoSource(id), id]));
+
+/** A different, stable image per photo id, whatever order the pool filled in. */
+function fetchOnePhotoPerId() {
+  return fetchServing((url) => {
+    const id = ID_BY_SOURCE.get(url);
+    return photoLike(CARD_PHOTO_IDS.indexOf(id) * 7919 + 1);
+  });
+}
 
 /**
  * Every word the card draws, in order.
@@ -288,6 +300,66 @@ describe('the card PNG', () => {
 
     expect(cardPhotoPair('cold-truecolour')).toBeNull();
     expect(ihdr(png).colorType).toBe(2);
+  });
+});
+
+/**
+ * Which two photographs a card draws.
+ *
+ * This used to be a hash of the encoded share token, which made the board a
+ * property of how the link happened to be spelled: X's composer strips a
+ * token's trailing padding, so the card it fetched was drawn from a different
+ * hash than the one the player saw. The pair is named in the card id now, and
+ * that id is the only thing the render reads.
+ */
+describe('the photos a card is told to draw', () => {
+  it('are the ones the card id named, in the order it named them', async () => {
+    await preloadCardPhotos({ fetchImpl: fetchOnePhotoPerId() });
+    const [a, b] = ['blue-whale', 'mona-lisa'];
+
+    const named = cardPhotoPair('m_blue-whale_mona-lisa', [a, b]);
+    const swapped = cardPhotoPair('m_mona-lisa_blue-whale', [b, a]);
+
+    expect(named.top.equals(swapped.bottom)).toBe(true);
+    expect(named.bottom.equals(swapped.top)).toBe(true);
+    expect(named.top.equals(named.bottom)).toBe(false);
+  });
+
+  it('do not change when the seed does', async () => {
+    await preloadCardPhotos({ fetchImpl: fetchOnePhotoPerId() });
+    const photos = ['japan', 'titanic'];
+
+    const first = cardPhotoPair('one-spelling', photos);
+    const second = cardPhotoPair('a-completely-different-string', photos);
+
+    expect(second.top.equals(first.top)).toBe(true);
+    expect(second.bottom.equals(first.bottom)).toBe(true);
+  });
+
+  it('reach the rendered card, not just the pair helper', async () => {
+    await preloadCardPhotos({ fetchImpl: fetchOnePhotoPerId() });
+    const photos = ['egypt', 'spotify'];
+
+    const svg = generateOgImageSvg({ ...RESULT, photos }, 'm_egypt_spotify');
+    const embedded = [...svg.matchAll(/xlink:href="data:image\/jpeg;base64,([^"]+)"/g)].map(
+      (match) => match[1],
+    );
+    const pair = cardPhotoPair('m_egypt_spotify', photos);
+
+    expect(embedded).toEqual([pair.top.toString('base64'), pair.bottom.toString('base64')]);
+  });
+
+  it('stand in for a photo the pool never loaded rather than leaving a hole', async () => {
+    // The pool drops flat graphics and tolerates a Wikimedia fetch that fails,
+    // so an id a share named is not always an id there are bytes for.
+    await preloadCardPhotos({ fetchImpl: fetchOnePhotoPerId() });
+
+    const pair = cardPhotoPair('m_gone_titanic', ['not-in-the-pool', 'titanic']);
+    const again = cardPhotoPair('m_gone_titanic', ['not-in-the-pool', 'titanic']);
+
+    expect(pair.top).toBeInstanceOf(Buffer);
+    expect(pair.top.equals(pair.bottom)).toBe(false);
+    expect(again.top.equals(pair.top)).toBe(true);
   });
 });
 

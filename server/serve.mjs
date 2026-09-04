@@ -28,6 +28,7 @@ import { extname, join, posix, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { brotliCompress, constants, gzip } from 'node:zlib';
+import { CARD_IMAGE_ROUTE, cardFromId, cardId, isDrawableShare } from './og-card.mjs';
 import { generateOgImagePng, generateOgDescription } from './og-image.mjs';
 import { preloadCardPhotos } from './og-photos.mjs';
 import { hasShareMarkers, shareDocument } from './share-document.mjs';
@@ -61,7 +62,7 @@ const OG_IMAGE_VERSION = JSON.parse(
 const OG_IMAGE_CACHE_CONTROL = 'public, max-age=300';
 
 /**
- * Rendered cards, keyed by share id.
+ * Rendered cards, keyed by CARD id — not by share id.
  *
  * A card is a rasterise plus a truecolour PNG encode, and a scraper fetches it
  * once and renders whatever comes back — spending that on every scrape of the
@@ -69,7 +70,12 @@ const OG_IMAGE_CACHE_CONTROL = 'public, max-age=300';
  * brings a burst of scrapers to a single id, so the first pays and the rest
  * read memory.
  *
- * Bounded because share ids are unbounded: oldest out once full, which is the
+ * Keying on the card id is what makes that cache correct as well as fast: the
+ * padded, unpadded and legacy `~` spellings of one share token all resolve to
+ * the same card id, so they read the same entry instead of rendering three
+ * boards from three hashes of three strings.
+ *
+ * Bounded because card ids are unbounded: oldest out once full, which is the
  * right eviction order when the traffic is bursts around freshly pasted links.
  */
 const ogImageCache = new Map();
@@ -217,12 +223,15 @@ function canonicalShareId(segment) {
 }
 
 /**
- * Decode share data from URL-safe base64.
+ * Decode share data from a share token.
  *
- * Padding is restored rather than assumed: `twitter-text`, the library X's own
- * composer uses to find links in a draft, treats `~` as a character a URL may
- * contain but never end with, so roughly half of all share links reach a
- * scraper with their trailing padding — and everything after it — cut off.
+ * Three spellings resolve to one payload. Tokens emitted from 0.8.35 are
+ * unpadded base64url; before that they carried base64's `=` padding rewritten
+ * as `~`, and `twitter-text` — the library X's own composer uses to find links
+ * in a draft — treats `~` as a character a URL may contain but never end with,
+ * so roughly half of those links reached a scraper with their trailing padding,
+ * and everything after it, cut off. Padding is restored rather than assumed,
+ * and a payload that names no drawable card is not a share.
  */
 function decodeShareData(encoded) {
   try {
@@ -230,10 +239,7 @@ function decodeShareData(encoded) {
     const base64 = unpadded.padEnd(Math.ceil(unpadded.length / 4) * 4, '=');
     const json = Buffer.from(base64, 'base64').toString('utf-8');
     const data = JSON.parse(json);
-    if (!data || typeof data !== 'object' || !('game' in data)) {
-      return null;
-    }
-    return data;
+    return isDrawableShare(data) ? data : null;
   } catch {
     return null;
   }
@@ -271,25 +277,19 @@ function handleShareRoute(pathname) {
 }
 
 /**
- * Handle /share/:id/og.png routes for OG images.
- * Returns null for non-OG routes, '404' for invalid share IDs, or the PNG record.
+ * Render one card, or read the one already rendered for that id.
  *
- * Matches on the path alone, so the `?v=` cache-bust stamp never has to be a
- * known value — any stamp resolves to the current render of that share id.
+ * The card id is the whole input: the routes below differ only in how they
+ * arrive at one, so every path to a given card serves the same bytes.
  */
-async function handleOgImageRoute(pathname) {
-  const match = /^\/share\/([^/]+)\/og\.png$/.exec(pathname);
-  if (!match) return null;
-
-  const shareId = canonicalShareId(match[1]);
-  const shareData = decodeShareData(shareId);
-  // Invalid share ID should 404
-  if (!shareData) return '404';
-
-  const cached = ogImageCache.get(shareId);
+async function cardRecord(id) {
+  const cached = ogImageCache.get(id);
   if (cached) return cached;
 
-  const pngBuffer = await generateOgImagePng(shareData, shareId);
+  const card = cardFromId(id);
+  if (!card) return '404';
+
+  const pngBuffer = await generateOgImagePng(card, id);
 
   const record = {
     body: pngBuffer,
@@ -306,9 +306,44 @@ async function handleOgImageRoute(pathname) {
   if (ogImageCache.size >= OG_IMAGE_CACHE_MAX) {
     ogImageCache.delete(ogImageCache.keys().next().value);
   }
-  ogImageCache.set(shareId, record);
+  ogImageCache.set(id, record);
 
   return record;
+}
+
+/**
+ * Handle /og/share/:cardId.png — the URL `og:image` declares.
+ *
+ * Short, flat, and made only of characters `twitter-text` will keep: the card
+ * a composer fetches should look like the homepage lockup it already unfurls,
+ * not like a second dynamic route with a result payload nested inside it.
+ *
+ * Matches on the path alone, so the `?v=` cache-bust stamp never has to be a
+ * known value — any stamp resolves to the current render of that card.
+ */
+async function handleCardImageRoute(pathname) {
+  const match = CARD_IMAGE_ROUTE.exec(pathname);
+  if (!match) return null;
+
+  return cardRecord(match[1]);
+}
+
+/**
+ * Handle /share/:id/og.png, the path share pages declared before 0.8.35.
+ *
+ * X keeps an unfurled card against its URL for days, so this stays: the token
+ * resolves to the same card id the short path would, and therefore to exactly
+ * the same bytes.
+ */
+async function handleOgImageRoute(pathname) {
+  const match = /^\/share\/([^/]+)\/og\.png$/.exec(pathname);
+  if (!match) return null;
+
+  const shareData = decodeShareData(canonicalShareId(match[1]));
+  // Invalid share ID should 404
+  if (!shareData) return '404';
+
+  return cardRecord(cardId(shareData));
 }
 
 export async function handleRequest(req, res) {
@@ -321,7 +356,8 @@ export async function handleRequest(req, res) {
   const pathname = url.pathname;
 
   // Try dynamic routes first
-  let record = await handleOgImageRoute(pathname);
+  let record = await handleCardImageRoute(pathname);
+  if (!record) record = await handleOgImageRoute(pathname);
   if (!record) record = handleShareRoute(pathname);
   
   // Invalid share ID returns '404' sentinel, not null

@@ -140,11 +140,13 @@ export const MORE_OR_LESS_BUTTON_SLOTS = [
 /**
  * Generate a spoiler-free OG image PNG for a game result.
  *
- * `shareId` picks which photo pair the More or Less board draws, so one share
- * link always renders the same board however many times it is scraped.
+ * `cardId` identifies the card being drawn (`server/og-card.mjs`). A More or
+ * Less card names its two photos in that id, so one share link always renders
+ * the same board however many times, and however spelled, it is scraped; the
+ * id is also the seed that stands in for a photo the pool never loaded.
  */
-export async function generateOgImagePng(data, shareId = '') {
-  const svg = generateOgImageSvg(data, shareId);
+export async function generateOgImagePng(data, cardId = '') {
+  const svg = generateOgImageSvg(data, cardId);
 
   // TRUECOLOUR, NOT INDEXED. This card was palettised for weight: two
   // photographs encode to ~1 MB lossless and to ~300 KB through the quantiser.
@@ -200,10 +202,10 @@ export function generateOgDescription(data) {
  * shows, so "the board carries no counters" is a claim to make here rather
  * than by diffing rasterised pixels.
  */
-export function generateOgImageSvg(data, shareId = '') {
+export function generateOgImageSvg(data, cardId = '') {
   switch (data.game) {
     case 'more-or-less':
-      return generateMoreOrLessImage(shareId);
+      return generateMoreOrLessImage(data, cardId);
     case 'clueless':
       return generateCluelessImage(data);
     case 'wordfall':
@@ -277,9 +279,9 @@ function boardButton({ x, y, fill, fillOpacity, stroke, strokeOpacity, label, la
  * seen counters, because they are chrome at timeline size and the standing
  * already reads in the paste line above the link.
  */
-function generateMoreOrLessImage(shareId) {
+function generateMoreOrLessImage(data, cardId) {
   const { pad, cardRadius, ink, label, more, less } = BOARD;
-  const photos = cardPhotoPair(shareId);
+  const photos = cardPhotoPair(cardId, data.photos);
   const [topSlot, bottomSlot] = MORE_OR_LESS_CARD_SLOTS;
   const [moreSlot, lessSlot] = MORE_OR_LESS_BUTTON_SLOTS;
 
