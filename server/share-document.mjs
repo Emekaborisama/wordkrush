@@ -21,6 +21,7 @@
  * get rewritten.
  */
 import { COPY_MARKERS, HEAD_MARKERS, escapeHtml } from '../scripts/patch-web-head.mjs';
+import { cardId, cardImagePath } from './og-card.mjs';
 
 export const SITE_URL = 'https://wordkrush.com';
 
@@ -121,12 +122,18 @@ function shareCopy({ title, description, name }) {
  *
  * `shareId` is the canonical (already percent-decoded) id, so the URLs this
  * page declares are the same however the request that asked for it was encoded.
+ *
+ * The card is declared at `/og/share/{cardId}.png`, not at `/share/{shareId}/
+ * og.png`. A scraper reading this page fetches whatever `og:image` says, and
+ * the nested path made that a second dynamic route carrying the whole result
+ * payload; the card id is short, flat and names only what the card draws. The
+ * old path still serves the same bytes for anything that already cached it.
  */
 export function shareDocument(shellHtml, { shareId, shareData, description, imageVersion }) {
   const name = gameTitle(shareData.game);
   const title = `WordKrush · ${name}`;
   const pageUrl = `${SITE_URL}/share/${shareId}`;
-  const imageUrl = `${pageUrl}/og.png?v=${imageVersion}`;
+  const imageUrl = `${SITE_URL}${cardImagePath(cardId(shareData))}?v=${imageVersion}`;
   const imageAlt = IMAGE_ALT[shareData.game];
 
   let html = replaceBlock(

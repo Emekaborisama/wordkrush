@@ -19,6 +19,7 @@ import {
   applySearchSurface,
   applyViewportCss,
 } from '../scripts/patch-web-head.mjs';
+import { cardId, cardImagePath } from './og-card.mjs';
 import { hasShareMarkers, shareDocument } from './share-document.mjs';
 
 const SHELL = applyViewportCss(
@@ -84,14 +85,25 @@ describe('the share document', () => {
     expect(html).not.toContain(COPY_MARKERS[0]);
   });
 
-  it('points every declared URL at the share id it was given', () => {
+  it('points the page URLs at the share id it was given', () => {
     const html = shareFrom();
 
     expect(html).toContain('<meta property="og:url" content="https://wordkrush.com/share/abc~"/>');
-    expect(html).toContain(
-      '<meta property="og:image" content="https://wordkrush.com/share/abc~/og.png?v=9.9.9"/>',
-    );
     expect(html).toContain('<link rel="canonical" href="https://wordkrush.com/share/abc~"/>');
+  });
+
+  it('points the card at the short path, not at the share id', () => {
+    const html = shareFrom();
+    const stamped = `https://wordkrush.com${cardImagePath(cardId(RESULT))}?v=9.9.9`;
+
+    // A scraper fetches whatever `og:image` says. The nested
+    // `/share/{token}/og.png` put the whole result payload in that URL; the
+    // card id carries only the two photos a More or Less board draws.
+    expect(stamped).toMatch(/\/og\/share\/m_[a-z0-9-]+_[a-z0-9-]+\.png\?v=9\.9\.9$/);
+    expect(html).toContain(`<meta property="og:image" content="${stamped}"/>`);
+    expect(html).toContain(`<meta property="og:image:secure_url" content="${stamped}"/>`);
+    expect(html).toContain(`<meta name="twitter:image" content="${stamped}"/>`);
+    expect(html).not.toContain('/share/abc~/og.png');
   });
 
   it('escapes a description before it reaches an attribute', () => {
