@@ -36,10 +36,10 @@ const ACCENT_COLOR = '#E8B840'; // brand.krush
  * one full-width photo card above another, MORE and LESS underneath, then a
  * dark bottom band so X's `summary_large_image` title strip ("WordKrush · More
  * or Less") cannot sit on the buttons. The measurements here trace that crop
- * — cards ending around y=221 and y=436 on a 1200×630 ground, an 86px button
- * row, then a 96px pad.
+ * — cards ending around y=217 and y=428 on a 1200×630 ground, an 86px button
+ * row, 12px of air, then a 96px pad.
  *
- * That makes each photo slot ~5.7:1, and cropping a mostly-portrait Wikipedia
+ * That makes each photo slot ~5.9:1, and cropping a mostly-portrait Wikipedia
  * lead image that flat costs real detail. It is an accepted cost, not a
  * trade-off to reopen: the stacked pair is the product bar, and the pad is
  * what keeps both buttons clear of the overlay. `og-photos.mjs` spends its
@@ -60,6 +60,8 @@ const BOARD = {
    * below, so an overlay at either edge cannot cover MORE or LESS.
    */
   bottomSafePad: 96,
+  /** Air between the button row and the overlay zone, same as `gap`. */
+  clearance: 12,
   /** `theme.bg` — dark-on-bright label for the filled button. */
   ink: '#0A0817',
   /** `theme.text`. */
@@ -80,7 +82,7 @@ const BOARD = {
 
 const CARD_W = WIDTH - BOARD.pad * 2;
 const CARD_H = Math.round(
-  (HEIGHT - BOARD.pad - BOARD.bottomSafePad - BOARD.buttonHeight - BOARD.gap * 2) / 2,
+  (HEIGHT - BOARD.pad - BOARD.bottomSafePad - BOARD.clearance - BOARD.buttonHeight - BOARD.gap * 2) / 2,
 );
 const BUTTON_W = Math.round((CARD_W - BOARD.gap) / 2);
 
