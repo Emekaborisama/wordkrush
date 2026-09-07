@@ -29,11 +29,12 @@ import { CARD_PHOTO_IDS, cardPhotoSource, pickCardPhotoIds } from './og-card.mjs
  * Stored size of one card photo. Matches the card slot in `og-image.mjs`;
  * change them together or the photo is rescaled a second time on the way out.
  *
- * Two full-width rows inside 1200×630 make this a 4.8:1 slot, which is the
- * shape the signed board has and is not negotiable — see `og-image.mjs`.
+ * Two full-width rows plus the bottom safe pad inside 1200×630 make this a
+ * ~5.9:1 slot, which is the shape the signed board has and is not negotiable
+ * — see `og-image.mjs`.
  */
 export const PHOTO_WIDTH = 1164;
-export const PHOTO_HEIGHT = 242;
+export const PHOTO_HEIGHT = 196;
 
 /**
  * Minimum image entropy for a card photo.
@@ -65,7 +66,7 @@ const photos = new Map();
  * for a flat graphic so the caller can drop it from the pool.
  */
 async function toCardPhoto(bytes) {
-  // The slot is a 4.8:1 sliver of a mostly-portrait source, so which band of
+  // The slot is a ~5.9:1 sliver of a mostly-portrait source, so which band of
   // the frame survives decides whether the photo is recognisable at all.
   // `attention` picks the most salient one, which on a Wikipedia lead portrait
   // is the face. A fixed band does not work: cropping from the top leaves hair
