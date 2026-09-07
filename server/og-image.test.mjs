@@ -169,10 +169,10 @@ describe('the More or Less board layout', () => {
       // ("WordKrush · More or Less") lands on the dark band, not the buttons.
       expect(slot.top).toBeGreaterThanOrEqual(MORE_OR_LESS_X_TITLE_STRIP);
       expect(slot.top + slot.height).toBeLessThanOrEqual(630 - MORE_OR_LESS_BOTTOM_SAFE_PAD);
-      // Not flush with the overlay: a gap of dark band sits between the
-      // button's bottom edge and the strip budget.
-      expect(630 - (slot.top + slot.height)).toBeGreaterThan(MORE_OR_LESS_BOTTOM_SAFE_PAD);
     }
+    // 110px is the signed pad. The overlay lands on it; the buttons sit above it.
+    expect(MORE_OR_LESS_BOTTOM_SAFE_PAD).toBe(110);
+    expect(630 - (more.top + more.height)).toBe(MORE_OR_LESS_BOTTOM_SAFE_PAD);
     expect(band.height).toBeGreaterThanOrEqual(MORE_OR_LESS_BOTTOM_SAFE_PAD + more.height);
     expect(band.top + band.height).toBe(630);
     expect(band.fill).toBe('#121025');

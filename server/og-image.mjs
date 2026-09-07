@@ -36,8 +36,8 @@ const ACCENT_COLOR = '#E8B840'; // brand.krush
  * one full-width photo card above another, MORE and LESS underneath, then a
  * dark bottom band so X's `summary_large_image` title strip ("WordKrush · More
  * or Less") cannot sit on the buttons. The measurements here trace that crop
- * — cards ending around y=217 and y=428 on a 1200×630 ground, an 86px button
- * row, 12px of air, then a 96px pad.
+ * — cards ending around y=214 and y=422 on a 1200×630 ground, an 86px button
+ * row, then a 110px pad. The pad is the signed bar.
  *
  * That makes each photo slot ~5.9:1, and cropping a mostly-portrait Wikipedia
  * lead image that flat costs real detail. It is an accepted cost, not a
@@ -55,13 +55,12 @@ const BOARD = {
   buttonHeight: 86,
   buttonRadius: 28,
   /**
-   * Dark band below the button row. 96px is ~15% of 630 — a one-line title
-   * bar plus chrome — and is also the top-strip budget the buttons must sit
-   * below, so an overlay at either edge cannot cover MORE or LESS.
+   * Dark band below the button row. 110px is the signed bar — enough for X's
+   * title strip ("WordKrush · More or Less") plus chrome — and is also the
+   * top-strip budget the buttons must sit below, so an overlay at either
+   * edge cannot cover MORE or LESS.
    */
-  bottomSafePad: 96,
-  /** Air between the button row and the overlay zone, same as `gap`. */
-  clearance: 12,
+  bottomSafePad: 110,
   /** `theme.bg` — dark-on-bright label for the filled button. */
   ink: '#0A0817',
   /** `theme.text`. */
@@ -82,7 +81,7 @@ const BOARD = {
 
 const CARD_W = WIDTH - BOARD.pad * 2;
 const CARD_H = Math.round(
-  (HEIGHT - BOARD.pad - BOARD.bottomSafePad - BOARD.clearance - BOARD.buttonHeight - BOARD.gap * 2) / 2,
+  (HEIGHT - BOARD.pad - BOARD.bottomSafePad - BOARD.buttonHeight - BOARD.gap * 2) / 2,
 );
 const BUTTON_W = Math.round((CARD_W - BOARD.gap) / 2);
 

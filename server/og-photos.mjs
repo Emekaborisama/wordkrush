@@ -34,7 +34,7 @@ import { CARD_PHOTO_IDS, cardPhotoSource, pickCardPhotoIds } from './og-card.mjs
  * — see `og-image.mjs`.
  */
 export const PHOTO_WIDTH = 1164;
-export const PHOTO_HEIGHT = 197;
+export const PHOTO_HEIGHT = 196;
 
 /**
  * Minimum image entropy for a card photo.
