@@ -13,8 +13,11 @@ import { afterEach, describe, expect, it } from 'vitest';
 import sharp from 'sharp';
 
 import {
+  MORE_OR_LESS_BOTTOM_BAND,
+  MORE_OR_LESS_BOTTOM_SAFE_PAD,
   MORE_OR_LESS_BUTTON_SLOTS,
   MORE_OR_LESS_CARD_SLOTS,
+  MORE_OR_LESS_X_TITLE_STRIP,
   generateOgImagePng,
   generateOgImageSvg,
 } from './og-image.mjs';
@@ -155,6 +158,22 @@ describe('the More or Less board layout', () => {
     expect(less.left).toBeGreaterThan(more.left + more.width);
     expect(more.top + more.height).toBeLessThanOrEqual(630);
   });
+
+  it('keeps the button row in the safe zone below X’s title strip and above the bottom pad', () => {
+    const [more, less] = MORE_OR_LESS_BUTTON_SLOTS;
+    const band = MORE_OR_LESS_BOTTOM_BAND;
+
+    for (const slot of [more, less]) {
+      // Below the top-strip budget: an overlay at the top of the card cannot
+      // sit on MORE or LESS. Above the bottom pad: the green title strip
+      // ("WordKrush · More or Less") lands on the dark band, not the buttons.
+      expect(slot.top).toBeGreaterThanOrEqual(MORE_OR_LESS_X_TITLE_STRIP);
+      expect(slot.top + slot.height).toBeLessThanOrEqual(630 - MORE_OR_LESS_BOTTOM_SAFE_PAD);
+    }
+    expect(band.height).toBeGreaterThanOrEqual(MORE_OR_LESS_BOTTOM_SAFE_PAD + more.height);
+    expect(band.top + band.height).toBe(630);
+    expect(band.fill).toBe('#121025');
+  });
 });
 
 describe('the More or Less card', () => {
@@ -210,6 +229,29 @@ describe('the More or Less card', () => {
     // An empty slot is `theme.card` (#1A1732, mean ~34) on a #0A0817 page.
     // Anything drawn into it and scrimmed sits well above that.
     for (const { mean } of slots) expect(mean).toBeGreaterThan(60);
+  });
+
+  it('draws a dark band under the button row for X’s title strip', async () => {
+    await preloadCardPhotos({ fetchImpl: fetchServing((url) => photoLike(url.length)) });
+    const svg = generateOgImageSvg(RESULT, 'safe-pad');
+    const png = await generateOgImagePng(RESULT, 'safe-pad');
+    const [more] = MORE_OR_LESS_BUTTON_SLOTS;
+    const band = MORE_OR_LESS_BOTTOM_BAND;
+
+    expect(svg).toContain(
+      `<rect x="${band.left}" y="${band.top}" width="${band.width}" height="${band.height}" fill="${band.fill}"/>`,
+    );
+
+    // Sample the pad itself, below the buttons and clear of their rounded
+    // corners: a flat elevated ink, not a photo and not a button fill.
+    const { mean, maxStdev } = await regionStats(png, {
+      left: 40,
+      top: more.top + more.height + 8,
+      width: 200,
+      height: MORE_OR_LESS_BOTTOM_SAFE_PAD - 16,
+    });
+    expect(mean).toBeLessThan(30);
+    expect(maxStdev).toBeLessThan(0.5);
   });
 
   it('keeps the MORE and LESS fills flat', async () => {

@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.36] - 2026-09-07
+
+### Fixed
+- **MORE and LESS on the share card now sit clear of X's title strip.** 0.8.35 made the composer unfurl a large card, and after a full minute LESS read cleanly while MORE sat under the green `WordKrush · More or Less` overlay. The stacked board is unchanged — two full-bleed photo cards above MORE / LESS, no title, grid, streak, names or values — but `server/og-image.mjs` now draws a `theme.bgElevated` bottom band under the button row (`MORE_OR_LESS_BOTTOM_SAFE_PAD`, 96px, ~15% of 630). The overlay lands on that pad; both buttons sit below a matching top-strip budget and above the pad. Photo slots shorten to match (still stacked, still `sharp.strategy.attention`). `server/og-image.test.mjs` asserts the button region is in that safe zone and that the pad itself is a flat dark band. Stamped `?v=0.8.36`. Share token encoding, photo ids, `/og/share/` path, truecolour encode, homepage lockup, Wordfall L4, analytics and races are untouched.
+
 ## [0.8.35] - 2026-09-04
 
 ### Fixed

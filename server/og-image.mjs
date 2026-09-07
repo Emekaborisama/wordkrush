@@ -33,14 +33,17 @@ const ACCENT_COLOR = '#E8B840'; // brand.krush
  * `src/ui/theme.ts` / `src/games/registry.ts`.
  *
  * The board is STACKED, as the phone plays it and as the signed crop shows it:
- * one full-width photo card above another, MORE and LESS underneath. The
- * measurements here trace that crop — cards ending around y=260 and y=514 on a
- * 1200×630 ground, an ~86px button row beneath them.
+ * one full-width photo card above another, MORE and LESS underneath, then a
+ * dark bottom band so X's `summary_large_image` title strip ("WordKrush · More
+ * or Less") cannot sit on the buttons. The measurements here trace that crop
+ * — cards ending around y=221 and y=436 on a 1200×630 ground, an 86px button
+ * row, then a 96px pad.
  *
- * That makes each photo slot 4.8:1, and cropping a mostly-portrait Wikipedia
+ * That makes each photo slot ~5.7:1, and cropping a mostly-portrait Wikipedia
  * lead image that flat costs real detail. It is an accepted cost, not a
- * trade-off to reopen: the stacked pair is the product bar. `og-photos.mjs`
- * spends its crop budget on keeping the subject in the band that survives.
+ * trade-off to reopen: the stacked pair is the product bar, and the pad is
+ * what keeps both buttons clear of the overlay. `og-photos.mjs` spends its
+ * crop budget on keeping the subject in the band that survives.
  *
  * `CARD_W` / `CARD_H` are the photo size in `og-photos.mjs`; change them
  * together or a card photo is rescaled a second time on the way out.
@@ -51,6 +54,12 @@ const BOARD = {
   cardRadius: 28,
   buttonHeight: 86,
   buttonRadius: 28,
+  /**
+   * Dark band below the button row. 96px is ~15% of 630 — a one-line title
+   * bar plus chrome — and is also the top-strip budget the buttons must sit
+   * below, so an overlay at either edge cannot cover MORE or LESS.
+   */
+  bottomSafePad: 96,
   /** `theme.bg` — dark-on-bright label for the filled button. */
   ink: '#0A0817',
   /** `theme.text`. */
@@ -65,11 +74,25 @@ const BOARD = {
   scrim: 'rgba(8,6,20,0.34)',
   /** `theme.card` — the surface a card keeps when it has no photo. */
   surface: '#1A1732',
+  /** `theme.bgElevated` — the shelf X's title strip lands on. */
+  band: '#121025',
 };
 
 const CARD_W = WIDTH - BOARD.pad * 2;
-const CARD_H = Math.round((HEIGHT - BOARD.pad * 2 - BOARD.buttonHeight - BOARD.gap * 2) / 2);
+const CARD_H = Math.round(
+  (HEIGHT - BOARD.pad - BOARD.bottomSafePad - BOARD.buttonHeight - BOARD.gap * 2) / 2,
+);
 const BUTTON_W = Math.round((CARD_W - BOARD.gap) / 2);
+
+/**
+ * X's `summary_large_image` title-strip budget, from either edge. Buttons
+ * must sit below this from the top and above `HEIGHT` minus this from the
+ * bottom.
+ */
+export const MORE_OR_LESS_X_TITLE_STRIP = BOARD.bottomSafePad;
+
+/** Dark pad under the MORE / LESS row. Same figure as the top-strip budget. */
+export const MORE_OR_LESS_BOTTOM_SAFE_PAD = BOARD.bottomSafePad;
 
 // Copy Fredoka font to a location fontconfig can find
 // librsvg (used by sharp for SVG) doesn't support data URI fonts in @font-face
@@ -136,6 +159,18 @@ export const MORE_OR_LESS_BUTTON_SLOTS = [
     height: BOARD.buttonHeight,
   },
 ];
+
+/**
+ * Full-bleed shelf under the stacked photos: the gap above the buttons, the
+ * button row, and the safe pad X's title strip occupies.
+ */
+export const MORE_OR_LESS_BOTTOM_BAND = {
+  left: 0,
+  top: BOARD.pad + CARD_H * 2 + BOARD.gap,
+  width: WIDTH,
+  height: HEIGHT - (BOARD.pad + CARD_H * 2 + BOARD.gap),
+  fill: BOARD.band,
+};
 
 /**
  * Generate a spoiler-free OG image PNG for a game result.
@@ -272,7 +307,8 @@ function boardButton({ x, y, fill, fillOpacity, stroke, strokeOpacity, label, la
 }
 
 /**
- * The board a player just left: two stacked photo cards over MORE and LESS.
+ * The board a player just left: two stacked photo cards over MORE and LESS,
+ * sitting on a dark pad so X's title strip cannot cover the buttons.
  *
  * Nothing else is on it. No item names or values, because a share card is
  * public and the pair that ended a run is a spoiler; no streak, best, rank or
@@ -284,6 +320,7 @@ function generateMoreOrLessImage(data, cardId) {
   const photos = cardPhotoPair(cardId, data.photos);
   const [topSlot, bottomSlot] = MORE_OR_LESS_CARD_SLOTS;
   const [moreSlot, lessSlot] = MORE_OR_LESS_BUTTON_SLOTS;
+  const band = MORE_OR_LESS_BOTTOM_BAND;
 
   const clip = (id, y) =>
     `<clipPath id="${id}"><rect x="${pad}" y="${y}" width="${CARD_W}" height="${CARD_H}" rx="${cardRadius}"/></clipPath>`;
@@ -293,6 +330,7 @@ function generateMoreOrLessImage(data, cardId) {
   const content = `
     ${boardCard('wk-card-top', topSlot.left, topSlot.top, photos?.top)}
     ${boardCard('wk-card-bottom', bottomSlot.left, bottomSlot.top, photos?.bottom)}
+    <rect x="${band.left}" y="${band.top}" width="${band.width}" height="${band.height}" fill="${band.fill}"/>
     ${boardButton({
       x: moreSlot.left,
       y: moreSlot.top,
