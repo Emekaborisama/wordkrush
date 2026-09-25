@@ -229,6 +229,56 @@ export const LEVELS: Level[] = [
     ],
     availableFrom: '2026-09-21',
   },
+  {
+    number: 16,
+    name: 'Surgical Strike',
+    description: 'Clear 12 S tiles and score 5,000 points.',
+    moves: 20,
+    crates: 0,
+    objectives: [
+      { kind: 'letter', letter: 's', target: 12 },
+      { kind: 'score', target: 5000 },
+    ],
+    availableFrom: '2026-09-28',
+  },
+  {
+    number: 17,
+    name: 'Rush Hour',
+    description: 'Play seven words, including four with four or more letters, in 90 seconds.',
+    moves: UNLIMITED_MOVES,
+    timeLimitMs: seconds(90),
+    crates: 0,
+    objectives: [
+      { kind: 'words', target: 7 },
+      { kind: 'length', minLength: 4, target: 4 },
+    ],
+    availableFrom: '2026-10-05',
+  },
+  {
+    number: 18,
+    name: 'Crate Code',
+    description: 'Break all 10 crates and clear 10 O tiles.',
+    moves: 20,
+    crates: 10,
+    objectives: [
+      { kind: 'crates', target: 10 },
+      { kind: 'letter', letter: 'o', target: 10 },
+    ],
+    availableFrom: '2026-10-12',
+  },
+  {
+    number: 19,
+    name: 'Blaze Score',
+    description: 'Break six crates and score 1,500 points in 90 seconds.',
+    moves: UNLIMITED_MOVES,
+    timeLimitMs: seconds(90),
+    crates: 8,
+    objectives: [
+      { kind: 'crates', target: 6 },
+      { kind: 'score', target: 1500 },
+    ],
+    availableFrom: '2026-10-19',
+  },
 ];
 
 export function levelByNumber(n: number): Level | undefined {

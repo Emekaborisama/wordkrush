@@ -296,6 +296,12 @@ function LevelPlay({
     resume,
     (saved) => saved ?? newGame(ctx, seed ?? randomSeed()),
   );
+  /**
+   * React batches multiple browser pointer events from one task. Keep the
+   * reducer's latest trace result here so release can submit it even before the
+   * render that exposes it through `state` has run.
+   */
+  const pendingTrace = useRef<WordfallState | null>(null);
   const reported = useRef(false);
   const [boardBounds, setBoardBounds] = useState({ width: 0, height: 0 });
 
@@ -445,17 +451,33 @@ function LevelPlay({
     return null;
   }, [state.rejection, state.lastPlay]);
 
+  const trace = useCallback(
+    (index: number) => {
+      const next = reducer(pendingTrace.current ?? state, { type: 'trace', index }, ctx);
+      pendingTrace.current = next;
+      dispatch({ type: 'trace', index });
+    },
+    [ctx, state],
+  );
+
+  const cancelTrace = useCallback(() => {
+    pendingTrace.current = null;
+    dispatch({ type: 'cancel' });
+  }, []);
+
   const submit = () => {
-    if (state.selection.length === 0) return;
+    const traceState = pendingTrace.current ?? state;
+    if (traceState.selection.length === 0) return;
     // Bank the clock to this exact instant before playing, so a level's
     // recorded time is when it was finished rather than up to a tick earlier —
     // and so a word played after the buzzer cannot sneak in.
-    const now = startedAtRef.current === null ? state.elapsedMs : Date.now() - startedAtRef.current;
-    const ticked = reducer(state, { type: 'tick', elapsedMs: now }, ctx);
+    const now = startedAtRef.current === null ? traceState.elapsedMs : Date.now() - startedAtRef.current;
+    const ticked = reducer(traceState, { type: 'tick', elapsedMs: now }, ctx);
     const after = reducer(ticked, { type: 'submit' }, ctx);
 
     dispatch({ type: 'tick', elapsedMs: now });
     dispatch({ type: 'submit' });
+    pendingTrace.current = null;
 
     const rejectionKind =
       after.rejection?.kind === 'too-short'
@@ -539,9 +561,9 @@ function LevelPlay({
             maxWidth={boardBounds.width}
             maxHeight={boardBounds.height}
             disabled={over}
-            onTrace={(index) => dispatch({ type: 'trace', index })}
+            onTrace={trace}
             onRelease={submit}
-            onCancel={() => dispatch({ type: 'cancel' })}
+            onCancel={cancelTrace}
           />
         ) : null}
       </View>
