@@ -1,5 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, PanResponder, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, PanResponder, Platform, StyleSheet, Text, View } from 'react-native';
 import { colOf, rowOf } from '../../games/wordfall/board';
 import type { Board, PlayResult, SpecialKind } from '../../games/wordfall/types';
 import { font, radius, theme, type } from '../theme';
@@ -104,8 +104,8 @@ export function BoardView({
   // PanResponder is created once, but its handlers must see the CURRENT props.
   // Without this indirection the responder closes over the first render's
   // callbacks and the board stops responding after the first word.
-  const live = useRef({ onTrace, onRelease, onCancel, tileSize, board, disabled });
-  live.current = { onTrace, onRelease, onCancel, tileSize, board, disabled };
+  const live = useRef({ onTrace, onRelease, onCancel, tileSize, board, disabled, selection });
+  live.current = { onTrace, onRelease, onCancel, tileSize, board, disabled, selection };
 
   const responder = useMemo(
     () =>
@@ -126,7 +126,11 @@ export function BoardView({
           const hit = hitTest(e.nativeEvent.pageX, e.nativeEvent.pageY);
           if (hit !== null) live.current.onTrace(hit);
         },
-        onPanResponderRelease: () => live.current.onRelease(),
+        onPanResponderRelease: (e) => {
+          const hit = hitTest(e.nativeEvent.pageX, e.nativeEvent.pageY);
+          if (hit !== null) live.current.onTrace(hit);
+          live.current.onRelease();
+        },
         // A terminated gesture (a system alert, a scroll taking over) is not a
         // submission — dropping the trace is the safe reading.
         onPanResponderTerminate: () => live.current.onCancel(),
@@ -137,25 +141,41 @@ export function BoardView({
   /**
    * Which tile a page coordinate is on.
    *
-   * Deliberately generous inside a tile and strict near its edge: the test is
-   * distance from the tile's centre, not the cell rectangle. Using the whole
-   * cell makes it far too easy to clip a diagonal neighbour on the way past and
-   * spell something you did not mean.
+   * Cells are resolved by their nearest centre, so the narrow visual gap belongs
+   * to the tile beside it. Browser pointer automation and a fast finger can
+   * otherwise land a few pixels over a tile boundary and silently lose the
+   * first or final letter. The circular limit still rejects diagonal corners.
    */
   function hitTest(pageX: number, pageY: number): number | null {
     const { tileSize: size, board: b } = live.current;
     if (size <= 0) return null;
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const x = pageX - window.scrollX;
+      const y = pageY - window.scrollY;
+      const boardElement = document.getElementById(WORDFALL_BOARD_WEB_ID);
+      const tiles = boardElement?.querySelectorAll<HTMLElement>('[aria-label]') ?? [];
+      let closest: { index: number; distance: number; radius: number } | null = null;
+      for (let index = 0; index < b.tiles.length; index++) {
+        const tile = tiles[index];
+        if (!tile) continue;
+        const rect = tile.getBoundingClientRect();
+        const distance = Math.hypot(x - (rect.left + rect.width / 2), y - (rect.top + rect.height / 2));
+        const candidate = { index, distance, radius: Math.max(rect.width, rect.height) * 0.58 };
+        if (!closest || candidate.distance < closest.distance) closest = candidate;
+      }
+      return closest && closest.distance <= closest.radius ? closest.index : null;
+    }
     const x = pageX - origin.current.x;
     const y = pageY - origin.current.y;
     const pitch = size + GAP;
-    const col = Math.floor(x / pitch);
-    const row = Math.floor(y / pitch);
+    const col = Math.round((x - size / 2) / pitch);
+    const row = Math.round((y - size / 2) / pitch);
     if (col < 0 || col >= b.width || row < 0 || row >= b.height) return null;
 
     const cx = col * pitch + size / 2;
     const cy = row * pitch + size / 2;
     const distance = Math.hypot(x - cx, y - cy);
-    return distance <= size * 0.46 ? row * b.width + col : null;
+    return distance <= pitch / 2 ? row * b.width + col : null;
   }
 
   const measure = () => {

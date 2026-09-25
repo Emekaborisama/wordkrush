@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.37] - 2026-09-25
+
+### Added
+- **Wordfall weekly buffer through 19 October.** Four hard bundled drops keep the Monday queue full: Surgical Strike (28 Sep), Rush Hour (5 Oct), Crate Code (12 Oct), and Blaze Score (19 Oct). Web players receive them after the next merge and deploy; native players need a build containing this catalog.
+
 ## [0.8.36] - 2026-09-07
 
 ### Fixed
