@@ -5,15 +5,18 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CANONICAL_URL,
+  COPY_MARKERS,
   GAMES,
   GOOGLE_VERIFICATION_BODY,
   GOOGLE_VERIFICATION_FILE,
+  HEAD_MARKERS,
   HUB_SUBTITLE,
   PAGE_DESCRIPTION,
   PAGE_TITLE,
   SAME_AS,
   SITE_URL,
   applySearchSurface,
+  applyViewportCss,
   documentMeta,
   googleVerificationMeta,
   jsonLdGraph,
@@ -94,10 +97,35 @@ describe('branded search surface', () => {
     expect(html).toContain(`<title>${PAGE_TITLE}</title>`);
     expect(html).not.toContain('You need to enable JavaScript to run this app.');
     expect(html).toContain('<noscript>');
-    expect(html).toContain('<div id="root"><main id="wk-seo">');
+    expect(html).toContain(`<div id="root">${COPY_MARKERS[0]}<main id="wk-seo">`);
     expect(html).toContain('More or Less');
     expect(html).toContain('Clueless');
     expect(html).toContain('Wordfall');
+  });
+
+  it('delimits everything that describes the hub, so a share page can swap it', () => {
+    const html = applySearchSurface(FIXTURE, { ogImageUrl: `${SITE_URL}/og-image.png` });
+    const [headStart, headEnd] = HEAD_MARKERS;
+    const [copyStart, copyEnd] = COPY_MARKERS;
+
+    // `server/share-document.mjs` replaces these blocks whole. Anything the
+    // hub says that falls outside them survives onto every share page.
+    expect(html).toContain(`${headStart}<title>`);
+    expect(html).toContain(`</script>${headEnd}`);
+    expect(html.match(new RegExp(copyStart, 'g'))).toHaveLength(2);
+    expect(html.match(new RegExp(copyEnd, 'g'))).toHaveLength(2);
+    expect(html.slice(html.indexOf(headStart), html.indexOf(headEnd))).toContain(
+      PAGE_DESCRIPTION,
+    );
+  });
+
+  it('anchors the layout CSS after the head block, not inside it', () => {
+    const html = applyViewportCss(
+      applySearchSurface(FIXTURE, { ogImageUrl: `${SITE_URL}/og-image.png` }),
+    );
+
+    expect(html).toContain(`${HEAD_MARKERS[1]}<style id="wk-web-viewport"`);
+    expect(applyViewportCss(html)).toBe(html);
   });
 
   it('injects a Search Console meta tag only when the token is plausible', () => {

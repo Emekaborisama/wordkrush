@@ -65,16 +65,44 @@ describe('share data encoding', () => {
     expect(decoded).toEqual(data);
   });
 
-  it('produces URL-safe encoded strings', () => {
+  it('carries the card photos the share draws', () => {
     const data: MoreOrLessShareData = {
       game: 'more-or-less',
-      streak: 100,
-      bestStreak: 100,
+      streak: 15,
+      bestStreak: 20,
+      photos: ['albert-einstein', 'blue-whale'],
     };
 
-    const encoded = encodeShareData(data);
-    // URL-safe: no +, /, or = characters
-    expect(encoded).not.toMatch(/[+/=]/);
+    // The server draws the pair the token names, so the ids have to survive
+    // the round trip exactly — a link that loses them draws a different board.
+    expect(decodeShareData(encodeShareData(data))).toEqual(data);
+  });
+
+  it('produces tokens a composer will keep whole', () => {
+    // Every payload length mod 3, so the two that used to need `=` padding —
+    // and therefore used to end on `~` — are both covered.
+    for (const streak of [1, 10, 100, 1000, 10000]) {
+      const encoded = encodeShareData({ game: 'more-or-less', streak, bestStreak: streak });
+
+      // `twitter-text`, the library X's own composer uses to find the links in
+      // a draft, will not end a URL on `~`, so a token that ended on one was
+      // truncated there — the paste showed a blue link and no card. Unpadded
+      // base64url has nothing but characters a URL may end on.
+      expect(encoded).not.toMatch(/[+/=~]/);
+      expect(encoded.at(-1)).toMatch(/[A-Za-z0-9_-]/);
+    }
+  });
+
+  it('still decodes the ~-padded tokens shared before 0.8.35', () => {
+    const data: MoreOrLessShareData = { game: 'more-or-less', streak: 0, bestStreak: 0 };
+    const unpadded = encodeShareData(data);
+    // How this payload was spelled until 0.8.35, and how it arrives after a
+    // composer has cut the trailing `~` off it.
+    const legacy = `${unpadded}~~`;
+
+    expect(decodeShareData(legacy)).toEqual(data);
+    expect(decodeShareData(unpadded)).toEqual(data);
+    expect(decodeShareData(`${unpadded}==`)).toEqual(data);
   });
 
   it('returns null for invalid encoded strings', () => {
