@@ -46,6 +46,11 @@ behavioural analysis, not by validation.
 
 ## 3. Attack surface
 
+![Attack surface: reading the public web bundle yields the publishable key, and a magic link to any inbox yields a real session JWT. The two combine at PostgREST, where the only guard on inserting a global score is auth.uid() = player_id — identity, never gameplay.](diagrams/attack-surface.svg)
+
+<details>
+<summary>Text version</summary>
+
 ```
   ATTACKER                    SURFACE                          BACKED BY
      │
@@ -73,6 +78,8 @@ behavioural analysis, not by validation.
      └ scans the deployment
                             ► wordkrush.com response headers   server/serve.mjs
 ```
+
+</details>
 
 The starred line is where essentially all the risk sits. Everything reachable
 there is reachable with a legitimately obtained session token, which costs one

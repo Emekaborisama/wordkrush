@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" width="960" height="420" role="img" aria-label="Attack surface: reading the public web bundle yields the publishable key, and a magic link to any inbox yields a real session JWT. The two combine at the PostgREST REST endpoint, where the only guard on inserting a global score is auth.uid() = player_id — a check of identity, never of gameplay.">
+  <rect width="960" height="420" fill="#0A0817"/>
+
+  <text x="24" y="36" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#FFF9F6">Attack surface</text>
+  <text x="24" y="57" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#87809E">Two inputs that are public by design combine into one authenticated write.</text>
+
+  <!-- attacker -->
+  <rect x="24" y="182" width="120" height="64" rx="10" fill="#1A1732" stroke="#4B4171" stroke-width="1.5"/>
+  <text x="84" y="219" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#FFF9F6">ATTACKER</text>
+
+  <!-- attacker to lane A -->
+  <polyline points="144,206 160,206 160,128 167,128" fill="none" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="176,128 167,123 167,133" fill="#4B4171"/>
+  <!-- attacker to lane B -->
+  <polyline points="144,222 160,222 160,300 167,300" fill="none" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="176,300 167,295 167,305" fill="#4B4171"/>
+
+  <!-- lane A: bundle -->
+  <rect x="176" y="96" width="210" height="64" rx="10" fill="#1A1732" stroke="#4B4171" stroke-width="1.5"/>
+  <text x="281" y="123" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#FFF9F6">Web bundle</text>
+  <text x="281" y="142" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#87809E">public by design (D-004)</text>
+
+  <!-- lane B: magic link -->
+  <rect x="176" y="268" width="210" height="64" rx="10" fill="#1A1732" stroke="#4B4171" stroke-width="1.5"/>
+  <text x="281" y="295" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#FFF9F6">Magic link</text>
+  <text x="281" y="314" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#87809E">to any disposable inbox</text>
+
+  <!-- lane A arrow -->
+  <line x1="386" y1="128" x2="433" y2="128" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="442,128 433,123 433,133" fill="#4B4171"/>
+  <text x="414" y="119" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#87809E">reads</text>
+
+  <!-- lane B arrow -->
+  <line x1="386" y1="300" x2="433" y2="300" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="442,300 433,295 433,305" fill="#4B4171"/>
+  <text x="414" y="291" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#87809E">requests</text>
+
+  <!-- yield A -->
+  <rect x="442" y="96" width="196" height="64" rx="10" fill="#1A1732" stroke="#4B4171" stroke-width="1.5"/>
+  <text x="540" y="123" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#FFB020">publishable key</text>
+  <text x="540" y="142" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#87809E">shipped in the JS bundle</text>
+
+  <!-- yield B -->
+  <rect x="442" y="268" width="196" height="64" rx="10" fill="#1A1732" stroke="#4B4171" stroke-width="1.5"/>
+  <text x="540" y="295" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#32E487">session JWT</text>
+  <text x="540" y="314" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#87809E">genuine, fully valid</text>
+
+  <!-- converge -->
+  <polyline points="638,128 668,128 668,186 691,186" fill="none" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="700,186 691,181 691,191" fill="#4B4171"/>
+  <polyline points="638,300 668,300 668,274 691,274" fill="none" stroke="#4B4171" stroke-width="1.5"/>
+  <polygon points="700,274 691,269 691,279" fill="#4B4171"/>
+
+  <!-- critical surface -->
+  <rect x="700" y="138" width="236" height="184" rx="10" fill="#241F43" stroke="#FF5E72" stroke-width="2"/>
+  <text x="818" y="167" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#FF5E72">★  PostgREST /rest/v1</text>
+  <line x1="716" y1="180" x2="920" y2="180" stroke="#4B4171" stroke-width="1"/>
+  <text x="818" y="203" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#FFF9F6">INSERT global_scores</text>
+  <text x="818" y="228" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#87809E">the only guard</text>
+  <text x="818" y="249" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#FFB020">auth.uid() = player_id</text>
+  <text x="818" y="276" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="#C5BED8">proves who you are,</text>
+  <text x="818" y="295" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#FF5E72">never that you played</text>
+
+  <text x="24" y="392" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="#87809E">RLS is the entire boundary — there is no application server in front of PostgREST to add one later.  SEC-01</text>
+</svg>

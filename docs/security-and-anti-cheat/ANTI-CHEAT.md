@@ -48,6 +48,8 @@ evidence trail.
 
 These are different products and need different boards.
 
+![The two-board split. A client-chosen seed gives an unbounded solve window and a run that is genuinely correct, which no verifier can distinguish from skill, so it may only ever be a personal best. A server-issued seed withheld until the window opens gives a bounded window, one entry per challenge, and a replayable action log — the only path that earns a global rank.](diagrams/two-board-split.svg)
+
 | | **Casual** | **Ranked** |
 |---|---|---|
 | Seed | Client (`randomSeed()`) | Server-issued, published at window open |
@@ -76,6 +78,11 @@ Each tier catches what the previous cannot. Deploy in order — every tier is
 useful on its own, and tiers 0 and 1 are pure backend work needing no client
 release, which matters while web is the only live surface.
 
+![Four tiers of defence. A submission passes Tier 0 structural SQL checks, then Tier 1 replay verification, then Tier 2 behavioural scoring, before becoming a ranked entry. Tiers 0 and 1 reject into a retained, never-shown store; Tier 2 only flags into a human review queue.](diagrams/defence-tiers.svg)
+
+<details>
+<summary>Text version</summary>
+
 ```
  SUBMISSION
      │
@@ -91,6 +98,8 @@ release, which matters while web is the only live surface.
      └─ TIER 3  Containment      what happens to what we caught?  policy
                 silent exclusion, sanction ladder, no feedback to the author
 ```
+
+</details>
 
 ---
 
