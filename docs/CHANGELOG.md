@@ -9,7 +9,7 @@ Rules:
 ## [0.8.39] - 2026-09-29
 
 ### Added
-- **Clueless Daily Vault levels 37–38: Hidden Space and Gather Round.** Two reviewed future solo levels extend the bundled Daily Vault buffer. Neither shows a hint; each theme stays sealed until players reach it. Native installs receive them with a later shipped build.
+- **Clueless Daily Vault levels 37–39: Hidden Space, Gather Round, and Daybreak Path.** Three reviewed future solo levels extend the bundled Daily Vault buffer. None shows a hint; each theme stays sealed until players reach it. Native installs receive them with a later shipped build.
 
 ## [0.8.38] - 2026-09-26
 
