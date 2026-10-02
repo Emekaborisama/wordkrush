@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.8.38] - 2026-10-02
+
+### Added
+- **Wordfall weekly buffer through 26 October.** Deep Focus is a hard bundled puzzle that asks players to score 5,000 points while playing nine words. Web players receive it after the next merge and deploy; native players need a build containing this catalog.
+
 ## [0.8.37] - 2026-09-25
 
 ### Added
