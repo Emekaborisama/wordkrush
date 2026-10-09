@@ -445,6 +445,15 @@ export const CLUELESS_SOLO_LEVELS: readonly CluelessSoloLevel[] = [
     hintPolicy: 'none',
     hint: null,
   },
+  {
+    number: 47,
+    puzzleNumber: 77,
+    name: 'Daily Vault: Velvet Trail',
+    description: 'Follow a fresh trail through meaning.',
+    phase: 'daily',
+    hintPolicy: 'none',
+    hint: null,
+  },
 ] as const;
 
 const LEVEL_BY_NUMBER = new Map(CLUELESS_SOLO_LEVELS.map((level) => [level.number, level]));
