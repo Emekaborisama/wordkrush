@@ -291,6 +291,18 @@ export const LEVELS: Level[] = [
     ],
     availableFrom: '2026-10-26',
   },
+  {
+    number: 21,
+    name: 'Tactical Sweep',
+    description: 'Clear 12 T tiles and make four five-letter words.',
+    moves: 20,
+    crates: 0,
+    objectives: [
+      { kind: 'letter', letter: 't', target: 12 },
+      { kind: 'length', minLength: 5, target: 4 },
+    ],
+    availableFrom: '2026-11-02',
+  },
 ];
 
 export function levelByNumber(n: number): Level | undefined {

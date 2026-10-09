@@ -9,7 +9,7 @@ Rules:
 ## [0.8.38] - 2026-10-02
 
 ### Added
-- **Wordfall weekly buffer through 26 October.** Deep Focus is a hard bundled puzzle that asks players to score 5,000 points while playing nine words. Web players receive it after the next merge and deploy; native players need a build containing this catalog.
+- **Wordfall weekly buffer through 2 November.** Deep Focus asks players to score 5,000 points while playing nine words; Tactical Sweep asks for 12 T tiles and four five-letter words. Both are hard bundled puzzles. Web players receive them after the next merge and deploy; native players need a build containing this catalog.
 
 ## [0.8.37] - 2026-09-25
 
