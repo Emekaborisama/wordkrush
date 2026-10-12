@@ -92,6 +92,7 @@ import p76 from './0076.json';
 import p77 from './0077.json';
 import p78 from './0078.json';
 import p79 from './0079.json';
+import p80 from './0080.json';
 
 export { CLUELESS_HINTS, hintForPuzzle } from './hints';
 
@@ -105,7 +106,7 @@ export const PUZZLES: Puzzle[] = [
   p54, p55, p56, p57, p58, p59, p60, p61, p62, p63, p64, p65, p66, p67, p68, p69,
   p70, p71, p72, p73, p74,
   p75, p76, p77, p78,
-  p79,
+  p79, p80,
 ] as Puzzle[];
 
 export const VOCABULARY: string[] = vocabData as string[];
