@@ -303,6 +303,16 @@ export const LEVELS: Level[] = [
     ],
     availableFrom: '2026-11-02',
   },
+  {
+    number: 22,
+    name: 'Long Haul',
+    description: 'Make three six-letter words in 90 seconds.',
+    moves: UNLIMITED_MOVES,
+    timeLimitMs: seconds(90),
+    crates: 0,
+    objectives: [{ kind: 'length', minLength: 6, target: 3 }],
+    availableFrom: '2026-11-09',
+  },
 ];
 
 export function levelByNumber(n: number): Level | undefined {
