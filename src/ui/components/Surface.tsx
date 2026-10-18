@@ -14,8 +14,8 @@ type Props = {
   children: ReactNode;
   /** Depth, back to front. 1–3 are cream boxes, lighter as they come forward. */
   level?: 0 | 1 | 2 | 3;
-  /** `cream` (default; `paper` is its old name) or the cyan board `frame` (`wood`). */
-  variant?: 'cream' | 'frame' | 'paper' | 'wood';
+  /** A cream box (default) or the cyan board `frame`. */
+  variant?: 'cream' | 'frame';
   /** Soft white sheen on the top half of the face. */
   gloss?: boolean;
   /** Override the border colour — e.g. gold on the selected row. */

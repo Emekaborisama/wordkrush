@@ -199,7 +199,6 @@ function startDetailFor(
     return (
       <StartDetail
         ribbon
-        ribbonColor={palette.ribbon}
         label={labelRound ? roundLabel(labelRound) : 'THIS SET'}
         title={`${seen} / ${total} names seen`}
         meta={
@@ -282,7 +281,6 @@ function startDetailFor(
     return (
       <StartDetail
         ribbon
-        ribbonColor={palette.ribbon}
         label="WORDFALL"
         title="Campaign levels"
         meta="A new level drops every Monday"

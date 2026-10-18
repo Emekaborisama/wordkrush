@@ -13,7 +13,7 @@ export type RaysProps = {
  * Twelve wedges in a slow spin. Static under reduce-motion. The triangles are
  * borders, not SVG, so web and native match. Never takes a tap.
  */
-export function Rays({ size = 280, color = withAlpha(palette.star, 0.72) }: RaysProps) {
+export function Rays({ size = 280, color = withAlpha(palette.gold, 0.72) }: RaysProps) {
   const reduceMotion = useReduceMotion();
   const spin = useRef(new Animated.Value(0)).current;
 
@@ -60,7 +60,7 @@ export function Rays({ size = 280, color = withAlpha(palette.star, 0.72) }: Rays
               borderTopWidth: size * 0.42,
               borderLeftColor: 'transparent',
               borderRightColor: 'transparent',
-              borderTopColor: index % 2 === 0 ? color : withAlpha(palette.ribbon, 0.45),
+              borderTopColor: index % 2 === 0 ? color : withAlpha(palette.orange, 0.45),
             }}
           />
         </View>

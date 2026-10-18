@@ -15,7 +15,6 @@ import {
   theme,
   tint,
   tone,
-  toneForPill,
   toneFrom,
   type,
   withAlpha,
@@ -133,11 +132,6 @@ describe('Block Blast kit', () => {
     expect(derived.lip).toBe(shade('#9B78FF', 0.3));
   });
 
-  it('maps every legacy pill name onto a kit tone', () => {
-    expect(toneForPill('green')).toBe('green');
-    expect(toneForPill('coral')).toBe('red');
-    expect(toneForPill('ribbon')).toBe('gold');
-  });
 
   it('keeps cubes distinct from each other', () => {
     const faces = Object.values(cube);

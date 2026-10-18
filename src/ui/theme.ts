@@ -86,31 +86,6 @@ export const palette = {
   pink: '#FF7EB6',
   lime: '#8BD43A',
 
-  /**
-   * @deprecated Sand / wood names, kept only while screens migrate to the
-   * Block Blast tokens above. Each maps to its Block Blast counterpart.
-   */
-  sand: '#F7D5B3',
-  /** @deprecated */
-  wood: '#179BC8',
-  /** @deprecated */
-  plank: '#38C5EA',
-  /** @deprecated */
-  paper: '#FFEAD3',
-  /** @deprecated */
-  brown: '#173A63',
-  /** @deprecated */
-  brownMuted: '#3D5D85',
-  /** @deprecated */
-  brownSoft: '#3D5D85',
-  /** @deprecated */
-  greenBevel: '#2F8012',
-  /** @deprecated */
-  ribbon: '#FFC928',
-  /** @deprecated */
-  star: '#FFC928',
-  /** @deprecated */
-  starEdge: '#F29A0B',
 } as const;
 
 /**
@@ -264,49 +239,6 @@ export function toneFrom(hex: string): GlossTone {
   };
 }
 
-/** @deprecated Pill names from the sand chrome. Use `tone` and `Button`'s `tone`. */
-export type PillTone = 'green' | 'purple' | 'blue' | 'coral' | 'ribbon';
-
-/** @deprecated */
-export type PillChrome = { face: string; bevel: string; label: string };
-
-const PILL_TO_TONE: Record<PillTone, Tone> = {
-  green: 'green',
-  purple: 'purple',
-  blue: 'blue',
-  coral: 'red',
-  ribbon: 'gold',
-};
-
-/** Maps a legacy pill name onto its Block Blast tone. */
-export function toneForPill(name: PillTone): Tone {
-  return PILL_TO_TONE[name];
-}
-
-/** @deprecated Use `tone` / `toneFrom`. */
-export function pillChrome(hex: string, _label: 'white' | 'brown' = 'white'): PillChrome {
-  const glossy = toneFrom(hex);
-  return { face: glossy.bottom, bevel: glossy.lip, label: palette.white };
-}
-
-/** @deprecated Use `tone`. */
-export const pillTone: Record<PillTone, string> = {
-  green: tone.green.bottom,
-  purple: tone.purple.bottom,
-  blue: tone.blue.bottom,
-  coral: tone.red.bottom,
-  ribbon: tone.gold.bottom,
-};
-
-/** @deprecated Use `tone`. */
-export const pill: Record<PillTone, PillChrome> = {
-  green: { face: tone.green.bottom, bevel: tone.green.lip, label: palette.white },
-  purple: { face: tone.purple.bottom, bevel: tone.purple.lip, label: palette.white },
-  blue: { face: tone.blue.bottom, bevel: tone.blue.lip, label: palette.white },
-  coral: { face: tone.red.bottom, bevel: tone.red.lip, label: palette.white },
-  ribbon: { face: tone.gold.bottom, bevel: tone.gold.lip, label: palette.white },
-};
-
 export const reward = {
   gold: palette.gold,
   goldHot: palette.goldDeep,
@@ -351,14 +283,6 @@ export const theme = {
   violetSoft: withAlpha(palette.purple, 0.16),
   /** Dark-blue scrim behind a popup. */
   overlay: 'rgba(14, 38, 84, 0.62)',
-  /** @deprecated Text on the old wood playfield; white on the new cyan one. */
-  onWood: palette.white,
-  /** @deprecated Inset score well. */
-  well: palette.ink,
-  /** @deprecated */
-  wood: palette.frameDeep,
-  /** @deprecated */
-  plank: palette.frame,
 } as const;
 
 /**
@@ -428,8 +352,8 @@ const FRAME_ELEVATION = [
   { backgroundColor: palette.white, borderColor: palette.frame, borderTopColor: palette.white },
 ] as const;
 
-export function elevation(level: 0 | 1 | 2 | 3, surface: 'cream' | 'frame' | 'paper' | 'wood' = 'cream') {
-  return (surface === 'frame' || surface === 'wood' ? FRAME_ELEVATION : CREAM_ELEVATION)[level];
+export function elevation(level: 0 | 1 | 2 | 3, surface: 'cream' | 'frame' = 'cream') {
+  return (surface === 'frame' ? FRAME_ELEVATION : CREAM_ELEVATION)[level];
 }
 
 /**

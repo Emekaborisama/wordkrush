@@ -84,9 +84,9 @@ Rules that keep it one system:
   `borderRadius` + `overflow: 'hidden'`. Shadows go on a view that has a
   `borderRadius` and a background — a shadow on a transparent wrapper draws a
   square box on web (the old build's grey rectangles behind pills).
-- The legacy names (`palette.sand/wood/paper/brown/...`, `pill`, `pillChrome`,
-  `elevation('wood')`) are deprecated aliases kept only so un-migrated code
-  compiles; they map onto Block Blast values. Do not use them in new code.
+- The sand / wood names (`palette.sand/wood/paper/brown`, `pill`,
+  `pillChrome`) were removed once every screen moved to the kit tokens. Do not
+  bring them back.
 
 ## Component library (`src/ui/components/`)
 
@@ -97,7 +97,6 @@ Rules that keep it one system:
 | `GlossFace` | Button body | Gradient face, shine band, gloss dot, lip, outline; sinks on press |
 | `Button` | Connect / Terms / Contact us / Play | `tone`, `size` xl/lg/md/sm, `leading` icon, `disabled` → grey |
 | `SquareButton` | Booster squares, home buttons, gold gear | `shape` square/circle, `price` chip, `badge`, `caption` |
-| `RoundIconButton` | — | Legacy API over `SquareButton shape="circle"` |
 | `Panel` | Final pop-up | `title` + `ribbon` (tab/banner/scroll), `onClose`, `tone` coral/purple/sky, `scroll`, `footer` |
 | `PopupModal` | Pop-ups over the game | `Panel` over a navy scrim, pops in with overshoot |
 | `PanelText`, `PanelDivider`, `CreamText` | Copy on coral / divider / copy in cream | |
@@ -110,6 +109,10 @@ Rules that keep it one system:
 | `StarRow`, `KitStar` | Chubby gold stars | Unearned = darker silhouette of the surface |
 | `StarRibbon` | Stars on the blue scroll | Result pop-ups |
 | `Toggle` | Music / SFX switch | |
+| `TabSwitch` | — | Small glossy tabs; the selected one is gold (scores, account, teams, feedback) |
+| `PausePopup` | Gear → settings | Resume / How to play / Leave game, opened from the dock's gold gear |
+| `TopBar`, `StreakPill`, `CoinsPill` | Top bar | Coral band; streak · logo · coins, or back · title · coins |
+| `BoosterDock` | Booster bar | Tray of green tiles plus the gold gear; `BoostBar` maps a game's boosts onto it |
 | `BlockTile` | Studded cube / letter tile | Views only (fast on a 7×7 board) |
 | `BlockLogo` | BLOCK BLAST! | WORD cubes + KRUSH! gold |
 | `BlockDigits` | Pixel-block level numbers | |
@@ -119,8 +122,9 @@ Rules that keep it one system:
 
 Older components (`Surface`, `Badge`, `Stat`, `ProgressPill`, `GameHeader`,
 `ResultSheet`, `DisplayTitle`, `Ribbon`, `CoinPill`, `XpBadge`, `StreakBadge`,
-`TextField`, `EmptyState`, `FeedbackBanner`, `GameArtwork`) are restyled onto
-the same tokens; prefer the kit components above in new layouts.
+`TextField`, `EmptyState`, `FeedbackBanner`, `GameArtwork`, `IconButton`) are
+restyled onto the same tokens; prefer the kit components above in new layouts.
+`SettingsPopup` lives in `src/ui/` because it reads app settings.
 
 The dev page `?kit` (web dev build only: `npm run web`, then
 `http://localhost:8081/?kit`, or `?kit=controls|icons|blocks`) shows every

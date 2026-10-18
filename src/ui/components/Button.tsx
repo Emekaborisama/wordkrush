@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { tone as tones, toneForPill, toneFrom, type GlossTone, type PillTone, type Tone } from '../theme';
+import { tone as tones, toneFrom, type GlossTone, type Tone } from '../theme';
 import { GlossFace } from './GlossFace';
 import { PressableScale } from './PressableScale';
 import { StrokeText } from './StrokeText';
@@ -16,9 +16,9 @@ export type ButtonProps = {
   /**
    * Kit tone. `green` is the primary CTA (Play, Continue), `gold` the hero
    * Play, `blue` secondary (Connect), `red` destructive / Less, `purple`,
-   * `teal`, `coral`, `sky`. Legacy pill names (`ribbon`) still map.
+   * `teal`, `coral`, `sky`.
    */
-  tone?: Tone | PillTone;
+  tone?: Tone;
   /** Any hex, for a face whose colour is data (a game accent). `tone` wins. */
   color?: string;
   disabled?: boolean;
@@ -36,13 +36,9 @@ const SIZE = {
   sm: { height: 40, radius: 13, lip: 4, font: 16, stroke: 1.5, depth: 1, padX: 14 },
 } as const;
 
-function isTone(name: Tone | PillTone): name is Tone {
-  return name in tones;
-}
-
-function resolveTone(name: Tone | PillTone | undefined, color: string | undefined, variant: Variant): GlossTone {
+function resolveTone(name: Tone | undefined, color: string | undefined, variant: Variant): GlossTone {
   if (variant === 'outline' || variant === 'tonal') return tones.sky;
-  if (name) return isTone(name) ? tones[name] : tones[toneForPill(name)];
+  if (name) return tones[name];
   if (color) return toneFrom(color);
   return tones.green;
 }
