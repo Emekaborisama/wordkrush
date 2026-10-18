@@ -5,7 +5,7 @@ import { canVibrate } from '../native/haptics';
 import type { FeedbackChannel, FeedbackSettings } from '../settings/types';
 import { GAMES } from '../games/registry';
 import { BrandArtwork, GameArtwork, IconButton } from './components';
-import { font, radius, space, theme, type, withAlpha } from './theme';
+import { font, labelFloorPx, radius, space, theme, type, withAlpha } from './theme';
 
 export type DrawerDestination =
   | { kind: 'hub' }
@@ -282,13 +282,12 @@ const styles = StyleSheet.create({
   closeMark: { color: theme.textMuted, fontFamily: font.semibold, fontSize: 24, lineHeight: 25 },
 
   sectionLabel: {
-    color: theme.textDim,
+    color: theme.textMuted,
     ...type.overline,
-    fontSize: 9,
+    fontSize: labelFloorPx,
     paddingHorizontal: 10,
     marginTop: 16,
     marginBottom: 6,
-    opacity: 0.7,
   },
   item: {
     flexDirection: 'row',
@@ -301,22 +300,22 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   itemIcon: { width: 36, alignItems: 'center', justifyContent: 'center' },
-  itemGlyph: { color: theme.textMuted, fontFamily: font.semibold, fontSize: 17, fontWeight: '600' },
+  itemGlyph: { color: theme.textMuted, fontSize: 17 },
   itemLabel: {
-    color: theme.textMuted,
+    color: theme.text,
     fontFamily: font.medium,
     fontSize: 15,
     fontWeight: '500',
     flex: 1,
   },
   itemLabelActive: { fontFamily: font.semibold, fontWeight: '600' },
-  itemDim: { opacity: 0.5 },
+  itemDim: { color: theme.textMuted },
   trailing: {
-    color: theme.textDim,
+    color: theme.textMuted,
     fontFamily: font.semibold,
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontSize: labelFloorPx,
+    fontWeight: '600',
+    letterSpacing: 0.6,
     borderWidth: 1,
     borderColor: theme.border,
     borderRadius: radius.sm,
@@ -325,6 +324,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   spacer: { flex: 1 },
-  footer: { color: theme.textDim, fontFamily: font.medium, fontSize: 10, opacity: 0.5, padding: 10 },
-  pressed: { opacity: 0.7 },
+  footer: { color: theme.textMuted, fontFamily: font.medium, fontSize: labelFloorPx, padding: 10 },
+  pressed: { backgroundColor: theme.bg },
 });

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from './components';
-import { elevation, font, motion, proximityColor, radius, shadow, space, theme, type } from './theme';
+import { contrastRatio, elevation, font, gloss, motion, palette, proximityColor, radius, shade, shadow, space, theme, type, withAlpha } from './theme';
 
 export type HowToStep = { n: number; title: string; body: string };
 
@@ -56,6 +56,7 @@ export function HowToPlay({
             },
           ]}
         >
+          <View pointerEvents="none" style={styles.sheen} />
           {/* Grab handle: a visual affordance that this is a dismissible sheet. */}
           <View style={styles.handle} />
 
@@ -70,8 +71,11 @@ export function HowToPlay({
             <View style={styles.steps}>
               {steps.map((step) => (
                 <View key={step.n} style={styles.step}>
-                  <View style={[styles.stepBadge, { backgroundColor: accent }]}>
-                    <Text style={styles.stepNum}>{step.n}</Text>
+                  <View style={styles.stepBadgeWrap}>
+                    <View style={[styles.stepLip, { backgroundColor: shade(accent, 0.38) }]} />
+                    <View style={[styles.stepBadge, { backgroundColor: accent }]}>
+                      <Text style={[styles.stepNum, { color: stepNumColor(accent) }]}>{step.n}</Text>
+                    </View>
                   </View>
                   <View style={styles.stepBody}>
                     <Text style={styles.stepTitle}>{step.title}</Text>
@@ -113,23 +117,36 @@ export function ExampleRow({
       />
       <View style={styles.exContent}>
         <Text style={styles.exWord}>{word}</Text>
-        <Text style={styles.exRank}>{win ? '★' : rank?.toLocaleString()}</Text>
+        <Text style={win ? styles.exStar : styles.exRank}>{win ? '★' : rank?.toLocaleString()}</Text>
       </View>
     </View>
   );
 }
 
+function stepNumColor(accent: string): string {
+  return contrastRatio(palette.brown, accent) >= 4.5 ? palette.brown : palette.white;
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.overlay, justifyContent: 'flex-end' },
   sheet: {
-    ...elevation(1),
+    ...elevation(2),
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     borderTopWidth: 1,
     paddingHorizontal: space.xl,
     paddingBottom: space.xl,
     maxHeight: '86%',
+    overflow: 'hidden',
     ...shadow.raised,
+  },
+  sheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: `${gloss.height * 100}%`,
+    backgroundColor: withAlpha('#FFFFFF', gloss.alpha),
   },
   handle: {
     width: 38,
@@ -146,15 +163,23 @@ const styles = StyleSheet.create({
 
   steps: { marginTop: space.xl, gap: space.lg },
   step: { flexDirection: 'row', gap: space.md },
+  stepBadgeWrap: { width: 32, height: 36, marginTop: 1 },
+  stepLip: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 32,
+    borderRadius: radius.pill,
+  },
   stepBadge: {
-    width: 30,
-    height: 30,
+    width: 32,
+    height: 32,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 1,
   },
-  stepNum: { color: theme.bg, fontFamily: font.bold, fontSize: 13, fontWeight: '700' },
+  stepNum: { fontFamily: font.bold, fontSize: 13, fontWeight: '700' },
   stepBody: { flex: 1, gap: 2 },
   stepTitle: { ...type.bodyStrong, color: theme.text },
   stepText: { ...type.caption, color: theme.textMuted },
@@ -185,4 +210,5 @@ const styles = StyleSheet.create({
   },
   exWord: { ...type.bodyStrong, color: theme.text, fontSize: 14 },
   exRank: { ...type.caption, color: theme.text, fontFamily: font.bold, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  exStar: { color: theme.text, fontSize: type.caption.fontSize, lineHeight: type.caption.lineHeight },
 });

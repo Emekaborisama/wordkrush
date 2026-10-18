@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { font, gameAccentTokens, radius, space, theme, type } from '../theme';
+import { font, gameAccentTokens, labelFloorPx, radius, space, theme } from '../theme';
 
 type Props = {
   label: string;
@@ -32,8 +32,8 @@ export function ProgressPill({
     >
       {icon}
       <View>
-        <Text style={[styles.value, { color: tint }]}>{value}</Text>
-        <Text style={[type.overline, styles.label]}>{label}</Text>
+        <Text style={styles.value}>{value}</Text>
+        <Text style={styles.label}>{label}</Text>
       </View>
     </View>
   );
@@ -51,11 +51,19 @@ const styles = StyleSheet.create({
     gap: space.sm,
   },
   value: {
+    color: theme.text,
     fontFamily: font.bold,
     fontSize: 21,
     fontWeight: '700',
     lineHeight: 23,
     fontVariant: ['tabular-nums'],
   },
-  label: { color: theme.textDim, fontSize: 8.5 },
+  label: {
+    color: theme.textMuted,
+    fontFamily: font.semibold,
+    fontWeight: '600',
+    fontSize: labelFloorPx,
+    letterSpacing: 1.1,
+    lineHeight: 14,
+  },
 });

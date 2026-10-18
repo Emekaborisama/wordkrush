@@ -1,9 +1,26 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { clampParticleCount } from './motion';
 import { theme } from './theme';
+import { useReduceMotion } from './useReduceMotion';
 
-const PARTICLE_COUNT = 14;
+const DEFAULT_COUNT = 14;
 const DURATION_MS = 780;
+const FALL_MS = 1100;
+
+export type SparkleShape = 'dot' | 'rect';
+
+export type SparkleProps = {
+  active: boolean;
+  color?: string;
+  /** When set, particles cycle these colours. `color` is the fallback. */
+  colors?: readonly string[];
+  /** Capped at 24. Default 14, which is what existing callers already see. */
+  count?: number;
+  shape?: SparkleShape;
+  /** Burst outward, then drift down. Confetti sets this. */
+  fall?: boolean;
+};
 
 /**
  * A one-shot particle burst, fired when the count-up lands on its final number.
@@ -16,85 +33,112 @@ const DURATION_MS = 780;
  * frame — recomputing angles during the animation would make the burst jitter
  * instead of fly outward.
  */
-export function Sparkle({ active, color = theme.accent }: { active: boolean; color?: string }) {
+export function Sparkle({
+  active,
+  color = theme.accent,
+  colors,
+  count = DEFAULT_COUNT,
+  shape = 'dot',
+  fall = false,
+}: SparkleProps) {
+  const reduceMotion = useReduceMotion();
   const progress = useRef(new Animated.Value(0)).current;
+  const total = clampParticleCount(count);
+  const swatches = colors && colors.length > 0 ? colors : [color];
+  const swatchKey = swatches.join('|');
 
   const particles = useMemo(
     () =>
-      Array.from({ length: PARTICLE_COUNT }, (_, i) => {
-        // Even spread around the circle, then jittered so it reads organic
-        // rather than like clock hands.
-        const base = (i / PARTICLE_COUNT) * Math.PI * 2;
+      Array.from({ length: total }, (_, i) => {
+        const base = (i / Math.max(1, total)) * Math.PI * 2;
         const angle = base + (Math.random() - 0.5) * 0.5;
+        const list = swatchKey.split('|');
         return {
           angle,
           distance: 46 + Math.random() * 46,
           size: 4 + Math.random() * 5,
           delay: Math.random() * 90,
+          spin: (Math.random() - 0.5) * 80,
+          color: list[i % list.length] ?? color,
         };
       }),
-    [],
+    [total, swatchKey, color],
   );
 
   useEffect(() => {
-    if (!active) {
+    if (!active || reduceMotion) {
       progress.setValue(0);
       return;
     }
     progress.setValue(0);
     const animation = Animated.timing(progress, {
       toValue: 1,
-      duration: DURATION_MS,
+      duration: fall ? FALL_MS : DURATION_MS,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     });
     animation.start();
     return () => animation.stop();
-  }, [active, progress]);
+  }, [active, fall, progress, reduceMotion]);
 
-  if (!active) return null;
+  if (!active || reduceMotion) return null;
 
   return (
     // pointerEvents none: this sits over the card and must never eat a tap.
-    <View style={styles.root} pointerEvents="none">
-      {particles.map((p, i) => (
-        <Animated.View
-          key={i}
-          style={[
-            styles.particle,
-            {
-              width: p.size,
-              height: p.size,
-              borderRadius: p.size / 2,
-              backgroundColor: color,
-              opacity: progress.interpolate({
-                inputRange: [0, 0.12, 0.6, 1],
-                outputRange: [0, 1, 0.9, 0],
-              }),
-              transform: [
-                {
-                  translateX: progress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, Math.cos(p.angle) * p.distance],
-                  }),
-                },
-                {
-                  translateY: progress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, Math.sin(p.angle) * p.distance],
-                  }),
-                },
-                {
-                  scale: progress.interpolate({
-                    inputRange: [0, 0.25, 1],
-                    outputRange: [0.2, 1.15, 0.35],
-                  }),
-                },
-              ],
-            },
-          ]}
-        />
-      ))}
+    <View style={styles.root} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no">
+      {particles.map((p, i) => {
+        const burst = progress.interpolate(
+          fall
+            ? { inputRange: [0, 0.42, 1], outputRange: [0, 1, 1] }
+            : { inputRange: [0, 1], outputRange: [0, 1] },
+        );
+        const drop = progress.interpolate({
+          inputRange: [0, 0.35, 1],
+          outputRange: [0, 0, fall ? 90 : 0],
+        });
+        return (
+          <Animated.View
+            key={i}
+            style={[
+              styles.particle,
+              {
+                width: shape === 'rect' ? p.size * 0.7 : p.size,
+                height: shape === 'rect' ? p.size * 1.35 : p.size,
+                borderRadius: shape === 'rect' ? 2 : p.size / 2,
+                backgroundColor: p.color,
+                opacity: progress.interpolate({
+                  inputRange: [0, 0.12, 0.6, 1],
+                  outputRange: [0, 1, 0.9, 0],
+                }),
+                transform: [
+                  {
+                    translateX: burst.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, Math.cos(p.angle) * p.distance],
+                    }),
+                  },
+                  {
+                    translateY: Animated.add(
+                      burst.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, Math.sin(p.angle) * p.distance],
+                      }),
+                      drop,
+                    ),
+                  },
+                  {
+                    scale: progress.interpolate({
+                      inputRange: [0, 0.25, 1],
+                      outputRange: [0.2, 1.15, 0.35],
+                    }),
+                  },
+                  { rotate: `${p.spin}deg` },
+                ],
+              },
+            ]}
+          />
+        );
+      })}
     </View>
   );
 }

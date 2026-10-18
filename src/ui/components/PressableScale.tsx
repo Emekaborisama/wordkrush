@@ -1,52 +1,59 @@
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Platform, Pressable, StyleSheet, type PressableProps } from 'react-native';
+import type { ReactNode } from 'react';
+import { Platform, Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import { interaction } from '../theme';
+import { useReduceMotion } from '../useReduceMotion';
 
-type Props = PressableProps & {
-  children: React.ReactNode;
+export type PressVisual = { pressed: boolean };
+
+type Props = Omit<PressableProps, 'children'> & {
+  children: ReactNode | ((state: PressVisual) => ReactNode);
+  /**
+   * Bevel buttons move their own face. Set this false so the wrapper does not
+   * add a second translate. Scale on native still runs.
+   */
+  translateOnPress?: boolean;
 };
 
 /**
- * The one pressed-state for the app. Every screen used to redefine
- * `pressed && styles.pressed` with a slightly different opacity (0.6, 0.7,
- * 0.75, 0.85 all appeared across screens) — this is the single decision.
+ * The one pressed-state for controls that are not bevel pills.
  *
- * Scale-on-press only runs on native. On web a mouse cursor is still visibly
- * hovering while the element shrinks underneath it, which reads as jank
- * rather than tactility, so the web build stays opacity-only.
+ * Scale-on-press only runs on native. A bevel button (`BevelFace`) depresses
+ * its face on web and native instead, and opts out of this translate.
  */
-export function PressableScale({ children, disabled, onPressIn, onPressOut, style, ...rest }: Props) {
-  const [reduceMotion, setReduceMotion] = useState(false);
+export function PressableScale({
+  children,
+  disabled,
+  onPressIn,
+  onPressOut,
+  style,
+  translateOnPress = true,
+  ...rest
+}: Props) {
+  const reduceMotion = useReduceMotion();
   const scalable = Platform.OS !== 'web';
-
-  useEffect(() => {
-    void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
-    return () => subscription.remove();
-  }, []);
 
   return (
     <Pressable
       disabled={disabled}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
-      style={(state) => [
-        typeof style === 'function' ? style(state) : style,
-        state.pressed && !disabled && { opacity: interaction.pressedOpacity },
-        state.pressed && scalable && !reduceMotion && styles.pressed,
-      ]}
+      style={(state) => {
+        const pressed = state.pressed && !disabled;
+        const base = typeof style === 'function' ? style(state) : style;
+        const transform: StyleProp<ViewStyle> =
+          pressed && scalable && !reduceMotion
+            ? {
+                transform: [
+                  ...(translateOnPress ? [{ translateY: interaction.pressedTranslateY }] : []),
+                  { scale: interaction.pressedScale },
+                ],
+              }
+            : undefined;
+        return [base, pressed && { opacity: interaction.pressedOpacity }, transform];
+      }}
       {...rest}
     >
-      {children}
+      {(state) => (typeof children === 'function' ? children({ pressed: state.pressed }) : children)}
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  pressed: {
-    transform: [
-      { translateY: interaction.pressedTranslateY },
-      { scale: interaction.pressedScale },
-    ],
-  },
-});
