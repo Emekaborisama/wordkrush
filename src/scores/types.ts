@@ -21,6 +21,11 @@ export type ScoreEntry = {
   durationMs?: number;
   /** Whether this entry has been accepted by the global leaderboard. */
   synced?: boolean;
+  /**
+   * A run that spent a boost. It still counts on this device. It is not
+   * uploaded to a global or team board.
+   */
+  boosted?: boolean;
 };
 
 export type ScoreBoard = {
@@ -44,6 +49,26 @@ export type ScoreDirection = 'higher' | 'lower';
 
 export function isBetter(a: number, b: number, direction: ScoreDirection): boolean {
   return direction === 'higher' ? a > b : a < b;
+}
+
+/**
+ * Whether `score` beats the board from before this run was saved.
+ *
+ * A tie is not a new best. The first recorded run is, including a
+ * lower-is-better game whose empty board stores a phantom 0.
+ */
+export function isNewBest(
+  previousBoard: ScoreBoard,
+  score: number,
+  direction: ScoreDirection = 'higher',
+): boolean {
+  if (previousBoard.totalRuns === 0) return true;
+  return isBetter(score, previousBoard.bestStreak, direction);
+}
+
+/** Unsynced, unboosted rows are the only ones a global board may receive. */
+export function needsGlobalSync(entry: ScoreEntry): boolean {
+  return entry.synced !== true && entry.boosted !== true;
 }
 
 export function addScore(
@@ -136,7 +161,8 @@ export function isValidEntry(value: unknown): value is ScoreEntry {
     // Optional, but not free-form: a present-and-nonsense duration would be
     // rendered as a completion time, so it is checked when it is there.
     (e.durationMs === undefined ||
-      (typeof e.durationMs === 'number' && Number.isFinite(e.durationMs) && e.durationMs >= 0))
+      (typeof e.durationMs === 'number' && Number.isFinite(e.durationMs) && e.durationMs >= 0)) &&
+    (e.boosted === undefined || typeof e.boosted === 'boolean')
   );
 }
 
