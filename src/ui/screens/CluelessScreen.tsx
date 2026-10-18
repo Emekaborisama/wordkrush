@@ -28,7 +28,10 @@ import {
   type CluelessHintPolicy,
   type CluelessState,
 } from '../../games/clueless/types';
-import { loadProgress, saveProgress } from '../../games/progress';
+import { warmerWord } from '../../games/clueless/boosts';
+import { loadProgressEnvelope, saveProgress } from '../../games/progress';
+import { boostPrice } from '../../rewards/wallet';
+import type { BoostKind } from '../../rewards/types';
 import { feedback } from '../../native/feedback';
 import { shareResult } from '../../native/share';
 import { GuessRow } from '../GuessRow';
@@ -44,10 +47,12 @@ import {
   ResultSheet,
   RoundIconButton,
   ScoreWell,
-  StarRow,
   Surface,
   TextField,
 } from '../components';
+import { BoostBar, coinShortfall } from '../rewards/BoostBar';
+import type { RunReward } from '../rewards/RunReward';
+import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
 import { elevation, font, palette, proximityColor, radius, screen, space, theme, type, withAlpha } from '../theme';
 
 const GAME_ID = 'clueless';
@@ -61,11 +66,17 @@ type Props = {
   /** Assigned by reviewed level content, never selected during play. */
   hintPolicy: CluelessHintPolicy;
   hint?: string | null;
-  onWin: (guessesUsed: number, assistanceContext: CluelessAssistanceContext) => void;
+  onWin: (
+    guessesUsed: number,
+    assistanceContext: CluelessAssistanceContext,
+    detail: { boosted: boolean },
+  ) => void | Promise<RunReward | void>;
   onExit: () => void;
   /** Opened automatically the first time someone plays. */
   showHelpInitially?: boolean;
   persist?: boolean;
+  coins?: number;
+  onSpend?: (kind: BoostKind) => boolean;
   onScore?: (guesses: number, complete: boolean) => void;
 };
 
@@ -80,6 +91,8 @@ export function CluelessScreen({
   onExit,
   showHelpInitially = false,
   persist = true,
+  coins = 0,
+  onSpend,
   onScore,
 }: Props) {
   const puzzle = puzzleByNumber(puzzleNumber)!;
@@ -94,6 +107,10 @@ export function CluelessScreen({
   const [input, setInput] = useState('');
   const [help, setHelp] = useState(showHelpInitially);
   const [shareNote, setShareNote] = useState<string | null>(null);
+  const [boosted, setBoosted] = useState(false);
+  const [reward, setReward] = useState<RunReward | null>(null);
+  const boostedRef = useRef(false);
+  boostedRef.current = boosted;
   const reported = useRef(false);
   const shareNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Nothing may be written until the restore attempt finishes, or the empty
@@ -115,8 +132,10 @@ export function CluelessScreen({
       return;
     }
     let cancelled = false;
-    void loadProgress(GAME_ID, puzzleNumber, isCluelessState).then((saved) => {
+    void loadProgressEnvelope(GAME_ID, puzzleNumber, isCluelessState).then((loaded) => {
       if (cancelled) return;
+      const saved = loaded?.state;
+      if (loaded?.meta?.boosted) setBoosted(true);
       const restoredState = saved
         ? rehydrate(saved, hintPolicy)
         : newPuzzle(puzzleNumber, hintPolicy);
@@ -155,15 +174,13 @@ export function CluelessScreen({
   // Persist after every change, once restore has run.
   useEffect(() => {
     if (!persist || !restored.current) return;
-    void saveProgress(GAME_ID, puzzleNumber, state);
-  }, [state, puzzleNumber, persist]);
+    void saveProgress(GAME_ID, puzzleNumber, state, { boosted });
+  }, [state, puzzleNumber, persist, boosted]);
 
-  function submit() {
-    if (!input.trim()) return;
+  function submitWord(word: string) {
     const before = state.status;
-    const next = reducer(state, { type: 'guess', word: input }, index);
-    dispatch({ type: 'guess', word: input });
-    setInput('');
+    const next = reducer(state, { type: 'guess', word }, index);
+    dispatch({ type: 'guess', word });
 
     const rejectionKind =
       next.rejection?.kind === 'not-a-word'
@@ -190,7 +207,13 @@ export function CluelessScreen({
       feedback('win');
       if (!reported.current) {
         reported.current = true;
-        onWin(next.guesses.length, assistanceContextForHintPolicy(next.hintPolicy));
+        void Promise.resolve(
+          onWin(next.guesses.length, assistanceContextForHintPolicy(next.hintPolicy), {
+            boosted: boostedRef.current,
+          }),
+        ).then((result) => {
+          if (result) setReward(result);
+        });
       }
     } else if (next.rejection?.kind === 'not-a-word') {
       feedback('wrong');
@@ -199,6 +222,23 @@ export function CluelessScreen({
       onScore?.(next.guesses.length, next.status === 'won');
     }
   }
+
+  function submit() {
+    if (!input.trim()) return;
+    submitWord(input);
+    setInput('');
+  }
+
+  const spendBoost = (kind: BoostKind): boolean => {
+    if (!persist || !onSpend?.(kind)) return false;
+    boostedRef.current = true;
+    setBoosted(true);
+    return true;
+  };
+
+  const warmerPrice = boostPrice('warmer-word');
+  const hintPrice = boostPrice('hint-now');
+  const warmer = state.status === 'playing' ? warmerWord(state, index) : null;
 
   useEffect(() => {
     return () => {
@@ -225,7 +265,7 @@ export function CluelessScreen({
         outcome: 'win',
         score_kind: 'guesses_used',
         method: outcome === 'shared' ? 'share_sheet' : 'clipboard',
-        is_new_best: false,
+        is_new_best: reward?.isNewBest ?? false,
       });
     }
   }
@@ -324,7 +364,7 @@ export function CluelessScreen({
             <Rays />
           </View>
           <View style={styles.stars}>
-            <StarRow earned={0} animate={false} />
+            {reward ? <RewardPanel events={reward.events} boosted={reward.boosted} /> : null}
           </View>
           <ResultSheet
             accessibilityLabel="Solved"
@@ -373,9 +413,46 @@ export function CluelessScreen({
             <Text style={styles.wonWord}>{puzzle.secret}</Text>
             {pathPhase !== 'team' ? <Text style={styles.completionCopy}>{completionCopy}</Text> : null}
           </ResultSheet>
+          {reward ? <RewardCelebration events={reward.events} /> : null}
         </View>
       ) : (
         <View style={styles.guessCard}>
+          {persist && onSpend && state.status === 'playing' ? (
+            <BoostBar
+              controls={[
+                {
+                  kind: 'warmer-word',
+                  label: 'Warmer word',
+                  glyph: '↑',
+                  price: warmerPrice,
+                  disabled: coins < warmerPrice || warmer === null,
+                  disabledReason:
+                    coinShortfall(coins, warmerPrice) ??
+                    (warmer === null ? 'No warmer word' : undefined),
+                  onPress: () => {
+                    if (!warmer || !spendBoost('warmer-word')) return;
+                    submitWord(warmer);
+                  },
+                },
+                ...(state.hintPolicy === 'guess_threshold'
+                  ? [
+                      {
+                        kind: 'hint-now' as const,
+                        label: 'Hint now',
+                        glyph: '?',
+                        price: hintPrice,
+                        disabled: coins < hintPrice,
+                        disabledReason: coinShortfall(coins, hintPrice),
+                        onPress: () => {
+                          if (!spendBoost('hint-now')) return;
+                          dispatch({ type: 'unlockHint' });
+                        },
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          ) : null}
           <TextField
             accent={accent}
             value={input}

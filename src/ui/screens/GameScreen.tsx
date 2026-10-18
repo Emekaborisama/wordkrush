@@ -12,7 +12,11 @@ import {
 import { isGameState, isResumable, matchesDataset } from '../../games/more-or-less/persistence';
 import type { RatioBand } from '../../games/more-or-less/pairing';
 import type { Category, Item } from '../../games/more-or-less/types';
-import { clearProgress, loadProgress, saveProgress } from '../../games/progress';
+import { clearProgress, loadProgressEnvelope, saveProgress } from '../../games/progress';
+import { secondChance, skipChallenger } from '../../games/more-or-less/boosts';
+import { boostPrice } from '../../rewards/wallet';
+import type { BoostKind } from '../../rewards/types';
+import { BoostBar, coinShortfall } from '../rewards/BoostBar';
 import { feedback } from '../../native/feedback';
 import { HowToPlay } from '../HowToPlay';
 import { Sparkle } from '../Sparkle';
@@ -36,8 +40,10 @@ type Props = {
   seed: number;
   bestStreak: number;
   onExit: () => void;
-  onGameOver: (state: GameState) => void;
+  onGameOver: (state: GameState, detail: { boosted: boolean }) => void;
   persist?: boolean;
+  coins?: number;
+  onSpend?: (kind: BoostKind) => boolean;
   band?: RatioBand;
   targetStreak?: number;
   onScore?: (score: number, complete: boolean) => void;
@@ -57,6 +63,8 @@ export function GameScreen({
   onExit,
   onGameOver,
   persist = true,
+  coins = 0,
+  onSpend,
   band,
   targetStreak,
   onScore,
@@ -71,6 +79,11 @@ export function GameScreen({
   onSeenRef.current = labelRound?.onSeen;
   const accent = palette.green;
   const [help, setHelp] = useState(false);
+  const [boosted, setBoosted] = useState(false);
+  const boostedRef = useRef(false);
+  boostedRef.current = boosted;
+  const chanceUsed = useRef(false);
+  const [chance, setChance] = useState<'idle' | 'offer' | 'done'>('idle');
   const [state, dispatch] = useReducer(
     (s: GameState, a: Parameters<typeof reducer>[1]) =>
       reducer(s, a, pool, preferRef.current),
@@ -93,12 +106,14 @@ export function GameScreen({
       return;
     }
     let cancelled = false;
-    void loadProgress('more-or-less', category.id, isGameState).then((saved) => {
+    void loadProgressEnvelope('more-or-less', category.id, isGameState).then((saved) => {
       if (cancelled) return;
-      const canResume = Boolean(saved && isResumable(saved) && matchesDataset(saved, pool));
-      if (saved && canResume) {
-        dispatch({ type: 'restore', state: saved });
-      } else if (saved) {
+      const state = saved?.state;
+      const canResume = Boolean(state && isResumable(state) && matchesDataset(state, pool));
+      if (state && canResume) {
+        if (saved?.meta?.boosted) setBoosted(true);
+        dispatch({ type: 'restore', state });
+      } else if (state) {
         // Stale or unresumable — drop it rather than leaving it to be retried.
         void clearProgress('more-or-less');
       }
@@ -117,8 +132,8 @@ export function GameScreen({
   useEffect(() => {
     if (!persist || !restored.current) return;
     if (state.status === 'over') void clearProgress('more-or-less');
-    else void saveProgress('more-or-less', category.id, state);
-  }, [state, category.id, persist]);
+    else void saveProgress('more-or-less', category.id, state, { boosted });
+  }, [state, category.id, persist, boosted]);
 
   useEffect(() => {
     onScore?.(state.streak, targetStreak != null ? state.streak >= targetStreak : false);
@@ -156,7 +171,10 @@ export function GameScreen({
       const hitTarget = targetStreak != null && state.streak >= targetStreak;
       if (hitTarget) {
         if (!persist) return; // Live runs stay here and wait for teammates; LivePlayShell manages the transition
-        const t = setTimeout(() => onGameOver(state), 1600);
+        const t = setTimeout(
+          () => onGameOver(state, { boosted: boostedRef.current }),
+          1600,
+        );
         return () => clearTimeout(t);
       }
       const t = setTimeout(() => dispatch({ type: 'next' }), 1250);
@@ -164,10 +182,15 @@ export function GameScreen({
     }
     if (state.status === 'over') {
       if (!persist) return; // Live runs stay here and wait for teammates
-      const t = setTimeout(() => onGameOver(state), 1600);
+      if (!chanceUsed.current && chance !== 'done') {
+        if (chance !== 'offer') setChance('offer');
+        const offer = setTimeout(() => setChance('done'), 5000);
+        return () => clearTimeout(offer);
+      }
+      const t = setTimeout(() => onGameOver(state, { boosted: boostedRef.current }), 1600);
       return () => clearTimeout(t);
     }
-  }, [state.status, state.right.id, state.streak, targetStreak, onGameOver, persist]);
+  }, [state.status, state.right.id, state.streak, targetStreak, onGameOver, persist, chance, state]);
 
   const correct = state.lastGuessCorrect;
 
@@ -190,6 +213,17 @@ export function GameScreen({
     });
     dispatch({ type: 'guess', choice });
   };
+
+  const spendBoost = (kind: BoostKind): boolean => {
+    if (!persist || !onSpend?.(kind)) return false;
+    boostedRef.current = true;
+    setBoosted(true);
+    return true;
+  };
+
+  const skipPrice = boostPrice('skip-pair');
+  const chancePrice = boostPrice('second-chance');
+  const showBoosts = persist && onSpend !== undefined && state.status === 'playing';
 
   return (
     <View style={styles.root}>
@@ -252,6 +286,27 @@ export function GameScreen({
             Does <Text style={styles.promptStrong}>{state.right.label}</Text> have more or less than{' '}
             <Text style={styles.promptStrong}>{state.left.label}</Text>?
           </Text>
+          {showBoosts ? (
+            <BoostBar
+              controls={[
+                {
+                  kind: 'skip-pair',
+                  label: 'Skip pair',
+                  glyph: '>>',
+                  price: skipPrice,
+                  disabled: coins < skipPrice,
+                  disabledReason: coinShortfall(coins, skipPrice),
+                  onPress: () => {
+                    if (!spendBoost('skip-pair')) return;
+                    dispatch({
+                      type: 'restore',
+                      state: skipChallenger(state, pool, preferRef.current),
+                    });
+                  },
+                },
+              ]}
+            />
+          ) : null}
           <View style={styles.buttonRow}>
             <Button
               title="More"
@@ -294,6 +349,30 @@ export function GameScreen({
                   : 'The final values are revealed above.'
             }
           />
+          {state.status === 'over' && chance === 'offer' && persist ? (
+            <View style={styles.offer}>
+              <Text style={styles.offerTitle}>{`Keep your streak — ${chancePrice} coins`}</Text>
+              <Button
+                title="Second chance"
+                tone="green"
+                size="md"
+                disabled={coins < chancePrice}
+                onPress={() => {
+                  if (!spendBoost('second-chance')) return;
+                  chanceUsed.current = true;
+                  setChance('done');
+                  dispatch({
+                    type: 'restore',
+                    state: secondChance(state, pool, preferRef.current),
+                  });
+                }}
+              />
+              {coins < chancePrice ? (
+                <Text style={styles.offerNote}>{coinShortfall(coins, chancePrice)}</Text>
+              ) : null}
+              <Button title="No thanks" tone="purple" size="md" onPress={() => setChance('done')} />
+            </View>
+          ) : null}
         </View>
       )}
 
@@ -510,6 +589,9 @@ const styles = StyleSheet.create({
   vsText: { ...type.overline, color: theme.textMuted },
 
   actions: { gap: space.sm, minHeight: 112, justifyContent: 'flex-end' },
+  offer: { gap: space.xs },
+  offerTitle: { ...type.body, color: theme.text, textAlign: 'center', fontWeight: '700' },
+  offerNote: { ...type.caption, color: theme.textMuted, textAlign: 'center' },
   prompt: { ...type.caption, color: theme.onWood, textAlign: 'center', lineHeight: 18 },
   promptStrong: { color: theme.onWood, fontFamily: font.bold, fontWeight: '700' },
   buttonRow: { flexDirection: 'row', gap: space.sm },

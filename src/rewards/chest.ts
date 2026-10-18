@@ -19,6 +19,11 @@ export function chestStatus(state: RewardsState, today: string): ChestStatus {
   return 'locked';
 }
 
+/** The day `claimChest` would grant, or null when today cannot open a chest. */
+export function nextChestDay(state: RewardsState, today: string): ChestDay | null {
+  return dayToClaim(state, today);
+}
+
 function dayToClaim(state: RewardsState, today: string): ChestDay | null {
   if (!state.chest.lastClaimedDay) return 1;
   const gap = dayGap(state.chest.lastClaimedDay, today);

@@ -6,6 +6,19 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.9.0] - 2026-10-18
+
+### Added
+- **A finished run now pays the player.** XP, stars, and coins land on the result, then a level-up or milestone celebration if one was earned. The hub shows today's chest: locked until a run finishes, ready to open, then back tomorrow. Coins buy boosts inside a solo run. A boosted run still counts on this device, shows a Boosted tag, and is not uploaded to the global board. Live races do not offer boosts.
+- **The casual-game look is on every screen.** Sand pages, wood playfields, and glossy pills are the shared chrome. Each game only changes its ribbon and accent.
+- **A first visit can start in one tap.** One welcome page, then More or Less. Browser Back follows the in-app parent instead of leaving the site. Wordfall shows a short drag coach on the first visit, and again after two single-tile releases.
+
+### Fixed
+- **A tie is not a new best.** The result and its analytics use the board from before the run is saved.
+- **Reopening Wordfall no longer replays a finished level.** A won or lost board is not saved, and a restored terminal board is not reported again.
+- **A Wordfall loss extends the daily flame.** Finishing a run in any solo game counts, including a loss.
+- **Web analytics records one page view per load** after consent.
+
 ## [0.8.37] - 2026-09-25
 
 ### Added

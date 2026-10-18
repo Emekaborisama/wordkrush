@@ -28,7 +28,15 @@ export type FeedbackEvent =
   /** A Wordfall level cleared. */
   | 'levelUp'
   /** A run won, or a new personal best. The biggest moment in the app. */
-  | 'win';
+  | 'win'
+  /** A star landing on a result. */
+  | 'star'
+  /** Coins counting onto a result. */
+  | 'coin'
+  /** The daily chest opening. */
+  | 'chest'
+  /** A boost being spent. */
+  | 'boost';
 
 type Effect = {
   readonly sound?: SoundName;
@@ -50,6 +58,10 @@ const EFFECTS: Record<FeedbackEvent, Effect> = {
   select: { haptic: tapSelect },
   levelUp: { sound: 'nextLevel', haptic: tapCelebrate },
   win: { sound: 'win', haptic: tapCelebrate },
+  star: { sound: 'win', haptic: tapCelebrate },
+  coin: { sound: 'bonus', haptic: tapLight },
+  chest: { sound: 'nextLevel', haptic: tapCelebrate },
+  boost: { sound: 'bonus', haptic: tapLight },
 };
 
 /**

@@ -14,11 +14,14 @@ export function TopBar({
   onBack,
   title,
   right,
+  hud,
 }: {
   onMenu: () => void;
   onBack?: () => void;
   title?: string;
   right?: ReactNode;
+  /** Coins and level. Sits in the band without replacing the wordmark. */
+  hud?: ReactNode;
 }) {
   return (
     <View style={styles.bar}>
@@ -45,6 +48,7 @@ export function TopBar({
         </View>
       )}
 
+      {hud}
       <View style={styles.right}>
         {onBack ? <MenuButton onPress={onMenu} /> : right}
       </View>

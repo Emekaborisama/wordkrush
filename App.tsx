@@ -17,6 +17,7 @@ import { readArrivalContext, type ArrivalContext } from './src/analytics/arrival
 import { isLandingArrival } from './src/analytics/attribution';
 import {
   captureAnalytics,
+  captureWebPageview,
   identifyAnalytics,
   initializeAnalytics,
   isAnalyticsConfigured,
@@ -25,9 +26,11 @@ import {
   setAnalyticsConsent as persistAnalyticsConsent,
 } from './src/analytics/client';
 import {
+  levelBucket,
   runCountBucket,
   streakBucket,
   type AnalyticsConsent,
+  type AnalyticsEvents,
 } from './src/analytics/events';
 import * as Linking from 'expo-linking';
 import {
@@ -93,10 +96,23 @@ import {
   recordScore,
   saveBoard,
 } from './src/scores/storage';
-import { EMPTY_BOARD, type ScoreBoard } from './src/scores/types';
+import { EMPTY_BOARD, isNewBest, needsGlobalSync, type ScoreBoard, type ScoreDirection, type ScoreEntry } from './src/scores/types';
 import { loadStreak, markPlayedToday } from './src/streak/storage';
 import { dayKey, EMPTY_STREAK, type DailyStreak } from './src/streak/types';
 import { applyFeedbackSettings, feedback } from './src/native/feedback';
+import { loadOnboarding, markOnboardingComplete } from './src/onboarding/storage';
+import { COMPLETED_ONBOARDING, type OnboardingState } from './src/onboarding/types';
+import { chestStatus, claimChest, nextChestDay } from './src/rewards/chest';
+import { applyRun, levelProgress } from './src/rewards/progression';
+import { loadRewards, saveRewards } from './src/rewards/storage';
+import {
+  EMPTY_REWARDS,
+  type BoostKind,
+  type RewardEvent,
+  type RewardsState,
+  type RunSummary,
+} from './src/rewards/types';
+import { spend } from './src/rewards/wallet';
 import { loadFeedbackSettings, saveFeedbackSettings } from './src/settings/storage';
 import {
   DEFAULT_FEEDBACK_SETTINGS,
@@ -111,6 +127,11 @@ import type { LiveMatchSnapshot } from './src/live/types';
 import { clearExistingMembership } from './src/teams/api';
 import { parseTeamInviteUrl } from './src/teams/codes';
 import { Drawer, type DrawerDestination } from './src/ui/Drawer';
+import { CoinPill, XpBadge } from './src/ui/components';
+import { parentOf, type Parent } from './src/ui/navigation';
+import { installWebHistory, noteWebNavigation } from './src/ui/webHistory';
+import { OnboardingScreen } from './src/ui/screens/OnboardingScreen';
+import type { RunReward } from './src/ui/rewards/RunReward';
 import { FeedbackPrompt } from './src/ui/FeedbackPrompt';
 import { TopBar } from './src/ui/TopBar';
 import { AccountScreen } from './src/ui/screens/AccountScreen';
@@ -146,7 +167,7 @@ type Screen =
   | { name: 'hub' }
   | { name: 'home'; gameId: string }
   | { name: 'game'; gameId: string; seed: number; cluelessLevelNumber?: number; live?: LiveRun }
-  | { name: 'over'; gameId: string; state: GameState; entryId: string }
+  | { name: 'over'; gameId: string; state: GameState; entryId: string; isNewBest: boolean; boosted: boolean; events: RewardEvent[] }
   | { name: 'scores'; gameId: string; highlightId?: string }
   | { name: 'auth'; returnTo?: 'teams' | 'scores'; returnGameId?: string }
   | { name: 'teams' }
@@ -337,6 +358,9 @@ export default function App() {
   const [pendingInvite, setPendingInvite] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [streak, setStreak] = useState<DailyStreak>(EMPTY_STREAK);
+  const [rewards, setRewards] = useState<RewardsState>(EMPTY_REWARDS);
+  const [onboarding, setOnboarding] = useState<OnboardingState | null>(null);
+  const [chestOpenDay, setChestOpenDay] = useState<number | null>(null);
   const [feedbackSettings, setFeedbackSettings] =
     useState<FeedbackSettings>(DEFAULT_FEEDBACK_SETTINGS);
   const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent>('granted');
@@ -362,6 +386,30 @@ export default function App() {
   const restoredSessionReported = useRef(false);
   const hadRestoredSession = useRef(false);
   const identifiedProfileId = useRef<string | null>(null);
+  const rewardsRef = useRef(rewards);
+  rewardsRef.current = rewards;
+  const boardsRef = useRef(boards);
+  boardsRef.current = boards;
+  const historyReady = useRef(false);
+
+  const progress = levelProgress(rewards.xp);
+  const todayKey = dayKey(new Date());
+  const todayChest = chestStatus(rewards, todayKey);
+  const todayChestDay = nextChestDay(rewards, todayKey) ?? (rewards.chest.day >= 1 ? rewards.chest.day : 1);
+  const hasScoreHistory = Object.values(boards).some((board) => board.totalRuns > 0);
+  const showOnboarding =
+    onboarding !== null && !onboarding.completed && boardsReady && !hasScoreHistory;
+
+  const dismissOnboarding = () => {
+    setOnboarding(COMPLETED_ONBOARDING);
+    void markOnboardingComplete();
+  };
+
+  const applyParent = (parent: Parent): Screen => {
+    if (parent.name === 'hub') return { name: 'hub' };
+    if (parent.name === 'home') return { name: 'home', gameId: parent.gameId };
+    return { name: 'teams' };
+  };
 
   useEffect(() => {
     ensureWebViewport();
@@ -413,11 +461,13 @@ export default function App() {
       }
     })();
     // Display only — a visit alone does not extend the streak, finishing a
-    // run does (see recordFinish below).
+    // run does (see finishRun below).
     void loadStreak().then((loadedStreak) => {
       setStreak(loadedStreak);
       setStreakReady(true);
     });
+    void loadRewards().then(setRewards);
+    void loadOnboarding().then(setOnboarding);
     void loadRoundProgress(FIRST_ROUND_ID).then(setLabelProgress);
     void loadCluelessPathProgress().then((progress) => {
       setCluelessPath(progress);
@@ -555,6 +605,27 @@ export default function App() {
   };
 
   useEffect(() => {
+    return installWebHistory(() => {
+      let handled = false;
+      setScreen((current) => {
+        const parent = parentOf(current);
+        if (!parent) return current;
+        handled = true;
+        return applyParent(parent);
+      });
+      return handled;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!historyReady.current) {
+      historyReady.current = true;
+      return;
+    }
+    noteWebNavigation(parentOf(screen) === null);
+  }, [screen]);
+
+  useEffect(() => {
     if (analyticsConsent !== 'granted' || !arrivalReady) return;
     const authStatus = profile ? 'signed_in' : 'guest';
     if (profile && identifiedProfileId.current !== profile.id) {
@@ -564,6 +635,7 @@ export default function App() {
     registerAnalyticsContext(authStatus);
     if (!openedReported.current) {
       openedReported.current = true;
+      captureWebPageview();
       const arrival = arrivalRef.current;
       captureAnalytics('app_opened', {
         backend_configured: isBackendConfigured,
@@ -652,7 +724,7 @@ export default function App() {
   useEffect(() => {
     if (!profile || screen.name !== 'scores') return;
     const local = boardFor(screen.gameId);
-    if (!local.history.some((entry) => !entry.synced)) return;
+    if (!local.history.some((entry) => needsGlobalSync(entry))) return;
 
     let cancelled = false;
     void syncPendingScores(screen.gameId, local, profile).then(async (synced) => {
@@ -667,12 +739,78 @@ export default function App() {
     };
   }, [profile, screen]);
 
-  // Every place a run ends and its score is recorded also counts today
-  // towards the cross-game daily streak — finishing a run in any game
-  // counts, not just opening the app.
-  const recordFinish = async <T,>(save: () => Promise<T>): Promise<T> => {
-    const [result] = await Promise.all([save(), markPlayedToday(dayKey(new Date())).then(setStreak)]);
-    return result;
+  const finishRun = async (input: {
+    gameId: string;
+    direction: ScoreDirection;
+    entry: ScoreEntry;
+    summary: (fresh: boolean) => RunSummary;
+    clueless?: { tutorialCleared: boolean; vaultsSolved: number };
+    wordfall?: { campaignCleared: boolean };
+    analytics: Omit<AnalyticsEvents['run_completed'], 'is_new_best' | 'boosted'>;
+  }): Promise<RunReward> => {
+    const previous = boardsRef.current[input.gameId] ?? EMPTY_BOARD;
+    const fresh = isNewBest(previous, input.entry.streak, input.direction);
+    const today = dayKey(new Date());
+    const [nextBoard, nextStreak] = await Promise.all([
+      recordScore(input.gameId, { ...input.entry, boosted: input.entry.boosted === true }, input.direction),
+      markPlayedToday(today),
+    ]);
+    boardsRef.current = { ...boardsRef.current, [input.gameId]: nextBoard };
+    setBoards((prev) => ({ ...prev, [input.gameId]: nextBoard }));
+    setStreak(nextStreak);
+    const applied = applyRun(rewardsRef.current, input.summary(fresh), {
+      today,
+      dailyStreakAfter: nextStreak.current,
+      clueless: input.clueless,
+      wordfall: input.wordfall,
+    });
+    rewardsRef.current = applied.state;
+    setRewards(applied.state);
+    await saveRewards(applied.state);
+    captureAnalytics('run_completed', {
+      ...input.analytics,
+      is_new_best: fresh,
+      boosted: input.entry.boosted === true,
+    });
+    for (const event of applied.events) {
+      if (event.kind === 'levelUp') {
+        captureAnalytics('player_level_up', { level_bucket: levelBucket(event.to) });
+      }
+      if (event.kind === 'milestone') {
+        captureAnalytics('milestone_reached', { milestone_id: event.id });
+      }
+    }
+    return {
+      events: applied.events,
+      isNewBest: fresh,
+      boosted: input.entry.boosted === true,
+    };
+  };
+
+  const spendBoost = (kind: BoostKind, gameId: 'more-or-less' | 'clueless' | 'wordfall'): boolean => {
+    const result = spend(rewardsRef.current, kind);
+    if (!result.ok) return false;
+    rewardsRef.current = result.state;
+    setRewards(result.state);
+    void saveRewards(result.state);
+    captureAnalytics('boost_used', { game_id: gameId, boost_kind: kind });
+    feedback('boost');
+    return true;
+  };
+
+  const openChest = () => {
+    const today = dayKey(new Date());
+    const claimed = claimChest(rewardsRef.current, today);
+    if (claimed.events.length === 0) return;
+    rewardsRef.current = claimed.state;
+    setRewards(claimed.state);
+    void saveRewards(claimed.state);
+    const day = claimed.state.chest.day;
+    if (day === 1 || day === 2 || day === 3 || day === 4 || day === 5 || day === 6 || day === 7) {
+      captureAnalytics('daily_chest_claimed', { chest_day: day });
+    }
+    feedback('chest');
+    setChestOpenDay(day);
   };
 
   // The game screen owns the whole viewport during play, so the chrome is
@@ -720,18 +858,10 @@ export default function App() {
   };
 
   const chromeBack = (): (() => void) | undefined => {
-    if (screen.name === 'hub' || screen.name === 'game' || screen.name === 'live-lobby' || screen.name === 'over') {
-      return undefined;
-    }
-    if (screen.name === 'live-results') return () => setScreen({ name: 'teams' });
-    if (screen.name === 'auth') {
-      return () => {
-        if (screen.returnTo === 'teams') {
-          setScreen({ name: 'home', gameId: screen.returnGameId ?? 'wordfall' });
-        } else setScreen({ name: 'hub' });
-      };
-    }
-    return () => setScreen({ name: 'hub' });
+    if (screen.name === 'hub' || screen.name === 'game' || screen.name === 'over') return undefined;
+    const parent = parentOf(screen);
+    if (!parent) return undefined;
+    return () => setScreen(applyParent(parent));
   };
 
   const navigate = (to: DrawerDestination) => {
@@ -760,14 +890,38 @@ export default function App() {
       <View style={styles.glowViolet} pointerEvents="none" />
       <View style={styles.glowCoral} pointerEvents="none" />
       <View style={[styles.frame, wide && styles.frameLaptop]}>
-        {showChrome && (
-          <TopBar onMenu={() => setMenuOpen(true)} onBack={chromeBack()} />
+        {showChrome && !showOnboarding && (
+          <TopBar
+            onMenu={() => setMenuOpen(true)}
+            onBack={chromeBack()}
+            hud={
+              <>
+                <XpBadge level={progress.level} progress={progress.fraction} />
+                <CoinPill count={rewards.coins} />
+              </>
+            }
+          />
         )}
 
-        {screen.name === 'hub' && (
+        {showOnboarding ? (
+          <OnboardingScreen
+            onPlay={() => {
+              dismissOnboarding();
+              startGame(MORE_OR_LESS);
+            }}
+            onExplore={dismissOnboarding}
+          />
+        ) : null}
+
+        {screen.name === 'hub' && !showOnboarding && (
           <HubScreen
             boards={boards}
             streak={streak}
+            chest={todayChest}
+            chestDay={todayChestDay}
+            chestOpen={chestOpenDay !== null}
+            onOpenChest={openChest}
+            onChestClosed={() => setChestOpenDay(null)}
             labelRoundsPassed={labelProgress.roundsPassed}
             onPlay={(gameId) => {
               captureAnalytics('game_selected', { game_id: gameId, source: 'hub' });
@@ -792,6 +946,8 @@ export default function App() {
             hintPolicy={screen.live ? 'none' : activeSoloCluelessLevel?.hintPolicy ?? 'none'}
             hint={screen.live ? null : activeSoloCluelessLevel?.hint}
             persist={!screen.live}
+            coins={rewards.coins}
+            onSpend={screen.live ? undefined : (kind) => spendBoost(kind, 'clueless')}
             onScore={
               screen.live
                 ? (score, complete) => {
@@ -802,47 +958,54 @@ export default function App() {
             onExit={() =>
               screen.live ? setScreen({ name: 'teams' }) : openGameHome('clueless')
             }
-            onWin={async (guessesUsed, assistanceContext) => {
+            onWin={async (guessesUsed, assistanceContext, detail) => {
               if (screen.live) {
                 await postMatchScore(screen.live.matchId, guessesUsed, true, true);
                 return;
               }
               const level = activeSoloCluelessLevel;
               if (!level) return;
-              const previous = boardForCluelessAssistanceContext(
-                boardFor('clueless'),
-                assistanceContext,
-              );
-              const next = await recordFinish(() =>
-                recordScore(
-                  'clueless',
-                  {
-                    id: makeEntryId(),
-                    streak: guessesUsed,
-                    categoryId: assistanceContext,
-                    playedAt: new Date().toISOString(),
-                    seed: activeCluelessPuzzle.number,
-                  },
-                  'lower',
-                ),
-              );
-              setBoards((prev) => ({ ...prev, clueless: next }));
+              const entryId = makeEntryId();
               const completedAt = new Date();
               const nextPath = completeCluelessPathLevel(cluelessPath, level.number, completedAt);
               await saveCluelessPathProgress(nextPath);
               setCluelessPath(nextPath);
               setCluelessPathNow(completedAt);
-              captureAnalytics('run_completed', {
-                game_id: 'clueless',
-                outcome: 'win',
-                score: guessesUsed,
-                score_kind: 'guesses_used',
-                is_new_best: previous.totalRuns === 0 || guessesUsed < previous.bestStreak,
-                puzzle_number: activeCluelessPuzzle.number,
-                level_number: level.number,
-                path_phase: level.phase,
-                assistance_context: assistanceContext,
-                hint_source: level.hintPolicy,
+              return finishRun({
+                gameId: 'clueless',
+                direction: 'lower',
+                entry: {
+                  id: entryId,
+                  streak: guessesUsed,
+                  categoryId: assistanceContext,
+                  playedAt: completedAt.toISOString(),
+                  seed: activeCluelessPuzzle.number,
+                  boosted: detail.boosted,
+                },
+                summary: (fresh) => ({
+                  gameId: 'clueless',
+                  runId: entryId,
+                  levelNumber: level.number,
+                  phase: level.phase,
+                  guesses: guessesUsed,
+                  isNewBest: fresh,
+                  boosted: detail.boosted,
+                }),
+                clueless: {
+                  tutorialCleared: nextPath.completedThrough >= 3,
+                  vaultsSolved: Math.max(0, nextPath.completedThrough - 3),
+                },
+                analytics: {
+                  game_id: 'clueless',
+                  outcome: 'win',
+                  score: guessesUsed,
+                  score_kind: 'guesses_used',
+                  puzzle_number: activeCluelessPuzzle.number,
+                  level_number: level.number,
+                  path_phase: level.phase,
+                  assistance_context: assistanceContext,
+                  hint_source: level.hintPolicy,
+                },
               });
             }}
           />
@@ -870,35 +1033,86 @@ export default function App() {
             onExit={() =>
               screen.live ? setScreen({ name: 'teams' }) : setScreen({ name: 'home', gameId: 'wordfall' })
             }
-            onLevelWon={async (score, levelNumber, elapsedMs) => {
+            coins={rewards.coins}
+            onSpend={screen.live ? undefined : (kind) => spendBoost(kind, 'wordfall')}
+            onLevelWon={async (score, levelNumber, elapsedMs, detail) => {
               if (screen.live) {
                 await postMatchScore(screen.live.matchId, score, true, true);
                 return;
               }
-              const previous = boardFor('wordfall');
-              const next = await recordFinish(() =>
-                recordScore(
-                  'wordfall',
-                  {
-                    id: makeEntryId(),
-                    streak: score,
-                    categoryId: `level-${levelNumber}`,
-                    playedAt: new Date().toISOString(),
-                    seed: levelNumber,
-                    durationMs: elapsedMs,
-                  },
-                  'higher',
-                ),
-              );
-              setBoards((prev) => ({ ...prev, wordfall: next }));
-              captureAnalytics('run_completed', {
-                game_id: 'wordfall',
-                outcome: 'win',
-                score,
-                score_kind: 'points',
-                duration_ms: elapsedMs,
-                is_new_best: previous.totalRuns === 0 || score > previous.bestStreak,
-                level_number: levelNumber,
+              const entryId = makeEntryId();
+              return finishRun({
+                gameId: 'wordfall',
+                direction: 'higher',
+                entry: {
+                  id: entryId,
+                  streak: score,
+                  categoryId: `level-${levelNumber}`,
+                  playedAt: new Date().toISOString(),
+                  seed: levelNumber,
+                  durationMs: elapsedMs,
+                  boosted: detail.boosted,
+                },
+                summary: (fresh) => ({
+                  gameId: 'wordfall',
+                  runId: entryId,
+                  levelNumber,
+                  weekly: detail.weekly,
+                  outcome: 'win',
+                  movesLeft: detail.movesLeft,
+                  moves: detail.moves,
+                  timeLeftMs: detail.timeLeftMs,
+                  timeLimitMs: detail.timeLimitMs,
+                  isNewBest: fresh,
+                  boosted: detail.boosted,
+                }),
+                wordfall: { campaignCleared: !detail.weekly && levelNumber >= 11 },
+                analytics: {
+                  game_id: 'wordfall',
+                  outcome: 'win',
+                  score,
+                  score_kind: 'points',
+                  duration_ms: elapsedMs,
+                  level_number: levelNumber,
+                },
+              });
+            }}
+            onLevelLost={async (score, levelNumber, elapsedMs, detail) => {
+              if (screen.live) return;
+              const entryId = makeEntryId();
+              return finishRun({
+                gameId: 'wordfall',
+                direction: 'higher',
+                entry: {
+                  id: entryId,
+                  streak: score,
+                  categoryId: `level-${levelNumber}`,
+                  playedAt: new Date().toISOString(),
+                  seed: levelNumber,
+                  durationMs: elapsedMs,
+                  boosted: detail.boosted,
+                },
+                summary: (fresh) => ({
+                  gameId: 'wordfall',
+                  runId: entryId,
+                  levelNumber,
+                  weekly: detail.weekly,
+                  outcome: 'loss',
+                  movesLeft: detail.movesLeft,
+                  moves: detail.moves,
+                  timeLeftMs: detail.timeLeftMs,
+                  timeLimitMs: detail.timeLimitMs,
+                  isNewBest: fresh,
+                  boosted: detail.boosted,
+                }),
+                analytics: {
+                  game_id: 'wordfall',
+                  outcome: 'loss',
+                  score,
+                  score_kind: 'points',
+                  duration_ms: elapsedMs,
+                  level_number: levelNumber,
+                },
               });
             }}
           />
@@ -1022,13 +1236,11 @@ export default function App() {
             onExit={() =>
               screen.live ? setScreen({ name: 'teams' }) : setScreen({ name: 'home', gameId: screen.gameId })
             }
-            onGameOver={async (state) => {
-              if (screen.live) {
-                // Should not reach here for live mode if we properly intercepted it, but just in case:
-                return;
-              }
+            coins={rewards.coins}
+            onSpend={screen.live ? undefined : (kind) => spendBoost(kind, 'more-or-less')}
+            onGameOver={async (state, detail) => {
+              if (screen.live) return;
               const entryId = makeEntryId();
-              const previous = boardFor(screen.gameId);
               const roundResult = recordSeen(snapshot, labelProgress, state.seenIds);
               setLabelProgress(roundResult.progress);
               setLabelJustPassed(roundResult.justPassed);
@@ -1041,28 +1253,43 @@ export default function App() {
                   item_count: labelResolved.round.itemIds.length,
                 });
               }
-              // Persist before navigating so a reload mid-transition cannot
-              // lose the run that just finished.
-              const next = await recordFinish(() =>
-                recordScore(screen.gameId, {
+              const reward = await finishRun({
+                gameId: screen.gameId,
+                direction: 'higher',
+                entry: {
                   id: entryId,
                   streak: state.streak,
                   categoryId: category.id,
                   playedAt: new Date().toISOString(),
                   seed: screen.seed,
+                  boosted: detail.boosted,
+                },
+                summary: (fresh) => ({
+                  gameId: 'more-or-less',
+                  runId: entryId,
+                  streak: state.streak,
+                  isNewBest: fresh,
+                  setCleared: roundResult.justPassed,
+                  boosted: detail.boosted,
                 }),
-              );
-              setBoards((prev) => ({ ...prev, [screen.gameId]: next }));
-              captureAnalytics('run_completed', {
-                game_id: 'more-or-less',
-                outcome: 'loss',
-                score: state.streak,
-                score_kind: 'streak',
-                is_new_best: previous.totalRuns === 0 || state.streak > previous.bestStreak,
-                category_id: category.id,
-                relaxed_rounds: state.relaxedRounds,
+                analytics: {
+                  game_id: 'more-or-less',
+                  outcome: 'loss',
+                  score: state.streak,
+                  score_kind: 'streak',
+                  category_id: category.id,
+                  relaxed_rounds: state.relaxedRounds,
+                },
               });
-              setScreen({ name: 'over', gameId: screen.gameId, state, entryId });
+              setScreen({
+                name: 'over',
+                gameId: screen.gameId,
+                state,
+                entryId,
+                isNewBest: reward.isNewBest,
+                boosted: reward.boosted,
+                events: reward.events,
+              });
             }}
           />
           </LiveMaybe>
@@ -1110,12 +1337,15 @@ export default function App() {
               justPassed: labelJustPassed,
               caughtUp: labelResolved.caughtUp,
             }}
+            isNewBest={screen.isNewBest}
+            boosted={screen.boosted}
+            events={screen.events}
             onPlayAgain={() => {
               captureAnalytics('game_over_action', {
                 game_id: 'more-or-less',
                 action: 'play_again',
                 streak_bucket: streakBucket(screen.state.streak),
-                is_new_best: screen.state.streak >= boardFor(screen.gameId).bestStreak,
+                is_new_best: screen.isNewBest,
               });
               startGame(screen.gameId);
             }}
@@ -1124,7 +1354,7 @@ export default function App() {
                 game_id: 'more-or-less',
                 action: 'home',
                 streak_bucket: streakBucket(screen.state.streak),
-                is_new_best: screen.state.streak >= boardFor(screen.gameId).bestStreak,
+                is_new_best: screen.isNewBest,
               });
               setScreen({ name: 'hub' });
             }}
@@ -1133,7 +1363,7 @@ export default function App() {
                 game_id: 'more-or-less',
                 action: 'scores',
                 streak_bucket: streakBucket(screen.state.streak),
-                is_new_best: screen.state.streak >= boardFor(screen.gameId).bestStreak,
+                is_new_best: screen.isNewBest,
               });
               setScreen({ name: 'scores', gameId: screen.gameId, highlightId: screen.entryId });
             }}

@@ -2,7 +2,8 @@ import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-n
 import { GAMES, type GameDefinition } from '../../games/registry';
 import type { ScoreBoard } from '../../scores/types';
 import { dayKey, type DailyStreak } from '../../streak/types';
-import { Badge, Button, StreakBadge } from '../components';
+import type { ChestStatus } from '../../rewards/chest';
+import { Badge, Button, DisplayTitle, Rays, StreakBadge } from '../components';
 import { isWideLayout } from '../layout';
 import { Mascot } from '../lottie/Mascot';
 import { palette, screen, space, theme, type, type PillTone } from '../theme';
@@ -10,12 +11,29 @@ import { palette, screen, space, theme, type, type PillTone } from '../theme';
 type Props = {
   boards: Record<string, ScoreBoard>;
   streak: DailyStreak;
+  chest: ChestStatus;
+  /** Day number shown on a ready chest, 1–7. */
+  chestDay: number;
+  chestOpen: boolean;
+  onOpenChest: () => void;
+  onChestClosed: () => void;
   onPlay: (gameId: string) => void;
   onScores: () => void;
   labelRoundsPassed?: number;
 };
 
-export function HubScreen({ boards, streak, onPlay, onScores, labelRoundsPassed }: Props) {
+export function HubScreen({
+  boards,
+  streak,
+  chest,
+  chestDay,
+  chestOpen,
+  onOpenChest,
+  onChestClosed,
+  onPlay,
+  onScores,
+  labelRoundsPassed,
+}: Props) {
   const wide = isWideLayout(useWindowDimensions().width);
   const featuredId = GAMES.find((game) => game.status === 'available')?.id;
   return (
@@ -33,6 +51,12 @@ export function HubScreen({ boards, streak, onPlay, onScores, labelRoundsPassed 
         <Text style={[type.overline, styles.sectionLabel, wide && styles.sectionWide]}>
           CHOOSE YOUR GAME
         </Text>
+        <ChestCard
+          status={chest}
+          day={chestDay}
+          wide={wide}
+          onOpen={onOpenChest}
+        />
         {GAMES.map((game) => (
           <GameButton
             key={game.id}
@@ -50,6 +74,44 @@ export function HubScreen({ boards, streak, onPlay, onScores, labelRoundsPassed 
       </ScrollView>
 
       <Button title="View your scores" tone="blue" size="md" onPress={onScores} />
+      {chestOpen ? (
+        <View style={styles.celebration} accessibilityViewIsModal>
+          <View style={styles.rays} pointerEvents="none">
+            <Rays />
+          </View>
+          <DisplayTitle>{`DAY ${chestDay}`}</DisplayTitle>
+          <Button title="Continue" tone="green" size="lg" onPress={onChestClosed} />
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function ChestCard({
+  status,
+  day,
+  wide,
+  onOpen,
+}: {
+  status: ChestStatus;
+  day: number;
+  wide: boolean;
+  onOpen: () => void;
+}) {
+  const copy =
+    status === 'ready'
+      ? `Open — Day ${day}/7`
+      : status === 'claimed'
+        ? 'Back tomorrow'
+        : "Finish any run to open today's chest";
+  return (
+    <View style={[styles.chest, wide && styles.sectionWide]}>
+      <Text style={styles.chestLabel}>TODAY’S CHEST</Text>
+      {status === 'ready' ? (
+        <Button title={copy} tone="green" size="lg" onPress={onOpen} />
+      ) : (
+        <Text style={styles.chestCopy}>{copy}</Text>
+      )}
     </View>
   );
 }
@@ -141,4 +203,21 @@ const styles = StyleSheet.create({
     maxHeight: 96,
   },
   mascotWide: { flexBasis: '100%', width: '100%' },
+  chest: { gap: space.xs },
+  chestLabel: { ...type.overline, color: theme.textDim },
+  chestCopy: { ...type.caption, color: theme.text, fontWeight: '700' },
+  celebration: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.md,
+    backgroundColor: 'rgba(58, 36, 21, 0.45)',
+    padding: space.lg,
+    zIndex: 4,
+  },
+  rays: { position: 'absolute', top: 24 },
 });

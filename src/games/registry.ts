@@ -53,10 +53,10 @@ export const GAMES: GameDefinition[] = [
   {
     id: 'clueless',
     name: 'Clueless',
-    tagline: 'Follow the meaning trail to uncover today’s secret word.',
-    badge: 'DAILY PUZZLE',
+    tagline: 'Follow the meaning trail to the secret word.',
+    badge: 'SOLO PATH',
     blurb:
-      'One secret word a day. Every guess is ranked by meaning, not spelling — start broad, then follow the heat.',
+      'Every guess is ranked by meaning, not spelling. Clear the sparks, then open the vault.',
     accent: '#9B78FF',
     emoji: '❓',
     status: 'available',

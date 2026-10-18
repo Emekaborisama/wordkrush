@@ -125,6 +125,8 @@ export type WordfallSave = {
    * new attempt starts. Omitted on saves from before boosts existed.
    */
   boosted?: boolean;
+  /** The drag coach has been shown once. Omitted until the first visit ends. */
+  traceCoachSeen?: boolean;
 };
 
 export function isWordfallSave(value: unknown): value is WordfallSave {
@@ -132,5 +134,6 @@ export function isWordfallSave(value: unknown): value is WordfallSave {
   const s = value as Record<string, unknown>;
   if (!Number.isInteger(s.unlocked) || (s.unlocked as number) < 1) return false;
   if (s.boosted !== undefined && typeof s.boosted !== 'boolean') return false;
+  if (s.traceCoachSeen !== undefined && typeof s.traceCoachSeen !== 'boolean') return false;
   return s.state === null || isWordfallState(s.state);
 }

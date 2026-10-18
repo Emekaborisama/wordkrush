@@ -8,7 +8,9 @@ import type { Category } from '../../games/more-or-less/types';
 import { feedback } from '../../native/feedback';
 import { shareResult } from '../../native/share';
 import { rankOf, type ScoreBoard } from '../../scores/types';
-import { Button, DisplayTitle, Rays, ResultSheet, RoundIconButton, ScoreWell, StarRow } from '../components';
+import type { RewardEvent } from '../../rewards/types';
+import { Button, DisplayTitle, Rays, ResultSheet, RoundIconButton, ScoreWell } from '../components';
+import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
 import { font, formatValue, palette, radius, screen, space, theme, type } from '../theme';
 
 type Props = {
@@ -18,6 +20,9 @@ type Props = {
   onPlayAgain: () => void;
   onHome: () => void;
   onScores: () => void;
+  isNewBest: boolean;
+  boosted: boolean;
+  events: readonly RewardEvent[];
   labelRound?: {
     roundsPassed: number;
     remaining: number;
@@ -33,16 +38,18 @@ export function GameOverScreen({
   onPlayAgain,
   onHome,
   onScores,
+  isNewBest,
+  boosted,
+  events,
   labelRound,
 }: Props) {
-  const isBest = state.streak > 0 && state.streak >= board.bestStreak;
   const rank = rankOf(board, state.streak);
   const [shareNote, setShareNote] = useState<string | null>(null);
   const shareNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (isBest) feedback('win');
-  }, [isBest]);
+    if (isNewBest) feedback('win');
+  }, [isNewBest]);
 
   useEffect(() => {
     return () => {
@@ -55,7 +62,7 @@ export function GameOverScreen({
       game_id: 'more-or-less',
       action: 'share',
       streak_bucket: streakBucket(state.streak),
-      is_new_best: isBest,
+      is_new_best: isNewBest,
     });
     const outcome = await shareResult(
       buildShareText({ streak: state.streak, bestStreak: board.bestStreak, rank }),
@@ -71,23 +78,23 @@ export function GameOverScreen({
         outcome: 'loss',
         score_kind: 'streak',
         method: outcome === 'shared' ? 'share_sheet' : 'clipboard',
-        is_new_best: isBest,
+        is_new_best: isNewBest,
       });
     }
   }
 
   return (
     <View style={styles.root}>
-      {isBest ? (
+      {isNewBest ? (
         <View style={styles.rays} pointerEvents="none">
           <Rays />
         </View>
       ) : null}
       <View style={styles.stars}>
-        <StarRow earned={0} animate={false} />
+        <RewardPanel events={events} boosted={boosted} />
       </View>
       <ResultSheet
-        accessibilityLabel={isBest ? 'You win' : 'Game over'}
+        accessibilityLabel={isNewBest ? 'You win' : 'Game over'}
         footer={
           <View style={styles.footer}>
             <Button title="Try again" size="xl" tone="green" onPress={onPlayAgain} />
@@ -123,7 +130,7 @@ export function GameOverScreen({
           </View>
         }
       >
-        <DisplayTitle>{isBest ? 'YOU WIN' : 'GAME OVER'}</DisplayTitle>
+        <DisplayTitle>{isNewBest ? 'YOU WIN' : 'GAME OVER'}</DisplayTitle>
         <ScoreWell label={state.streak === 1 ? 'ROUND' : 'ROUNDS'} value={String(state.streak)} />
         <View style={styles.summary}>
           <Text style={styles.summaryItem}>Local rank #{rank}</Text>
@@ -152,6 +159,7 @@ export function GameOverScreen({
           <Text style={styles.pairMetric}>{category.metricLabel}</Text>
         </View>
       </ResultSheet>
+      <RewardCelebration events={events} />
     </View>
   );
 }

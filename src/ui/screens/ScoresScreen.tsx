@@ -277,6 +277,7 @@ function LocalBoard({
           title: `${entry.streak.toLocaleString('en-US')} ${scoreNoun}`,
           detail: formatDate(entry.playedAt),
           highlight: entry.id === highlightId,
+          boosted: entry.boosted === true,
         }))}
       />
       {rest.map((entry, index) => {
@@ -297,6 +298,7 @@ function LocalBoard({
                 {entry.durationMs !== undefined && ` · ${formatDuration(entry.durationMs)}`}
               </Text>
             </View>
+            {entry.boosted ? <Badge label="Boosted" tone="warning" /> : null}
             {highlighted ? <Badge label="THIS RUN" color={accent} /> : null}
           </Surface>
         );
@@ -416,7 +418,7 @@ function GlobalBoard({
 function Podium({
   places,
 }: {
-  places: { key: string; rank: number; title: string; detail: string; highlight?: boolean }[];
+  places: { key: string; rank: number; title: string; detail: string; highlight?: boolean; boosted?: boolean }[];
 }) {
   if (places.length === 0) return null;
   const ordered = places.length >= 3 ? [places[1], places[0], places[2]] : places;
@@ -434,6 +436,7 @@ function Podium({
             <Text style={styles.podiumDetail} numberOfLines={2}>
               {place.detail}
             </Text>
+            {place.boosted ? <Badge label="Boosted" tone="warning" /> : null}
           </View>
         );
       })}

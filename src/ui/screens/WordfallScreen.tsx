@@ -20,9 +20,12 @@ import {
   type WordfallContext,
 } from '../../games/wordfall/engine';
 import { analyze, scoreWord, specialFor, TRIGGERS } from '../../games/wordfall/linguistics';
+import { findWordPath } from '../../games/wordfall/board';
 import {
   isWordfallSave,
+  persistableWordfallState,
   rehydrate,
+  shouldReportOutcome,
   type WordfallSave,
 } from '../../games/wordfall/persistence';
 import {
@@ -39,6 +42,8 @@ import type { Level, SpecialKind, WordfallState } from '../../games/wordfall/typ
 import { buildShareText } from '../../games/wordfall/share';
 import { feedback } from '../../native/feedback';
 import { shareResult } from '../../native/share';
+import { boostPrice } from '../../rewards/wallet';
+import type { BoostKind } from '../../rewards/types';
 import { HowToPlay } from '../HowToPlay';
 import {
   Badge,
@@ -50,9 +55,12 @@ import {
   ResultSheet,
   RoundIconButton,
   ScoreWell,
-  StarRow,
   Surface,
 } from '../components';
+import { BoostBar, coinShortfall } from '../rewards/BoostBar';
+import type { RunReward } from '../rewards/RunReward';
+import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
+import { shouldShowTraceHint } from '../wordfall/coach';
 import { elevation, font, formatDuration, palette, radius, screen, space, theme, type } from '../theme';
 import { BoardView } from '../wordfall/BoardView';
 import { describeObjective, Hud, TracePreview } from '../wordfall/Hud';
@@ -73,24 +81,51 @@ type LiveWordfall = {
   onScore: (score: number, complete: boolean) => void;
 };
 
+type WordfallFinish = {
+  boosted: boolean;
+  movesLeft: number;
+  moves: number;
+  timeLeftMs: number | null;
+  timeLimitMs: number | null;
+  weekly: boolean;
+};
+
 type Props = {
   /** Called once per level cleared, with the score and how long it took. */
-  onLevelWon: (score: number, levelNumber: number, elapsedMs: number) => void;
+  onLevelWon: (
+    score: number,
+    levelNumber: number,
+    elapsedMs: number,
+    detail: WordfallFinish,
+  ) => void | Promise<RunReward | void>;
+  onLevelLost?: (
+    score: number,
+    levelNumber: number,
+    elapsedMs: number,
+    detail: WordfallFinish,
+  ) => void | Promise<RunReward | void>;
   onExit: () => void;
   showHelpInitially?: boolean;
   live?: LiveWordfall;
+  coins?: number;
+  onSpend?: (kind: BoostKind) => boolean;
 };
 
 export function WordfallScreen({
   onLevelWon,
+  onLevelLost,
   onExit,
   showHelpInitially = false,
   live,
+  coins = 0,
+  onSpend,
 }: Props) {
   const [loaded, setLoaded] = useState(Boolean(live));
   const [unlocked, setUnlocked] = useState(1);
   const [levelNumber, setLevelNumber] = useState(live?.levelNumber ?? 1);
   const [resume, setResume] = useState<WordfallState | null>(null);
+  const [runBoosted, setRunBoosted] = useState(false);
+  const [coachSeen, setCoachSeen] = useState(false);
   const [help, setHelp] = useState(showHelpInitially);
   const [picking, setPicking] = useState(false);
   /** Bumped to force a fresh board for the same level number. */
@@ -107,9 +142,12 @@ export function WordfallScreen({
       if (cancelled) return;
       if (save) {
         setUnlocked(save.unlocked);
-        if (save.state && levelByNumber(save.state.levelNumber)) {
-          setLevelNumber(save.state.levelNumber);
-          setResume(rehydrate(save.state));
+        if (save.traceCoachSeen) setCoachSeen(true);
+        const playable = save.state ? persistableWordfallState(save.state) : null;
+        if (playable && levelByNumber(playable.levelNumber)) {
+          setLevelNumber(playable.levelNumber);
+          setResume(rehydrate(playable));
+          setRunBoosted(save.boosted === true);
         } else {
           // A finished level clears the board but keeps the unlock. Opening at
           // level 1 in that case would send a returning player back to the
@@ -129,21 +167,28 @@ export function WordfallScreen({
   }, [live]);
 
   const persist = useCallback(
-    (state: WordfallState | null, unlockedNow: number) => {
+    (state: WordfallState | null, unlockedNow: number, boostedNow: boolean) => {
       if (live) return;
       // Nothing may be written before the restore completes, or a fresh empty
       // board would overwrite the saved one on launch.
       if (!loaded) return;
-      void saveProgress<WordfallSave>(GAME_ID, SESSION, { unlocked: unlockedNow, state });
+      const playable = state ? persistableWordfallState(state) : null;
+      const body: WordfallSave = {
+        unlocked: unlockedNow,
+        state: playable,
+        ...(playable && boostedNow ? { boosted: true } : {}),
+        ...(coachSeen ? { traceCoachSeen: true } : {}),
+      };
+      void saveProgress<WordfallSave>(GAME_ID, SESSION, body);
     },
-    [loaded, live],
+    [loaded, live, coachSeen],
   );
 
   // Stable identity, so the child's save effect fires on real state changes
   // rather than on every parent render.
   const handleStateChange = useCallback(
-    (state: WordfallState) => persist(state, unlocked),
-    [persist, unlocked],
+    (state: WordfallState) => persist(state, unlocked, runBoosted && state.status === 'playing'),
+    [persist, unlocked, runBoosted],
   );
 
   const level = levelByNumber(levelNumber)!;
@@ -169,16 +214,31 @@ export function WordfallScreen({
         // you read the instructions would be a bad joke.
         paused={help || picking}
         onScore={live?.onScore}
-        onWin={(score, elapsedMs) => {
+        coins={coins}
+        onSpend={live ? undefined : onSpend}
+        boosted={runBoosted}
+        onBoosted={() => setRunBoosted(true)}
+        coachSeen={coachSeen}
+        onCoachSeen={() => setCoachSeen(true)}
+        onWin={(score, elapsedMs, detail) => {
           if (!live) {
             const next = unlockAfterWin(unlocked, levelNumber);
             setUnlocked(next);
-            persist(null, next);
+            setRunBoosted(false);
+            persist(null, next, false);
           }
-          onLevelWon(score, levelNumber, elapsedMs);
+          return onLevelWon(score, levelNumber, elapsedMs, detail);
+        }}
+        onLose={(score, elapsedMs, detail) => {
+          if (!live) {
+            setRunBoosted(false);
+            persist(null, unlocked, false);
+          }
+          return onLevelLost?.(score, levelNumber, elapsedMs, detail);
         }}
         onNext={() => {
           setResume(null);
+          setRunBoosted(false);
           const upcoming = levelByNumber(levelNumber + 1);
           if (upcoming && isLevelPlayable(upcoming, unlockAfterWin(unlocked, levelNumber), new Date())) {
             setLevelNumber(upcoming.number);
@@ -187,6 +247,7 @@ export function WordfallScreen({
         }}
         onRetry={() => {
           setResume(null);
+          setRunBoosted(false);
           setAttempt((a) => a + 1);
         }}
       />
@@ -199,6 +260,7 @@ export function WordfallScreen({
         onSelect={(n) => {
           setPicking(false);
           setResume(null);
+          setRunBoosted(false);
           setLevelNumber(n);
           setAttempt((a) => a + 1);
         }}
@@ -271,11 +333,18 @@ function LevelPlay({
   onStateChange,
   onScore,
   onWin,
+  onLose,
   onNext,
   onRetry,
   onExit,
   onHelp,
   onPickLevel,
+  coins,
+  onSpend,
+  boosted,
+  onBoosted,
+  coachSeen,
+  onCoachSeen,
 }: {
   level: Level;
   resume: WordfallState | null;
@@ -286,12 +355,27 @@ function LevelPlay({
   hidePicker?: boolean;
   onStateChange: (state: WordfallState) => void;
   onScore?: (score: number, complete: boolean) => void;
-  onWin: (score: number, elapsedMs: number) => void;
+  onWin: (
+    score: number,
+    elapsedMs: number,
+    detail: WordfallFinish,
+  ) => void | Promise<RunReward | void>;
+  onLose: (
+    score: number,
+    elapsedMs: number,
+    detail: WordfallFinish,
+  ) => void | Promise<RunReward | void>;
   onNext: () => void;
   onRetry: () => void;
   onExit: () => void;
   onHelp: () => void;
   onPickLevel: () => void;
+  coins: number;
+  onSpend?: (kind: BoostKind) => boolean;
+  boosted: boolean;
+  onBoosted: () => void;
+  coachSeen: boolean;
+  onCoachSeen: () => void;
 }) {
   const ctx: WordfallContext = useMemo(() => createContext(level, DICTIONARY), [level]);
   const [state, dispatch] = useReducer(
@@ -305,8 +389,15 @@ function LevelPlay({
    * render that exposes it through `state` has run.
    */
   const pendingTrace = useRef<WordfallState | null>(null);
-  const reported = useRef(false);
+  const reported = useRef(!shouldReportOutcome(resume?.status ?? 'playing'));
   const [boardBounds, setBoardBounds] = useState({ width: 0, height: 0 });
+  const [reward, setReward] = useState<RunReward | null>(null);
+  const [paidHint, setPaidHint] = useState<readonly number[] | null>(null);
+  const [introDismissed, setIntroDismissed] = useState(false);
+  const [adaptiveDismissed, setAdaptiveDismissed] = useState(false);
+  const [singleTileReleases, setSingleTileReleases] = useState(0);
+  const boostedRef = useRef(boosted);
+  boostedRef.current = boosted;
 
   useEffect(() => {
     captureAnalytics('run_started', {
@@ -356,6 +447,15 @@ function LevelPlay({
     tracedCount.current = state.selection.length;
   }, [state.selection.length]);
 
+  const finishDetail = (current: WordfallState): WordfallFinish => ({
+    boosted: boostedRef.current,
+    movesLeft: current.movesLeft,
+    moves: level.moves,
+    timeLeftMs: timeLeftMs(current, ctx),
+    timeLimitMs: level.timeLimitMs ?? null,
+    weekly: level.availableFrom !== undefined,
+  });
+
   useEffect(() => {
     if (state.status === 'won' && !reported.current) {
       reported.current = true;
@@ -369,7 +469,9 @@ function LevelPlay({
         moves_left_bucket:
           state.movesLeft >= 5 ? '5_plus' : state.movesLeft >= 1 ? '1_4' : '0',
       });
-      onWin(state.score, state.elapsedMs);
+      void Promise.resolve(onWin(state.score, state.elapsedMs, finishDetail(state))).then((result) => {
+        if (result) setReward(result);
+      });
       onScore?.(state.score, true);
     } else if (state.status === 'lost' && !reported.current) {
       reported.current = true;
@@ -381,14 +483,8 @@ function LevelPlay({
         duration_ms: state.elapsedMs,
         failure_mode: failureMode,
       });
-      captureAnalytics('run_completed', {
-        game_id: 'wordfall',
-        outcome: 'loss',
-        score: state.score,
-        score_kind: 'points',
-        duration_ms: state.elapsedMs,
-        is_new_best: false,
-        level_number: level.number,
+      void Promise.resolve(onLose(state.score, state.elapsedMs, finishDetail(state))).then((result) => {
+        if (result) setReward(result);
       });
       onScore?.(state.score, false);
     }
@@ -400,6 +496,7 @@ function LevelPlay({
     state.movesLeft,
     level.number,
     onWin,
+    onLose,
     onScore,
     ctx,
   ]);
@@ -482,6 +579,15 @@ function LevelPlay({
     dispatch({ type: 'submit' });
     pendingTrace.current = null;
 
+    if (traceState.selection.length === 1) {
+      setSingleTileReleases((count) => count + 1);
+    }
+    if (traceState.selection.length >= 2) {
+      setIntroDismissed(true);
+      setAdaptiveDismissed(true);
+      onCoachSeen();
+    }
+
     const rejectionKind =
       after.rejection?.kind === 'too-short'
         ? 'too_short'
@@ -506,6 +612,46 @@ function LevelPlay({
   };
 
   const over = state.status !== 'playing';
+  const showCoach =
+    !hidePicker &&
+    state.status === 'playing' &&
+    shouldShowTraceHint({
+      seenIntro: coachSeen,
+      introDismissed,
+      singleTileReleases,
+      adaptiveDismissed,
+    });
+  const coachPath = showCoach ? findWordPath(state.board, ctx.solver, state.played) : null;
+
+  useEffect(() => {
+    if (!showCoach || coachSeen || introDismissed) return;
+    const timer = setTimeout(() => {
+      setIntroDismissed(true);
+      onCoachSeen();
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [showCoach, coachSeen, introDismissed, onCoachSeen]);
+
+  useEffect(() => {
+    if (!paidHint) return;
+    const timer = setTimeout(() => setPaidHint(null), 3000);
+    return () => clearTimeout(timer);
+  }, [paidHint]);
+
+  const spendBoost = (kind: BoostKind): boolean => {
+    if (!onSpend?.(kind)) return false;
+    boostedRef.current = true;
+    onBoosted();
+    return true;
+  };
+
+  const shufflePrice = boostPrice('shuffle');
+  const hintPrice = boostPrice('word-hint');
+  const extraPrice = boostPrice(level.timeLimitMs === undefined ? 'extra-moves' : 'extra-time');
+  const extraKind: BoostKind = level.timeLimitMs === undefined ? 'extra-moves' : 'extra-time';
+  const extraUsed =
+    extraKind === 'extra-moves' ? state.extraMovesGranted === true : (state.bonusMs ?? 0) > 0;
+  const hintTiles = findWordPath(state.board, ctx.solver, state.played);
 
   return (
     <View style={styles.play}>
@@ -548,6 +694,56 @@ function LevelPlay({
         accent={palette.green}
       />
 
+      {onSpend && state.status === 'playing' ? (
+        <BoostBar
+          controls={[
+            {
+              kind: 'shuffle',
+              label: 'Shuffle',
+              glyph: '⟳',
+              price: shufflePrice,
+              disabled: coins < shufflePrice,
+              disabledReason: coinShortfall(coins, shufflePrice),
+              onPress: () => {
+                if (!spendBoost('shuffle')) return;
+                dispatch({ type: 'boost', kind: 'shuffle' });
+              },
+            },
+            {
+              kind: 'word-hint',
+              label: 'Word hint',
+              glyph: '✦',
+              price: hintPrice,
+              disabled: coins < hintPrice || hintTiles === null,
+              disabledReason:
+                coinShortfall(coins, hintPrice) ?? (hintTiles === null ? 'No word to show' : undefined),
+              onPress: () => {
+                const path = findWordPath(state.board, ctx.solver, state.played);
+                if (!path || !spendBoost('word-hint')) return;
+                setPaidHint(path);
+              },
+            },
+            {
+              kind: extraKind,
+              label: extraKind === 'extra-moves' ? '+3 moves' : '+10s',
+              glyph: extraKind === 'extra-moves' ? '+3' : '+10',
+              price: extraPrice,
+              disabled: coins < extraPrice || extraUsed,
+              disabledReason: extraUsed
+                ? 'Already used this level'
+                : coinShortfall(coins, extraPrice),
+              onPress: () => {
+                if (extraUsed || !spendBoost(extraKind)) return;
+                dispatch({
+                  type: 'boost',
+                  kind: extraKind === 'extra-moves' ? 'extraMoves' : 'extraTime',
+                });
+              },
+            },
+          ]}
+        />
+      ) : null}
+
       <View
         style={styles.boardWrap}
         onLayout={(event) => {
@@ -566,10 +762,16 @@ function LevelPlay({
             maxWidth={boardBounds.width}
             maxHeight={boardBounds.height}
             disabled={over}
+            hintPath={paidHint ?? coachPath ?? undefined}
             onTrace={trace}
             onRelease={submit}
             onCancel={cancelTrace}
           />
+        ) : null}
+        {showCoach && coachPath ? (
+          <Text style={styles.coach} pointerEvents="none">
+            Drag through the glowing letters
+          </Text>
         ) : null}
       </View>
 
@@ -591,6 +793,7 @@ function LevelPlay({
           onExit={onExit}
           onNext={onNext}
           onRetry={onRetry}
+          reward={reward}
         />
       )}
     </View>
@@ -604,6 +807,7 @@ function LevelOutcome({
   onExit,
   onNext,
   onRetry,
+  reward,
 }: {
   state: WordfallState;
   level: Level;
@@ -612,6 +816,7 @@ function LevelOutcome({
   onExit: () => void;
   onNext: () => void;
   onRetry: () => void;
+  reward: RunReward | null;
 }) {
   const won = state.status === 'won';
   const latest = lastReleasedNumber(LEVELS, new Date());
@@ -647,7 +852,7 @@ function LevelOutcome({
         outcome: won ? 'win' : 'loss',
         score_kind: 'points',
         method: outcome === 'shared' ? 'share_sheet' : 'clipboard',
-        is_new_best: false,
+        is_new_best: reward?.isNewBest ?? false,
       });
     }
   }
@@ -669,7 +874,7 @@ function LevelOutcome({
         </View>
       ) : null}
       <View style={styles.stars}>
-        <StarRow earned={0} animate={false} />
+        {reward ? <RewardPanel events={reward.events} boosted={reward.boosted} /> : null}
       </View>
       <ResultSheet
         accessibilityLabel={won ? 'You win' : 'Game over'}
@@ -732,6 +937,7 @@ function LevelOutcome({
           </View>
         ) : null}
       </ResultSheet>
+      {reward ? <RewardCelebration events={reward.events} /> : null}
     </View>
   );
 }
@@ -874,6 +1080,18 @@ const styles = StyleSheet.create({
   // The board takes whatever height is left and centres itself, so the HUD and
   // the read-out keep their positions on every screen size.
   boardWrap: { flex: 1, justifyContent: 'center' },
+  coach: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 8,
+    textAlign: 'center',
+    color: palette.brown,
+    fontFamily: font.bold,
+    fontWeight: '700',
+    fontSize: 14,
+    lineHeight: 18,
+  },
 
   outcomeScrim: {
     position: 'absolute',

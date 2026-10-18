@@ -32,6 +32,8 @@ type Props = {
   maxHeight: number;
   disabled?: boolean;
   lastPlay: PlayResult | null;
+  /** Tile indexes to glow. The coach and the word hint. Does not take touches. */
+  hintPath?: readonly number[];
 };
 
 export function BoardView({
@@ -45,6 +47,7 @@ export function BoardView({
   maxHeight,
   disabled = false,
   lastPlay,
+  hintPath,
 }: Props) {
   const containerRef = useRef<View>(null);
   /**
@@ -219,6 +222,7 @@ export function BoardView({
               left={colOf(board, index) * (tileSize + GAP)}
               top={rowOf(board, index) * (tileSize + GAP)}
               order={selectedAt.get(index)}
+              hinted={hintPath?.includes(index) === true}
               accent={accent}
               dropHoldMs={dropHoldMs}
               justBorn={bornId === tile.id}
@@ -311,6 +315,7 @@ const TileView = memo(function TileView({
   left,
   top,
   order,
+  hinted = false,
   accent,
   dropHoldMs,
   justBorn,
@@ -324,6 +329,8 @@ const TileView = memo(function TileView({
   top: number;
   /** Position in the current trace, or undefined if not selected. */
   order: number | undefined;
+  /** Coach or word-hint glow. Visual only. */
+  hinted?: boolean;
   accent: string;
   dropHoldMs: number;
   justBorn: boolean;
@@ -422,6 +429,10 @@ const TileView = memo(function TileView({
           backgroundColor: accent,
           borderColor: accent,
           borderBottomColor: shade(accent, 0.35),
+        },
+        !crate && !selected && hinted && {
+          borderColor: palette.star,
+          borderBottomColor: palette.starEdge,
         },
         !crate && !selected && visual && {
           backgroundColor: visual.color,
