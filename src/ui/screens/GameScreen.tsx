@@ -21,6 +21,7 @@ import { feedback } from '../../native/feedback';
 import { HowToPlay } from '../HowToPlay';
 import { Sparkle } from '../Sparkle';
 import {
+  afterModalClose,
   Button,
   ComboBanner,
   CreamBox,
@@ -442,7 +443,7 @@ export function GameScreen({
         onResume={() => setPaused(false)}
         onHelp={() => {
           setPaused(false);
-          setHelp(true);
+          afterModalClose(() => setHelp(true));
         }}
         onLeave={() => {
           setPaused(false);

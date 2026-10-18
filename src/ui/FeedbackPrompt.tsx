@@ -78,7 +78,8 @@ export function FeedbackPrompt({ visible, identity, onClose }: Props) {
       visible={visible}
       onClose={close}
       title={sent ? 'Thanks!' : 'Feedback'}
-      dismissable={!busy}
+      // A tap outside must not throw away a half-written report.
+      dismissable={!busy && message.trim().length === 0}
       footer={
         sent ? (
           <Button title="Done" tone="green" size="lg" onPress={onClose} />

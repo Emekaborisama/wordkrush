@@ -53,5 +53,6 @@ export function TabSwitch<T extends string>({
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: space.xs },
   item: { flex: 1 },
-  face: { minHeight: 38, paddingHorizontal: 8 },
+  // 40 + the 4px lip clears the 44px touch minimum.
+  face: { minHeight: 40, paddingHorizontal: 8 },
 });

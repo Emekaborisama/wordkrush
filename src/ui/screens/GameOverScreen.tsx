@@ -130,9 +130,7 @@ export function GameOverScreen({
           onPress={() => void onShare()}
         />
       </View>
-      {shareNote ? (
-        <PanelText>{shareNote}</PanelText>
-      ) : null}
+      {shareNote ? <PanelText live>{shareNote}</PanelText> : null}
     </>
   );
 

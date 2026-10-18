@@ -121,7 +121,7 @@ import { joinMatch, postMatchScore } from './src/live/api';
 import type { LiveMatchSnapshot } from './src/live/types';
 import { clearExistingMembership } from './src/teams/api';
 import { parseTeamInviteUrl } from './src/teams/codes';
-import { CoinsPill, SkyBackground, StreakPill, TopBar } from './src/ui/components';
+import { afterModalClose, CoinsPill, SkyBackground, StreakPill, TopBar } from './src/ui/components';
 import { parentOf, type Parent } from './src/ui/navigation';
 import { installWebHistory, noteWebNavigation } from './src/ui/webHistory';
 import { OnboardingScreen } from './src/ui/screens/OnboardingScreen';
@@ -902,7 +902,7 @@ export default function App() {
             }}
             onQuickPlay={() => {
               const gameId = quickPlayGameId();
-              captureAnalytics('game_selected', { game_id: gameId, source: 'hub' });
+              captureAnalytics('game_selected', { game_id: gameId, source: 'quick_play' });
               openGameHome(gameId);
             }}
             onScores={() => setScreen({ name: 'scores', gameId: MORE_OR_LESS })}
@@ -1438,7 +1438,7 @@ export default function App() {
           canSendFeedback={isFeedbackConfigured()}
           onSendFeedback={() => {
             setSettingsOpen(false);
-            setShowFeedback(true);
+            afterModalClose(() => setShowFeedback(true));
           }}
           version={appConfig.expo.version}
         />

@@ -32,6 +32,7 @@ export { IconButton } from './IconButton';
 export { CreamText, Panel, PanelDivider, PanelText, PopupModal, panelInk } from './Panel';
 export type { PanelProps, PanelTone, PopupModalProps } from './Panel';
 export { PausePopup } from './PausePopup';
+export { afterModalClose, MODAL_HANDOFF_MS } from './modalHandoff';
 export { PressableScale } from './PressableScale';
 export type { PressVisual } from './PressableScale';
 export { ProgressPill } from './ProgressPill';

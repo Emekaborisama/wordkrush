@@ -19,6 +19,9 @@ Rules:
 - **Juice from Block King**: a gold +1 bursts from a right More or Less call, milestone streaks and Wordfall chains throw a GREAT! / CASCADE! / KRUSH! banner, and a miss shakes the board red.
 - **First visit** opens on the kit's hero: the block logo drops in, a hand taps a cube, and a gold Play starts More or Less.
 
+- **Pop-ups make room for the keyboard**, and a Feedback draft is no longer lost to a tap outside the card. A pop-up opened from another one (How to play from Pause, Feedback from Settings) waits for the first to close, so iOS shows it; Wordfall's clock stays stopped in between.
+- **Analytics:** the gold Play on Home reports `game_selected` with `source: 'quick_play'`; a game's own Play still reports `hub`. `drawer` no longer occurs.
+
 ### Removed
 - The deer mascot from Home and the first visit (the kit has no mascot). The Lottie module stays in the repo, unused.
 

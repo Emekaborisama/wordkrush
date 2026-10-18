@@ -195,7 +195,7 @@ export function BoardView({
   return (
     // The frame is a separate view outside the measured board, so hit-testing
     // still reads tile positions straight off the board's own origin.
-    <View style={styles.frame}>
+    <View style={styles.frame} onLayout={() => measure()}>
     <View
       ref={containerRef}
       nativeID={WORDFALL_BOARD_WEB_ID}

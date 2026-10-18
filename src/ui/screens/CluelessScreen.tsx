@@ -37,6 +37,7 @@ import { shareResult } from '../../native/share';
 import { GuessRow } from '../GuessRow';
 import { ExampleRow, HowToPlay } from '../HowToPlay';
 import {
+  afterModalClose,
   BlockTile,
   Button,
   CreamBox,
@@ -383,7 +384,7 @@ export function CluelessScreen({
                     onPress={() => void onShare()}
                   />
                 </View>
-                {shareNote ? <PanelText>{shareNote}</PanelText> : null}
+                {shareNote ? <PanelText live>{shareNote}</PanelText> : null}
               </>
             }
           >
@@ -491,7 +492,7 @@ export function CluelessScreen({
         onResume={() => setPaused(false)}
         onHelp={() => {
           setPaused(false);
-          setHelp(true);
+          afterModalClose(() => setHelp(true));
         }}
         onLeave={() => {
           setPaused(false);

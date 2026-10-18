@@ -2,7 +2,9 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import {
   Animated,
   Easing,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -139,12 +141,15 @@ export function PanelText({
   variant = 'body',
   tone = 'coral',
   align = 'center',
+  live = false,
   style,
 }: {
   children: string;
   variant?: 'heading' | 'body';
   tone?: PanelTone;
   align?: 'left' | 'center';
+  /** Announce changes politely (e.g. "Copied to clipboard"). */
+  live?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   if (variant === 'heading') {
@@ -152,6 +157,15 @@ export function PanelText({
       <StrokeText size={24} stroke={BODY[tone].ink} strokeWidth={2.2} depth={1.5} align={align} style={style}>
         {children}
       </StrokeText>
+    );
+  }
+  if (live) {
+    return (
+      <View accessibilityLiveRegion="polite" aria-live="polite">
+        <PanelText variant={variant} tone={tone} align={align} style={style}>
+          {children}
+        </PanelText>
+      </View>
     );
   }
   return (
@@ -244,7 +258,12 @@ export function PopupModal({
 
   return (
     <Modal transparent visible={visible} animationType="none" onRequestClose={onClose} statusBarTranslucent>
-      <View style={[styles.scrim, scrim === 'strong' && styles.scrimStrong]}>
+      {/* Lifts a pop-up with a text field clear of the keyboard, so the field
+          and the footer's Send stay reachable without dismissing anything. */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={[styles.scrim, scrim === 'strong' && styles.scrimStrong]}
+      >
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={dismissable ? onClose : undefined}
@@ -262,7 +281,7 @@ export function PopupModal({
         >
           <Panel {...panel} onClose={hideClose ? undefined : onClose} scroll />
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

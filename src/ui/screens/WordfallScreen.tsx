@@ -45,6 +45,7 @@ import { boostPrice } from '../../rewards/wallet';
 import type { BoostKind } from '../../rewards/types';
 import { HowToPlay } from '../HowToPlay';
 import {
+  afterModalClose,
   Badge,
   BlockDigits,
   BlockTile,
@@ -200,6 +201,9 @@ export function WordfallScreen({
 
   const level = levelByNumber(levelNumber)!;
   const [gearPaused, setGearPaused] = useState(false);
+  // True between the pause pop-up closing and How to play opening, so the
+  // clock never runs in the gap between the two.
+  const [helpPending, setHelpPending] = useState(false);
 
   if (!loaded) return <View style={styles.root} />;
 
@@ -220,7 +224,7 @@ export function WordfallScreen({
         onPickLevel={() => setPicking(true)}
         // The clock stops while a sheet is open: losing a timed level because
         // you read the instructions would be a bad joke.
-        paused={help || picking || gearPaused}
+        paused={help || picking || gearPaused || helpPending}
         onPause={() => setGearPaused(true)}
         onScore={live?.onScore}
         coins={coins}
@@ -279,8 +283,12 @@ export function WordfallScreen({
         visible={gearPaused}
         onResume={() => setGearPaused(false)}
         onHelp={() => {
+          setHelpPending(true);
           setGearPaused(false);
-          setHelp(true);
+          afterModalClose(() => {
+            setHelp(true);
+            setHelpPending(false);
+          });
         }}
         onLeave={() => {
           setGearPaused(false);
@@ -806,7 +814,7 @@ function LevelPlay({
 
       {/* The first-visit coach takes the read-out's place, under the board,
           so it never covers the letters it points at. */}
-      {showCoach && coachPath && preview.word.length === 0 ? (
+      {showCoach && coachPath && preview.word.length === 0 && message === null ? (
         <View style={styles.coach}>
           <GameIcon name="hand" size={34} />
           <Text style={styles.coachText}>Drag through the glowing letters</Text>
@@ -975,7 +983,7 @@ function LevelOutcome({
                 onPress={onExit}
               />
             </View>
-            {shareNote ? <PanelText>{shareNote}</PanelText> : null}
+            {shareNote ? <PanelText live>{shareNote}</PanelText> : null}
           </>
         }
       >

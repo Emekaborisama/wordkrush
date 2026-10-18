@@ -41,7 +41,8 @@ export type AnalyticsEvents = {
     game_id?: string;
   };
   game_selected: CommonGameProperties & {
-    source: 'hub' | 'drawer';
+    /** `quick_play` is the hub's gold Play; `drawer` predates 0.10.0. */
+    source: 'hub' | 'quick_play' | 'drawer';
   };
   run_started: CommonGameProperties & CluelessLevelProperties & {
     is_resume: boolean;

@@ -25,7 +25,7 @@ export type SquareButtonProps = {
   /** Caption ink. White (outlined) on sky, navy on cream. */
   captionTone?: 'light' | 'dark';
   disabled?: boolean;
-  /** Read by assistive tech when disabled, and shown instead of the price. */
+  /** Read by assistive tech when disabled. */
   disabledReason?: string;
   style?: StyleProp<ViewStyle>;
 };

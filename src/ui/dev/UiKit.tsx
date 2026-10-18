@@ -12,12 +12,6 @@ import { IconsKit } from './IconsKit';
  * every Block Blast primitive on one scroll, for screenshots and review.
  * `?kit=icons`, `?kit=blocks`, `?kit=controls` show one section.
  */
-export function wantsUiKit(): boolean {
-  if (!__DEV__) return false;
-  if (typeof window === 'undefined' || !window.location) return false;
-  return /[?&]kit\b/.test(window.location.search ?? '');
-}
-
 function section(): string {
   if (typeof window === 'undefined' || !window.location) return 'all';
   const match = /[?&]kit=([a-z]+)/.exec(window.location.search ?? '');

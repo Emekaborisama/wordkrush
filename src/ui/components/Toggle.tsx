@@ -51,6 +51,7 @@ export function Toggle({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ checked: value }}
       aria-checked={value}
+      hitSlop={8}
       style={styles.track}
     >
       <Text style={[styles.word, value ? styles.wordLeft : styles.wordRight]}>{value ? 'ON' : 'OFF'}</Text>
