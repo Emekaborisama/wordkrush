@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import {
   chainLengthBucket,
@@ -34,7 +34,6 @@ import {
   isLevelReleased,
   isNewestRelease,
   lastReleasedNumber,
-  nextDropDate,
   parseAvailableFrom,
   unlockAfterWin,
 } from '../../games/wordfall/schedule';
@@ -46,16 +45,13 @@ import { boostPrice } from '../../rewards/wallet';
 import type { BoostKind } from '../../rewards/types';
 import { HowToPlay } from '../HowToPlay';
 import {
-  Badge,
   Button,
   DisplayTitle,
-  GameArtwork,
   GameHeader,
   Rays,
   ResultSheet,
   RoundIconButton,
   ScoreWell,
-  Surface,
 } from '../components';
 import { BoostBar, coinShortfall } from '../rewards/BoostBar';
 import type { RunReward } from '../rewards/RunReward';
@@ -666,7 +662,7 @@ function LevelPlay({
             {hidePicker ? null : (
               <RoundIconButton
                 icon={<Text style={styles.headerGlyph}>≡</Text>}
-                accessibilityLabel="Choose a level"
+                accessibilityLabel="Open level map"
                 onPress={onPickLevel}
                 tone="blue"
                 size={44}
@@ -942,10 +938,24 @@ function LevelOutcome({
   );
 }
 
-function pickerIntro(now: Date): string {
-  const upcoming = nextDropDate(LEVELS, now);
-  if (upcoming) return `A new level drops every Monday. Next: ${formatDropDay(upcoming)}.`;
-  return 'A new level drops every Monday. Beat the campaign and come back next week.';
+/** Grass, dirt and stone from the level-map reference. This screen is a map, not a form. */
+const MAP = {
+  grass: '#6FAF45',
+  grassDeep: '#4E8C32',
+  path: '#E2C48A',
+  pathEdge: '#C49A62',
+  stone: '#F7F1E4',
+  locked: '#A3A39A',
+} as const;
+
+const MAP_NODE = 74;
+const MAP_STEP = 128;
+
+function moveLabel(level: Level): { value: string; unit: string } {
+  if (level.timeLimitMs !== undefined) {
+    return { value: formatDuration(level.timeLimitMs), unit: 'TIME' };
+  }
+  return { value: String(level.moves), unit: 'MOVES' };
 }
 
 function LevelPicker({
@@ -961,95 +971,115 @@ function LevelPicker({
   onClose: () => void;
   onSelect: (levelNumber: number) => void;
 }) {
+  const { width } = useWindowDimensions();
+  const boardWidth = Math.min(width, 480);
+  const left = boardWidth * 0.28;
+  const right = boardWidth * 0.72;
+  const now = new Date();
+  const nodes = LEVELS.map((level, index) => {
+    const released = isLevelReleased(level, now);
+    const playable = isLevelPlayable(level, unlocked, now);
+    const upcoming = !released && level.availableFrom ? parseAvailableFrom(level.availableFrom) : null;
+    return {
+      level,
+      index,
+      locked: !playable,
+      cleared: playable && level.number < unlocked,
+      active: level.number === current,
+      fresh: isNewestRelease(level, now),
+      upcoming,
+      x: index % 2 === 0 ? right : left,
+      y: 36 + index * MAP_STEP,
+    };
+  });
+  const height = 36 + LEVELS.length * MAP_STEP + 24;
+  const here = nodes.find((node) => node.active) ?? nodes[0];
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.pickerRoot}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
-        <View style={styles.picker}>
-          <View style={styles.pickerHandle} />
-          <View style={styles.pickerHeader}>
-            <GameArtwork gameId={GAME_ID} accent={RIBBON} size={54} raised />
-            <View style={styles.pickerHeaderCopy}>
-              <Text style={styles.pickerTitle}>Choose a level</Text>
-              <Text style={styles.pickerIntro}>
-                {pickerIntro(new Date())}
-              </Text>
-            </View>
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View style={styles.mapRoot}>
+        <View style={styles.mapSignRow}>
+          <RoundIconButton
+            icon={<Text style={styles.roundGlyph}>‹</Text>}
+            accessibilityLabel="Close level map"
+            onPress={onClose}
+            tone="blue"
+            size={44}
+          />
+          <View style={styles.mapSign}>
+            <Text style={styles.mapSignTitle}>LEVEL MAP</Text>
+            <Text style={styles.mapSignMeta} numberOfLines={1}>
+              {here ? `${here.level.number} · ${here.level.name}` : 'Choose a level'}
+            </Text>
           </View>
-          <ScrollView contentContainerStyle={styles.pickerList} showsVerticalScrollIndicator={false}>
-            {LEVELS.map((level) => {
-              const now = new Date();
-              const released = isLevelReleased(level, now);
-              const playable = isLevelPlayable(level, unlocked, now);
-              const upcoming = !released && level.availableFrom
-                ? parseAvailableFrom(level.availableFrom)
-                : null;
-              const locked = !playable;
-              const active = level.number === current;
-              const fresh = isNewestRelease(level, now);
+        </View>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.mapScroll}>
+          <View style={[styles.mapBoard, { width: boardWidth, height }]}>
+            {nodes.slice(0, -1).map((node, index) => {
+              const next = nodes[index + 1];
+              if (!next) return null;
+              const dx = next.x - node.x;
+              const dy = next.y - node.y;
+              const length = Math.hypot(dx, dy);
               return (
-                <Surface
-                  key={level.number}
-                  level={active ? 3 : 2}
-                  radius={radius.md}
-                  disabled={locked}
-                  onPress={() => onSelect(level.number)}
-                  borderColor={active ? RIBBON : undefined}
-                  style={styles.pickerRow}
+                <View
+                  key={`path-${node.level.number}`}
+                  pointerEvents="none"
+                  style={[
+                    styles.mapPath,
+                    {
+                      width: length,
+                      left: (node.x + next.x) / 2 - length / 2,
+                      top: (node.y + next.y) / 2 - 9,
+                      transform: [{ rotate: `${Math.atan2(dy, dx)}rad` }],
+                    },
+                  ]}
+                />
+              );
+            })}
+            {nodes.map((node) => {
+              const budget = moveLabel(node.level);
+              const label = node.upcoming
+                ? `Level ${node.level.number}, ${node.level.name}, ${budget.value} ${budget.unit.toLowerCase()}, drops ${formatDropDay(node.upcoming)}`
+                : node.locked
+                  ? `Level ${node.level.number}, ${node.level.name}, locked, ${budget.value} ${budget.unit.toLowerCase()}`
+                  : `Play level ${node.level.number}, ${node.level.name}, ${budget.value} ${budget.unit.toLowerCase()}`;
+              return (
+                <Pressable
+                  key={node.level.number}
+                  disabled={node.locked}
+                  onPress={() => onSelect(node.level.number)}
                   accessibilityRole="button"
-                  accessibilityLabel={
-                    !released && upcoming
-                      ? `Level ${level.number}, ${level.name}, drops ${formatDropDay(upcoming)}. ${level.description}`
-                      : locked
-                        ? `Level ${level.number}, ${level.name}, locked. ${level.description}`
-                        : `Play level ${level.number}, ${level.name}. ${level.description}`
-                  }
+                  accessibilityLabel={label}
+                  style={[
+                    styles.mapNode,
+                    { left: node.x - MAP_NODE / 2, top: node.y - MAP_NODE / 2 },
+                  ]}
                 >
                   <View
                     style={[
-                      styles.pickerNumber,
-                      active && { backgroundColor: RIBBON, borderColor: RIBBON },
+                      styles.mapStone,
+                      {
+                        backgroundColor: node.locked ? MAP.locked : node.active ? palette.ribbon : MAP.stone,
+                        borderColor: node.active ? palette.brown : MAP.pathEdge,
+                      },
                     ]}
                   >
-                    {locked ? (
+                    {node.locked ? (
                       <LockMark />
                     ) : (
-                      <Text style={[styles.pickerNumberText, active && { color: palette.brown }]}>
-                        {level.number}
-                      </Text>
+                      <Text style={styles.mapNumber}>{node.level.number}</Text>
                     )}
+                    {node.cleared ? <Text style={styles.mapStar}>★</Text> : null}
                   </View>
-                  <View style={styles.pickerBody}>
-                    <View style={styles.pickerNameRow}>
-                      <Text style={[styles.pickerName, locked && styles.dim]}>{level.name}</Text>
-                      {fresh ? <Badge label="THIS WEEK" color={RIBBON} /> : null}
-                      {upcoming ? <Badge label={`DROPS ${formatDropDay(upcoming).toUpperCase()}`} /> : null}
-                      {active ? <Badge label="CURRENT" color={RIBBON} /> : null}
-                    </View>
-                    <Text style={styles.pickerDescription} numberOfLines={2}>
-                      {level.description}
-                    </Text>
-                    <Text style={styles.pickerGoals} numberOfLines={2}>
-                      {level.objectives
-                        .map((o) => `${describeObjective(o).label} ${o.target.toLocaleString('en-US')}`)
-                        .join(' · ')}
-                    </Text>
-                  </View>
-                  <View style={styles.pickerBudget}>
-                    <Text style={styles.pickerBudgetValue}>
-                      {level.timeLimitMs === undefined
-                        ? level.moves
-                        : formatDuration(level.timeLimitMs)}
-                    </Text>
-                    <Text style={styles.pickerBudgetLabel}>
-                      {level.timeLimitMs === undefined ? 'MOVES' : 'TIME'}
-                    </Text>
-                  </View>
-                </Surface>
+                  <Text style={styles.mapMoves}>
+                    {node.fresh ? 'New' : `${budget.value} ${budget.unit.toLowerCase()}`}
+                  </Text>
+                </Pressable>
               );
             })}
-          </ScrollView>
-        </View>
+          </View>
+        </ScrollView>
       </View>
     </Modal>
   );
@@ -1111,70 +1141,82 @@ const styles = StyleSheet.create({
   missedTitle: { ...type.overline, color: theme.danger, marginBottom: 2 },
   missedRow: { ...type.caption, color: theme.textMuted },
 
-  pickerRoot: { flex: 1, justifyContent: 'flex-end', backgroundColor: theme.overlay },
-  picker: {
-    ...elevation(1),
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    borderTopWidth: 1,
-    paddingHorizontal: space.lg,
-    paddingBottom: space.xl,
-    maxHeight: '88%',
-  },
-  pickerHandle: {
-    width: 38,
-    height: 4,
-    borderRadius: radius.pill,
-    backgroundColor: theme.borderStrong,
-    alignSelf: 'center',
-    marginVertical: space.md,
-  },
-  pickerHeader: {
+  mapRoot: { flex: 1, backgroundColor: MAP.grass },
+  mapSignRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
-    marginBottom: space.lg,
+    gap: space.sm,
+    paddingHorizontal: space.md,
+    paddingTop: space.md,
+    paddingBottom: space.sm,
   },
-  pickerHeaderCopy: { flex: 1 },
-  pickerTitle: { ...type.title, color: theme.text },
-  pickerIntro: { ...type.caption, color: theme.textMuted, marginTop: 2 },
-  pickerList: { gap: space.sm, paddingBottom: space.md },
-  pickerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-  },
-  pickerNumber: {
-    width: 44,
-    height: 44,
+  mapSign: {
+    flex: 1,
+    backgroundColor: palette.wood,
     borderRadius: radius.md,
-    backgroundColor: elevation(1).backgroundColor,
-    borderWidth: 1,
-    borderColor: elevation(1).borderColor,
+    borderBottomWidth: 6,
+    borderBottomColor: MAP.grassDeep,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    alignItems: 'center',
+  },
+  mapSignTitle: {
+    color: palette.ribbon,
+    fontFamily: font.bold,
+    fontWeight: '700',
+    fontSize: 22,
+    lineHeight: 26,
+    letterSpacing: 1,
+  },
+  mapSignMeta: { color: palette.paper, fontFamily: font.semibold, fontWeight: '600', fontSize: 13, marginTop: 2 },
+  mapScroll: { alignItems: 'center', paddingBottom: space.xl },
+  mapBoard: { position: 'relative' },
+  mapPath: {
+    position: 'absolute',
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: MAP.path,
+    borderWidth: 2,
+    borderColor: MAP.pathEdge,
+  },
+  mapNode: {
+    position: 'absolute',
+    width: MAP_NODE,
+    alignItems: 'center',
+  },
+  mapStone: {
+    width: MAP_NODE,
+    height: MAP_NODE,
+    borderRadius: MAP_NODE / 2,
+    borderWidth: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pickerNumberText: {
-    color: theme.textMuted,
+  mapNumber: {
+    color: palette.brown,
     fontFamily: font.bold,
-    fontSize: 18,
     fontWeight: '700',
+    fontSize: 26,
+    lineHeight: 30,
     fontVariant: ['tabular-nums'],
   },
-  pickerBody: { flex: 1 },
-  pickerNameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  pickerName: { ...type.subtitle, color: theme.text },
-  pickerDescription: { ...type.caption, color: theme.textMuted, marginTop: 3, lineHeight: 16 },
-  pickerGoals: { ...type.caption, color: theme.textMuted, marginTop: 4 },
-  pickerBudget: { width: 48, alignItems: 'flex-end' },
-  pickerBudgetValue: {
-    ...type.caption,
-    color: theme.text,
-    fontFamily: font.semibold,
-    fontWeight: '600',
-    fontVariant: ['tabular-nums'],
+  mapMoves: {
+    marginTop: 4,
+    color: palette.brown,
+    fontFamily: font.bold,
+    fontWeight: '700',
+    fontSize: 12,
+    lineHeight: 14,
+    textAlign: 'center',
   },
-  pickerBudgetLabel: { ...type.overline, color: theme.textDim, marginTop: 1 },
+  mapStar: {
+    position: 'absolute',
+    top: 2,
+    right: 6,
+    color: palette.starEdge,
+    fontSize: 14,
+    lineHeight: 16,
+  },
   dim: { color: theme.textDim },
   lock: { width: 18, height: 21, alignItems: 'center', justifyContent: 'flex-end' },
   lockShackle: {
