@@ -1,4 +1,5 @@
 import type { PlayerCountBucket } from '../games/campaign';
+import type { BoostKind, MilestoneId } from '../rewards/types';
 import type { ArrivalAttribution, EntrySource, UtmMedium, UtmSource } from './attribution';
 
 export type AnalyticsConsent = 'granted' | 'denied';
@@ -54,6 +55,11 @@ export type AnalyticsEvents = {
     score_kind: 'streak' | 'guesses_used' | 'points';
     duration_ms?: number;
     is_new_best: boolean;
+    /**
+     * Whether this run spent a boost. Optional only so call sites that predate
+     * the economy still typecheck; a screen that finishes a run should set it.
+     */
+    boosted?: boolean;
     category_id?: string;
     puzzle_number?: number;
     level_number?: number;
@@ -184,6 +190,19 @@ export type AnalyticsEvents = {
   card_image_load_failed: CommonGameProperties & {
     has_image_url: true;
   };
+  boost_used: {
+    game_id: GameId;
+    boost_kind: BoostKind;
+  };
+  daily_chest_claimed: {
+    chest_day: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  };
+  player_level_up: {
+    level_bucket: LevelBucket;
+  };
+  milestone_reached: {
+    milestone_id: MilestoneId;
+  };
 };
 
 export type AnalyticsEventName = keyof AnalyticsEvents;
@@ -225,7 +244,21 @@ export const ANALYTICS_EVENT_NAMES: ReadonlySet<string> = new Set<AnalyticsEvent
   'score_persist_failed',
   'progress_persist_failed',
   'card_image_load_failed',
+  'boost_used',
+  'daily_chest_claimed',
+  'player_level_up',
+  'milestone_reached',
 ]);
+
+export type LevelBucket = '1_4' | '5_9' | '10_19' | '20_plus';
+
+/** Player level is unbounded, so the event stores a bucket rather than the number. */
+export function levelBucket(level: number): LevelBucket {
+  if (level >= 20) return '20_plus';
+  if (level >= 10) return '10_19';
+  if (level >= 5) return '5_9';
+  return '1_4';
+}
 
 export function streakBucket(streak: number): '0_4' | '5_9' | '10_19' | '20_plus' {
   if (streak >= 20) return '20_plus';

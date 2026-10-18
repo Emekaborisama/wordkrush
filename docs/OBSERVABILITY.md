@@ -99,7 +99,7 @@ expose a typed event map so names and property shapes cannot drift.
 | `screen_viewed` | P1 | Observe the `Screen` union in `App.tsx` | `screen_name`, optional `game_id`, `source` | Navigation and funnel entry |
 | `game_selected` | P1 | Hub card or drawer navigation | `game_id`, `source: hub \| drawer` | Demand by title and discovery source |
 | `run_started` | P1 | WordKrush comparison-mode `startGame`; Clueless/Wordfall after restore resolves | `game_id`, `is_resume`, optional `category_id`, `puzzle_number`, `level_number`; Clueless adds bounded `assistance_context`, `hint_source`, and `path_phase` | Start rate and resume behavior |
-| `run_completed` | P1 | Existing completion callbacks in `App.tsx` | `game_id`, `outcome`, `score`, `score_kind`, `duration_ms?`, `is_new_best`, game context; Clueless adds bounded assistance context, hint policy, and path phase | Completion, retention, and balance |
+| `run_completed` | P1 | Existing completion callbacks in `App.tsx` | `game_id`, `outcome`, `score`, `score_kind`, `duration_ms?`, `is_new_best`, `boosted` (boolean; true when the run spent a boost), game context; Clueless adds bounded assistance context, hint policy, and path phase | Completion, retention, and balance. A boosted run is still a completion; it is not a global-board submission. |
 | `label_round_passed` | P1 | More or Less game-over after a set is exhausted | `round_id`, `rounds_passed`, `item_count` | Come-back loop: how many Wikipedia name-sets players clear |
 | `guess_submitted` | P1 | WordKrush comparison mode and Clueless submit handlers | `game_id`, `guess_index`, optional `puzzle_number`, `level_number`, `choice`, `result_kind`, `rank_bucket`, bounded Clueless assistance/path context | Core-loop depth and input friction |
 | `round_resolved` | P1 | WordKrush comparison UI observes reducer result | `correct`, `round_index`, `streak_bucket`, `pair_relaxed` | Difficulty curve and fairness |
@@ -125,6 +125,12 @@ expose a typed event map so names and property shapes cannot drift.
 | `match_created` | P1 | Host opens a lobby | `game_id`, `level_number` | Which path rows get raced |
 | `match_started` | P1 | Host starts a ready lobby | `game_id`, `level_number`, `player_count_bucket: 2 \| 3 \| 4` | Live-race start rate |
 | `match_finished` | P1 | Match reaches `finished` | `game_id`, `level_number`, `player_count_bucket`, `complete`, `outcome: win \| loss` | Completion vs spectating the clock |
+| `boost_used` | P1 | Player spends coins on a hint or power-up | `game_id`, `boost_kind` (fixed id) | Which helps are bought. No word, no board, no price. |
+| `daily_chest_claimed` | P1 | Player opens that local day's chest | `chest_day` 1–7 | How far the chest cycle gets |
+| `player_level_up` | P1 | Lifetime XP crosses one or more levels | `level_bucket: 1_4 \| 5_9 \| 10_19 \| 20_plus` | Whether players progress. The raw level is not sent. |
+| `milestone_reached` | P1 | A one-time milestone is granted | `milestone_id` (fixed id) | Which celebrations fire |
+
+`boost_used`, `daily_chest_claimed`, `player_level_up`, and `milestone_reached` carry no name, no email, and no guessed or traced word. `boost_kind` and `milestone_id` are closed sets. `run_completed.boosted` is the only new property on an existing event.
 
 `score` has different semantics across games, so every completed run includes
 `score_kind`: `streak` for WordKrush comparison mode, `guesses_used` for Clueless, and

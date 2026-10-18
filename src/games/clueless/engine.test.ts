@@ -251,3 +251,18 @@ describe('todaysPuzzleNumber', () => {
     }
   });
 });
+
+describe('unlockHint', () => {
+  it('turns a threshold hint into an opening hint and ignores other policies', () => {
+    const locked = newPuzzle(22, 'guess_threshold');
+    const opened = reducer(locked, { type: 'unlockHint' }, index);
+    expect(opened.hintPolicy).toBe('opening');
+    expect(isHintVisible(opened)).toBe(true);
+    expect(opened.guesses).toEqual(locked.guesses);
+    expect(reducer(opened, { type: 'unlockHint' }, index)).toBe(opened);
+    const none = newPuzzle(22, 'none');
+    expect(reducer(none, { type: 'unlockHint' }, index)).toBe(none);
+    const opening = newPuzzle(22, 'opening');
+    expect(reducer(opening, { type: 'unlockHint' }, index)).toBe(opening);
+  });
+});

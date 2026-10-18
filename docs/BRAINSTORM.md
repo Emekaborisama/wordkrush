@@ -138,7 +138,9 @@ If no candidate fits the band, widen it progressively rather than failing — ne
 2. **Game** — the two panels, MORE/LESS buttons, current streak.
 3. **Game Over** — final streak, best streak, the pair that ended the run, Play Again + Share.
 
-Deliberately no settings, no accounts, no onboarding in v1.
+Deliberately no settings and no accounts in v1.
+
+**Superseded 2026-10-18:** a one-page first-run welcome now exists. The parser and storage live in `src/onboarding/`. See §13 and the correction log.
 
 ### Clueless difficulty modes **[SUPERSEDED — 2026-08-25 by the solo path]**
 
@@ -347,6 +349,24 @@ Recommendation: **ship v1 on Wikipedia pageviews** (free, real, honest, unblocks
 
 ---
 
+## 13. Rewards and economy
+
+**[GIVEN] D1 — progression plus spendable coins.** XP and a player level, 1–3 stars per finished run or cleared level, a daily chest, and one-time milestones. Coins are earned only by playing. There is no real-money purchase and no IAP. Coins buy hints and power-ups, and those spends intentionally change the rules of that run. The wallet is on the device only (`wordkrush.rewards.v1`). No Supabase sync and no migration.
+
+**[GIVEN] D2 — boosted runs.** A run in which coins were spent on a hint or power-up still counts toward the player's own best, the daily flame, and rewards. It is not submitted to a global or team leaderboard. Power-ups are not offered in a live race.
+
+**[GIVEN] O-2 — the flame.** Any finished run extends the daily flame, including a Wordfall loss. Finishing a run is the act that counts.
+
+**[GIVEN] O-3 — the chest.** The chest becomes ready after the first finished run of the local day, not when the app is opened. Missing a local day resets the chest cycle to day 1. A clock that moves backwards does not change the stored day.
+
+**[ASSUMED] O-1 — the numbers.** XP costs, coin grants, star thresholds, milestone payouts, and boost prices are the values in `src/rewards/config.ts`. They are tunables, not a permanent economy. Revisit them after a week of play.
+
+Stars never gate a level. The best star total for a level is kept (`wordfall:12`, `clueless:4`, `more-or-less:best`). A tie is not a new personal best.
+
+The warmer-word boost suggests a ranked vocabulary word for the player to submit as a normal guess. It is not the reviewed thematic hint: it never returns the secret, a rank tighter than 10, a word that shares the secret's first four letters, or a word that contains the secret.
+
+---
+
 ## Correction log
 
 Append here whenever an assumption is confirmed or overturned. Never delete an entry — the trail is the point.
@@ -364,3 +384,7 @@ Append here whenever an assumption is confirmed or overturned. Never delete an e
 | 2026-08-25 | Solo More or Less pool | Owner: the Wikipedia labels are a gated round queue, not one eternal 50. The player stays on the current set until every name has been seen; new sets are sampled weekly from a pipeline-only reservoir. Calendar does not advance the player. Reddit keeps the newest published round so a post stays shared. |
 | 2026-08-25 | Teams / live race size | Owner raised a live race from 2–4 to 2–10 simultaneous players. Team invite, CRUD, and dual unlock are unchanged. |
 | 2026-08-25 | Wordfall Stretch level | Owner changed level 2 to count four-letter words and longer. The goal now teaches longer-word scoring; special creation remains governed by the existing trigger rules. |
+| 2026-10-18 | §13 D1 / D2 | Owner: XP, stars, coins, a daily chest, and milestones, stored on the device. Coins buy hints and power-ups. A boosted run counts locally and is not uploaded. Numbers in `src/rewards/config.ts` are **[ASSUMED]** tunables. |
+| 2026-10-18 | Clueless hints | The reviewed thematic hint is unchanged. A separate paid warmer-word boost may suggest a ranked vocabulary word. It is not reviewed hint copy, and it never returns the secret, a rank under 10, a 4-letter prefix of the secret, or a word containing the secret. |
+| 2026-10-18 | §6 onboarding | A one-page first-run welcome now exists. `src/onboarding/` holds the parser and the local flag. This supersedes "no onboarding in v1". |
+| 2026-10-18 | Daily flame | Any finished run extends the flame, including a Wordfall loss. Previously only a recorded score did, so a lost Wordfall level left the flame unchanged. |
