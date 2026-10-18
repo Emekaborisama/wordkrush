@@ -28,7 +28,7 @@ import {
   Surface,
   TextField,
 } from '../components';
-import { font, radius, space, theme, type } from '../theme';
+import { font, palette, radius, screen, space, theme, type } from '../theme';
 
 type Mode = 'signin' | 'signup';
 
@@ -204,7 +204,7 @@ export function AccountScreen({
                   onPress={submitCode}
                   disabled={busy}
                   size="lg"
-                  leading={busy ? <ActivityIndicator color={theme.bg} /> : undefined}
+                  leading={busy ? <ActivityIndicator color={theme.onPill} /> : undefined}
                 />
                 <Button
                   title={busy ? 'Sending…' : 'Resend link'}
@@ -214,8 +214,8 @@ export function AccountScreen({
                 />
                 <Button
                   title="Use a different email"
-                  variant="ghost"
-                  size="sm"
+                  tone="purple"
+                  size="md"
                   onPress={() => {
                     setSent(false);
                     setCode('');
@@ -256,7 +256,7 @@ export function AccountScreen({
                   onPress={sendCode}
                   disabled={busy}
                   size="lg"
-                  leading={busy ? <ActivityIndicator color={theme.bg} /> : undefined}
+                  leading={busy ? <ActivityIndicator color={theme.onPill} /> : undefined}
                 />
               </>
             )}
@@ -264,8 +264,8 @@ export function AccountScreen({
             {onSkip && (
               <Button
                 title={isRaceIntent ? 'Back to solo play' : 'Keep playing as guest'}
-                variant="ghost"
-                size="sm"
+                tone="blue"
+                size="md"
                 onPress={onSkip}
               />
             )}
@@ -280,7 +280,7 @@ export function AccountScreen({
                 value={analyticsConsent === 'granted'}
                 onValueChange={(val) => onToggleAnalytics(val ? 'granted' : 'denied')}
                 trackColor={{ false: theme.border, true: theme.success }}
-                thumbColor={Platform.OS === 'android' ? theme.bg : undefined}
+                thumbColor={Platform.OS === 'android' ? palette.white : undefined}
               />
             </View>
             <Text style={styles.analyticsBody}>
@@ -315,7 +315,7 @@ function ModeTab({ label, active, onPress }: { label: string; active: boolean; o
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg },
+  root: screen.page,
   content: {
     padding: space.lg,
     gap: space.md,
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 44,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',

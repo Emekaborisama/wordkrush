@@ -2,7 +2,7 @@ import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'rea
 import { Animated, Easing, PanResponder, Platform, StyleSheet, Text, View } from 'react-native';
 import { colOf, rowOf } from '../../games/wordfall/board';
 import type { Board, PlayResult, SpecialKind } from '../../games/wordfall/types';
-import { font, radius, theme, type } from '../theme';
+import { font, palette, radius, shade, theme, type } from '../theme';
 import { WORDFALL_BOARD_WEB_ID } from '../webViewport';
 import {
   CLEAR_HOLD_MS,
@@ -12,7 +12,7 @@ import {
   playJuiceKey,
   type ClearGhost,
 } from './clearJuice';
-import { SPECIAL_VISUALS, TILE } from './visuals';
+import { SPECIAL_VISUALS, TILE, specialInk } from './visuals';
 
 const GAP = 6;
 
@@ -401,6 +401,7 @@ const TileView = memo(function TileView({
   }, [justBorn, juiceKey, scale]);
 
   const visual = special ? SPECIAL_VISUALS[special] : null;
+  const ink = visual ? specialInk(visual.color) : theme.text;
 
   return (
     <Animated.View
@@ -417,8 +418,16 @@ const TileView = memo(function TileView({
           transform: [{ translateY: drop }, { scale }],
         },
         crate && styles.crate,
-        !crate && selected && { backgroundColor: accent, borderColor: accent },
-        !crate && !selected && visual && { borderColor: visual.color, borderWidth: 2 },
+        !crate && selected && {
+          backgroundColor: accent,
+          borderColor: accent,
+          borderBottomColor: shade(accent, 0.35),
+        },
+        !crate && !selected && visual && {
+          backgroundColor: visual.color,
+          borderColor: shade(visual.color, 0.12),
+          borderBottomColor: shade(visual.color, 0.35),
+        },
       ]}
       accessibilityLabel={
         crate ? 'Blocked crate' : special ? `${letter}, ${special} tile` : letter
@@ -433,12 +442,13 @@ const TileView = memo(function TileView({
               styles.letter,
               { fontSize: size * 0.46 },
               selected && styles.letterSelected,
+              !selected && visual && { color: ink },
             ]}
           >
             {letter.toUpperCase()}
           </Text>
           {visual && !selected && (
-            <Text style={[styles.glyph, { color: visual.color, fontSize: size * 0.26 }]}>
+            <Text style={[styles.glyph, { color: ink, fontSize: size * 0.26 }]}>
               {visual.glyph}
             </Text>
           )}
@@ -580,7 +590,7 @@ const styles = StyleSheet.create({
   tile: {
     position: 'absolute',
     backgroundColor: TILE.face,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: TILE.faceEdge,
     borderBottomWidth: 4,
@@ -593,13 +603,9 @@ const styles = StyleSheet.create({
     color: theme.text,
     fontFamily: font.bold,
     fontWeight: '700',
-    textShadowColor: 'rgba(0,0,0,0.35)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
-  // The selected tile is filled with the accent, so its letter flips to the
-  // dark background colour to stay readable.
-  letterSelected: { color: theme.bg },
+  // Selected tiles are the yellow ribbon. Brown stays readable; sand does not.
+  letterSelected: { color: palette.brown },
   glyph: {
     position: 'absolute',
     top: 2,

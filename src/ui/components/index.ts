@@ -21,7 +21,7 @@ export { ProgressPill } from './ProgressPill';
 export { Rays } from './Rays';
 export type { RaysProps } from './Rays';
 export { ResultPanel } from './ResultPanel';
-export { ResultSheet } from './ResultSheet';
+export { ResultSheet, ScoreWell } from './ResultSheet';
 export type { ResultSheetProps } from './ResultSheet';
 export { Ribbon } from './Ribbon';
 export type { RibbonProps } from './Ribbon';

@@ -12,7 +12,7 @@ import {
   theme,
   type,
 } from '../theme';
-import { SPECIAL_VISUALS } from './visuals';
+import { SPECIAL_VISUALS, specialInk } from './visuals';
 
 /** One line of player-facing copy per objective kind. */
 export function describeObjective(objective: Objective): { icon: string; label: string } {
@@ -86,7 +86,7 @@ export function Hud({
           style={[styles.stat, styles.statRight]}
         >
           <Text style={styles.statLabel}>SCORE</Text>
-          <Text style={[styles.statValue, { color: accent }]}>{score.toLocaleString('en-US')}</Text>
+          <Text style={styles.statValue}>{score.toLocaleString('en-US')}</Text>
         </Surface>
       </View>
 
@@ -146,7 +146,7 @@ function GoalChip({
       borderColor={done ? tokens.border : undefined}
       style={styles.goal}
     >
-      <Text style={[styles.goalIcon, done && { color: accent }]}>{done ? '✓' : icon}</Text>
+      <Text style={styles.goalIcon}>{done ? '✓' : icon}</Text>
       <View style={styles.goalBody}>
         <Text style={styles.goalLabel} numberOfLines={1}>
           {label}
@@ -206,9 +206,9 @@ export function TracePreview({
   if (word.length === 0) {
     const tone =
       message?.tone === 'good'
-        ? accent
+        ? theme.text
         : message?.tone === 'bad'
-          ? theme.danger
+          ? theme.dangerDim
           : theme.textDim;
     return (
       <View style={styles.preview}>
@@ -235,13 +235,13 @@ export function TracePreview({
 
       {valid && (
         <>
-          <Text style={[styles.previewPoints, { color: accent }]}>
+          <Text style={styles.previewPoints}>
             +{points.toLocaleString('en-US')}
           </Text>
           {visual && (
-            <View style={[styles.previewBadge, { borderColor: visual.color }]}>
-              <Text style={[styles.previewGlyph, { color: visual.color }]}>{visual.glyph}</Text>
-              <Text style={[styles.previewBadgeText, { color: visual.color }]}>
+            <View style={[styles.previewBadge, { backgroundColor: visual.color, borderColor: visual.color }]}>
+              <Text style={[styles.previewGlyph, { color: specialInk(visual.color) }]}>{visual.glyph}</Text>
+              <Text style={[styles.previewBadgeText, { color: specialInk(visual.color) }]}>
                 {special!.toUpperCase()}
               </Text>
             </View>
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     marginTop: -3,
   },
   timeFill: { height: '100%', borderRadius: 2 },
-  brief: { ...type.caption, color: theme.textMuted, textAlign: 'center', paddingHorizontal: space.sm },
+  brief: { ...type.caption, color: theme.onWood, textAlign: 'center', paddingHorizontal: space.sm },
 
   goals: { flexDirection: 'row', gap: space.sm },
   goal: {
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   previewIdle: { ...type.caption, textAlign: 'center' },
   previewWord: { ...type.title, color: theme.text, letterSpacing: 1.5 },
   previewWordDim: { color: theme.textDim },
-  previewPoints: { ...type.bodyStrong, fontVariant: ['tabular-nums'] },
+  previewPoints: { ...type.bodyStrong, color: theme.text, fontVariant: ['tabular-nums'] },
   previewBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -333,6 +333,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  previewGlyph: { ...type.caption, fontWeight: '900' },
-  previewBadgeText: { ...type.overline },
+  previewGlyph: { ...type.caption, color: theme.onPill, fontWeight: '900' },
+  previewBadgeText: { ...type.overline, color: theme.onPill },
 });

@@ -2,10 +2,10 @@ import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-n
 import { GAMES, type GameDefinition } from '../../games/registry';
 import type { ScoreBoard } from '../../scores/types';
 import { dayKey, type DailyStreak } from '../../streak/types';
-import { Badge, Button, GameArtwork, StreakBadge, Surface } from '../components';
+import { Badge, Button, StreakBadge } from '../components';
 import { isWideLayout } from '../layout';
 import { Mascot } from '../lottie/Mascot';
-import { font, gameAccentTokens, radius, space, theme, type, withAlpha } from '../theme';
+import { palette, screen, space, theme, type, type PillTone } from '../theme';
 
 type Props = {
   boards: Record<string, ScoreBoard>;
@@ -17,6 +17,7 @@ type Props = {
 
 export function HubScreen({ boards, streak, onPlay, onScores, labelRoundsPassed }: Props) {
   const wide = isWideLayout(useWindowDimensions().width);
+  const featuredId = GAMES.find((game) => game.status === 'available')?.id;
   return (
     <View style={styles.root}>
       <View style={styles.hero}>
@@ -33,11 +34,12 @@ export function HubScreen({ boards, streak, onPlay, onScores, labelRoundsPassed 
           CHOOSE YOUR GAME
         </Text>
         {GAMES.map((game) => (
-          <GameCard
+          <GameButton
             key={game.id}
             game={game}
             board={boards[game.id]}
             wide={wide}
+            featured={game.id === featuredId}
             labelRoundsPassed={game.id === 'more-or-less' ? labelRoundsPassed : undefined}
             onPress={() => onPlay(game.id)}
           />
@@ -47,90 +49,68 @@ export function HubScreen({ boards, streak, onPlay, onScores, labelRoundsPassed 
         </View>
       </ScrollView>
 
-      <Button title="View your scores" variant="outline" size="md" onPress={onScores} />
+      <Button title="View your scores" tone="blue" size="md" onPress={onScores} />
     </View>
   );
 }
 
-function GameCard({
+function hubTone(gameId: string): PillTone {
+  if (gameId === 'clueless') return 'purple';
+  if (gameId === 'wordfall') return 'ribbon';
+  return 'ribbon';
+}
+
+function GameButton({
   game,
   board,
   wide,
+  featured,
   onPress,
   labelRoundsPassed,
 }: {
   game: GameDefinition;
   board?: ScoreBoard;
   wide: boolean;
+  featured: boolean;
   onPress: () => void;
   labelRoundsPassed?: number;
 }) {
   const locked = game.status === 'coming-soon';
   const best = board?.bestStreak ?? 0;
-  const tokens = gameAccentTokens(game.accent);
+  const played = (board?.totalRuns ?? 0) > 0;
+  const stat = locked
+    ? 'Coming soon'
+    : played
+      ? labelRoundsPassed !== undefined
+        ? `Best ${game.scoreNoun}: ${best} · ${labelRoundsPassed} ${labelRoundsPassed === 1 ? 'round' : 'rounds'}`
+        : `Best ${game.scoreNoun}: ${best}`
+      : 'Start your first game';
 
   return (
-    <Surface
-      level={2}
-      raised
-      // A disabled control still needs to explain itself to a screen reader,
-      // so even a locked card stays on the Pressable branch rather than
-      // falling back to a plain View with no accessibility state.
-      onPress={locked ? () => {} : onPress}
-      disabled={locked}
-      borderColor={locked ? theme.border : tokens.border}
-      accessibilityLabel={locked ? `${game.name}, coming soon` : `Play ${game.name}`}
-      style={[styles.card, wide && styles.cardWide]}
-    >
-      <View style={[styles.cardGlow, { backgroundColor: locked ? theme.border : tokens.glow }]} />
-      <GameArtwork gameId={game.id} accent={game.accent} size={86} raised />
-
-      <View style={styles.cardBody}>
-        <View style={styles.nameRow}>
-          <Text style={[styles.cardName, locked && styles.dim]}>{game.name}</Text>
-          {locked ? <Badge label="SOON" /> : null}
-        </View>
-        <Text style={styles.cardTagline} numberOfLines={2}>
-          {game.tagline}
-        </Text>
-        {!locked && (
-          <View style={styles.cardFooter}>
-            <Text style={[styles.cardStat, { color: game.accent }]}>
-              {(board?.totalRuns ?? 0) > 0
-                ? labelRoundsPassed !== undefined
-                  ? `Best ${game.scoreNoun}: ${best} · ${labelRoundsPassed} ${labelRoundsPassed === 1 ? 'round' : 'rounds'}`
-                  : `Best ${game.scoreNoun}: ${best}`
-                : 'Start your first game'}
-            </Text>
-            <View
-              style={[
-                styles.playPill,
-                {
-                  backgroundColor: game.accent,
-                  borderBottomColor: withAlpha(game.accent, 0.48),
-                },
-              ]}
-            >
-              <Text style={styles.playText}>PLAY</Text>
-              <Text style={styles.playArrow}>›</Text>
-            </View>
-          </View>
-        )}
+    <View style={[styles.game, wide && styles.gameWide]}>
+      <View style={styles.nameRow}>
+        <Text style={[styles.gameName, locked && styles.dim]}>{game.name}</Text>
+        {locked ? <Badge label="SOON" /> : null}
       </View>
-    </Surface>
+      <Text style={styles.tagline} numberOfLines={2}>
+        {game.tagline}
+      </Text>
+      <Text style={styles.stat}>{stat}</Text>
+      <Button
+        title={featured && !locked ? 'Play' : game.name}
+        size={featured && !locked ? 'xl' : 'lg'}
+        tone={featured && !locked ? 'green' : hubTone(game.id)}
+        disabled={locked}
+        onPress={locked ? () => {} : onPress}
+        accessibilityLabel={locked ? `${game.name}, coming soon` : `Play ${game.name}`}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  mascotRow: {
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-    maxHeight: 96,
-  },
   root: {
-    flex: 1,
-    backgroundColor: theme.bg,
+    ...screen.page,
     paddingHorizontal: space.lg,
     paddingTop: space.sm,
     paddingBottom: space.sm,
@@ -142,63 +122,23 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   heroSubtitle: { ...type.caption, color: theme.textMuted, flex: 1 },
-  // `height: 0` plus `flex: 1` is how a column child actually shrinks on
-  // RN-web; `minHeight: 0` alone still sizes to the cards and they paint
-  // under the scores button.
   listScroll: { flex: 1, minHeight: 0, height: 0, overflow: 'hidden' },
-  list: { gap: space.md, paddingBottom: space.sm },
+  list: { gap: space.lg, paddingBottom: space.sm },
   listWide: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'stretch' },
   sectionLabel: { color: theme.textDim, marginBottom: -2 },
   sectionWide: { width: '100%', flexBasis: '100%' },
-  card: {
-    minHeight: 142,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  cardWide: { flexGrow: 1, flexBasis: 280, minWidth: 260 },
-  mascotWide: { flexBasis: '100%', width: '100%' },
-  cardGlow: {
-    position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    left: -62,
-    top: -62,
-    opacity: 0.45,
-  },
-  cardBody: { flex: 1, alignSelf: 'stretch', justifyContent: 'center', gap: space.xs },
+  game: { gap: space.xs },
+  gameWide: { flexGrow: 1, flexBasis: 280, minWidth: 260 },
   nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
-  cardName: { ...type.title, color: theme.text, fontSize: 20 },
+  gameName: { ...type.title, color: theme.text, fontSize: 22 },
   dim: { color: theme.textMuted },
-  cardTagline: { ...type.caption, color: theme.textMuted, lineHeight: 17 },
-  cardFooter: {
-    flexDirection: 'row',
+  tagline: { ...type.caption, color: theme.textMuted, lineHeight: 17 },
+  stat: { ...type.caption, color: palette.brownMuted, fontWeight: '700', marginBottom: space.xs },
+  mascotRow: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space.sm,
-    marginTop: space.xs,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+    maxHeight: 96,
   },
-  cardStat: { ...type.caption, flex: 1, fontSize: 11.5, fontWeight: '700' },
-  playPill: {
-    minWidth: 70,
-    minHeight: 34,
-    paddingHorizontal: 11,
-    borderRadius: radius.pill,
-    borderBottomWidth: 3,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 3,
-  },
-  playText: {
-    color: theme.bg,
-    fontFamily: font.semibold,
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.8,
-  },
-  playArrow: { color: theme.bg, fontSize: 19, lineHeight: 18, marginTop: -2 },
+  mascotWide: { flexBasis: '100%', width: '100%' },
 });

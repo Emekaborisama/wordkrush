@@ -13,7 +13,6 @@ import { isGameState, isResumable, matchesDataset } from '../../games/more-or-le
 import type { RatioBand } from '../../games/more-or-less/pairing';
 import type { Category, Item } from '../../games/more-or-less/types';
 import { clearProgress, loadProgress, saveProgress } from '../../games/progress';
-import { getGame } from '../../games/registry';
 import { feedback } from '../../native/feedback';
 import { HowToPlay } from '../HowToPlay';
 import { Sparkle } from '../Sparkle';
@@ -21,10 +20,11 @@ import { Button, FeedbackBanner, GameHeader, ProgressPill, Surface } from '../co
 import {
   font,
   formatValue,
-  gameAccentTokens,
   interaction,
   motion,
+  palette,
   radius,
+  screen,
   space,
   theme,
   type,
@@ -69,7 +69,7 @@ export function GameScreen({
   preferRef.current = labelRound?.preferUnseenIds;
   const onSeenRef = useRef(labelRound?.onSeen);
   onSeenRef.current = labelRound?.onSeen;
-  const accent = getGame('more-or-less')?.accent ?? theme.success;
+  const accent = palette.green;
   const [help, setHelp] = useState(false);
   const [state, dispatch] = useReducer(
     (s: GameState, a: Parameters<typeof reducer>[1]) =>
@@ -196,7 +196,7 @@ export function GameScreen({
       <GameHeader
         title="More or Less"
         subtitle={category.name}
-        accent={accent}
+        ribbon={palette.ribbon}
         onExit={onExit}
         onHelp={() => setHelp(true)}
       />
@@ -218,14 +218,12 @@ export function GameScreen({
           item={state.left}
           metricLabel={category.metricLabel}
           value={state.left.value}
-          accent={accent}
         />
         <Card
           item={state.right}
           metricLabel={category.metricLabel}
           value={revealed ? counted.value : null}
           highlight={correct === null ? undefined : correct}
-          accent={accent}
           sparkling={sparkling}
           onImageError={() =>
             captureAnalytics('card_image_load_failed', {
@@ -258,17 +256,16 @@ export function GameScreen({
             <Button
               title="More"
               size="lg"
-              color={accent}
+              tone="green"
               onPress={() => submitGuess('more')}
               accessibilityHint={`${state.right.label} has more ${category.metricLabel}`}
-              leading={<Text style={[styles.choiceArrow, { color: theme.bg }]}>↑</Text>}
+              leading={<Text style={styles.choiceArrow}>↑</Text>}
               style={styles.choiceButton}
             />
             <Button
               title="Less"
               size="lg"
-              variant="tonal"
-              color={theme.accentSecondary}
+              tone="coral"
               onPress={() => submitGuess('less')}
               accessibilityHint={`${state.right.label} has fewer ${category.metricLabel}`}
               leading={<Text style={styles.choiceArrow}>↓</Text>}
@@ -360,7 +357,6 @@ function Card({
   metricLabel,
   value,
   highlight,
-  accent,
   sparkling = false,
   onImageError,
 }: {
@@ -368,35 +364,35 @@ function Card({
   metricLabel: string;
   value: number | null;
   highlight?: boolean;
-  accent: string;
   sparkling?: boolean;
   onImageError?: () => void;
 }) {
-  const tokens = gameAccentTokens(accent);
-  const borderColor = highlight === undefined ? undefined : highlight ? accent : theme.danger;
+  const borderColor = highlight === undefined ? undefined : highlight ? palette.green : palette.coral;
 
   // Images are a bonus, never a requirement: a remote fetch can fail offline,
   // and a rare item may still lack a freely-licensed file. Either way the
   // card keeps the same shape and the game plays exactly the same.
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(item.imageUrl) && !imageFailed;
+  const ink = showImage ? theme.onWood : theme.text;
+  const muted = showImage ? palette.sand : theme.textMuted;
 
   const content = (
     <View style={styles.cardBody}>
-      <Text style={styles.cardLabel} numberOfLines={2} adjustsFontSizeToFit>
+      <Text style={[styles.cardLabel, { color: ink }]} numberOfLines={2} adjustsFontSizeToFit>
         {item.label}
       </Text>
       {value === null ? (
-        <Text style={styles.hidden}>? ? ?</Text>
+        <Text style={[styles.hidden, { color: ink }]}>? ? ?</Text>
       ) : (
         <>
           {/* Wrapper is the anchor the burst radiates from, so particles
               originate at the number rather than the card centre. */}
           <View style={styles.valueWrap}>
-            <Text style={[styles.value, { color: accent }]}>{formatValue(value)}</Text>
+            <Text style={[styles.value, { color: ink }]}>{formatValue(value)}</Text>
             <Sparkle active={sparkling} />
           </View>
-          <Text style={styles.metric}>{metricLabel}</Text>
+          <Text style={[styles.metric, { color: muted }]}>{metricLabel}</Text>
         </>
       )}
     </View>
@@ -431,7 +427,7 @@ function Card({
           {content}
         </ImageBackground>
       ) : (
-        <View style={[styles.cardFill, styles.cardPlain, { backgroundColor: tokens.soft }]}>
+        <View style={[styles.cardFill, styles.cardPlain, { backgroundColor: palette.paper }]}>
           {content}
         </View>
       )}
@@ -441,8 +437,7 @@ function Card({
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
-    backgroundColor: theme.bg,
+    ...screen.playfield,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
     gap: space.sm,
@@ -515,18 +510,17 @@ const styles = StyleSheet.create({
   vsText: { ...type.overline, color: theme.textMuted },
 
   actions: { gap: space.sm, minHeight: 112, justifyContent: 'flex-end' },
-  prompt: { ...type.caption, color: theme.textMuted, textAlign: 'center', lineHeight: 18 },
-  promptStrong: { color: theme.text, fontFamily: font.bold, fontWeight: '700' },
+  prompt: { ...type.caption, color: theme.onWood, textAlign: 'center', lineHeight: 18 },
+  promptStrong: { color: theme.onWood, fontFamily: font.bold, fontWeight: '700' },
   buttonRow: { flexDirection: 'row', gap: space.sm },
   choiceButton: { flex: 1 },
   choiceArrow: {
-    color: theme.text,
-    fontFamily: font.bold,
+    color: theme.onPill,
     fontSize: 21,
     fontWeight: '700',
     lineHeight: 22,
   },
 
-  provenance: { ...type.overline, color: theme.textDim, textAlign: 'center' },
-  credits: { ...type.overline, color: theme.textDim, textAlign: 'center', marginTop: 2 },
+  provenance: { ...type.overline, color: theme.onWood, textAlign: 'center' },
+  credits: { ...type.overline, color: theme.onWood, textAlign: 'center', marginTop: 2 },
 });

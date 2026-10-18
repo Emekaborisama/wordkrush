@@ -88,7 +88,7 @@ export function HowToPlay({
             {example && <View style={styles.example}>{example}</View>}
           </ScrollView>
 
-          <Button title="Got it, let’s play" color={accent} size="lg" onPress={onClose} />
+          <Button title="Got it, let’s play" tone="green" size="lg" onPress={onClose} />
         </Animated.View>
       </View>
     </Modal>

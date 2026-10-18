@@ -4,7 +4,7 @@ import type { AnalyticsConsent } from '../analytics/events';
 import { canVibrate } from '../native/haptics';
 import type { FeedbackChannel, FeedbackSettings } from '../settings/types';
 import { GAMES } from '../games/registry';
-import { BrandArtwork, GameArtwork, IconButton } from './components';
+import { BrandArtwork, GameArtwork, RoundIconButton } from './components';
 import { font, labelFloorPx, radius, space, theme, type, withAlpha } from './theme';
 
 export type DrawerDestination =
@@ -95,10 +95,12 @@ export function Drawer({
               <Text style={styles.brand}>WordKrush</Text>
               <Text style={styles.account}>{signedInAs ?? 'Playing as guest'}</Text>
             </View>
-            <IconButton
+            <RoundIconButton
               icon={<Text style={styles.closeMark}>×</Text>}
               accessibilityLabel="Close menu"
               onPress={onClose}
+              tone="purple"
+              size={44}
             />
           </View>
         </View>
@@ -242,7 +244,7 @@ function Item({
       <Text
         style={[
           styles.itemLabel,
-          active && [styles.itemLabelActive, { color: accent }],
+          active && styles.itemLabelActive,
           disabled && styles.itemDim,
         ]}
       >
@@ -279,7 +281,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.55,
   },
   account: { ...type.caption, color: theme.textMuted, fontSize: 11, marginTop: 1 },
-  closeMark: { color: theme.textMuted, fontFamily: font.semibold, fontSize: 24, lineHeight: 25 },
+  closeMark: { color: theme.onPill, fontSize: 22, lineHeight: 24 },
 
   sectionLabel: {
     color: theme.textMuted,
@@ -293,7 +295,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 12,
+    minHeight: 44,
+    paddingVertical: 10,
     paddingHorizontal: 10,
     borderRadius: radius.md,
     borderWidth: 1,

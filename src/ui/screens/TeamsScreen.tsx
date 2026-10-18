@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Platform, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Platform, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import type { Profile } from '../../auth/auth';
 import { isBackendConfigured } from '../../auth/client';
 import { LIVE_ROSTER_LABEL, PATH_GAME_IDS, type PathGameId } from '../../games/campaign';
-import { GAMES, getGame } from '../../games/registry';
+import { GAMES } from '../../games/registry';
 import { createMatch, loadActiveMatch } from '../../live/api';
 import { clearExistingMembership, createTeam, joinTeam } from '../../teams/api';
 import { teamInviteUrl } from '../../teams/codes';
@@ -14,12 +14,11 @@ import {
   Button,
   EmptyState,
   FeedbackBanner,
-  ScreenHeader,
+  Ribbon,
   Surface,
   TextField,
 } from '../components';
-import { isWideLayout } from '../layout';
-import { space, theme, type } from '../theme';
+import { screen, space, theme, type, type PillTone } from '../theme';
 
 type Props = {
   profile: Profile | null;
@@ -43,8 +42,6 @@ export function TeamsScreen({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
-  const wide = isWideLayout(useWindowDimensions().width);
-
   useEffect(() => {
     if (!profile || !isBackendConfigured) {
       setReady(true);
@@ -77,8 +74,6 @@ export function TeamsScreen({
     };
   }, [profile, pendingInviteCode, snapshot, onInviteConsumed]);
 
-
-  const accent = getGame(gameId)?.accent ?? theme.accent;
 
   async function handleCreate() {
     if (!profile) return;
@@ -177,17 +172,17 @@ export function TeamsScreen({
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <ScreenHeader
-          eyebrow="TEAMS"
-          title="Create or join a race room"
-          size={wide ? 'display' : 'title'}
-          subtitle={`Private invite only. Race with ${LIVE_ROSTER_LABEL} people on More or Less, Clueless, or Wordfall.`}
-        />
+        <View style={styles.ribbon}>
+          <Ribbon label="TEAMS" />
+        </View>
+        <Text style={styles.lead}>
+          {`Private invite only. Race with ${LIVE_ROSTER_LABEL} people on More or Less, Clueless, or Wordfall.`}
+        </Text>
         {error ? <FeedbackBanner title="Couldn’t continue" body={error} tone="danger" /> : null}
         <Surface style={styles.card}>
           <Text style={styles.cardTitle}>Create a room</Text>
           <TextField label="Room name" value={name} onChangeText={setName} autoCapitalize="words" />
-          <Button title="Create room" onPress={() => void handleCreate()} disabled={busy || name.trim().length < 2} />
+          <Button title="Create room" size="xl" tone="green" onPress={() => void handleCreate()} disabled={busy || name.trim().length < 2} />
         </Surface>
         <Surface style={styles.card}>
           <Text style={styles.cardTitle}>Join with a code</Text>
@@ -198,7 +193,7 @@ export function TeamsScreen({
             autoCapitalize="characters"
             autoCorrect={false}
           />
-          <Button title="Join room" variant="tonal" onPress={() => void handleJoin()} disabled={busy} />
+          <Button title="Join room" tone="purple" size="md" onPress={() => void handleJoin()} disabled={busy} />
         </Surface>
       </ScrollView>
     );
@@ -208,8 +203,9 @@ export function TeamsScreen({
     <View style={styles.actions}>
       <Button
         title="Open lobby"
+        size="xl"
+        tone="green"
         onPress={() => void handleOpenLobby()}
-        color={accent}
         disabled={busy}
       />
     </View>
@@ -221,22 +217,23 @@ export function TeamsScreen({
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-        <ScreenHeader
-          eyebrow="TEAM"
-          title={snapshot.team.name}
-          size={wide ? 'display' : 'title'}
-          subtitle={`${snapshot.members.length} ${snapshot.members.length === 1 ? 'player' : 'players'} · races hold ${LIVE_ROSTER_LABEL} · code ${snapshot.team.inviteCode}`}
-        />
+        <View style={styles.ribbon}>
+          <Ribbon label="TEAMS" />
+        </View>
+        <Text style={styles.lead}>
+          {snapshot.team.name}
+          {` · ${snapshot.members.length} ${snapshot.members.length === 1 ? 'player' : 'players'} · races hold ${LIVE_ROSTER_LABEL}`}
+        </Text>
         {error ? <FeedbackBanner title="Couldn’t continue" body={error} tone="danger" /> : null}
 
         <Surface style={styles.inviteCard}>
           <Text style={styles.inviteTitle}>Invite players</Text>
           <Text style={styles.inviteCode}>{snapshot.team.inviteCode}</Text>
           <Button 
-            title="Share invite link" 
+            title="Share invite link"
             size="lg"
-            onPress={() => void shareInvite()} 
-            color={accent}
+            tone="blue"
+            onPress={() => void shareInvite()}
           />
         </Surface>
 
@@ -259,9 +256,9 @@ export function TeamsScreen({
               <Button
                 key={id}
                 title={game?.name ?? id}
-                size="md"
-                variant={active ? 'primary' : 'tonal'}
-                color={game?.accent ?? theme.accent}
+                size="sm"
+                tone={teamTone(id)}
+                variant={active ? 'primary' : 'outline'}
                 fullWidth={false}
                 style={styles.gameChip}
                 onPress={() => {
@@ -276,10 +273,15 @@ export function TeamsScreen({
   );
 }
 
+function teamTone(id: string): PillTone {
+  if (id === 'clueless') return 'purple';
+  if (id === 'wordfall') return 'ribbon';
+  return 'green';
+}
+
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
-    backgroundColor: theme.bg,
+    ...screen.page,
     paddingHorizontal: space.lg,
     paddingTop: space.md,
   },
@@ -289,7 +291,9 @@ const styles = StyleSheet.create({
   cardTitle: { ...type.subtitle, color: theme.text, fontSize: 16 },
   inviteCard: { gap: space.md, alignItems: 'center', padding: space.lg },
   inviteTitle: { ...type.subtitle, color: theme.text, fontSize: 18 },
-  inviteCode: { ...type.display, color: theme.accent, fontSize: 32, letterSpacing: 4 },
+  inviteCode: { ...type.display, color: theme.text, fontSize: 32, letterSpacing: 4 },
+  ribbon: { alignItems: 'center' },
+  lead: { ...type.body, color: theme.text, textAlign: 'center' },
   member: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   memberName: { ...type.bodyStrong, color: theme.text },
   section: { ...type.overline, color: theme.textDim },

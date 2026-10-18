@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { PathGameId } from '../../games/campaign';
 import type { LivePlayer } from '../../live/types';
 import { remainingMs } from '../../live/types';
-import { formatDuration, space, theme, type, withAlpha } from '../theme';
+import { formatDuration, palette, space, theme, type } from '../theme';
 
 type Props = {
   gameId: PathGameId;
@@ -61,25 +61,25 @@ const styles = StyleSheet.create({
   },
   clock: {
     alignSelf: 'center',
-    backgroundColor: withAlpha(theme.bg, 0.72),
+    backgroundColor: palette.paper,
     borderRadius: 999,
     paddingHorizontal: space.md,
-    paddingVertical: 4,
+    paddingVertical: 6,
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: space.xs,
   },
-  clockLabel: { ...type.overline, color: theme.textDim, fontSize: 9 },
+  clockLabel: { ...type.overline, color: theme.textDim },
   clockValue: { ...type.subtitle, color: theme.text, fontSize: 16 },
   rivals: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
   rival: {
-    backgroundColor: withAlpha(theme.card, 0.9),
+    backgroundColor: palette.paper,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
     maxWidth: 140,
   },
-  self: { borderWidth: 1, borderColor: theme.accent },
-  rivalName: { ...type.caption, color: theme.textMuted, fontSize: 10 },
+  self: { borderWidth: 2, borderColor: palette.green },
+  rivalName: { ...type.caption, color: theme.textMuted, fontSize: 11 },
   rivalScore: { ...type.bodyStrong, color: theme.text, fontSize: 12 },
 });

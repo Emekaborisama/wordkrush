@@ -27,10 +27,11 @@ import {
   EmptyState,
   GameArtwork,
   PressableScale,
+  Ribbon,
   Stat,
   Surface,
 } from '../components';
-import { font, formatDuration, radius, space, theme, type, withAlpha } from '../theme';
+import { font, formatDuration, palette, radius, screen, space, theme, type, withAlpha } from '../theme';
 
 type Props = {
   gameId: string;
@@ -116,11 +117,10 @@ export function ScoresScreen({
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <GameArtwork gameId={gameId} accent={accent} size={64} raised />
-        <View style={styles.headerCopy}>
-          <Text style={[type.overline, { color: accent }]}>LEADERBOARDS</Text>
-          <Text style={styles.title}>{game?.name ?? 'Your'} scores</Text>
-        </View>
+        <Ribbon
+          label={(game?.name ?? 'SCORES').toUpperCase()}
+          color={gameId === 'clueless' ? palette.purple : palette.ribbon}
+        />
       </View>
 
       <Surface level={1} radius={radius.md} padded={false} style={styles.tabs}>
@@ -157,7 +157,7 @@ export function ScoresScreen({
           }
           label={tab === 'global' ? 'YOUR GLOBAL RANK' : `BEST ${scoreNoun.toUpperCase()}`}
           size="lg"
-          color={accent}
+          color={theme.text}
         />
         <View style={styles.divider} />
         <Stat
@@ -168,7 +168,7 @@ export function ScoresScreen({
         {tab === 'local' && roundsPassed !== undefined ? (
           <>
             <View style={styles.divider} />
-            <Stat value={roundsPassed} label="ROUNDS PASSED" size="lg" color={accent} />
+            <Stat value={roundsPassed} label="ROUNDS PASSED" size="lg" color={theme.text} />
           </>
         ) : null}
       </Surface>
@@ -195,7 +195,7 @@ export function ScoresScreen({
 
       <View style={styles.footer}>
         {profile ? null : backendConfigured ? (
-          <Button title="Sign in to join the global board" variant="tonal" color={accent} onPress={onSignIn} />
+          <Button title="Sign in to join the global board" tone="blue" size="md" onPress={onSignIn} />
         ) : null}
 
         <Text style={styles.footerNote}>
@@ -204,7 +204,7 @@ export function ScoresScreen({
             : 'Local history stays on this device and works offline.'}
         </Text>
 
-        <Button title="Back to all games" variant="outline" onPress={onBack} />
+        <Button title="Back to all games" tone="purple" size="md" onPress={onBack} />
       </View>
     </View>
   );
@@ -265,10 +265,21 @@ function LocalBoard({
     );
   }
 
+  const podium = entries.slice(0, 3);
+  const rest = entries.slice(3);
   return (
     <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
       <Text style={[type.overline, styles.listLabel]}>TOP RUNS ON THIS DEVICE</Text>
-      {entries.map((entry, index) => {
+      <Podium
+        places={podium.map((entry, index) => ({
+          key: entry.id,
+          rank: index + 1,
+          title: `${entry.streak.toLocaleString('en-US')} ${scoreNoun}`,
+          detail: formatDate(entry.playedAt),
+          highlight: entry.id === highlightId,
+        }))}
+      />
+      {rest.map((entry, index) => {
         const highlighted = entry.id === highlightId;
         return (
           <Surface
@@ -278,7 +289,7 @@ function LocalBoard({
             radius={radius.md}
             style={styles.row}
           >
-            <Rank rank={index + 1} accent={accent} />
+            <Rank rank={index + 4} accent={accent} />
             <View style={styles.rowMain}>
               <ScoreValue score={entry.streak} scoreNoun={scoreNoun} />
               <Text style={styles.rowDate}>
@@ -362,7 +373,16 @@ function GlobalBoard({
       }
     >
       <Text style={[type.overline, styles.listLabel]}>GLOBAL BESTS</Text>
-      {state.entries.map((entry) => {
+      <Podium
+        places={state.entries.slice(0, 3).map((entry) => ({
+          key: entry.id,
+          rank: entry.rank,
+          title: entry.displayName,
+          detail: `${entry.score.toLocaleString('en-US')} ${scoreNoun}`,
+          highlight: entry.playerId === profile?.id,
+        }))}
+      />
+      {state.entries.slice(3).map((entry) => {
         const mine = entry.playerId === profile?.id;
         return (
           <Surface
@@ -390,6 +410,34 @@ function GlobalBoard({
         );
       })}
     </ScrollView>
+  );
+}
+
+function Podium({
+  places,
+}: {
+  places: { key: string; rank: number; title: string; detail: string; highlight?: boolean }[];
+}) {
+  if (places.length === 0) return null;
+  const ordered = places.length >= 3 ? [places[1], places[0], places[2]] : places;
+  return (
+    <View style={styles.podium}>
+      {ordered.map((place) => {
+        const first = place.rank === 1;
+        return (
+          <View key={place.key} style={[styles.podiumCard, first && styles.podiumFirst, place.highlight && styles.podiumMine]}>
+            <Text style={styles.podiumStar}>{first ? '★' : '☆'}</Text>
+            <Text style={styles.podiumRank}>{place.rank}</Text>
+            <Text style={styles.podiumTitle} numberOfLines={2}>
+              {place.title}
+            </Text>
+            <Text style={styles.podiumDetail} numberOfLines={2}>
+              {place.detail}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -424,14 +472,14 @@ function formatDate(iso: string): string {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg, padding: space.lg, gap: space.md },
-  header: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingTop: space.xs },
+  root: { ...screen.page, padding: space.lg, gap: space.md },
+  header: { alignItems: 'center', paddingTop: space.xs },
   headerCopy: { flex: 1 },
   title: { ...type.title, color: theme.text, fontSize: 26, lineHeight: 31, marginTop: 1 },
   tabs: { flexDirection: 'row', padding: 4 },
   tab: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 44,
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
@@ -445,7 +493,24 @@ const styles = StyleSheet.create({
   list: { flex: 1 },
   listContent: { gap: space.sm, paddingVertical: space.xs },
   listLabel: { color: theme.textDim, marginBottom: 2 },
-  rowUnit: { ...type.caption, color: theme.textDim, fontWeight: '700', fontSize: 10 },
+  rowUnit: { ...type.caption, color: theme.textDim, fontWeight: '700', fontSize: 11 },
+  podium: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginBottom: space.sm },
+  podiumCard: {
+    flex: 1,
+    minHeight: 108,
+    backgroundColor: palette.paper,
+    borderRadius: radius.md,
+    padding: space.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  podiumFirst: { minHeight: 132, backgroundColor: palette.ribbon },
+  podiumMine: { borderWidth: 2, borderColor: palette.purple },
+  podiumStar: { color: palette.brown, fontSize: 16, lineHeight: 18 },
+  podiumRank: { color: palette.brown, fontFamily: font.bold, fontSize: 18, fontWeight: '700' },
+  podiumTitle: { color: palette.brown, fontFamily: font.semibold, fontSize: 12, fontWeight: '600', textAlign: 'center' },
+  podiumDetail: { color: palette.brownMuted, fontFamily: font.medium, fontSize: 11, textAlign: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   rank: {
     width: 34,

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { palette, radius, space, theme } from '../theme';
+import { ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { palette, radius, space, theme, type } from '../theme';
 
 export type ResultSheetProps = {
   /** Scrolls. Stars, score, rewards. */
@@ -41,6 +41,35 @@ export function ResultSheet({
     </View>
   );
 }
+
+/** Dark inset well for the score sitting on the warm-white result card. */
+export function ScoreWell({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={wellStyles.well} accessibilityLabel={`${label} ${value}`}>
+      <Text style={wellStyles.label}>{label}</Text>
+      <Text style={wellStyles.value}>{value}</Text>
+    </View>
+  );
+}
+
+const wellStyles = StyleSheet.create({
+  well: {
+    alignSelf: 'stretch',
+    backgroundColor: theme.well,
+    borderRadius: radius.md,
+    paddingVertical: space.md,
+    paddingHorizontal: space.lg,
+    alignItems: 'center',
+    marginTop: space.sm,
+  },
+  label: { ...type.overline, color: palette.paper },
+  value: {
+    ...type.display,
+    color: palette.paper,
+    fontVariant: ['tabular-nums'],
+    marginTop: 2,
+  },
+});
 
 const styles = StyleSheet.create({
   root: {

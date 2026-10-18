@@ -33,7 +33,7 @@ export function FeedbackBanner({ title, body, tone = 'info' }: Props) {
         <Text style={styles.symbolText}>{symbol}</Text>
       </View>
       <View style={styles.copy}>
-        <Text style={[styles.title, { color }]}>{title}</Text>
+        <Text style={styles.title}>{title}</Text>
         {body ? <Text style={styles.body}>{body}</Text> : null}
       </View>
     </View>
@@ -58,8 +58,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  symbolText: { color: theme.bg, fontFamily: font.bold, fontSize: 17, fontWeight: '700' },
+  symbolText: { color: theme.onPill, fontFamily: font.bold, fontSize: 17, fontWeight: '700' },
   copy: { flex: 1 },
-  title: { fontFamily: font.semibold, fontSize: 15, fontWeight: '600' },
+  title: { color: theme.text, fontFamily: font.semibold, fontSize: 15, fontWeight: '600' },
   body: { ...type.caption, color: theme.textMuted, marginTop: 1 },
 });

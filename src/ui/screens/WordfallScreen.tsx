@@ -36,24 +36,27 @@ import {
   unlockAfterWin,
 } from '../../games/wordfall/schedule';
 import type { Level, SpecialKind, WordfallState } from '../../games/wordfall/types';
-import { getGame } from '../../games/registry';
 import { buildShareText } from '../../games/wordfall/share';
 import { feedback } from '../../native/feedback';
 import { shareResult } from '../../native/share';
 import { HowToPlay } from '../HowToPlay';
 import {
   Badge,
+  Button,
+  DisplayTitle,
   GameArtwork,
   GameHeader,
-  IconButton,
-  ResultPanel,
+  Rays,
+  ResultSheet,
+  RoundIconButton,
+  ScoreWell,
+  StarRow,
   Surface,
 } from '../components';
-import { Mascot } from '../lottie/Mascot';
-import { elevation, font, formatDuration, radius, space, theme, type } from '../theme';
+import { elevation, font, formatDuration, palette, radius, screen, space, theme, type } from '../theme';
 import { BoardView } from '../wordfall/BoardView';
 import { describeObjective, Hud, TracePreview } from '../wordfall/Hud';
-import { SPECIAL_VISUALS } from '../wordfall/visuals';
+import { SPECIAL_VISUALS, specialInk } from '../wordfall/visuals';
 
 const GAME_ID = 'wordfall';
 /**
@@ -62,7 +65,7 @@ const GAME_ID = 'wordfall';
  * in the middle of.
  */
 const SESSION = 'campaign';
-const ACCENT = getGame('wordfall')?.accent ?? theme.warning;
+const RIBBON = palette.ribbon;
 
 type LiveWordfall = {
   levelNumber: number;
@@ -206,7 +209,7 @@ export function WordfallScreen({
         onClose={() => setHelp(false)}
         title="How to play Wordfall"
         intro="Drag across touching letters to spell a word. What the word is made of decides what it leaves behind. New levels drop every Monday."
-        accent={ACCENT}
+        accent={RIBBON}
         steps={[
           {
             n: 1,
@@ -241,12 +244,12 @@ function TriggerLegend() {
         const visual = SPECIAL_VISUALS[trigger.kind];
         return (
           <View key={trigger.kind} style={styles.legendRow}>
-            <View style={[styles.legendGlyph, { borderColor: visual.color }]}>
-              <Text style={[styles.legendGlyphText, { color: visual.color }]}>{visual.glyph}</Text>
+            <View style={[styles.legendGlyph, { backgroundColor: visual.color, borderColor: visual.color }]}>
+              <Text style={[styles.legendGlyphText, { color: specialInk(visual.color) }]}>{visual.glyph}</Text>
             </View>
             <View style={styles.legendBody}>
               <Text style={styles.legendName}>
-                <Text style={{ color: visual.color }}>{trigger.label}</Text>
+                <Text style={styles.legendName}>{trigger.label}</Text>
                 <Text style={styles.legendCondition}> — {trigger.condition}</Text>
               </Text>
               <Text style={styles.legendEffect}>{trigger.effect}</Text>
@@ -509,24 +512,26 @@ function LevelPlay({
       <GameHeader
         title="Wordfall"
         subtitle={`LEVEL ${level.number} · ${level.name.toUpperCase()}`}
-        accent={ACCENT}
+        ribbon={RIBBON}
         onExit={onExit}
-        sideWidth={92}
+        sideWidth={hidePicker ? 52 : 108}
         trailing={
           <View style={styles.headerActions}>
             {hidePicker ? null : (
-              <IconButton
-                icon={<Text style={styles.levelListMark}>≡</Text>}
+              <RoundIconButton
+                icon={<Text style={styles.headerGlyph}>≡</Text>}
                 accessibilityLabel="Choose a level"
                 onPress={onPickLevel}
-                color={ACCENT}
+                tone="blue"
+                size={44}
               />
             )}
-            <IconButton
-              icon={<Text style={styles.helpMark}>?</Text>}
+            <RoundIconButton
+              icon={<Text style={styles.headerGlyph}>?</Text>}
               accessibilityLabel="How to play"
               onPress={onHelp}
-              color={ACCENT}
+              tone="purple"
+              size={44}
             />
           </View>
         }
@@ -540,7 +545,7 @@ function LevelPlay({
         score={state.score}
         objectives={level.objectives}
         progress={state.progress}
-        accent={ACCENT}
+        accent={palette.green}
       />
 
       <View
@@ -557,7 +562,7 @@ function LevelPlay({
             board={state.board}
             selection={state.selection}
             lastPlay={state.lastPlay}
-            accent={ACCENT}
+            accent={RIBBON}
             maxWidth={boardBounds.width}
             maxHeight={boardBounds.height}
             disabled={over}
@@ -574,7 +579,7 @@ function LevelPlay({
         points={preview.points}
         special={preview.special}
         message={message}
-        accent={ACCENT}
+        accent={RIBBON}
       />
 
       {over && (
@@ -583,6 +588,7 @@ function LevelPlay({
           level={level}
           unlocked={unlocked}
           outOfTime={lostToClock(state, ctx)}
+          onExit={onExit}
           onNext={onNext}
           onRetry={onRetry}
         />
@@ -594,8 +600,8 @@ function LevelPlay({
 function LevelOutcome({
   state,
   level,
-  unlocked,
   outOfTime,
+  onExit,
   onNext,
   onRetry,
 }: {
@@ -603,6 +609,7 @@ function LevelOutcome({
   level: Level;
   unlocked: number;
   outOfTime: boolean;
+  onExit: () => void;
   onNext: () => void;
   onRetry: () => void;
 }) {
@@ -645,41 +652,71 @@ function LevelOutcome({
     }
   }
 
+  const primaryLabel = won && !finished ? 'Continue' : 'Try again';
+  const summary = `${state.played.length} ${state.played.length === 1 ? 'word' : 'words'} · ${formatDuration(
+    state.elapsedMs,
+  )}${
+    won && level.timeLimitMs === undefined && state.movesLeft > 0
+      ? ` · ${state.movesLeft} moves spare`
+      : ''
+  }${finished ? ' · All levels cleared' : ''}${outOfTime && !won ? ' · Out of time' : ''}`;
+
   return (
     <View style={styles.outcomeScrim}>
-      <ResultPanel
-        eyebrow={
-          finished
-            ? 'ALL LEVELS CLEARED'
-            : won
-              ? 'LEVEL COMPLETE'
-              : outOfTime
-                ? 'OUT OF TIME'
-                : 'OUT OF MOVES'
+      {won ? (
+        <View style={styles.rays} pointerEvents="none">
+          <Rays />
+        </View>
+      ) : null}
+      <View style={styles.stars}>
+        <StarRow earned={0} animate={false} />
+      </View>
+      <ResultSheet
+        accessibilityLabel={won ? 'You win' : 'Game over'}
+        footer={
+          <View style={styles.outcomeFooter}>
+            <Button
+              title={primaryLabel}
+              size="xl"
+              tone="green"
+              onPress={won && !finished ? onNext : onRetry}
+            />
+            <View style={styles.roundRow}>
+              <RoundIconButton
+                icon={<Text style={styles.roundGlyph}>⌂</Text>}
+                accessibilityLabel="Back to Wordfall"
+                onPress={onExit}
+                tone="blue"
+                size={52}
+              />
+              <RoundIconButton
+                icon={<Text style={styles.roundGlyph}>↻</Text>}
+                accessibilityLabel="Replay"
+                onPress={onRetry}
+                tone="purple"
+                size={52}
+              />
+            </View>
+            <Button
+              title="Share result"
+              tone="blue"
+              size="md"
+              onPress={() => void onShare()}
+              accessibilityHint="Copies a spoiler-free result you can paste anywhere"
+            />
+            {shareNote ? (
+              <Text style={styles.shareNote} accessibilityLiveRegion="polite">
+                {shareNote}
+              </Text>
+            ) : null}
+          </View>
         }
-        title={finished ? 'Wordfall master!' : won ? 'Board crushed!' : 'Almost there.'}
-        value={state.score.toLocaleString('en-US')}
-        valueLabel="POINTS"
-        body={`${state.played.length} ${state.played.length === 1 ? 'word' : 'words'} · ${formatDuration(
-          state.elapsedMs,
-        )}${
-          won && level.timeLimitMs === undefined && state.movesLeft > 0
-            ? ` · ${state.movesLeft} moves spare`
-            : ''
-        }`}
-        accent={won ? ACCENT : theme.danger}
-        art={<Mascot size={64} pose={won ? 'celebrate' : 'wince'} />}
-        share={{ label: 'Share result', onPress: () => void onShare(), note: shareNote }}
-        primary={{
-          label: won && !finished ? 'Next level' : won ? 'Replay level' : 'Try again',
-          onPress: won && !finished ? onNext : onRetry,
-        }}
-        secondary={won && !finished ? { label: 'Replay level', onPress: onRetry } : undefined}
       >
+        <DisplayTitle>{won ? 'YOU WIN' : 'GAME OVER'}</DisplayTitle>
+        <ScoreWell label="POINTS" value={state.score.toLocaleString('en-US')} />
+        <Text style={styles.outcomeBody}>{summary}</Text>
         {!won ? (
-          // Naming what fell short is the difference between "try again" and
-          // knowing what to try differently.
-          <Surface level={1} radius={radius.md} borderColor={theme.danger} style={styles.missed}>
+          <View style={styles.missed}>
             <Text style={styles.missedTitle}>STILL TO DO</Text>
             {level.objectives.map((objective, index) => {
               const progress = state.progress[index] ?? 0;
@@ -692,9 +729,9 @@ function LevelOutcome({
                 </Text>
               );
             })}
-          </Surface>
+          </View>
         ) : null}
-      </ResultPanel>
+      </ResultSheet>
     </View>
   );
 }
@@ -725,7 +762,7 @@ function LevelPicker({
         <View style={styles.picker}>
           <View style={styles.pickerHandle} />
           <View style={styles.pickerHeader}>
-            <GameArtwork gameId={GAME_ID} accent={ACCENT} size={54} raised />
+            <GameArtwork gameId={GAME_ID} accent={RIBBON} size={54} raised />
             <View style={styles.pickerHeaderCopy}>
               <Text style={styles.pickerTitle}>Choose a level</Text>
               <Text style={styles.pickerIntro}>
@@ -751,7 +788,7 @@ function LevelPicker({
                   radius={radius.md}
                   disabled={locked}
                   onPress={() => onSelect(level.number)}
-                  borderColor={active ? ACCENT : undefined}
+                  borderColor={active ? RIBBON : undefined}
                   style={styles.pickerRow}
                   accessibilityRole="button"
                   accessibilityLabel={
@@ -765,13 +802,13 @@ function LevelPicker({
                   <View
                     style={[
                       styles.pickerNumber,
-                      active && { backgroundColor: ACCENT, borderColor: ACCENT },
+                      active && { backgroundColor: RIBBON, borderColor: RIBBON },
                     ]}
                   >
                     {locked ? (
                       <LockMark />
                     ) : (
-                      <Text style={[styles.pickerNumberText, active && { color: theme.bg }]}>
+                      <Text style={[styles.pickerNumberText, active && { color: palette.brown }]}>
                         {level.number}
                       </Text>
                     )}
@@ -779,9 +816,9 @@ function LevelPicker({
                   <View style={styles.pickerBody}>
                     <View style={styles.pickerNameRow}>
                       <Text style={[styles.pickerName, locked && styles.dim]}>{level.name}</Text>
-                      {fresh ? <Badge label="THIS WEEK" color={ACCENT} /> : null}
+                      {fresh ? <Badge label="THIS WEEK" color={RIBBON} /> : null}
                       {upcoming ? <Badge label={`DROPS ${formatDropDay(upcoming).toUpperCase()}`} /> : null}
-                      {active ? <Badge label="CURRENT" color={ACCENT} /> : null}
+                      {active ? <Badge label="CURRENT" color={RIBBON} /> : null}
                     </View>
                     <Text style={styles.pickerDescription} numberOfLines={2}>
                       {level.description}
@@ -822,22 +859,17 @@ function LockMark() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg },
+  root: screen.playfield,
   play: { flex: 1, paddingHorizontal: space.md, paddingBottom: space.sm, gap: space.sm },
-  levelListMark: {
-    color: theme.text,
-    fontFamily: font.semibold,
-    fontSize: 21,
-    fontWeight: '600',
-    lineHeight: 22,
-  },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  helpMark: {
-    color: theme.text,
-    fontFamily: font.semibold,
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerGlyph: { color: theme.onPill, fontSize: 18, lineHeight: 20, fontWeight: '700' },
+  rays: { position: 'absolute', top: 24, left: 0, right: 0, alignItems: 'center' },
+  stars: { alignItems: 'center', marginBottom: -16, zIndex: 2 },
+  outcomeFooter: { gap: space.sm },
+  roundRow: { flexDirection: 'row', justifyContent: 'center', gap: space.lg },
+  roundGlyph: { color: theme.onPill, fontSize: 22, lineHeight: 26 },
+  shareNote: { ...type.caption, color: theme.textMuted, textAlign: 'center' },
+  outcomeBody: { ...type.caption, color: theme.textMuted, textAlign: 'center', marginTop: space.md },
 
   // The board takes whatever height is left and centres itself, so the HUD and
   // the read-out keep their positions on every screen size.
@@ -850,9 +882,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: theme.overlay,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: space.lg,
+    padding: space.md,
   },
   missed: {
     width: '100%',
@@ -897,8 +927,8 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   pickerNumber: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
     backgroundColor: elevation(1).backgroundColor,
     borderWidth: 1,
@@ -917,7 +947,7 @@ const styles = StyleSheet.create({
   pickerNameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   pickerName: { ...type.subtitle, color: theme.text },
   pickerDescription: { ...type.caption, color: theme.textMuted, marginTop: 3, lineHeight: 16 },
-  pickerGoals: { ...type.caption, color: ACCENT, marginTop: 4 },
+  pickerGoals: { ...type.caption, color: theme.textMuted, marginTop: 4 },
   pickerBudget: { width: 48, alignItems: 'flex-end' },
   pickerBudgetValue: {
     ...type.caption,
@@ -957,7 +987,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: elevation(3).backgroundColor,
   },
-  legendGlyphText: { fontSize: 15, fontWeight: '900' },
+  legendGlyphText: { color: theme.onPill, fontSize: 15, fontWeight: '900' },
   legendBody: { flex: 1 },
   legendName: { ...type.bodyStrong },
   legendCondition: { color: theme.textMuted, fontFamily: font.semibold, fontWeight: '600' },
