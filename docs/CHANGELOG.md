@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.9.1] - 2026-10-18
+
+### Changed
+- **Wordfall's level list is a path.** Opening the map shows a grass field, a wooden LEVEL MAP sign, and a winding path of stones. Each stone is the level number. The move budget, or the time on a race, sits under the stone. The stone you are on is gold. A cleared stone carries a star. A locked stone does not start.
+
 ## [0.9.0] - 2026-10-18
 
 ### Added
