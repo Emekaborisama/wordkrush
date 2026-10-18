@@ -37,23 +37,27 @@ import { shareResult } from '../../native/share';
 import { GuessRow } from '../GuessRow';
 import { ExampleRow, HowToPlay } from '../HowToPlay';
 import {
+  BlockTile,
   Button,
-  DisplayTitle,
+  CreamBox,
+  CreamText,
   EmptyState,
   FeedbackBanner,
   GameHeader,
-  ProgressPill,
+  GameIcon,
+  HudPanel,
+  Panel,
+  PanelText,
+  PausePopup,
   Rays,
-  ResultSheet,
-  RoundIconButton,
   ScoreWell,
-  Surface,
+  SquareButton,
   TextField,
 } from '../components';
 import { BoostBar, coinShortfall } from '../rewards/BoostBar';
 import type { RunReward } from '../rewards/RunReward';
 import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
-import { elevation, font, palette, proximityColor, radius, screen, space, theme, type, withAlpha } from '../theme';
+import { cube, font, palette, proximityColor, space, tone, type CubeColor } from '../theme';
 
 const GAME_ID = 'clueless';
 
@@ -106,6 +110,7 @@ export function CluelessScreen({
   );
   const [input, setInput] = useState('');
   const [help, setHelp] = useState(showHelpInitially);
+  const [paused, setPaused] = useState(false);
   const [shareNote, setShareNote] = useState<string | null>(null);
   const [boosted, setBoosted] = useState(false);
   const [reward, setReward] = useState<RunReward | null>(null);
@@ -287,236 +292,213 @@ export function CluelessScreen({
           ? 'Next level unlocked. Keep following the path.'
           : 'Puzzle complete. Head back to see what’s next.';
 
+  const levelLabel = levelName
+    ? `LEVEL ${levelNumber ?? puzzle.number} · ${levelName}`
+    : `${pathPhase === 'team' ? 'TEAM RACE' : pathPhase === 'daily' ? 'DAILY VAULT' : 'LEVEL'} ${
+        levelNumber ?? puzzle.number
+      }`;
+  const boosts =
+    persist && onSpend && state.status === 'playing'
+      ? [
+          {
+            kind: 'warmer-word' as const,
+            label: 'Warmer word',
+            icon: 'bulb' as const,
+            price: warmerPrice,
+            disabled: coins < warmerPrice || warmer === null,
+            disabledReason:
+              coinShortfall(coins, warmerPrice) ?? (warmer === null ? 'No warmer word' : undefined),
+            onPress: () => {
+              if (!warmer || !spendBoost('warmer-word')) return;
+              submitWord(warmer);
+            },
+          },
+          ...(state.hintPolicy === 'guess_threshold'
+            ? [
+                {
+                  kind: 'hint-now' as const,
+                  label: 'Hint now',
+                  icon: 'magnifier' as const,
+                  price: hintPrice,
+                  disabled: coins < hintPrice,
+                  disabledReason: coinShortfall(coins, hintPrice),
+                  onPress: () => {
+                    if (!spendBoost('hint-now')) return;
+                    dispatch({ type: 'unlockHint' });
+                  },
+                },
+              ]
+            : []),
+        ]
+      : [];
+
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <GameHeader
-        title="Clueless"
-        subtitle={
-          levelName
-            ? `LEVEL ${levelNumber ?? puzzle.number} · ${levelName}`
-            : `${pathPhase === 'team' ? 'TEAM RACE' : pathPhase === 'daily' ? 'DAILY VAULT' : 'LEVEL'} ${
-                levelNumber ?? puzzle.number
-              }`
-        }
-        ribbon={palette.purple}
-        onExit={onExit}
-        onHelp={() => setHelp(true)}
-      />
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <GameHeader title="Clueless" subtitle={levelLabel} onExit={onExit} onHelp={() => setHelp(true)} />
 
-      <View style={styles.statsRow}>
-        <ProgressPill
-          label={state.guesses.length === 1 ? 'GUESS' : 'GUESSES'}
-          value={state.guesses.length}
-          color={accent}
-        />
+      <View style={styles.hud}>
+        <HudPanel label={state.guesses.length === 1 ? 'Guess' : 'Guesses'} value={state.guesses.length} />
+        <HudPanel label="Closest" value={best == null ? '—' : `#${best.toLocaleString()}`} />
+        <HudPanel label="Level" value={levelNumber ?? puzzle.number} />
       </View>
-
-      {!won && state.hintPolicy !== 'none' && hint ? (
-        <Surface
-          level={hintVisible ? 2 : 1}
-          borderColor={hintVisible ? withAlpha(accent, 0.45) : undefined}
-          radius={radius.md}
-          style={styles.hintCard}
-        >
-          <Text style={styles.hintLabel}>
-            {hintVisible ? 'THEMATIC HINT' : 'HINT LOCKED'}
-          </Text>
-          <Text style={hintVisible ? styles.hintText : styles.hintCountdown}>
-            {hintVisible
-              ? hint
-              : `${hintRemaining} valid ${hintRemaining === 1 ? 'guess' : 'guesses'} until the hint`}
-          </Text>
-        </Surface>
-      ) : null}
-
-      {/* Warmth meter: turns the abstract best-rank number into something you
-          can read at a glance, and gives the screen a focal point. */}
-      {!won && state.guesses.length > 0 ? (
-        <Surface
-          level={1}
-          borderColor={withAlpha(proximityColor(warmth), 0.35)}
-          radius={radius.md}
-          style={styles.meter}
-        >
-          <View style={styles.meterCopy}>
-            <Text style={styles.meterTitle}>SEMANTIC HEAT</Text>
-            <Text style={styles.meterLabel}>
-              Closest <Text style={styles.meterValue}>#{best?.toLocaleString() ?? '—'}</Text>
-            </Text>
-          </View>
-          <View style={styles.meterTrack}>
-            <View
-              style={[
-                styles.meterFill,
-                { width: `${Math.max(2, warmth * 100)}%`, backgroundColor: proximityColor(warmth) },
-              ]}
-            />
-          </View>
-        </Surface>
-      ) : null}
 
       {won ? (
         <View style={styles.result}>
           <View style={styles.rays} pointerEvents="none">
-            <Rays />
+            <Rays size={360} />
           </View>
-          <View style={styles.stars}>
-            {reward ? <RewardPanel events={reward.events} boosted={reward.boosted} /> : null}
-          </View>
-          <ResultSheet
+          <Panel
+            title="SOLVED!"
+            scroll
+            style={styles.resultPanel}
             accessibilityLabel="Solved"
             footer={
-              <View style={styles.footer}>
+              <>
                 {pathPhase !== 'team' ? (
                   <Button
                     title="Continue"
-                    size="xl"
+                    size="lg"
                     tone="green"
                     onPress={onExit}
                     accessibilityHint="Return to the Clueless path"
                   />
                 ) : null}
-                <View style={styles.roundRow}>
+                <View style={styles.squares}>
                   {pathPhase !== 'team' ? (
-                    <RoundIconButton
-                      icon={<Text style={styles.roundGlyph}>⌂</Text>}
+                    <SquareButton
+                      icon={<GameIcon name="home" size={28} color={tone.sky.outline} />}
                       accessibilityLabel="Home"
+                      caption="Home"
+                      tone="sky"
+                      size={50}
                       onPress={onExit}
-                      tone="blue"
-                      size={52}
                     />
                   ) : null}
+                  <SquareButton
+                    icon={<GameIcon name="share" size={28} color={tone.sky.outline} />}
+                    accessibilityLabel="Share result"
+                    caption="Share"
+                    tone="sky"
+                    size={50}
+                    onPress={() => void onShare()}
+                  />
                 </View>
-                <Button
-                  title="Share result"
-                  tone="purple"
-                  size="md"
-                  onPress={() => void onShare()}
-                  accessibilityHint="Copies a spoiler-free result you can paste anywhere"
-                />
-                {shareNote ? (
-                  <Text style={styles.shareNote} accessibilityLiveRegion="polite">
-                    {shareNote}
-                  </Text>
-                ) : null}
-              </View>
+                {shareNote ? <PanelText>{shareNote}</PanelText> : null}
+              </>
             }
           >
-            <DisplayTitle>SOLVED</DisplayTitle>
-            <ScoreWell
-              label={state.guesses.length === 1 ? 'GUESS' : 'GUESSES'}
-              value={String(state.guesses.length)}
-            />
-            <Text style={styles.wonWord}>{puzzle.secret}</Text>
-            {pathPhase !== 'team' ? <Text style={styles.completionCopy}>{completionCopy}</Text> : null}
-          </ResultSheet>
+            {reward ? <RewardPanel events={reward.events} boosted={reward.boosted} /> : null}
+            <SecretWord word={puzzle.secret} />
+            <ScoreWell label={state.guesses.length === 1 ? 'GUESS' : 'GUESSES'} value={String(state.guesses.length)} />
+            {pathPhase !== 'team' ? <PanelText>{completionCopy}</PanelText> : null}
+          </Panel>
           {reward ? <RewardCelebration events={reward.events} /> : null}
         </View>
       ) : (
-        <View style={styles.guessCard}>
-          {persist && onSpend && state.status === 'playing' ? (
-            <BoostBar
-              controls={[
-                {
-                  kind: 'warmer-word',
-                  label: 'Warmer word',
-                  glyph: '↑',
-                  price: warmerPrice,
-                  disabled: coins < warmerPrice || warmer === null,
-                  disabledReason:
-                    coinShortfall(coins, warmerPrice) ??
-                    (warmer === null ? 'No warmer word' : undefined),
-                  onPress: () => {
-                    if (!warmer || !spendBoost('warmer-word')) return;
-                    submitWord(warmer);
-                  },
-                },
-                ...(state.hintPolicy === 'guess_threshold'
-                  ? [
-                      {
-                        kind: 'hint-now' as const,
-                        label: 'Hint now',
-                        glyph: '?',
-                        price: hintPrice,
-                        disabled: coins < hintPrice,
-                        disabledReason: coinShortfall(coins, hintPrice),
-                        onPress: () => {
-                          if (!spendBoost('hint-now')) return;
-                          dispatch({ type: 'unlockHint' });
-                        },
-                      },
-                    ]
-                  : []),
-              ]}
-            />
+        <>
+          {state.hintPolicy !== 'none' && hint ? (
+            <CreamBox style={!hintVisible && styles.hintLocked}>
+              <CreamText variant="label">{hintVisible ? 'THEMATIC HINT' : 'HINT LOCKED'}</CreamText>
+              <CreamText style={hintVisible ? styles.hintText : styles.hintCountdown}>
+                {hintVisible
+                  ? hint
+                  : `${hintRemaining} valid ${hintRemaining === 1 ? 'guess' : 'guesses'} until the hint`}
+              </CreamText>
+            </CreamBox>
           ) : null}
-          <TextField
-            accent={accent}
-            value={input}
-            onChangeText={setInput}
-            onSubmitEditing={submit}
-            placeholder="Type any word"
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="off"
-            returnKeyType="go"
-            blurOnSubmit={false}
-            trailing={
+
+          {/* The board: the kit's cyan frame round the guess field and the
+              ranked guesses, with the semantic-heat bar on top. */}
+          <View style={styles.board}>
+            {state.guesses.length > 0 ? (
+              <View style={styles.meter} accessible accessibilityLabel={`Closest guess rank ${best ?? 'none'}`}>
+                <Text style={styles.meterTitle}>HEAT</Text>
+                <View style={styles.meterTrack}>
+                  <View
+                    style={[
+                      styles.meterFill,
+                      { width: `${Math.max(2, warmth * 100)}%`, backgroundColor: proximityColor(warmth) },
+                    ]}
+                  />
+                </View>
+              </View>
+            ) : null}
+            <View style={styles.inputRow}>
+              <TextField
+                accent={palette.teal}
+                value={input}
+                onChangeText={setInput}
+                onSubmitEditing={submit}
+                placeholder="Type any word"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="off"
+                returnKeyType="go"
+                blurOnSubmit={false}
+                containerStyle={styles.field}
+              />
               <Button
                 title="Guess"
                 onPress={submit}
-                tone="purple"
-                size="sm"
+                tone="green"
+                size="md"
                 fullWidth={false}
                 disabled={!input.trim()}
                 accessibilityLabel="Submit guess"
-            />
-          }
-        />
-          {state.rejection ? (
-            <FeedbackBanner
-              tone={state.rejection.kind === 'already-guessed' ? 'warning' : 'danger'}
-              title={state.rejection.kind === 'already-guessed' ? 'Already on your board' : 'Try another word'}
-              body={
-                state.rejection.kind === 'not-a-word'
-                  ? `“${state.rejection.word}” isn’t in this word list.`
-                  : state.rejection.kind === 'already-guessed'
-                    ? `You already tried “${state.rejection.word}”.`
-                    : 'Type a word first.'
-              }
-            />
-          ) : null}
-          <ScrollView
-            style={styles.list}
-            contentContainerStyle={styles.listContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {state.guesses.length === 0 ? (
-              <EmptyState
-                title="Find the secret word"
-                body="Every guess is ranked by meaning, not spelling. Start broad, then follow the heat."
-                accent={accent}
-                art={<Text style={styles.emptyGlyphText}>?</Text>}
-                actionLabel="See how it works"
-                onAction={() => setHelp(true)}
               />
-            ) : (
-              state.guesses.map((g) => (
-                <GuessRow
-                  key={g.word}
-                  guess={g}
-                  rankedCount={puzzle.rankedCount}
-                  animate={g.word === state.lastWord}
+            </View>
+            {state.rejection ? (
+              <FeedbackBanner
+                tone={state.rejection.kind === 'already-guessed' ? 'warning' : 'danger'}
+                title={state.rejection.kind === 'already-guessed' ? 'Already on your board' : 'Try another word'}
+                body={
+                  state.rejection.kind === 'not-a-word'
+                    ? `“${state.rejection.word}” isn’t in this word list.`
+                    : state.rejection.kind === 'already-guessed'
+                      ? `You already tried “${state.rejection.word}”.`
+                      : 'Type a word first.'
+                }
+              />
+            ) : null}
+            <ScrollView
+              style={styles.list}
+              contentContainerStyle={styles.listContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {state.guesses.length === 0 ? (
+                <EmptyState
+                  title="Find the secret word"
+                  body="Every guess is ranked by meaning, not spelling. Start broad, then follow the heat."
+                  art={<BlockTile size={58} color="purple" letter="?" />}
+                  actionLabel="See how it works"
+                  onAction={() => setHelp(true)}
                 />
-              ))
-            )}
-          </ScrollView>
-        </View>
+              ) : (
+                state.guesses.map((g) => (
+                  <GuessRow key={g.word} guess={g} rankedCount={puzzle.rankedCount} animate={g.word === state.lastWord} />
+                ))
+              )}
+            </ScrollView>
+          </View>
+
+          <BoostBar controls={boosts} onPause={() => setPaused(true)} />
+        </>
       )}
+
+      <PausePopup
+        visible={paused}
+        onResume={() => setPaused(false)}
+        onHelp={() => {
+          setPaused(false);
+          setHelp(true);
+        }}
+        onLeave={() => {
+          setPaused(false);
+          onExit();
+        }}
+        note={persist ? 'Your guesses are saved.' : undefined}
+      />
 
       <HowToPlay
         visible={help}
@@ -544,52 +526,65 @@ export function CluelessScreen({
   );
 }
 
+const WORD_CUBES: readonly CubeColor[] = ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink'];
+
+/** The answer spelled in the kit's cubes, one colour per letter. */
+function SecretWord({ word }: { word: string }) {
+  const letters = [...word.toUpperCase()];
+  const size = letters.length > 8 ? 30 : 38;
+  return (
+    <View style={styles.secret} accessible accessibilityLabel={`The word was ${word}`}>
+      {letters.map((letter, i) => (
+        <BlockTile key={`${letter}-${i}`} size={size} color={cube[WORD_CUBES[i % WORD_CUBES.length]!]} letter={letter} />
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  root: {
-    ...screen.playfield,
-    paddingHorizontal: space.lg,
-    paddingBottom: space.sm,
-    gap: space.sm,
-  },
-  result: { flex: 1, minHeight: 0 },
-  rays: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
-  stars: { alignItems: 'center', marginBottom: -16, zIndex: 2 },
-  footer: { gap: space.sm },
-  roundRow: { flexDirection: 'row', justifyContent: 'center', gap: space.lg },
-  roundGlyph: { color: theme.onPill, fontSize: 22, lineHeight: 26 },
-  guessCard: {
+  root: { flex: 1, paddingHorizontal: space.md, paddingTop: space.xs, paddingBottom: space.xs, gap: space.sm },
+  hud: { flexDirection: 'row', gap: space.sm },
+  result: { flex: 1, minHeight: 0, justifyContent: 'center' },
+  rays: { position: 'absolute', top: -20, left: 0, right: 0, alignItems: 'center' },
+  resultPanel: { flexShrink: 1 },
+  squares: { flexDirection: 'row', justifyContent: 'center', gap: space.lg },
+  secret: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4 },
+  hintLocked: { opacity: 0.85 },
+  hintText: { fontFamily: font.heavy, fontSize: 15, lineHeight: 21 },
+  hintCountdown: { fontSize: 13, lineHeight: 18, color: palette.inkSoft },
+  board: {
     flex: 1,
     minHeight: 0,
-    backgroundColor: palette.paper,
-    borderRadius: radius.lg,
-    padding: space.md,
     gap: space.sm,
+    padding: space.sm,
+    borderRadius: 22,
+    backgroundColor: palette.frame,
+    borderWidth: 3,
+    borderColor: palette.frameDeep,
+    borderTopColor: '#7FE0F6',
   },
-  statsRow: { flexDirection: 'row', justifyContent: 'center', gap: space.sm },
-  hintCard: { gap: space.xs },
-  hintLabel: { ...type.overline, color: theme.textDim },
-  hintText: { ...type.bodyStrong, color: theme.text },
-  hintCountdown: { ...type.caption, color: theme.textMuted },
-  meter: { gap: space.sm },
-  meterCopy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  meterTitle: { ...type.overline, color: theme.textDim },
+  meter: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: 2 },
+  meterTitle: {
+    fontFamily: font.black,
+    fontSize: 12,
+    color: palette.white,
+    textShadowColor: palette.frameDeep,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+  },
   meterTrack: {
-    width: '100%',
-    height: 10,
-    borderRadius: radius.pill,
-    backgroundColor: elevation(1).backgroundColor,
+    flex: 1,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: palette.navyDeep,
+    borderWidth: 2,
+    borderColor: palette.white,
     overflow: 'hidden',
   },
-  meterFill: { height: '100%', borderRadius: radius.pill },
-  meterLabel: { ...type.caption, color: theme.textMuted },
-  meterValue: { color: theme.text, fontFamily: font.bold, fontWeight: '700', fontVariant: ['tabular-nums'] },
-
-  wonWord: { ...type.title, color: theme.text, marginTop: space.md, textAlign: 'center' },
-  completionCopy: { ...type.body, color: theme.textMuted, textAlign: 'center', marginTop: space.sm },
-  shareNote: { ...type.caption, color: theme.textMuted, textAlign: 'center' },
-
-  list: { flex: 1 },
-  listContent: { gap: 6, paddingBottom: space.lg },
-  emptyGlyphText: { ...type.display, color: theme.text },
-  exampleCaption: { ...type.caption, color: theme.textDim, marginBottom: 4 },
+  meterFill: { height: '100%', borderRadius: 4 },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  field: { flex: 1 },
+  list: { flex: 1, minHeight: 0 },
+  listContent: { gap: 6, paddingBottom: space.sm },
+  exampleCaption: { fontFamily: font.heavy, fontSize: 13, color: palette.inkSoft, marginBottom: 4 },
 });
