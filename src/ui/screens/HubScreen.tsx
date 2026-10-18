@@ -71,9 +71,8 @@ export function HubScreen({
         <View style={[styles.mascotRow, wide && styles.mascotWide]} pointerEvents="none">
           <Mascot size={wide ? 88 : 64} />
         </View>
+        <Button title="View your scores" tone="blue" size="md" onPress={onScores} />
       </ScrollView>
-
-      <Button title="View your scores" tone="blue" size="md" onPress={onScores} />
       {chestOpen ? (
         <View style={styles.celebration} accessibilityViewIsModal>
           <View style={styles.rays} pointerEvents="none">
@@ -184,8 +183,8 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   heroSubtitle: { ...type.caption, color: theme.textMuted, flex: 1 },
-  listScroll: { flex: 1, minHeight: 0, height: 0, overflow: 'hidden' },
-  list: { gap: space.lg, paddingBottom: space.sm },
+  listScroll: { flex: 1, minHeight: 0 },
+  list: { gap: space.lg, paddingBottom: space.xl },
   listWide: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'stretch' },
   sectionLabel: { color: theme.textDim, marginBottom: -2 },
   sectionWide: { width: '100%', flexBasis: '100%' },

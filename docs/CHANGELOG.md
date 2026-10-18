@@ -14,6 +14,8 @@ Rules:
 - **A first visit can start in one tap.** One welcome page, then More or Less. Browser Back follows the in-app parent instead of leaving the site. Wordfall shows a short drag coach on the first visit, and again after two single-tile releases.
 
 ### Fixed
+- **The hub no longer covers Wordfall after a run.** The chest, the three games, and "View your scores" scroll together, so the scores button cannot sit on top of Wordfall.
+- **A More or Less miss is game over.** The title stays "GAME OVER". "New personal best" appears only when the streak that just ended is above zero and beats the previous best. A first run that ends on round 0 is not presented as a win.
 - **A tie is not a new best.** The result and its analytics use the board from before the run is saved.
 - **Reopening Wordfall no longer replays a finished level.** A won or lost board is not saved, and a restored terminal board is not reported again.
 - **A Wordfall loss extends the daily flame.** Finishing a run in any solo game counts, including a loss.

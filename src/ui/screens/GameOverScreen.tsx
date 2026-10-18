@@ -47,9 +47,11 @@ export function GameOverScreen({
   const [shareNote, setShareNote] = useState<string | null>(null);
   const shareNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const personalBest = isNewBest && state.streak > 0;
+
   useEffect(() => {
-    if (isNewBest) feedback('win');
-  }, [isNewBest]);
+    if (personalBest) feedback('win');
+  }, [personalBest]);
 
   useEffect(() => {
     return () => {
@@ -85,7 +87,7 @@ export function GameOverScreen({
 
   return (
     <View style={styles.root}>
-      {isNewBest ? (
+      {personalBest ? (
         <View style={styles.rays} pointerEvents="none">
           <Rays />
         </View>
@@ -94,7 +96,7 @@ export function GameOverScreen({
         <RewardPanel events={events} boosted={boosted} />
       </View>
       <ResultSheet
-        accessibilityLabel={isNewBest ? 'You win' : 'Game over'}
+        accessibilityLabel={personalBest ? 'Game over. New personal best.' : 'Game over'}
         footer={
           <View style={styles.footer}>
             <Button title="Try again" size="xl" tone="green" onPress={onPlayAgain} />
@@ -130,7 +132,8 @@ export function GameOverScreen({
           </View>
         }
       >
-        <DisplayTitle>{isNewBest ? 'YOU WIN' : 'GAME OVER'}</DisplayTitle>
+        <DisplayTitle>GAME OVER</DisplayTitle>
+        {personalBest ? <Text style={styles.best}>New personal best</Text> : null}
         <ScoreWell label={state.streak === 1 ? 'ROUND' : 'ROUNDS'} value={String(state.streak)} />
         <View style={styles.summary}>
           <Text style={styles.summaryItem}>Local rank #{rank}</Text>
@@ -189,6 +192,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   stars: { alignItems: 'center', marginBottom: -16, zIndex: 2 },
+  best: { ...type.caption, color: theme.onWood, fontFamily: font.bold, fontWeight: '700', textAlign: 'center' },
   footer: { gap: space.sm },
   roundRow: { flexDirection: 'row', justifyContent: 'center', gap: space.lg },
   roundGlyph: { color: theme.onPill, fontSize: 22, lineHeight: 26 },
