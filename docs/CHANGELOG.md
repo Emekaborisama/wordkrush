@@ -9,7 +9,7 @@ Rules:
 ## [0.8.39] - 2026-09-29
 
 ### Added
-- **Clueless Daily Vault levels 37–55: Hidden Space, Gather Round, Daybreak Path, Open Counter, Light Load, Tidal Horizon, Seam Line, Distant Link, Quiet Frontier, Lesson Plan, Velvet Trail, Steady Hands, Public Square, Lantern Lane, Bright Token, Savory Trace, Common Ground, Shared Surface, and Final Word.** Nineteen reviewed future solo levels extend the bundled Daily Vault buffer. None shows a hint; each theme stays sealed until players reach it. Native installs receive them with a later shipped build.
+- **Clueless Daily Vault levels 37–56: Hidden Space, Gather Round, Daybreak Path, Open Counter, Light Load, Tidal Horizon, Seam Line, Distant Link, Quiet Frontier, Lesson Plan, Velvet Trail, Steady Hands, Public Square, Lantern Lane, Bright Token, Savory Trace, Common Ground, Shared Surface, Final Word, and After Hours.** Twenty reviewed future solo levels extend the bundled Daily Vault buffer. None shows a hint; each theme stays sealed until players reach it. Native installs receive them with a later shipped build.
 
 ## [0.8.38] - 2026-09-26
 
