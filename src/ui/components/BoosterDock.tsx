@@ -53,6 +53,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.85)',
     borderBottomColor: palette.frame,
   },
-  tiles: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
+  tiles: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: space.md },
   gear: { marginRight: -space.sm },
 });

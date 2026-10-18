@@ -119,6 +119,7 @@ export function RewardCelebration({ events }: { events: readonly RewardEvent[] }
       onClose={next}
       dismissable={false}
       hideClose
+      scrim="strong"
       title={beat.kind === 'levelUp' ? 'LEVEL UP!' : 'MILESTONE'}
       ribbon="banner"
       ribbonColor={palette.goldDeep}

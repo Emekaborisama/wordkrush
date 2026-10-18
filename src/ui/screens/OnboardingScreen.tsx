@@ -51,7 +51,7 @@ export function OnboardingScreen({ onPlay, onExplore }: Props) {
       <View style={styles.column}>
         <BlockLogo size="hero" animate />
         <StrokeText size={24} stroke={palette.navyDeep} strokeWidth={2.5} depth={2} lineHeight={30} style={styles.line}>
-          Guess right. Keep the streak alive.
+          {'Guess right.\nKeep the streak alive.'}
         </StrokeText>
 
         <View style={styles.cluster} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -75,7 +75,7 @@ export function OnboardingScreen({ onPlay, onExplore }: Props) {
           </Animated.View>
         </View>
 
-        <Text style={styles.body}>Three quick games. One flame. Come back tomorrow.</Text>
+        <Text style={styles.body}>{'Three quick games. One flame.\nCome back tomorrow.'}</Text>
         <Button title="Play" tone="gold" size="xl" onPress={onPlay} accessibilityLabel="Play your first game" />
         <Button title="All games" tone="blue" size="md" onPress={onExplore} accessibilityLabel="Explore games" />
       </View>

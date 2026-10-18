@@ -204,6 +204,8 @@ export type PopupModalProps = Omit<PanelProps, 'scroll' | 'onClose'> & {
   /** Hide the corner X (the footer carries the only exit). */
   hideClose?: boolean;
   width?: number;
+  /** `strong` all but hides what is underneath — for a beat that follows a result. */
+  scrim?: 'normal' | 'strong';
 };
 
 /**
@@ -216,6 +218,7 @@ export function PopupModal({
   dismissable = true,
   hideClose = false,
   width = 380,
+  scrim = 'normal',
   ...panel
 }: PopupModalProps) {
   const reduceMotion = useReduceMotion();
@@ -241,7 +244,7 @@ export function PopupModal({
 
   return (
     <Modal transparent visible={visible} animationType="none" onRequestClose={onClose} statusBarTranslucent>
-      <View style={styles.scrim}>
+      <View style={[styles.scrim, scrim === 'strong' && styles.scrimStrong]}>
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={dismissable ? onClose : undefined}
@@ -301,6 +304,7 @@ const styles = StyleSheet.create({
   divider: { alignSelf: 'stretch', marginVertical: space.xs },
   dividerDark: { height: 2, borderRadius: 1 },
   dividerLight: { height: 2, borderRadius: 1, backgroundColor: 'rgba(255,255,255,0.45)' },
+  scrimStrong: { backgroundColor: 'rgba(10, 28, 64, 0.92)' },
   scrim: {
     flex: 1,
     alignItems: 'center',

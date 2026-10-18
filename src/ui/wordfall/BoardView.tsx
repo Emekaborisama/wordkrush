@@ -386,7 +386,8 @@ const TileView = memo(function TileView({
   useEffect(() => {
     if (justBorn) return;
     Animated.spring(scale, {
-      toValue: selected ? 1.1 : 1,
+      // A small lift only: anything bigger pushes edge tiles past the frame.
+      toValue: selected ? 1.05 : 1,
       damping: 16,
       stiffness: 320,
       mass: 0.6,
@@ -601,10 +602,12 @@ const styles = StyleSheet.create({
     right: -2,
     bottom: -2,
     left: -2,
+    // White, not gold: gold is what a traced tile turns, and a hint must
+    // never look already selected.
     borderWidth: 3,
-    borderColor: palette.gold,
-    shadowColor: palette.gold,
-    shadowOpacity: 0.9,
+    borderColor: palette.white,
+    shadowColor: palette.white,
+    shadowOpacity: 0.95,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
   },

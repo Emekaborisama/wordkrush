@@ -10,13 +10,15 @@ export type XpBadgeProps = {
   progress: number;
   onPress?: () => void;
   accessibilityLabel?: string;
+  /** The thin bar under the star; off where a wider bar sits beside it. */
+  showBar?: boolean;
 };
 
 /**
  * Player level as a kit gold star with the number on it, over a thin purple
  * XP bar. `onPress` is how a screen opens more detail; this does not navigate.
  */
-export function XpBadge({ level, progress, onPress, accessibilityLabel }: XpBadgeProps) {
+export function XpBadge({ level, progress, onPress, accessibilityLabel, showBar = true }: XpBadgeProps) {
   const label = accessibilityLabel ?? `Level ${level}`;
   const fraction = Math.max(0, Math.min(1, progress));
   const body = (
@@ -29,9 +31,11 @@ export function XpBadge({ level, progress, onPress, accessibilityLabel }: XpBadg
           </StrokeText>
         </View>
       </View>
-      <View style={styles.track}>
-        <View style={[styles.fill, { width: `${fraction * 100}%` }]} />
-      </View>
+      {showBar ? (
+        <View style={styles.track}>
+          <View style={[styles.fill, { width: `${fraction * 100}%` }]} />
+        </View>
+      ) : null}
     </View>
   );
   if (!onPress) {

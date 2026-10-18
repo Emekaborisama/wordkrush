@@ -641,14 +641,13 @@ const styles = StyleSheet.create({
   choice: { flex: 1 },
   offerBox: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   flex: { flex: 1 },
+  // Required credits, set quietly: small navy on the pale foot of the sky.
   provenance: {
-    fontFamily: font.heavy,
+    fontFamily: font.body,
     fontSize: 11,
     lineHeight: 14,
-    color: palette.white,
+    color: palette.navyDeep,
     textAlign: 'center',
-    textShadowColor: palette.navyDeep,
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    opacity: 0.8,
   },
 });

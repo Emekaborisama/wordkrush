@@ -22,6 +22,8 @@ type Props = {
   board: ScoreBoard;
   onPlay: () => void;
   onScores: () => void;
+  /** The pop-up's red close disc: back to the hub. */
+  onClose?: () => void;
   /** Game-specific goal — today's set, the spark path, the campaign. */
   detail?: ReactNode;
   /** Small print under everything. */
@@ -47,6 +49,7 @@ export function GameStartScreen({
   board,
   onPlay,
   onScores,
+  onClose,
   detail,
   footer,
   playLabel = 'Play',
@@ -64,7 +67,7 @@ export function GameStartScreen({
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <Panel title={game?.name ?? 'Play'}>
+      <Panel title={game?.name ?? 'Play'} onClose={onClose} closeLabel="Back to all games">
         <View style={styles.hero}>
           <GameArtwork gameId={gameId} accent={accent} size={92} raised />
           <View style={styles.flex}>
@@ -73,7 +76,9 @@ export function GameStartScreen({
                 {game.badge}
               </StrokeText>
             ) : null}
-            <PanelText align="left">{game?.blurb ?? game?.tagline ?? ''}</PanelText>
+            <CreamBox style={styles.blurb}>
+              <CreamText style={styles.blurbText}>{game?.blurb ?? game?.tagline ?? ''}</CreamText>
+            </CreamBox>
           </View>
         </View>
         <PanelDivider />
@@ -155,9 +160,11 @@ export function StartDetail({
       <CreamText variant="label" style={styles.center}>
         {label}
       </CreamText>
-      <CreamText variant="title" style={styles.center}>
-        {title}
-      </CreamText>
+      {title ? (
+        <CreamText variant="title" style={styles.center}>
+          {title}
+        </CreamText>
+      ) : null}
       {meta ? <CreamText style={[styles.center, styles.meta]}>{meta}</CreamText> : null}
     </View>
   );
@@ -204,6 +211,8 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   hero: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  blurb: { marginTop: 4, paddingVertical: space.xs + 2, paddingHorizontal: space.sm },
+  blurbText: { fontSize: 13, lineHeight: 18 },
   flex: { flex: 1, minWidth: 0 },
   goal: { gap: space.sm },
   center: { textAlign: 'center' },

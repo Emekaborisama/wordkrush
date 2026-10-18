@@ -51,7 +51,8 @@ export function SquareButton({
   style,
 }: SquareButtonProps) {
   const face = Math.max(interaction.minTouch, size);
-  const glossy = disabled ? tones.grey : tone ? tones[tone] : color ? toneFrom(color) : tones.green;
+  // An unaffordable booster keeps its colour, dimmed: the kit never greys a tile.
+  const glossy = tone ? tones[tone] : color ? toneFrom(color) : tones.green;
   const radius = shape === 'circle' ? face / 2 : Math.round(face * 0.24);
   const lip = face >= 56 ? 5 : 4;
   const label = [
@@ -75,7 +76,7 @@ export function SquareButton({
         style={styles.hit}
       >
         {({ pressed }) => (
-          <View>
+          <View style={disabled && styles.dimTile}>
             <GlossFace
               tone={glossy}
               pressed={pressed && !disabled}
@@ -115,9 +116,10 @@ export function SquareButton({
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', gap: 2 },
+  wrap: { alignItems: 'center', gap: 8 },
   hit: { alignItems: 'center', justifyContent: 'center' },
-  dimIcon: { opacity: 0.55 },
+  dimIcon: { opacity: 0.7 },
+  dimTile: { opacity: 0.6 },
   price: {
     position: 'absolute',
     bottom: -6,

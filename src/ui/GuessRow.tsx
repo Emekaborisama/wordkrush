@@ -68,6 +68,9 @@ export function GuessRow({
         },
       ]}
     >
+      {/* A cold guess has no heat, so it draws no bar at all — a sliver read
+          as a rendering fault. */}
+      {guess.rank === null ? null : (
       <Animated.View
         style={[
           styles.bar,
@@ -83,6 +86,7 @@ export function GuessRow({
           },
         ]}
       />
+      )}
       {/* Soft inner edge on the bar's leading edge gives it a lit quality
           instead of looking like a flat block of colour. */}
       <View style={styles.sheen} pointerEvents="none" />

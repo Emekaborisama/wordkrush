@@ -75,26 +75,32 @@ export function HubScreen({
   return (
     <View style={styles.root}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-        <View style={styles.levelRow}>
-          <XpBadge level={level} progress={levelProgress} />
-          <StrokeText size={18} stroke={palette.navyDeep} strokeWidth={2} depth={1.5}>
-            {`Level ${level}`}
-          </StrokeText>
-          <View style={styles.flex} />
-          <StrokeText size={14} stroke={palette.navyDeep} strokeWidth={1.5} depth={1}>
-            Pick a game
-          </StrokeText>
-        </View>
+        <CreamBox style={styles.levelStrip}>
+          <View style={styles.levelRow} accessible accessibilityLabel={`Level ${level}, ${Math.round(levelProgress * 100)} percent to the next`}>
+            <XpBadge level={level} progress={levelProgress} showBar={false} />
+            <View style={styles.flex}>
+              <CreamText variant="title">{`Level ${level}`}</CreamText>
+              <View style={styles.xpTrack}>
+                <View style={[styles.xpFill, { width: `${Math.max(0, Math.min(1, levelProgress)) * 100}%` }]} />
+              </View>
+            </View>
+          </View>
+        </CreamBox>
         <ChestCard status={chest} day={chestDay} onOpen={onOpenChest} />
-        {GAMES.map((game) => (
-          <GameCard
-            key={game.id}
-            game={game}
-            board={boards[game.id]}
-            labelRoundsPassed={game.id === 'more-or-less' ? labelRoundsPassed : undefined}
-            onPress={() => onPlay(game.id)}
-          />
-        ))}
+        {/* The kit's list pop-up: every game a cream row with its own Play,
+            so the three fit above the home row and the gold Play stays the
+            one big button on screen. */}
+        <Panel title="Pick a game" contentStyle={styles.gameList}>
+          {GAMES.map((game) => (
+            <GameRow
+              key={game.id}
+              game={game}
+              board={boards[game.id]}
+              labelRoundsPassed={game.id === 'more-or-less' ? labelRoundsPassed : undefined}
+              onPress={() => onPlay(game.id)}
+            />
+          ))}
+        </Panel>
       </ScrollView>
 
       <View style={styles.dockFade} pointerEvents="none">
@@ -205,7 +211,7 @@ function ChestCard({ status, day, onOpen }: { status: ChestStatus; day: number; 
   );
 }
 
-function GameCard({
+function GameRow({
   game,
   board,
   onPress,
@@ -221,52 +227,64 @@ function GameCard({
   const played = (board?.totalRuns ?? 0) > 0;
   const bestLabel = `${game.scoreDirection === 'lower' ? 'Fewest' : 'Best'} ${game.scoreNoun}`;
   return (
-    <Panel title={game.name} accessibilityLabel={game.name}>
-      <View style={styles.cardRow}>
-        <GameArtwork gameId={game.id} accent={game.accent} size={84} raised />
-        <View style={styles.cardCopy}>
-          <CreamBox style={styles.tagline}>
-            <CreamText style={styles.taglineText}>{game.tagline}</CreamText>
-          </CreamBox>
+    <CreamBox style={styles.gameRow}>
+      <View style={styles.gameInner}>
+        <GameArtwork gameId={game.id} accent={game.accent} size={64} />
+        <View style={styles.flex}>
+          <Text style={styles.gameName} numberOfLines={1}>
+            {game.name}
+          </Text>
+          <Text style={styles.tagline} numberOfLines={2}>
+            {game.tagline}
+          </Text>
           <View style={styles.chips}>
             {locked ? <Badge label="SOON" /> : null}
-            {played ? (
-              <Text style={styles.chip}>{`${bestLabel}: ${best}`}</Text>
-            ) : (
-              <Text style={styles.chip}>New!</Text>
-            )}
+            <Text style={styles.chip}>{played ? `${bestLabel} ${best}` : 'New!'}</Text>
             {labelRoundsPassed ? <Text style={styles.chip}>{`Sets ${labelRoundsPassed}`}</Text> : null}
           </View>
         </View>
+        <Button
+          title={locked ? 'Soon' : 'Play'}
+          tone="green"
+          size="sm"
+          fullWidth={false}
+          disabled={locked}
+          onPress={locked ? () => {} : onPress}
+          accessibilityLabel={locked ? `${game.name}, coming soon` : `Play ${game.name}`}
+        />
       </View>
-      <Button
-        title={locked ? 'Coming soon' : 'Play'}
-        tone="green"
-        size="lg"
-        disabled={locked}
-        onPress={locked ? () => {} : onPress}
-        accessibilityLabel={locked ? `${game.name}, coming soon` : `Play ${game.name}`}
-      />
-    </Panel>
+    </CreamBox>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1, minHeight: 0 },
-  list: { paddingHorizontal: space.md, paddingTop: space.md, paddingBottom: DOCK_SPACE, gap: space.xl },
+  list: { paddingHorizontal: space.md, paddingTop: space.md, paddingBottom: DOCK_SPACE + space.md, gap: space.lg },
   flex: { flex: 1, minWidth: 0 },
-  levelRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: -space.sm },
+  levelStrip: { paddingVertical: space.xs },
+  levelRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  xpTrack: {
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: palette.navyDeep,
+    borderWidth: 1.5,
+    borderColor: palette.white,
+    overflow: 'hidden',
+    marginTop: 3,
+  },
+  xpFill: { height: '100%', borderRadius: 4, backgroundColor: palette.purple },
   chest: { paddingVertical: space.sm },
   chestReady: { borderColor: palette.goldDeep },
   chestRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   chestCopy: { fontSize: 13, lineHeight: 18 },
   dimmed: { opacity: 0.6 },
-  cardRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  cardCopy: { flex: 1, minWidth: 0, gap: space.xs },
-  tagline: { paddingVertical: space.xs + 2, paddingHorizontal: space.sm },
-  taglineText: { fontSize: 13, lineHeight: 18 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
+  gameList: { gap: space.sm },
+  gameRow: { paddingVertical: space.sm, paddingHorizontal: space.sm },
+  gameInner: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  gameName: { fontFamily: font.black, fontSize: 18, lineHeight: 22, color: palette.ink },
+  tagline: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: palette.inkSoft, marginTop: 1 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginTop: 4 },
   chip: {
     fontFamily: font.heavy,
     fontSize: 12,

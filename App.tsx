@@ -141,7 +141,7 @@ import { ScoresScreen } from './src/ui/screens/ScoresScreen';
 import { TeamsScreen } from './src/ui/screens/TeamsScreen';
 import { WordfallScreen } from './src/ui/screens/WordfallScreen';
 import { COLUMN_MAX_WIDTH, isWideLayout } from './src/ui/layout';
-import { palette, theme } from './src/ui/theme';
+import { theme } from './src/ui/theme';
 import { ensureWebViewport } from './src/ui/webViewport';
 import { useAppFonts } from './src/ui/fonts';
 
@@ -198,7 +198,6 @@ function startDetailFor(
     const total = labelRound?.round.itemIds.length ?? category.items.length;
     return (
       <StartDetail
-        ribbon
         label={labelRound ? roundLabel(labelRound) : 'THIS SET'}
         title={`${seen} / ${total} names seen`}
         meta={
@@ -214,8 +213,6 @@ function startDetailFor(
     if (!clueless.ready) {
       return (
         <StartDetail
-          ribbon
-          ribbonColor={palette.purple}
           label="SOLO PATH"
           title="Finding your next clue…"
           meta="Your path is safely stored on this device."
@@ -226,8 +223,6 @@ function startDetailFor(
     if (!clueless.currentLevel) {
       return (
         <StartDetail
-          ribbon
-          ribbonColor={palette.purple}
           label="DAILY VAULT"
           title="More vaults arrive in an app update"
           meta="You cleared the bundled path. Keep the flame going in the other games meanwhile."
@@ -240,22 +235,18 @@ function startDetailFor(
       clueless.nextUnlockAt && clueless.availability === 'waiting'
         ? localUnlockCopy(clueless.nextUnlockAt, clueless.now)
         : level.description;
+    // One line each: where you are, the path as cubes, and what clearing it
+    // unlocks — no heading repeated under another heading.
     return (
       <>
         <StartDetail
-          ribbon
-          ribbonColor={palette.purple}
-          label={
-            clueless.availability === 'waiting'
-              ? `VAULT ${level.number}`
-              : `LEVEL ${level.number} · ${level.name}`
-          }
+          label={clueless.availability === 'waiting' ? `VAULT ${level.number}` : `LEVEL ${level.number}`}
           title={
             clueless.availability === 'waiting'
               ? `Vault ${level.number} is sealed`
               : level.phase === 'daily'
                 ? 'Daily Vault'
-                : 'Solo path'
+                : level.name
           }
           meta={unlockMeta}
           accent={accent}
@@ -266,7 +257,7 @@ function startDetailFor(
         />
         <StartDetail
           label="YOUR PATH"
-          title={clueless.progress.completedThrough < 3 ? 'Clear the three sparks' : 'Open the Daily Vault'}
+          title=""
           meta={
             clueless.progress.completedThrough < 3
               ? 'Clear the three sparks to reach the Daily Vault.'
@@ -280,7 +271,6 @@ function startDetailFor(
   if (gameId === 'wordfall') {
     return (
       <StartDetail
-        ribbon
         label="WORDFALL"
         title="Campaign levels"
         meta="A new level drops every Monday"
@@ -1113,6 +1103,7 @@ export default function App() {
         {screen.name === 'home' && (
           <GameStartScreen
             gameId={screen.gameId}
+            onClose={() => setScreen({ name: 'hub' })}
             board={
               screen.gameId === 'clueless'
                 ? boardForCluelessAssistanceContext(

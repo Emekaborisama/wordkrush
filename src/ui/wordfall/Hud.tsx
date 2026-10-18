@@ -115,11 +115,11 @@ function GoalChip({ objective, progress }: { objective: Objective; progress: num
   return (
     <View style={styles.goal}>
       {done ? (
-        <GameIcon name="check" size={20} color={tone.green.outline} />
+        <GameIcon name="check" size={26} color={tone.green.outline} />
       ) : art ? (
-        <GameIcon name={art} size={20} />
+        <GameIcon name={art} size={26} />
       ) : (
-        <BlockTile size={18} color="cream" letter={icon} />
+        <BlockTile size={24} color="cream" letter={icon} />
       )}
       <Text style={[styles.goalCount, done && styles.goalDone]}>
         {/* Capped so a score objective does not read "4210/2800". */}
@@ -219,9 +219,9 @@ const styles = StyleSheet.create({
   score: { flex: 1 },
   goals: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', columnGap: 8, rowGap: 2 },
   goal: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  goalCount: { fontFamily: font.black, fontSize: 14, lineHeight: 18, color: palette.ink, fontVariant: ['tabular-nums'] },
+  goalCount: { fontFamily: font.black, fontSize: 20, lineHeight: 24, color: palette.ink, fontVariant: ['tabular-nums'] },
   goalDone: { color: tone.green.lip },
-  goalTarget: { fontFamily: font.heavy, fontSize: 12, color: palette.inkSoft },
+  goalTarget: { fontFamily: font.heavy, fontSize: 15, color: palette.inkSoft },
   timeTrack: {
     height: 6,
     borderRadius: 3,

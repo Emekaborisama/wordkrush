@@ -72,7 +72,7 @@ export function StreakPill({ streak, today, onPress }: { streak: DailyStreak; to
     <ResourcePill
       icon={<GameIcon name="flame" size={34} />}
       value={streak.current}
-      suffix={streak.current === 0 ? 'START' : atRisk ? 'PLAY!' : streak.current === 1 ? 'DAY' : 'DAYS'}
+      suffix={atRisk ? 'PLAY!' : streak.current === 1 ? 'DAY' : 'DAYS'}
       countUp={false}
       onPress={onPress}
       accessibilityLabel={label}

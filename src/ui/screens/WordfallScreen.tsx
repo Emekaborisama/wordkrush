@@ -1056,12 +1056,12 @@ function LevelPicker({
             accessibilityState={{ disabled: locked, selected: active }}
           >
             <CreamBox
-              tint={active ? '#FFF3B8' : locked ? '#E3E7EC' : undefined}
-              style={[styles.levelRow, active && styles.levelRowActive]}
+              tint={active ? '#FFF3B8' : undefined}
+              style={[styles.levelRow, active && styles.levelRowActive, locked && styles.levelRowLocked]}
             >
               <View style={styles.levelInner}>
                 <View style={styles.levelNumber}>
-                  <BlockDigits value={level.number} cell={level.number >= 10 ? 7 : 9} color={locked ? 'stone' : active ? 'orange' : 'red'} />
+                  <BlockDigits value={level.number} cell={level.number >= 10 ? 8 : 11} color={active ? 'orange' : 'red'} />
                 </View>
                 <View style={styles.flex}>
                   <Text style={[styles.levelName, locked && styles.levelLocked]} numberOfLines={1}>
@@ -1131,8 +1131,9 @@ const styles = StyleSheet.create({
 
   levelRow: { paddingVertical: space.xs + 2, paddingHorizontal: space.sm },
   levelRowActive: { borderColor: palette.goldDeep },
+  levelRowLocked: { opacity: 0.55 },
   levelInner: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  levelNumber: { width: 64, alignItems: 'center' },
+  levelNumber: { width: 72, alignItems: 'center' },
   levelName: { fontFamily: font.black, fontSize: 16, lineHeight: 20, color: palette.ink },
   levelLocked: { color: palette.inkSoft },
   levelMeta: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: palette.inkSoft },

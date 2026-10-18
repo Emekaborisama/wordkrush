@@ -12,7 +12,7 @@ export type StarSurface = 'coral' | 'cream' | 'sky';
 const EMPTY: Record<StarSurface, { fill: string; edge: string }> = {
   coral: { fill: reward.starOff, edge: shade(reward.starOff, 0.3) },
   cream: { fill: reward.starOffLight, edge: shade(reward.starOffLight, 0.25) },
-  sky: { fill: palette.navyDeep, edge: shade(palette.navyDeep, 0.35) },
+  sky: { fill: '#2B78C2', edge: '#1B5592' },
 };
 
 /**
