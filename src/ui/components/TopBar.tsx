@@ -51,7 +51,7 @@ export function TopBar({ onBack, backLabel = 'Go back', title, left, right, styl
             {title}
           </StrokeText>
         ) : (
-          <BlockLogo size="compact" layout="row" />
+          <BlockLogo size={16} layout="stacked" />
         )}
       </View>
       <View style={[styles.side, styles.right]}>{right}</View>
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     height: '42%',
     backgroundColor: 'rgba(255,255,255,0.16)',
   },
-  side: { minWidth: 92, flexShrink: 0, justifyContent: 'center' },
+  side: { minWidth: 96, flexShrink: 0, justifyContent: 'center' },
   right: { alignItems: 'flex-end' },
   center: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center' },
 });
