@@ -111,7 +111,7 @@ Rules that keep it one system:
 | `Toggle` | Music / SFX switch | |
 | `TabSwitch` | — | Small glossy tabs; the selected one is gold (scores, account, teams, feedback) |
 | `PausePopup` | Gear → settings | Resume / How to play / Leave game, opened from the dock's gold gear |
-| `TopBar`, `StreakPill`, `CoinsPill` | Top bar | Coral band; streak · logo · coins, or back · title · coins |
+| `TopBar`, `StreakPill`, `CoinsPill` | Top bar | Coral band; streak · logo · coins, or back · logo · coins |
 | `BoosterDock` | Booster bar | Tray of green tiles plus the gold gear; `BoostBar` maps a game's boosts onto it |
 | `BlockTile` | Studded cube / letter tile | Views only (fast on a 7×7 board) |
 | `BlockLogo` | BLOCK BLAST! | WORD cubes + KRUSH! gold |
@@ -152,7 +152,8 @@ backdrops are full-bleed.
   Vibration, Send feedback, Sign in → the Settings pop-up.
 - `TopBar` — coral bar with a white bottom rim and rounded bottom corners. Hub:
   streak `ResourcePill` (flame) · compact `BlockLogo` · coin `ResourcePill`.
-  Other menu screens: back `SquareButton` (sky) · screen title · coin pill.
+  Other menu screens: back `SquareButton` (sky) · block logo · coin pill; the
+  screen's pop-up tab carries its title.
 
 ### First visit (`OnboardingScreen`)
 

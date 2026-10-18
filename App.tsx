@@ -859,14 +859,6 @@ export default function App() {
     return latest && getGame(latest.gameId)?.status === 'available' ? latest.gameId : MORE_OR_LESS;
   };
 
-  const chromeTitle = (): string | undefined => {
-    // A start screen's pop-up already carries the game name on its tab.
-    if (screen.name === 'home') return undefined;
-    if (screen.name === 'scores') return 'Scores';
-    if (screen.name === 'auth') return 'Account';
-    if (screen.name === 'teams' || screen.name === 'live-lobby') return 'Teams';
-    return undefined;
-  };
 
   if (!fontsLoaded && !fontError) {
     return (
@@ -887,7 +879,6 @@ export default function App() {
         {showChrome && !showOnboarding && (
           <TopBar
             onBack={chromeBack()}
-            title={chromeTitle()}
             left={<StreakPill streak={streak} today={todayKey} />}
             right={<CoinsPill coins={rewards.coins} />}
           />

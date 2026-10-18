@@ -308,7 +308,7 @@ black lockup in `assets/logo/`. Every screen follows the Block Blast UI kit
 `SkyBackground` (the menu sky, or the play sky behind a board and its result)
 and keeps the app in a phone-width column (`COLUMN_MAX_WIDTH`, 560px) on wide
 screens. Menu screens get the kit's coral `TopBar` (daily flame, block logo,
-coins; or back, title, coins); game and result screens hide it. There is no
+coins; or back, block logo, coins); game and result screens hide it. There is no
 drawer: Home's bottom row opens Settings, Scores, Teams and Account, and the
 gold Play there reopens the game with the most recent `playedAt` across the
 score boards (More or Less before anything has been played). Settings is a
