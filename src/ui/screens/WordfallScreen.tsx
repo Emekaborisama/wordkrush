@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import {
   chainLengthBucket,
@@ -45,22 +45,33 @@ import { boostPrice } from '../../rewards/wallet';
 import type { BoostKind } from '../../rewards/types';
 import { HowToPlay } from '../HowToPlay';
 import {
+  Badge,
+  BlockDigits,
+  BlockTile,
   Button,
+  ComboBanner,
+  CreamBox,
+  CreamText,
   DisplayTitle,
   GameHeader,
+  GameIcon,
+  Panel,
+  PanelText,
+  PausePopup,
+  PopupModal,
+  PressableScale,
   Rays,
-  ResultSheet,
-  RoundIconButton,
   ScoreWell,
+  SquareButton,
 } from '../components';
 import { BoostBar, coinShortfall } from '../rewards/BoostBar';
 import type { RunReward } from '../rewards/RunReward';
 import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
 import { shouldShowTraceHint } from '../wordfall/coach';
-import { elevation, font, formatDuration, palette, radius, screen, space, theme, type } from '../theme';
+import { font, formatDuration, palette, space, tone } from '../theme';
 import { BoardView } from '../wordfall/BoardView';
 import { describeObjective, Hud, TracePreview } from '../wordfall/Hud';
-import { SPECIAL_VISUALS, specialInk } from '../wordfall/visuals';
+import { SPECIAL_VISUALS } from '../wordfall/visuals';
 
 const GAME_ID = 'wordfall';
 /**
@@ -69,7 +80,7 @@ const GAME_ID = 'wordfall';
  * in the middle of.
  */
 const SESSION = 'campaign';
-const RIBBON = palette.ribbon;
+const RIBBON = palette.gold;
 
 type LiveWordfall = {
   levelNumber: number;
@@ -188,6 +199,7 @@ export function WordfallScreen({
   );
 
   const level = levelByNumber(levelNumber)!;
+  const [gearPaused, setGearPaused] = useState(false);
 
   if (!loaded) return <View style={styles.root} />;
 
@@ -208,7 +220,8 @@ export function WordfallScreen({
         onPickLevel={() => setPicking(true)}
         // The clock stops while a sheet is open: losing a timed level because
         // you read the instructions would be a bad joke.
-        paused={help || picking}
+        paused={help || picking || gearPaused}
+        onPause={() => setGearPaused(true)}
         onScore={live?.onScore}
         coins={coins}
         onSpend={live ? undefined : onSpend}
@@ -262,6 +275,20 @@ export function WordfallScreen({
         }}
       />
 
+      <PausePopup
+        visible={gearPaused}
+        onResume={() => setGearPaused(false)}
+        onHelp={() => {
+          setGearPaused(false);
+          setHelp(true);
+        }}
+        onLeave={() => {
+          setGearPaused(false);
+          onExit();
+        }}
+        note={live ? undefined : 'Your level is saved.'}
+      />
+
       <HowToPlay
         visible={help}
         onClose={() => setHelp(false)}
@@ -295,19 +322,17 @@ export function WordfallScreen({
 function TriggerLegend() {
   return (
     <View style={styles.legend}>
-      <Text style={styles.legendCaption}>
+      <CreamText style={styles.legendCaption}>
         Only the first rule that matches applies, so you always know what you are about to get:
-      </Text>
+      </CreamText>
       {TRIGGERS.map((trigger) => {
         const visual = SPECIAL_VISUALS[trigger.kind];
         return (
           <View key={trigger.kind} style={styles.legendRow}>
-            <View style={[styles.legendGlyph, { backgroundColor: visual.color, borderColor: visual.color }]}>
-              <Text style={[styles.legendGlyphText, { color: specialInk(visual.color) }]}>{visual.glyph}</Text>
-            </View>
+            <BlockTile size={34} color={visual.cube} letter={visual.glyph} />
             <View style={styles.legendBody}>
               <Text style={styles.legendName}>
-                <Text style={styles.legendName}>{trigger.label}</Text>
+                {trigger.label}
                 <Text style={styles.legendCondition}> — {trigger.condition}</Text>
               </Text>
               <Text style={styles.legendEffect}>{trigger.effect}</Text>
@@ -335,6 +360,7 @@ function LevelPlay({
   onExit,
   onHelp,
   onPickLevel,
+  onPause,
   coins,
   onSpend,
   boosted,
@@ -366,6 +392,8 @@ function LevelPlay({
   onExit: () => void;
   onHelp: () => void;
   onPickLevel: () => void;
+  /** The gold gear: freezes the clock and opens the pause pop-up. */
+  onPause: () => void;
   coins: number;
   onSpend?: (kind: BoostKind) => boolean;
   boosted: boolean;
@@ -649,30 +677,85 @@ function LevelPlay({
     extraKind === 'extra-moves' ? state.extraMovesGranted === true : (state.bonusMs ?? 0) > 0;
   const hintTiles = findWordPath(state.board, ctx.solver, state.played);
 
+  // The kit's celebration word over the board when a word sets off a chain.
+  const [combo, setCombo] = useState<string | null>(null);
+  const lastPlay = state.lastPlay;
+  useEffect(() => {
+    if (!lastPlay) return;
+    if (lastPlay.chain >= 3) setCombo('KRUSH!');
+    else if (lastPlay.chain === 2) setCombo('CASCADE!');
+    else if (lastPlay.word.length >= 7) setCombo('AMAZING!');
+  }, [lastPlay]);
+
+  const boosts =
+    onSpend && state.status === 'playing'
+      ? [
+          {
+            kind: 'shuffle' as const,
+            label: 'Shuffle',
+            icon: 'shuffle' as const,
+            price: shufflePrice,
+            disabled: coins < shufflePrice,
+            disabledReason: coinShortfall(coins, shufflePrice),
+            onPress: () => {
+              if (!spendBoost('shuffle')) return;
+              dispatch({ type: 'boost', kind: 'shuffle' });
+            },
+          },
+          {
+            kind: 'word-hint' as const,
+            label: 'Word hint',
+            icon: 'bulb' as const,
+            price: hintPrice,
+            disabled: coins < hintPrice || hintTiles === null,
+            disabledReason: coinShortfall(coins, hintPrice) ?? (hintTiles === null ? 'No word to show' : undefined),
+            onPress: () => {
+              const path = findWordPath(state.board, ctx.solver, state.played);
+              if (!path || !spendBoost('word-hint')) return;
+              setPaidHint(path);
+            },
+          },
+          {
+            kind: extraKind,
+            label: extraKind === 'extra-moves' ? '+3 moves' : '+10s',
+            icon: extraKind === 'extra-moves' ? ('plus' as const) : ('clock' as const),
+            price: extraPrice,
+            disabled: coins < extraPrice || extraUsed,
+            disabledReason: extraUsed ? 'Already used this level' : coinShortfall(coins, extraPrice),
+            onPress: () => {
+              if (extraUsed || !spendBoost(extraKind)) return;
+              dispatch({
+                type: 'boost',
+                kind: extraKind === 'extra-moves' ? 'extraMoves' : 'extraTime',
+              });
+            },
+          },
+        ]
+      : [];
+
   return (
     <View style={styles.play}>
       <GameHeader
         title="Wordfall"
-        subtitle={`LEVEL ${level.number} · ${level.name.toUpperCase()}`}
-        ribbon={RIBBON}
+        subtitle={`LEVEL ${level.number}`}
         onExit={onExit}
-        sideWidth={hidePicker ? 52 : 108}
+        sideWidth={hidePicker ? 52 : 100}
         trailing={
           <View style={styles.headerActions}>
             {hidePicker ? null : (
-              <RoundIconButton
-                icon={<Text style={styles.headerGlyph}>≡</Text>}
+              <SquareButton
+                icon={<GameIcon name="flag" size={24} color={tone.sky.outline} />}
                 accessibilityLabel="Open level map"
                 onPress={onPickLevel}
-                tone="blue"
+                tone="sky"
                 size={44}
               />
             )}
-            <RoundIconButton
-              icon={<Text style={styles.headerGlyph}>?</Text>}
+            <SquareButton
+              icon={<GameIcon name="help" size={24} color={tone.sky.outline} />}
               accessibilityLabel="How to play"
               onPress={onHelp}
-              tone="purple"
+              tone="sky"
               size={44}
             />
           </View>
@@ -680,7 +763,7 @@ function LevelPlay({
       />
 
       <Hud
-        levelDescription={level.description}
+        levelDescription={`${level.name} — ${level.description}`}
         movesLeft={state.movesLeft}
         timeLeftMs={timeLeft}
         timeLimitMs={level.timeLimitMs}
@@ -689,56 +772,6 @@ function LevelPlay({
         progress={state.progress}
         accent={palette.green}
       />
-
-      {onSpend && state.status === 'playing' ? (
-        <BoostBar
-          controls={[
-            {
-              kind: 'shuffle',
-              label: 'Shuffle',
-              glyph: '⟳',
-              price: shufflePrice,
-              disabled: coins < shufflePrice,
-              disabledReason: coinShortfall(coins, shufflePrice),
-              onPress: () => {
-                if (!spendBoost('shuffle')) return;
-                dispatch({ type: 'boost', kind: 'shuffle' });
-              },
-            },
-            {
-              kind: 'word-hint',
-              label: 'Word hint',
-              glyph: '✦',
-              price: hintPrice,
-              disabled: coins < hintPrice || hintTiles === null,
-              disabledReason:
-                coinShortfall(coins, hintPrice) ?? (hintTiles === null ? 'No word to show' : undefined),
-              onPress: () => {
-                const path = findWordPath(state.board, ctx.solver, state.played);
-                if (!path || !spendBoost('word-hint')) return;
-                setPaidHint(path);
-              },
-            },
-            {
-              kind: extraKind,
-              label: extraKind === 'extra-moves' ? '+3 moves' : '+10s',
-              glyph: extraKind === 'extra-moves' ? '+3' : '+10',
-              price: extraPrice,
-              disabled: coins < extraPrice || extraUsed,
-              disabledReason: extraUsed
-                ? 'Already used this level'
-                : coinShortfall(coins, extraPrice),
-              onPress: () => {
-                if (extraUsed || !spendBoost(extraKind)) return;
-                dispatch({
-                  type: 'boost',
-                  kind: extraKind === 'extra-moves' ? 'extraMoves' : 'extraTime',
-                });
-              },
-            },
-          ]}
-        />
-      ) : null}
 
       <View
         style={styles.boardWrap}
@@ -764,21 +797,32 @@ function LevelPlay({
             onCancel={cancelTrace}
           />
         ) : null}
-        {showCoach && coachPath ? (
-          <Text style={styles.coach} pointerEvents="none">
-            Drag through the glowing letters
-          </Text>
+        {combo ? (
+          <View style={styles.comboLayer} pointerEvents="none">
+            <ComboBanner key={`${combo}-${state.played.length}`} text={combo} onDone={() => setCombo(null)} />
+          </View>
         ) : null}
       </View>
 
-      <TracePreview
-        word={preview.word}
-        valid={preview.valid}
-        points={preview.points}
-        special={preview.special}
-        message={message}
-        accent={RIBBON}
-      />
+      {/* The first-visit coach takes the read-out's place, under the board,
+          so it never covers the letters it points at. */}
+      {showCoach && coachPath && preview.word.length === 0 ? (
+        <View style={styles.coach}>
+          <GameIcon name="hand" size={34} />
+          <Text style={styles.coachText}>Drag through the glowing letters</Text>
+        </View>
+      ) : (
+        <TracePreview
+          word={preview.word}
+          valid={preview.valid}
+          points={preview.points}
+          special={preview.special}
+          message={message}
+          accent={RIBBON}
+        />
+      )}
+
+      <BoostBar controls={boosts} onPause={onPause} />
 
       {over && (
         <LevelOutcome
@@ -789,6 +833,7 @@ function LevelPlay({
           onExit={onExit}
           onNext={onNext}
           onRetry={onRetry}
+          onPickLevel={hidePicker ? undefined : onPickLevel}
           reward={reward}
         />
       )}
@@ -803,6 +848,7 @@ function LevelOutcome({
   onExit,
   onNext,
   onRetry,
+  onPickLevel,
   reward,
 }: {
   state: WordfallState;
@@ -812,6 +858,7 @@ function LevelOutcome({
   onExit: () => void;
   onNext: () => void;
   onRetry: () => void;
+  onPickLevel?: () => void;
   reward: RunReward | null;
 }) {
   const won = state.status === 'won';
@@ -862,94 +909,100 @@ function LevelOutcome({
       : ''
   }${finished ? ' · All levels cleared' : ''}${outOfTime && !won ? ' · Out of time' : ''}`;
 
+  const unmet = level.objectives
+    .map((objective, index) => ({ objective, progress: state.progress[index] ?? 0 }))
+    .filter(({ objective, progress }) => progress < objective.target);
+
+  // The kit's result pop-up over the dimmed board: the level on the tab and
+  // LEVEL COMPLETED on a win, a red banner when the moves or the clock ran out.
   return (
     <View style={styles.outcomeScrim}>
       {won ? (
         <View style={styles.rays} pointerEvents="none">
-          <Rays />
+          <Rays size={360} />
         </View>
       ) : null}
-      <View style={styles.stars}>
-        {reward ? <RewardPanel events={reward.events} boosted={reward.boosted} /> : null}
-      </View>
-      <ResultSheet
+      <Panel
+        title={won ? `LEVEL ${level.number}` : outOfTime ? "TIME'S UP" : 'OUT OF MOVES'}
+        ribbon={won ? 'tab' : 'banner'}
+        scroll
+        style={styles.outcomePanel}
         accessibilityLabel={won ? 'You win' : 'Game over'}
         footer={
-          <View style={styles.outcomeFooter}>
+          <>
             <Button
               title={primaryLabel}
-              size="xl"
+              size="lg"
               tone="green"
               onPress={won && !finished ? onNext : onRetry}
+              leading={
+                <GameIcon name={won && !finished ? 'play' : 'retry'} size={26} color={tone.green.outline} />
+              }
             />
-            <View style={styles.roundRow}>
-              <RoundIconButton
-                icon={<Text style={styles.roundGlyph}>⌂</Text>}
-                accessibilityLabel="Back to Wordfall"
-                onPress={onExit}
-                tone="blue"
-                size={52}
-              />
-              <RoundIconButton
-                icon={<Text style={styles.roundGlyph}>↻</Text>}
+            <View style={styles.squares}>
+              {onPickLevel ? (
+                <SquareButton
+                  icon={<GameIcon name="flag" size={26} color={tone.sky.outline} />}
+                  accessibilityLabel="Levels"
+                  caption="Levels"
+                  tone="sky"
+                  size={48}
+                  onPress={onPickLevel}
+                />
+              ) : null}
+              <SquareButton
+                icon={<GameIcon name="retry" size={26} color={tone.sky.outline} />}
                 accessibilityLabel="Replay"
+                caption="Replay"
+                tone="sky"
+                size={48}
                 onPress={onRetry}
-                tone="purple"
-                size={52}
+              />
+              <SquareButton
+                icon={<GameIcon name="share" size={26} color={tone.sky.outline} />}
+                accessibilityLabel="Share result"
+                caption="Share"
+                tone="sky"
+                size={48}
+                onPress={() => void onShare()}
+              />
+              <SquareButton
+                icon={<GameIcon name="home" size={26} color={tone.sky.outline} />}
+                accessibilityLabel="Back to Wordfall"
+                caption="Home"
+                tone="sky"
+                size={48}
+                onPress={onExit}
               />
             </View>
-            <Button
-              title="Share result"
-              tone="blue"
-              size="md"
-              onPress={() => void onShare()}
-              accessibilityHint="Copies a spoiler-free result you can paste anywhere"
-            />
-            {shareNote ? (
-              <Text style={styles.shareNote} accessibilityLiveRegion="polite">
-                {shareNote}
-              </Text>
-            ) : null}
-          </View>
+            {shareNote ? <PanelText>{shareNote}</PanelText> : null}
+          </>
         }
       >
-        <DisplayTitle>{won ? 'YOU WIN' : 'GAME OVER'}</DisplayTitle>
+        {reward ? <RewardPanel events={reward.events} boosted={reward.boosted} /> : null}
+        <DisplayTitle size={30}>{won ? 'LEVEL COMPLETED' : 'GAME OVER'}</DisplayTitle>
         <ScoreWell label="POINTS" value={state.score.toLocaleString('en-US')} />
-        <Text style={styles.outcomeBody}>{summary}</Text>
-        {!won ? (
-          <View style={styles.missed}>
-            <Text style={styles.missedTitle}>STILL TO DO</Text>
-            {level.objectives.map((objective, index) => {
-              const progress = state.progress[index] ?? 0;
-              if (progress >= objective.target) return null;
+        <PanelText>{summary}</PanelText>
+        {!won && unmet.length > 0 ? (
+          <CreamBox>
+            <CreamText variant="label" style={styles.center}>
+              STILL TO DO
+            </CreamText>
+            {unmet.map(({ objective, progress }, index) => {
               const { label } = describeObjective(objective);
               return (
-                <Text key={index} style={styles.missedRow}>
-                  {label}: {progress.toLocaleString('en-US')} of{' '}
-                  {objective.target.toLocaleString('en-US')}
-                </Text>
+                <CreamText key={index} style={styles.center}>
+                  {`${label}: ${progress.toLocaleString('en-US')} of ${objective.target.toLocaleString('en-US')}`}
+                </CreamText>
               );
             })}
-          </View>
+          </CreamBox>
         ) : null}
-      </ResultSheet>
+      </Panel>
       {reward ? <RewardCelebration events={reward.events} /> : null}
     </View>
   );
 }
-
-/** Grass, dirt and stone from the level-map reference. This screen is a map, not a form. */
-const MAP = {
-  grass: '#6FAF45',
-  grassDeep: '#4E8C32',
-  path: '#E2C48A',
-  pathEdge: '#C49A62',
-  stone: '#F7F1E4',
-  locked: '#A3A39A',
-} as const;
-
-const MAP_NODE = 74;
-const MAP_STEP = 128;
 
 function moveLabel(level: Level): { value: string; unit: string } {
   if (level.timeLimitMs !== undefined) {
@@ -958,6 +1011,11 @@ function moveLabel(level: Level): { value: string; unit: string } {
   return { value: String(level.moves), unit: 'MOVES' };
 }
 
+/**
+ * The kit's Levels pop-up: one cream row per level, its number drawn in
+ * little cubes, its name and budget, a check once cleared; the level you are
+ * on glows gold and locked levels are stone with a lock.
+ */
 function LevelPicker({
   visible,
   unlocked,
@@ -971,157 +1029,91 @@ function LevelPicker({
   onClose: () => void;
   onSelect: (levelNumber: number) => void;
 }) {
-  const { width } = useWindowDimensions();
-  const boardWidth = Math.min(width, 480);
-  const left = boardWidth * 0.28;
-  const right = boardWidth * 0.72;
   const now = new Date();
-  const nodes = LEVELS.map((level, index) => {
-    const released = isLevelReleased(level, now);
-    const playable = isLevelPlayable(level, unlocked, now);
-    const upcoming = !released && level.availableFrom ? parseAvailableFrom(level.availableFrom) : null;
-    return {
-      level,
-      index,
-      locked: !playable,
-      cleared: playable && level.number < unlocked,
-      active: level.number === current,
-      fresh: isNewestRelease(level, now),
-      upcoming,
-      x: index % 2 === 0 ? right : left,
-      y: 36 + index * MAP_STEP,
-    };
-  });
-  const height = 36 + LEVELS.length * MAP_STEP + 24;
-  const here = nodes.find((node) => node.active) ?? nodes[0];
-
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.mapRoot}>
-        <View style={styles.mapSignRow}>
-          <RoundIconButton
-            icon={<Text style={styles.roundGlyph}>‹</Text>}
-            accessibilityLabel="Close level map"
-            onPress={onClose}
-            tone="blue"
-            size={44}
-          />
-          <View style={styles.mapSign}>
-            <Text style={styles.mapSignTitle}>LEVEL MAP</Text>
-            <Text style={styles.mapSignMeta} numberOfLines={1}>
-              {here ? `${here.level.number} · ${here.level.name}` : 'Choose a level'}
-            </Text>
-          </View>
-        </View>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.mapScroll}>
-          <View style={[styles.mapBoard, { width: boardWidth, height }]}>
-            {nodes.slice(0, -1).map((node, index) => {
-              const next = nodes[index + 1];
-              if (!next) return null;
-              const dx = next.x - node.x;
-              const dy = next.y - node.y;
-              const length = Math.hypot(dx, dy);
-              return (
-                <View
-                  key={`path-${node.level.number}`}
-                  pointerEvents="none"
-                  style={[
-                    styles.mapPath,
-                    {
-                      width: length,
-                      left: (node.x + next.x) / 2 - length / 2,
-                      top: (node.y + next.y) / 2 - 9,
-                      transform: [{ rotate: `${Math.atan2(dy, dx)}rad` }],
-                    },
-                  ]}
-                />
-              );
-            })}
-            {nodes.map((node) => {
-              const budget = moveLabel(node.level);
-              const label = node.upcoming
-                ? `Level ${node.level.number}, ${node.level.name}, ${budget.value} ${budget.unit.toLowerCase()}, drops ${formatDropDay(node.upcoming)}`
-                : node.locked
-                  ? `Level ${node.level.number}, ${node.level.name}, locked, ${budget.value} ${budget.unit.toLowerCase()}`
-                  : `Play level ${node.level.number}, ${node.level.name}, ${budget.value} ${budget.unit.toLowerCase()}`;
-              return (
-                <Pressable
-                  key={node.level.number}
-                  disabled={node.locked}
-                  onPress={() => onSelect(node.level.number)}
-                  accessibilityRole="button"
-                  accessibilityLabel={label}
-                  style={[
-                    styles.mapNode,
-                    { left: node.x - MAP_NODE / 2, top: node.y - MAP_NODE / 2 },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.mapStone,
-                      {
-                        backgroundColor: node.locked ? MAP.locked : node.active ? palette.ribbon : MAP.stone,
-                        borderColor: node.active ? palette.brown : MAP.pathEdge,
-                      },
-                    ]}
-                  >
-                    {node.locked ? (
-                      <LockMark />
-                    ) : (
-                      <Text style={styles.mapNumber}>{node.level.number}</Text>
-                    )}
-                    {node.cleared ? <Text style={styles.mapStar}>★</Text> : null}
-                  </View>
-                  <Text style={styles.mapMoves}>
-                    {node.fresh ? 'New' : `${budget.value} ${budget.unit.toLowerCase()}`}
+    <PopupModal visible={visible} onClose={onClose} title="Levels" closeLabel="Close level map">
+      {LEVELS.map((level) => {
+        const released = isLevelReleased(level, now);
+        const playable = isLevelPlayable(level, unlocked, now);
+        const upcoming = !released && level.availableFrom ? parseAvailableFrom(level.availableFrom) : null;
+        const locked = !playable;
+        const cleared = playable && level.number < unlocked;
+        const active = level.number === current;
+        const fresh = isNewestRelease(level, now);
+        const budget = moveLabel(level);
+        const label = upcoming
+          ? `Level ${level.number}, ${level.name}, ${budget.value} ${budget.unit.toLowerCase()}, drops ${formatDropDay(upcoming)}`
+          : locked
+            ? `Level ${level.number}, ${level.name}, locked, ${budget.value} ${budget.unit.toLowerCase()}`
+            : `Play level ${level.number}, ${level.name}, ${budget.value} ${budget.unit.toLowerCase()}`;
+        return (
+          <PressableScale
+            key={level.number}
+            disabled={locked}
+            onPress={() => onSelect(level.number)}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityState={{ disabled: locked, selected: active }}
+          >
+            <CreamBox
+              tint={active ? '#FFF3B8' : locked ? '#E3E7EC' : undefined}
+              style={[styles.levelRow, active && styles.levelRowActive]}
+            >
+              <View style={styles.levelInner}>
+                <View style={styles.levelNumber}>
+                  <BlockDigits value={level.number} cell={level.number >= 10 ? 7 : 9} color={locked ? 'stone' : active ? 'orange' : 'red'} />
+                </View>
+                <View style={styles.flex}>
+                  <Text style={[styles.levelName, locked && styles.levelLocked]} numberOfLines={1}>
+                    {level.name}
                   </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </ScrollView>
-      </View>
-    </Modal>
-  );
-}
-
-function LockMark() {
-  return (
-    <View style={styles.lock}>
-      <View style={styles.lockShackle} />
-      <View style={styles.lockBody} />
-    </View>
+                  <Text style={styles.levelMeta} numberOfLines={1}>
+                    {upcoming ? `Drops ${formatDropDay(upcoming)}` : `${budget.value} ${budget.unit.toLowerCase()}`}
+                  </Text>
+                </View>
+                {fresh && !locked ? <Badge label="NEW" tone="danger" /> : null}
+                {locked ? (
+                  <GameIcon name="lock" size={28} color={palette.inkSoft} />
+                ) : cleared ? (
+                  <GameIcon name="star" size={30} />
+                ) : active ? (
+                  <GameIcon name="play" size={26} color={tone.green.outline} />
+                ) : null}
+              </View>
+            </CreamBox>
+          </PressableScale>
+        );
+      })}
+    </PopupModal>
   );
 }
 
 const styles = StyleSheet.create({
-  root: screen.playfield,
-  play: { flex: 1, paddingHorizontal: space.md, paddingBottom: space.sm, gap: space.sm },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  headerGlyph: { color: theme.onPill, fontSize: 18, lineHeight: 20, fontWeight: '700' },
-  rays: { position: 'absolute', top: 24, left: 0, right: 0, alignItems: 'center' },
-  stars: { alignItems: 'center', marginBottom: -16, zIndex: 2 },
-  outcomeFooter: { gap: space.sm },
-  roundRow: { flexDirection: 'row', justifyContent: 'center', gap: space.lg },
-  roundGlyph: { color: theme.onPill, fontSize: 22, lineHeight: 26 },
-  shareNote: { ...type.caption, color: theme.textMuted, textAlign: 'center' },
-  outcomeBody: { ...type.caption, color: theme.textMuted, textAlign: 'center', marginTop: space.md },
+  root: { flex: 1 },
+  play: { flex: 1, paddingHorizontal: space.md, paddingTop: space.xs, paddingBottom: space.xs, gap: space.sm },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rays: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
+  center: { textAlign: 'center' },
+  flex: { flex: 1, minWidth: 0 },
+  squares: { flexDirection: 'row', justifyContent: 'center', gap: space.md },
 
   // The board takes whatever height is left and centres itself, so the HUD and
   // the read-out keep their positions on every screen size.
-  boardWrap: { flex: 1, justifyContent: 'center' },
+  boardWrap: { flex: 1, minHeight: 0, justifyContent: 'center' },
   coach: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    bottom: 8,
-    textAlign: 'center',
-    color: palette.brown,
-    fontFamily: font.bold,
-    fontWeight: '700',
-    fontSize: 14,
-    lineHeight: 18,
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.xs,
+    paddingHorizontal: space.md,
+    borderRadius: 24,
+    backgroundColor: palette.creamFill,
+    borderWidth: 2.5,
+    borderColor: palette.goldDeep,
   },
+  coachText: { fontFamily: font.heavy, fontSize: 14, lineHeight: 18, color: palette.ink },
+  comboLayer: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
 
   outcomeScrim: {
     position: 'absolute',
@@ -1129,128 +1121,27 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: theme.overlay,
-    padding: space.md,
-  },
-  missed: {
-    width: '100%',
-    marginTop: space.lg,
-    gap: 3,
-    alignItems: 'center',
-  },
-  missedTitle: { ...type.overline, color: theme.danger, marginBottom: 2 },
-  missedRow: { ...type.caption, color: theme.textMuted },
-
-  mapRoot: { flex: 1, backgroundColor: MAP.grass },
-  mapSignRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    paddingHorizontal: space.md,
-    paddingTop: space.md,
-    paddingBottom: space.sm,
-  },
-  mapSign: {
-    flex: 1,
-    backgroundColor: palette.wood,
-    borderRadius: radius.md,
-    borderBottomWidth: 6,
-    borderBottomColor: MAP.grassDeep,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.md,
-    alignItems: 'center',
-  },
-  mapSignTitle: {
-    color: palette.ribbon,
-    fontFamily: font.bold,
-    fontWeight: '700',
-    fontSize: 22,
-    lineHeight: 26,
-    letterSpacing: 1,
-  },
-  mapSignMeta: { color: palette.paper, fontFamily: font.semibold, fontWeight: '600', fontSize: 13, marginTop: 2 },
-  mapScroll: { alignItems: 'center', paddingBottom: space.xl },
-  mapBoard: { position: 'relative' },
-  mapPath: {
-    position: 'absolute',
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: MAP.path,
-    borderWidth: 2,
-    borderColor: MAP.pathEdge,
-  },
-  mapNode: {
-    position: 'absolute',
-    width: MAP_NODE,
-    alignItems: 'center',
-  },
-  mapStone: {
-    width: MAP_NODE,
-    height: MAP_NODE,
-    borderRadius: MAP_NODE / 2,
-    borderWidth: 4,
-    alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(14, 38, 84, 0.55)',
+    paddingHorizontal: space.md,
+    paddingTop: space.xl,
+    paddingBottom: space.md,
   },
-  mapNumber: {
-    color: palette.brown,
-    fontFamily: font.bold,
-    fontWeight: '700',
-    fontSize: 26,
-    lineHeight: 30,
-    fontVariant: ['tabular-nums'],
-  },
-  mapMoves: {
-    marginTop: 4,
-    color: palette.brown,
-    fontFamily: font.bold,
-    fontWeight: '700',
-    fontSize: 12,
-    lineHeight: 14,
-    textAlign: 'center',
-  },
-  mapStar: {
-    position: 'absolute',
-    top: 2,
-    right: 6,
-    color: palette.starEdge,
-    fontSize: 14,
-    lineHeight: 16,
-  },
-  dim: { color: theme.textDim },
-  lock: { width: 18, height: 21, alignItems: 'center', justifyContent: 'flex-end' },
-  lockShackle: {
-    position: 'absolute',
-    top: 0,
-    width: 12,
-    height: 12,
-    borderWidth: 2,
-    borderColor: theme.textDim,
-    borderRadius: 7,
-  },
-  lockBody: {
-    width: 17,
-    height: 13,
-    borderRadius: 4,
-    backgroundColor: theme.textDim,
-  },
+  outcomePanel: { flexShrink: 1 },
+
+  levelRow: { paddingVertical: space.xs + 2, paddingHorizontal: space.sm },
+  levelRowActive: { borderColor: palette.goldDeep },
+  levelInner: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  levelNumber: { width: 64, alignItems: 'center' },
+  levelName: { fontFamily: font.black, fontSize: 16, lineHeight: 20, color: palette.ink },
+  levelLocked: { color: palette.inkSoft },
+  levelMeta: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: palette.inkSoft },
 
   legend: { gap: space.sm },
-  legendCaption: { ...type.caption, color: theme.textDim, marginBottom: 2 },
+  legendCaption: { fontSize: 13, lineHeight: 18, color: palette.inkSoft },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  legendGlyph: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.sm,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: elevation(3).backgroundColor,
-  },
-  legendGlyphText: { color: theme.onPill, fontSize: 15, fontWeight: '900' },
   legendBody: { flex: 1 },
-  legendName: { ...type.bodyStrong },
-  legendCondition: { color: theme.textMuted, fontFamily: font.semibold, fontWeight: '600' },
-  legendEffect: { ...type.caption, color: theme.textDim },
-
+  legendName: { fontFamily: font.black, fontSize: 15, lineHeight: 20, color: palette.ink },
+  legendCondition: { fontFamily: font.body, color: palette.inkSoft },
+  legendEffect: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: palette.inkSoft },
 });
