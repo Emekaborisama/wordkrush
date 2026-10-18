@@ -1,9 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getGame } from '../../games/registry';
 import { rankMatchScores } from '../../live/ranking';
 import type { LiveMatchSnapshot } from '../../live/types';
-import { Button, DisplayTitle, Rays, ResultSheet, RoundIconButton, ScoreWell, StarRow } from '../components';
-import { screen, space, theme, type } from '../theme';
+import { Button, CreamBox, GlossFace, Panel, PanelText, Rays, ScoreWell, StrokeText } from '../components';
+import { font, palette, space, tone, toneFrom, type GlossTone } from '../theme';
 
 type Props = {
   snapshot: LiveMatchSnapshot;
@@ -13,13 +13,14 @@ type Props = {
   onDone: () => void;
 };
 
-export function LiveResultsScreen({
-  snapshot,
-  playerId,
-  personalAdvanced,
-  teamAdvanced,
-  onDone,
-}: Props) {
+const MEDAL: readonly GlossTone[] = [tone.gold, tone.grey, toneFrom('#D9822B')];
+
+/**
+ * Race results as the kit's result pop-up: a red banner on a loss, the teal
+ * tab with rays behind on a win, the player's score in a cream pill, and the
+ * finishing order as cream rows led by medal discs.
+ */
+export function LiveResultsScreen({ snapshot, playerId, personalAdvanced, teamAdvanced, onDone }: Props) {
   const { match, players } = snapshot;
   const game = getGame(match.gameId);
   const ranked = rankMatchScores(
@@ -40,99 +41,68 @@ export function LiveResultsScreen({
           <Rays />
         </View>
       ) : null}
-      <View style={styles.stars}>
-        <StarRow earned={0} animate={false} />
-      </View>
-      <ResultSheet
-        accessibilityLabel={won ? 'You win' : 'Game over'}
-        footer={
-          <View style={styles.footer}>
-            <Button title="Continue" size="xl" tone="green" onPress={onDone} />
-            <View style={styles.roundRow}>
-              <RoundIconButton
-                icon={<Text style={styles.roundGlyph}>⌂</Text>}
-                accessibilityLabel="Back to team"
-                onPress={onDone}
-                tone="blue"
-                size={52}
-              />
-            </View>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Panel
+          title={won ? 'YOU WIN!' : 'RACE OVER'}
+          ribbon={won ? 'tab' : 'banner'}
+          accessibilityLabel={won ? 'You win' : 'Race over'}
+          footer={<Button title="Continue" size="lg" tone="green" onPress={onDone} />}
+        >
+          <PanelText variant="heading">{game?.name ?? match.gameId}</PanelText>
+          <ScoreWell label="YOUR SCORE" value={String(mine?.score ?? 0)} />
+          <View style={styles.rows}>
+            {ranked.map((row) => {
+              const player = players.find((item) => item.playerId === row.playerId);
+              const self = row.playerId === playerId;
+              const face = MEDAL[row.rank - 1] ?? tone.sky;
+              return (
+                <CreamBox key={row.playerId} tint={self ? '#FFF3B8' : undefined} style={styles.row}>
+                  <View style={styles.rowInner}>
+                    <GlossFace tone={face} lip={3} radius={20} raised={false} faceStyle={styles.medal}>
+                      <StrokeText size={16} stroke={face.outline} strokeWidth={1.5} depth={1}>
+                        {row.rank}
+                      </StrokeText>
+                    </GlossFace>
+                    <View style={styles.flex}>
+                      <Text style={styles.name} numberOfLines={1}>
+                        {self ? 'You' : player?.username ?? 'Player'}
+                      </Text>
+                      <Text style={styles.meta}>
+                        {row.complete ? 'Complete' : 'Not complete'} · {row.score}
+                      </Text>
+                    </View>
+                  </View>
+                </CreamBox>
+              );
+            })}
           </View>
-        }
-      >
-        <DisplayTitle>{won ? 'YOU WIN' : 'GAME OVER'}</DisplayTitle>
-        <Text style={styles.gameName}>{game?.name ?? match.gameId}</Text>
-        <ScoreWell label="YOUR SCORE" value={String(mine?.score ?? 0)} />
-        <View style={styles.podium}>
-          {ranked.slice(0, 3).map((row) => {
-            const player = players.find((item) => item.playerId === row.playerId);
-            const self = row.playerId === playerId;
-            return (
-              <View key={row.playerId} style={[styles.placeCard, row.rank === 1 && styles.placeFirst]}>
-                <Text style={styles.placeRank}>{row.rank}</Text>
-                <Text style={styles.placeName} numberOfLines={1}>
-                  {self ? 'You' : player?.username ?? 'Player'}
-                </Text>
-                <Text style={styles.placeScore}>{row.score}</Text>
-              </View>
-            );
-          })}
-        </View>
-        {ranked.slice(3).map((row) => {
-          const player = players.find((item) => item.playerId === row.playerId);
-          const self = row.playerId === playerId;
-          return (
-            <View key={row.playerId} style={styles.row}>
-              <Text style={styles.place}>{row.rank}</Text>
-              <View style={styles.body}>
-                <Text style={styles.name}>
-                  {player?.username ?? 'Player'}
-                  {self ? ' (you)' : ''}
-                </Text>
-                <Text style={styles.meta}>
-                  {row.complete ? 'Complete' : 'Not complete'} · {row.score}
-                </Text>
-              </View>
-            </View>
-          );
-        })}
-        <Text style={styles.hint}>
-          {teamAdvanced ? 'Team path advanced.' : 'Team path stayed put — nobody completed.'}{' '}
-          {personalAdvanced
-            ? 'Your path moved up.'
-            : 'Your path did not move. Next solo run is still your own level.'}
-        </Text>
-      </ResultSheet>
+          <PanelText>
+            {`${teamAdvanced ? 'Team path advanced.' : 'Team path stayed put — nobody completed.'} ${
+              personalAdvanced ? 'Your path moved up.' : 'Your path did not move. Next solo run is still your own level.'
+            }`}
+          </PanelText>
+        </Panel>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { ...screen.playfield, padding: space.md },
+  root: { flex: 1 },
   rays: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
-  stars: { alignItems: 'center', marginBottom: -16, zIndex: 2 },
-  footer: { gap: space.sm },
-  roundRow: { flexDirection: 'row', justifyContent: 'center' },
-  roundGlyph: { color: theme.onPill, fontSize: 22, lineHeight: 26 },
-  gameName: { ...type.subtitle, color: theme.text, textAlign: 'center', marginTop: space.sm },
-  podium: { width: '100%', flexDirection: 'row', gap: space.sm, marginTop: space.lg },
-  placeCard: {
-    flex: 1,
-    minHeight: 88,
-    borderRadius: 16,
-    backgroundColor: theme.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: space.sm,
+  content: {
+    paddingHorizontal: space.md,
+    paddingTop: space.xl,
+    paddingBottom: space.xxl,
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
   },
-  placeFirst: { backgroundColor: theme.warningSoft },
-  placeRank: { ...type.title, color: theme.text },
-  placeName: { ...type.caption, color: theme.text, textAlign: 'center' },
-  placeScore: { ...type.bodyStrong, color: theme.text },
-  row: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.sm },
-  place: { ...type.subtitle, color: theme.text, width: 28, textAlign: 'center' },
-  body: { flex: 1 },
-  name: { ...type.bodyStrong, color: theme.text },
-  meta: { ...type.caption, color: theme.textMuted, marginTop: 2 },
-  hint: { ...type.body, color: theme.textMuted, textAlign: 'center', marginTop: space.md },
+  rows: { gap: space.xs },
+  row: { paddingVertical: space.xs + 2 },
+  rowInner: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  medal: { width: 40, height: 40 },
+  flex: { flex: 1 },
+  name: { fontFamily: font.black, fontSize: 16, lineHeight: 20, color: palette.ink },
+  meta: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: palette.inkSoft },
 });

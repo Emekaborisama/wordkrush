@@ -1,12 +1,18 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import type { BoostKind } from '../../rewards/types';
-import { RoundIconButton } from '../components/RoundIconButton';
-import { font, palette, space } from '../theme';
+import { BoosterDock } from '../components/BoosterDock';
+import { SquareButton } from '../components/SquareButton';
+import { GameIcon } from '../icons/GameIcon';
+import type { IconName } from '../icons/names';
+import { font, palette, tone } from '../theme';
 
 export type BoostControl = {
   kind: BoostKind;
   label: string;
-  glyph: string;
+  /** Glyph on the green tile. */
+  icon?: IconName;
+  /** @deprecated Text glyph from the old pill; used only when `icon` is missing. */
+  glyph?: string;
   price: number;
   disabled?: boolean;
   disabledReason?: string;
@@ -20,47 +26,40 @@ export function coinShortfall(coins: number, price: number): string | undefined 
   return `Need ${need} more coins`;
 }
 
-/** Round boost buttons. Hidden by the caller during a live race. */
-export function BoostBar({ controls }: { controls: BoostControl[] }) {
-  if (controls.length === 0) return null;
+/**
+ * The kit's booster bar for a solo run: one green tile per boost with its
+ * coin price, the gold gear on the right when the screen passes `onPause`.
+ * Hidden by the caller during a live race.
+ */
+export function BoostBar({ controls, onPause }: { controls: BoostControl[]; onPause?: () => void }) {
+  if (controls.length === 0 && !onPause) return null;
   return (
-    <View style={styles.row}>
+    <BoosterDock onPause={onPause}>
       {controls.map((control) => (
-        <View key={control.kind} style={styles.item}>
-          <RoundIconButton
-            icon={<Text style={styles.glyph}>{control.glyph}</Text>}
-            badge={control.price}
-            accessibilityLabel={control.label}
-            disabled={control.disabled}
-            disabledReason={control.disabledReason}
-            onPress={control.onPress}
-            tone="purple"
-            size={52}
-          />
-          <Text style={styles.caption} numberOfLines={2}>
-            {control.label}
-          </Text>
-        </View>
+        <SquareButton
+          key={control.kind}
+          icon={
+            control.icon ? (
+              <GameIcon name={control.icon} size={32} color={tone.green.outline} />
+            ) : (
+              <Text style={styles.glyph}>{control.glyph ?? ''}</Text>
+            )
+          }
+          accessibilityLabel={control.label}
+          onPress={control.onPress}
+          tone="green"
+          size={56}
+          price={control.price}
+          caption={control.label}
+          captionTone="dark"
+          disabled={control.disabled}
+          disabledReason={control.disabledReason}
+        />
       ))}
-    </View>
+    </BoosterDock>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: space.sm,
-    paddingVertical: space.xs,
-  },
-  item: { alignItems: 'center', width: 72, gap: 4 },
-  glyph: { color: palette.white, fontSize: 16, fontWeight: '700' },
-  caption: {
-    color: palette.brown,
-    fontFamily: font.semibold,
-    fontWeight: '600',
-    fontSize: 11,
-    lineHeight: 13,
-    textAlign: 'center',
-  },
+  glyph: { color: palette.white, fontFamily: font.black, fontSize: 20 },
 });

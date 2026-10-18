@@ -1,5 +1,5 @@
-import { StyleSheet, Text } from 'react-native';
-import { font, labelFloorPx, palette, radius, theme, withAlpha } from '../theme';
+import { StyleSheet, Text, View } from 'react-native';
+import { font, labelFloorPx, palette, tone as tones, toneFrom, type GlossTone } from '../theme';
 
 type Props = {
   label: string;
@@ -7,42 +7,52 @@ type Props = {
   color?: string;
 };
 
-/** Small bordered pill — `SOON`, `THIS RUN`. One shape instead of each screen
-    hand-tuning its own padding/border/radius combination. */
+const TONES: Record<NonNullable<Props['tone']>, GlossTone> = {
+  neutral: tones.grey,
+  accent: tones.teal,
+  success: tones.green,
+  warning: tones.gold,
+  danger: tones.red,
+};
+
+/**
+ * Small glossy tag — `SOON`, `NEW`, `BOOSTED`. A solid kit colour with a
+ * darker rim and white lettering, like the kit's "Bonus" tag.
+ */
 export function Badge({ label, tone = 'neutral', color }: Props) {
-  const toneColor =
-    tone === 'accent'
-      ? theme.accent
-      : tone === 'success'
-        ? theme.success
-        : tone === 'warning'
-          ? theme.warning
-          : tone === 'danger'
-            ? theme.danger
-            : theme.textMuted;
-  const c = color ?? toneColor;
+  const face = color ? toneFrom(color) : TONES[tone];
   return (
-    <Text
-      style={[
-        styles.badge,
-        { color: palette.brown, borderColor: withAlpha(c, 0.55), backgroundColor: withAlpha(c, 0.16) },
-      ]}
-    >
-      {label}
-    </Text>
+    <View style={[styles.badge, { backgroundColor: face.bottom, borderColor: face.outline }]}>
+      <View style={styles.shine} />
+      <Text style={[styles.text, { textShadowColor: face.outline }]}>{label}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   badge: {
-    fontFamily: font.semibold,
-    fontWeight: '600',
-    fontSize: labelFloorPx,
-    letterSpacing: 0.8,
-    borderWidth: 1,
-    borderRadius: radius.pill,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    alignSelf: 'flex-start',
+    borderWidth: 1.5,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     overflow: 'hidden',
+  },
+  shine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  text: {
+    fontFamily: font.black,
+    fontSize: labelFloorPx,
+    lineHeight: 14,
+    letterSpacing: 0.8,
+    color: palette.white,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
 });

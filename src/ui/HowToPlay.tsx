@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Button } from './components';
-import { contrastRatio, elevation, font, gloss, motion, palette, proximityColor, radius, shade, shadow, space, theme, type, withAlpha } from './theme';
+import type { ReactNode } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { Button, CreamBox, GlossFace, PanelText, PopupModal, StrokeText } from './components';
+import { font, palette, proximityColor, space, tone } from './theme';
 
 export type HowToStep = { n: number; title: string; body: string };
 
@@ -12,86 +12,46 @@ type Props = {
   intro: string;
   steps: HowToStep[];
   /** Optional worked example rendered under the steps. */
-  example?: React.ReactNode;
+  example?: ReactNode;
+  /** Kept so existing call sites compile; step numbers use the kit's teal. */
   accent?: string;
 };
 
 /**
- * Instructions sheet, shared by every game.
- *
- * Presented as a bottom sheet rather than a centred alert: sheets are reachable
- * with a thumb, and the partial reveal of the screen behind keeps the player
- * anchored in the game instead of feeling interrupted.
+ * Instructions, shared by every game: the kit's pop-up with a "How to play"
+ * tab, the game named under it, and each step as a cream row led by a glossy
+ * number tile.
  */
-export function HowToPlay({
-  visible,
-  onClose,
-  title,
-  intro,
-  steps,
-  example,
-  accent = theme.accent,
-}: Props) {
-  const slide = useRef(new Animated.Value(visible ? 0 : 1)).current;
-
-  useEffect(() => {
-    Animated.spring(slide, {
-      toValue: visible ? 0 : 1,
-      ...motion.gentle,
-      useNativeDriver: true,
-    }).start();
-  }, [visible, slide]);
-
+export function HowToPlay({ visible, onClose, title, intro, steps, example }: Props) {
+  const heading = title.replace(/^How to play\s*/i, '') || title;
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.root}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
-        <Animated.View
-          style={[
-            styles.sheet,
-            {
-              transform: [
-                { translateY: slide.interpolate({ inputRange: [0, 1], outputRange: [0, 640] }) },
-              ],
-            },
-          ]}
-        >
-          <View pointerEvents="none" style={styles.sheen} />
-          {/* Grab handle: a visual affordance that this is a dismissible sheet. */}
-          <View style={styles.handle} />
-
-          <ScrollView
-            contentContainerStyle={styles.content}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
-            <Text style={styles.title}>{title}</Text>
-            <Text style={styles.intro}>{intro}</Text>
-
-            <View style={styles.steps}>
-              {steps.map((step) => (
-                <View key={step.n} style={styles.step}>
-                  <View style={styles.stepBadgeWrap}>
-                    <View style={[styles.stepLip, { backgroundColor: shade(accent, 0.38) }]} />
-                    <View style={[styles.stepBadge, { backgroundColor: accent }]}>
-                      <Text style={[styles.stepNum, { color: stepNumColor(accent) }]}>{step.n}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.stepBody}>
-                    <Text style={styles.stepTitle}>{step.title}</Text>
-                    <Text style={styles.stepText}>{step.body}</Text>
-                  </View>
-                </View>
-              ))}
+    <PopupModal
+      visible={visible}
+      onClose={onClose}
+      title="How to play"
+      footer={<Button title="Got it, let’s play" tone="green" size="lg" onPress={onClose} />}
+    >
+      <PanelText variant="heading">{heading}</PanelText>
+      <PanelText>{intro}</PanelText>
+      <View style={styles.steps}>
+        {steps.map((step) => (
+          <CreamBox key={step.n} style={styles.step}>
+            <View style={styles.stepRow}>
+              <GlossFace tone={tone.teal} lip={3} radius={10} raised={false} faceStyle={styles.numberFace}>
+                <StrokeText size={18} stroke={tone.teal.outline} strokeWidth={1.5} depth={1}>
+                  {step.n}
+                </StrokeText>
+              </GlossFace>
+              <View style={styles.stepBody}>
+                <Text style={styles.stepTitle}>{step.title}</Text>
+                <Text style={styles.stepText}>{step.body}</Text>
+              </View>
             </View>
-
-            {example && <View style={styles.example}>{example}</View>}
-          </ScrollView>
-
-          <Button title="Got it, let’s play" tone="green" size="lg" onPress={onClose} />
-        </Animated.View>
+          </CreamBox>
+        ))}
       </View>
-    </Modal>
+      {example ? <CreamBox style={styles.example}>{example}</CreamBox> : null}
+    </PopupModal>
   );
 }
 
@@ -112,7 +72,7 @@ export function ExampleRow({
       <View
         style={[
           styles.exBar,
-          { width: `${Math.max(6, fraction * 100)}%`, backgroundColor: win ? theme.accent : proximityColor(fraction) },
+          { width: `${Math.max(6, fraction * 100)}%`, backgroundColor: win ? palette.lime : proximityColor(fraction) },
         ]}
       />
       <View style={styles.exContent}>
@@ -123,92 +83,32 @@ export function ExampleRow({
   );
 }
 
-function stepNumColor(accent: string): string {
-  return contrastRatio(palette.brown, accent) >= 4.5 ? palette.brown : palette.white;
-}
-
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.overlay, justifyContent: 'flex-end' },
-  sheet: {
-    ...elevation(2),
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    borderTopWidth: 1,
-    paddingHorizontal: space.xl,
-    paddingBottom: space.xl,
-    maxHeight: '86%',
-    overflow: 'hidden',
-    ...shadow.raised,
-  },
-  sheen: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: `${gloss.height * 100}%`,
-    backgroundColor: withAlpha('#FFFFFF', gloss.alpha),
-  },
-  handle: {
-    width: 38,
-    height: 4,
-    borderRadius: radius.pill,
-    backgroundColor: theme.borderStrong,
-    alignSelf: 'center',
-    marginTop: space.md,
-    marginBottom: space.lg,
-  },
-  content: { paddingBottom: space.lg },
-  title: { ...type.display, color: theme.text },
-  intro: { ...type.body, color: theme.textMuted, marginTop: space.sm },
-
-  steps: { marginTop: space.xl, gap: space.lg },
-  step: { flexDirection: 'row', gap: space.md },
-  stepBadgeWrap: { width: 32, height: 36, marginTop: 1 },
-  stepLip: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 32,
-    borderRadius: radius.pill,
-  },
-  stepBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepNum: { fontFamily: font.bold, fontSize: 13, fontWeight: '700' },
-  stepBody: { flex: 1, gap: 2 },
-  stepTitle: { ...type.bodyStrong, color: theme.text },
-  stepText: { ...type.caption, color: theme.textMuted },
-
-  example: {
-    marginTop: space.xl,
-    backgroundColor: theme.bg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.border,
-    padding: space.md,
-    gap: 6,
-  },
+  steps: { gap: space.sm },
+  step: { paddingVertical: space.sm },
+  stepRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  numberFace: { width: 36, height: 36 },
+  stepBody: { flex: 1, gap: 1 },
+  stepTitle: { fontFamily: font.black, fontSize: 16, lineHeight: 20, color: palette.ink },
+  stepText: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: palette.inkSoft },
+  example: { gap: 6 },
   exRow: {
     height: 34,
-    borderRadius: radius.sm,
-    // Same depth as the real GuessRow this miniature stands in for.
-    backgroundColor: elevation(2).backgroundColor,
+    borderRadius: 10,
+    backgroundColor: palette.white,
+    borderWidth: 1.5,
+    borderColor: palette.creamEdge,
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  exBar: { position: 'absolute', left: 0, top: 0, bottom: 0, opacity: 0.9 },
+  exBar: { position: 'absolute', left: 0, top: 0, bottom: 0, opacity: 0.85 },
   exContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: space.md,
   },
-  exWord: { ...type.bodyStrong, color: theme.text, fontSize: 14 },
-  exRank: { ...type.caption, color: theme.text, fontFamily: font.bold, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  exStar: { color: theme.text, fontSize: type.caption.fontSize, lineHeight: type.caption.lineHeight },
+  exWord: { fontFamily: font.black, fontSize: 15, color: palette.ink },
+  exRank: { fontFamily: font.black, fontSize: 13, color: palette.ink, fontVariant: ['tabular-nums'] },
+  exStar: { color: palette.ink, fontSize: 14, lineHeight: 18 },
 });

@@ -1,14 +1,5 @@
-import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import { authErrorCategory } from '../../analytics/events';
 import { requestMagicLink, verifyEmailOtp, type Profile } from '../../auth/auth';
@@ -21,14 +12,17 @@ import {
 } from '../../auth/validation';
 import { type AnalyticsConsent } from '../../analytics/events';
 import {
-  BrandArtwork,
   Button,
+  CreamBox,
+  CreamText,
   FeedbackBanner,
-  PressableScale,
-  Surface,
+  Panel,
+  PanelText,
+  TabSwitch,
   TextField,
+  Toggle,
 } from '../components';
-import { font, palette, radius, screen, space, theme, type } from '../theme';
+import { palette, space } from '../theme';
 
 type Mode = 'signin' | 'signup';
 
@@ -43,6 +37,16 @@ type Props = {
   onToggleAnalytics: (consent: AnalyticsConsent) => void;
 };
 
+const MODES = [
+  { id: 'signup', label: 'Create account' },
+  { id: 'signin', label: 'Sign in' },
+] as const;
+
+/**
+ * Optional account, as the kit's pop-up: a tab naming what this is, the why
+ * in a cream box, cream fields, one green action. The analytics switch is
+ * the kit's Music / SFX toggle in its own cream row.
+ */
 export function AccountScreen({
   profile,
   onAuthed,
@@ -136,158 +140,151 @@ export function AccountScreen({
     setFormError(result.error);
   }
 
+  const heading = profile
+    ? 'Your account'
+    : isRaceIntent
+      ? 'Racing requires an account'
+      : isSignup
+        ? 'Keep your scores with you'
+        : 'Welcome back';
+  const why = profile
+    ? 'You are signed in. Your eligible runs will sync globally.'
+    : isRaceIntent
+      ? 'Live races need an account so teammates can see who they’re racing with. Solo play stays offline and does not need sign-in. One username per person. No password.'
+      : 'Scores already save offline on this device. Sign in with email to post your best run to the global board. One username per person. No password.';
+
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <BrandArtwork variant="lockup" size={168} />
-          {!profile && <Text style={styles.eyebrow}>{isRaceIntent ? 'SIGN IN TO RACE' : 'OPTIONAL ACCOUNT'}</Text>}
-          <Text style={styles.title}>
-            {profile 
-              ? 'Your Account'
-              : isRaceIntent
-                ? 'Racing requires an account'
-                : isSignup
-                  ? 'Keep your scores with you'
-                  : 'Welcome back'}
-          </Text>
-          <Text style={styles.subtitle}>
-            {profile
-              ? 'You are signed in. Your eligible runs will sync globally.'
-              : isRaceIntent
-                ? 'Live races need an account so teammates can see who they\'re racing with. Solo play stays offline and does not need sign-in. One username per person. No password.'
-                : 'Scores already save offline on this device. Sign in with email to post your best run to the global board. One username per person. No password.'}
-          </Text>
-        </View>
+        <Panel title={profile ? 'Account' : isRaceIntent ? 'Sign in to race' : 'Account'}>
+          <PanelText variant="heading">{heading}</PanelText>
+          <CreamBox>
+            <CreamText>{why}</CreamText>
+          </CreamBox>
 
-        {profile ? (
-          <Surface level={1} borderColor={theme.border} radius={radius.md} style={styles.signedInCard}>
-            <View style={styles.signedInHeader}>
-              <Text style={styles.signedInUsername}>{profile.username}</Text>
-              <Button title="Sign out" variant="outline" size="sm" onPress={onSignOut} />
-            </View>
-          </Surface>
-        ) : (
-          <>
-            <Surface level={1} radius={radius.md} padded={false} style={styles.tabs}>
-              <ModeTab
-                label="Create account"
-                active={isSignup}
-                onPress={() => switchMode('signup')}
-              />
-              <ModeTab label="Sign in" active={!isSignup} onPress={() => switchMode('signin')} />
-            </Surface>
+          {profile ? (
+            <CreamBox>
+              <View style={styles.signedIn}>
+                <View style={styles.flex}>
+                  <CreamText variant="label">PLAYER</CreamText>
+                  <CreamText variant="title" numberOfLines={1}>
+                    {profile.username}
+                  </CreamText>
+                </View>
+                <Button title="Sign out" tone="red" size="sm" fullWidth={false} onPress={() => void onSignOut()} />
+              </View>
+            </CreamBox>
+          ) : (
+            <>
+              <TabSwitch options={MODES} value={mode} onChange={switchMode} />
 
-            {sent ? (
-              <>
-                <FeedbackBanner
-                  title="Check your inbox"
-                  body={`We sent a sign-in link to ${email.trim()}. Open it on this device, or type the code from the email.`}
-                  tone="success"
-                />
-                <TextField
-                  label="Code"
-                  value={code}
-                  onChangeText={setCode}
-                  error={errors.code ?? undefined}
-                  placeholder="6-digit code"
-                  keyboardType="number-pad"
-                  autoComplete="one-time-code"
-                  textContentType="oneTimeCode"
-                />
-                {formError ? <FeedbackBanner title="Couldn’t continue" body={formError} tone="danger" /> : null}
-                <Button
-                  title={busy ? 'Checking…' : 'Verify code'}
-                  onPress={submitCode}
-                  disabled={busy}
-                  size="lg"
-                  leading={busy ? <ActivityIndicator color={theme.onPill} /> : undefined}
-                />
-                <Button
-                  title={busy ? 'Sending…' : 'Resend link'}
-                  variant="tonal"
-                  onPress={sendCode}
-                  disabled={busy}
-                />
-                <Button
-                  title="Use a different email"
-                  tone="purple"
-                  size="md"
-                  onPress={() => {
-                    setSent(false);
-                    setCode('');
-                    setFormError(null);
-                    setErrors({});
-                  }}
-                />
-              </>
-            ) : (
-              <>
-                {isSignup && (
-                  <TextField
-                    label="Username"
-                    value={username}
-                    onChangeText={setUsername}
-                    error={errors.username ?? undefined}
-                    placeholder="Shown on the leaderboard"
-                    autoCapitalize="none"
-                    maxLength={24}
+              {sent ? (
+                <>
+                  <FeedbackBanner
+                    title="Check your inbox"
+                    body={`We sent a sign-in link to ${email.trim()}. Open it on this device, or type the code from the email.`}
+                    tone="success"
                   />
-                )}
+                  <TextField
+                    label="Code"
+                    value={code}
+                    onChangeText={setCode}
+                    error={errors.code ?? undefined}
+                    placeholder="6-digit code"
+                    keyboardType="number-pad"
+                    autoComplete="one-time-code"
+                    textContentType="oneTimeCode"
+                  />
+                  {formError ? <FeedbackBanner title="Couldn’t continue" body={formError} tone="danger" /> : null}
+                  <Button
+                    title={busy ? 'Checking…' : 'Verify code'}
+                    tone="green"
+                    onPress={() => void submitCode()}
+                    disabled={busy}
+                    size="lg"
+                    leading={busy ? <ActivityIndicator color={palette.white} /> : undefined}
+                  />
+                  <Button
+                    title={busy ? 'Sending…' : 'Resend link'}
+                    tone="sky"
+                    onPress={() => void sendCode()}
+                    disabled={busy}
+                  />
+                  <Button
+                    title="Use a different email"
+                    tone="purple"
+                    size="md"
+                    onPress={() => {
+                      setSent(false);
+                      setCode('');
+                      setFormError(null);
+                      setErrors({});
+                    }}
+                  />
+                </>
+              ) : (
+                <>
+                  {isSignup && (
+                    <TextField
+                      label="Username"
+                      value={username}
+                      onChangeText={setUsername}
+                      error={errors.username ?? undefined}
+                      placeholder="Shown on the leaderboard"
+                      autoCapitalize="none"
+                      maxLength={24}
+                    />
+                  )}
 
-                <TextField
-                  label="Email"
-                  value={email}
-                  onChangeText={setEmail}
-                  error={errors.email ?? undefined}
-                  placeholder="you@example.com"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                />
+                  <TextField
+                    label="Email"
+                    value={email}
+                    onChangeText={setEmail}
+                    error={errors.email ?? undefined}
+                    placeholder="you@example.com"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                  />
 
-                {formError ? <FeedbackBanner title="Couldn’t continue" body={formError} tone="danger" /> : null}
+                  {formError ? <FeedbackBanner title="Couldn’t continue" body={formError} tone="danger" /> : null}
 
+                  <Button
+                    title={busy ? 'Sending…' : 'Email me a link'}
+                    tone="green"
+                    onPress={() => void sendCode()}
+                    disabled={busy}
+                    size="lg"
+                    leading={busy ? <ActivityIndicator color={palette.white} /> : undefined}
+                  />
+                </>
+              )}
+
+              {onSkip && (
                 <Button
-                  title={busy ? 'Sending…' : 'Email me a link'}
-                  onPress={sendCode}
-                  disabled={busy}
-                  size="lg"
-                  leading={busy ? <ActivityIndicator color={theme.onPill} /> : undefined}
+                  title={isRaceIntent ? 'Back to solo play' : 'Keep playing as guest'}
+                  tone="blue"
+                  size="md"
+                  onPress={onSkip}
                 />
-              </>
-            )}
+              )}
+            </>
+          )}
 
-            {onSkip && (
-              <Button
-                title={isRaceIntent ? 'Back to solo play' : 'Keep playing as guest'}
-                tone="blue"
-                size="md"
-                onPress={onSkip}
-              />
-            )}
-          </>
-        )}
-
-        <View style={styles.analyticsSection}>
-          <Surface level={1} borderColor={theme.border} radius={radius.md}>
-            <View style={styles.analyticsHeader}>
-              <Text style={styles.analyticsTitle}>Analytics</Text>
-              <Switch
+          <CreamBox>
+            <View style={styles.signedIn}>
+              <CreamText variant="teal">Analytics</CreamText>
+              <Toggle
                 value={analyticsConsent === 'granted'}
-                onValueChange={(val) => onToggleAnalytics(val ? 'granted' : 'denied')}
-                trackColor={{ false: theme.border, true: theme.success }}
-                thumbColor={Platform.OS === 'android' ? palette.white : undefined}
+                onChange={(on) => onToggleAnalytics(on ? 'granted' : 'denied')}
+                accessibilityLabel="Analytics"
               />
             </View>
-            <Text style={styles.analyticsBody}>
-              Analytics — WordKrush records which games you open and finish. No ads. Turn this off anytime.
-            </Text>
-          </Surface>
-        </View>
+            <CreamText style={styles.note}>
+              WordKrush records which games you open and finish. No ads. Turn this off anytime.
+            </CreamText>
+          </CreamBox>
+        </Panel>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -301,93 +298,17 @@ export function AccountScreen({
   }
 }
 
-function ModeTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <PressableScale
-      onPress={onPress}
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
-      style={[styles.tab, active && styles.tabActive]}
-    >
-      <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
-    </PressableScale>
-  );
-}
-
 const styles = StyleSheet.create({
-  root: screen.page,
+  root: { flex: 1 },
   content: {
-    padding: space.lg,
-    gap: space.md,
-    paddingTop: space.xl,
+    paddingHorizontal: space.md,
+    paddingTop: space.lg,
     paddingBottom: space.xxl,
     width: '100%',
-    maxWidth: 460,
+    maxWidth: 480,
     alignSelf: 'center',
   },
-  header: { alignItems: 'center', marginBottom: space.xs },
-  eyebrow: { ...type.overline, color: theme.accent, marginTop: space.md },
-  title: {
-    ...type.display,
-    color: theme.text,
-    fontSize: 31,
-    lineHeight: 36,
-    textAlign: 'center',
-    marginTop: space.xs,
-  },
-  subtitle: {
-    ...type.body,
-    color: theme.textMuted,
-    textAlign: 'center',
-    marginTop: space.sm,
-    maxWidth: 360,
-  },
-  tabs: {
-    flexDirection: 'row',
-    padding: 4,
-    marginBottom: space.xs,
-  },
-  tab: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabActive: { backgroundColor: theme.cardHigh },
-  tabText: { color: theme.textDim, fontFamily: font.medium, fontSize: 13, fontWeight: '500' },
-  tabTextActive: { color: theme.text, fontFamily: font.semibold, fontWeight: '600' },
-  signedInCard: {
-    padding: space.md,
-  },
-  signedInHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  signedInUsername: {
-    ...type.body,
-    color: theme.text,
-    fontFamily: font.bold,
-    fontWeight: '700',
-  },
-  analyticsSection: {
-    marginTop: space.xl,
-  },
-  analyticsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: space.sm,
-  },
-  analyticsTitle: {
-    ...type.body,
-    color: theme.text,
-    fontFamily: font.bold,
-    fontWeight: '700',
-  },
-  analyticsBody: {
-    ...type.caption,
-    color: theme.textDim,
-  },
+  signedIn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
+  flex: { flex: 1 },
+  note: { fontSize: 13, lineHeight: 18, marginTop: space.xs, color: palette.inkSoft },
 });

@@ -1,35 +1,46 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { starLabel } from '../motion';
-import { motion, palette, radius, reward, theme } from '../theme';
+import { font, motion, palette, withAlpha } from '../theme';
 import { useReduceMotion } from '../useReduceMotion';
+import { Gradient } from './Gradient';
+import { KitStar } from './StarRow';
 
 export type StarBarProps = {
   /** 0–1 progress along the track. */
   progress: number;
-  /** Where each of the three markers sits, 0–1. */
+  /** Where each of the three star markers sits, 0–1. */
   thresholds?: readonly [number, number, number];
   onStar?: (index: number) => void;
   animate?: boolean;
+  /** Text inside the track, e.g. "27%". */
+  label?: string;
 };
 
 const DEFAULT_THRESHOLDS: readonly [number, number, number] = [1 / 3, 2 / 3, 1];
+const STAR = 20;
 
 /**
- * A track with three star markers. A marker pops once progress crosses it.
+ * The kit's score bar: a dark sunken track with a gold fill and three stars
+ * hanging under it that light up as the fill passes them.
  */
 export function StarBar({
   progress,
   thresholds = DEFAULT_THRESHOLDS,
   onStar,
   animate = true,
+  label,
 }: StarBarProps) {
   const clamped = Math.max(0, Math.min(1, progress));
   const earned = thresholds.filter((t) => clamped + 1e-6 >= t).length as 0 | 1 | 2 | 3;
   return (
     <View accessibilityRole="image" accessibilityLabel={starLabel(earned)} style={styles.wrap}>
       <View style={styles.track}>
-        <View style={[styles.fill, { width: `${clamped * 100}%` }]} />
+        <View style={[styles.fill, { width: `${clamped * 100}%` }]}>
+          <Gradient colors={['#FFE85C', palette.gold, palette.goldDeep]} locations={[0, 0.5, 1]} />
+          <View style={styles.shine} />
+        </View>
+        {label ? <Text style={styles.label}>{label}</Text> : null}
       </View>
       {thresholds.map((threshold, index) => (
         <Marker
@@ -45,6 +56,9 @@ export function StarBar({
   );
 }
 
+/** Same bar under its kit name. */
+export const ProgressBar = StarBar;
+
 function Marker({
   index,
   threshold,
@@ -59,60 +73,78 @@ function Marker({
   onStar?: (index: number) => void;
 }) {
   const reduceMotion = useReduceMotion();
-  const scale = useRef(new Animated.Value(filled && animate && !reduceMotion ? 0 : 1)).current;
+  const scale = useRef(new Animated.Value(1)).current;
   const onStarRef = useRef(onStar);
   onStarRef.current = onStar;
-  const popped = useRef(false);
+  const popped = useRef(filled);
 
   useEffect(() => {
     if (!filled) {
-      scale.setValue(1);
       popped.current = false;
+      scale.setValue(1);
       return;
     }
     if (popped.current) return;
     popped.current = true;
-    if (!animate || reduceMotion) {
-      scale.setValue(1);
-      onStarRef.current?.(index);
-      return;
-    }
-    const timer = setTimeout(() => onStarRef.current?.(index), index * motion.staggerMs);
+    onStarRef.current?.(index);
+    if (!animate || reduceMotion) return;
+    scale.setValue(0.3);
     const anim = Animated.timing(scale, {
       toValue: 1,
       duration: motion.popMs,
-      delay: index * motion.staggerMs,
-      easing: Easing.out(Easing.back(1.6)),
+      easing: Easing.out(Easing.back(2.2)),
       useNativeDriver: true,
     });
     anim.start();
-    return () => {
-      clearTimeout(timer);
-      anim.stop();
-    };
+    return () => anim.stop();
   }, [animate, filled, index, reduceMotion, scale]);
 
   return (
     <Animated.View
       accessibilityElementsHidden
-      importantForAccessibility="no"
+      importantForAccessibility="no-hide-descendants"
       pointerEvents="none"
-      style={[styles.marker, { left: `${threshold * 100}%`, transform: [{ translateX: -11 }, { scale }] }]}
+      style={[
+        styles.marker,
+        // The last marker sits inside the track's end instead of past it.
+        { left: `${Math.min(threshold, 0.96) * 100}%`, transform: [{ translateX: -STAR / 2 }, { scale }] },
+      ]}
     >
-      <Text style={[styles.star, { color: filled ? reward.gold : reward.starOff }]}>★</Text>
+      <KitStar size={STAR} filled={filled} surface="sky" />
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { height: 28, justifyContent: 'center' },
+  wrap: { height: 14 + STAR - 4, justifyContent: 'flex-start' },
   track: {
-    height: 10,
-    borderRadius: radius.pill,
-    backgroundColor: theme.border,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: palette.navyDeep,
+    borderWidth: 2,
+    borderColor: '#0E2A55',
     overflow: 'hidden',
+    justifyContent: 'center',
   },
-  fill: { height: '100%', backgroundColor: palette.star, borderRadius: radius.pill },
-  marker: { position: 'absolute', top: 0, width: 22, alignItems: 'center' },
-  star: { fontSize: 18, lineHeight: 22, textAlign: 'center' },
+  fill: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 5, overflow: 'hidden' },
+  shine: {
+    position: 'absolute',
+    top: 1,
+    left: 3,
+    right: 3,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: withAlpha('#FFFFFF', 0.55),
+  },
+  label: {
+    alignSelf: 'center',
+    fontFamily: font.black,
+    fontSize: 10,
+    lineHeight: 12,
+    color: palette.white,
+    textShadowColor: palette.navyDeep,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+  },
+  marker: { position: 'absolute', top: 8, width: STAR, alignItems: 'center' },
 });

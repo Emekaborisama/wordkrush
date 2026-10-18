@@ -1,9 +1,3 @@
-import {
-  Fredoka_500Medium,
-  Fredoka_600SemiBold,
-  Fredoka_700Bold,
-  useFonts,
-} from '@expo-google-fonts/fredoka';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -149,6 +143,7 @@ import { WordfallScreen } from './src/ui/screens/WordfallScreen';
 import { LAPTOP_MAX_WIDTH, isWideLayout } from './src/ui/layout';
 import { palette, theme } from './src/ui/theme';
 import { ensureWebViewport } from './src/ui/webViewport';
+import { useAppFonts } from './src/ui/fonts';
 
 const snapshot = categoryData as CategorySnapshot;
 const category: Category & { provisional?: boolean } = snapshot;
@@ -341,11 +336,7 @@ function LiveMaybe({
 }
 
 export default function App() {
-  const [fontsLoaded, fontError] = useFonts({
-    Fredoka_500Medium,
-    Fredoka_600SemiBold,
-    Fredoka_700Bold,
-  });
+  const [fontsLoaded, fontError] = useAppFonts();
   const { width } = useWindowDimensions();
   const wide = isWideLayout(width);
   const [screen, setScreen] = useState<Screen>({ name: 'hub' });

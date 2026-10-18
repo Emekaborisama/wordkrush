@@ -12,13 +12,13 @@ import { PressableScale } from './PressableScale';
 
 type Props = {
   children: ReactNode;
-  /** Depth, back to front. See docs/DESIGN_SYSTEM.md#elevation. */
+  /** Depth, back to front. 1–3 are cream boxes, lighter as they come forward. */
   level?: 0 | 1 | 2 | 3;
-  /** `paper` is a warm-white card on sand. `wood` is the playfield. */
-  variant?: 'paper' | 'wood';
-  /** Soft white sheen on the top 46% of the face. */
+  /** `cream` (default; `paper` is its old name) or the cyan board `frame` (`wood`). */
+  variant?: 'cream' | 'frame' | 'paper' | 'wood';
+  /** Soft white sheen on the top half of the face. */
   gloss?: boolean;
-  /** Override the border colour — e.g. a game's accent when it's the active card. */
+  /** Override the border colour — e.g. gold on the selected row. */
   borderColor?: string;
   radius?: number;
   padded?: boolean;
@@ -33,17 +33,16 @@ type Props = {
 };
 
 /**
- * The one raised-surface shape. Replaces every screen picking its own
- * combination of `theme.card` / `theme.bgElevated`, border colour, and radius
- * by feel — a card is a depth level, not four separate style decisions.
+ * Generic raised box on the kit's tokens. New layouts should reach for
+ * `CreamBox` / `Panel`; this stays for rows and cards that need `onPress`.
  */
 export function Surface({
   children,
   level = 2,
-  variant = 'paper',
+  variant = 'cream',
   gloss: showGloss = false,
   borderColor,
-  radius: r = radius.lg,
+  radius: r = radius.md,
   padded = true,
   raised = false,
   onPress,
@@ -59,9 +58,9 @@ export function Surface({
     {
       backgroundColor: depth.backgroundColor,
       borderRadius: r,
-      borderWidth: 1,
+      borderWidth: 2,
       borderColor: borderColor ?? depth.borderColor,
-      borderTopColor: depth.borderTopColor,
+      borderBottomColor: borderColor ?? depth.borderTopColor,
     },
     padded && { padding: space.md },
     raised && shadow.card,
