@@ -28,23 +28,32 @@ import {
   type CluelessHintPolicy,
   type CluelessState,
 } from '../../games/clueless/types';
-import { loadProgress, saveProgress } from '../../games/progress';
-import { getGame } from '../../games/registry';
+import { warmerWord } from '../../games/clueless/boosts';
+import { loadProgressEnvelope, saveProgress } from '../../games/progress';
+import { boostPrice } from '../../rewards/wallet';
+import type { BoostKind } from '../../rewards/types';
 import { feedback } from '../../native/feedback';
 import { shareResult } from '../../native/share';
 import { GuessRow } from '../GuessRow';
 import { ExampleRow, HowToPlay } from '../HowToPlay';
 import {
   Button,
+  DisplayTitle,
   EmptyState,
   FeedbackBanner,
   GameHeader,
   ProgressPill,
+  Rays,
+  ResultSheet,
+  RoundIconButton,
+  ScoreWell,
   Surface,
   TextField,
 } from '../components';
-import { Mascot } from '../lottie/Mascot';
-import { elevation, font, proximityColor, radius, space, theme, type, withAlpha } from '../theme';
+import { BoostBar, coinShortfall } from '../rewards/BoostBar';
+import type { RunReward } from '../rewards/RunReward';
+import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
+import { elevation, font, palette, proximityColor, radius, screen, space, theme, type, withAlpha } from '../theme';
 
 const GAME_ID = 'clueless';
 
@@ -57,11 +66,17 @@ type Props = {
   /** Assigned by reviewed level content, never selected during play. */
   hintPolicy: CluelessHintPolicy;
   hint?: string | null;
-  onWin: (guessesUsed: number, assistanceContext: CluelessAssistanceContext) => void;
+  onWin: (
+    guessesUsed: number,
+    assistanceContext: CluelessAssistanceContext,
+    detail: { boosted: boolean },
+  ) => void | Promise<RunReward | void>;
   onExit: () => void;
   /** Opened automatically the first time someone plays. */
   showHelpInitially?: boolean;
   persist?: boolean;
+  coins?: number;
+  onSpend?: (kind: BoostKind) => boolean;
   onScore?: (guesses: number, complete: boolean) => void;
 };
 
@@ -76,6 +91,8 @@ export function CluelessScreen({
   onExit,
   showHelpInitially = false,
   persist = true,
+  coins = 0,
+  onSpend,
   onScore,
 }: Props) {
   const puzzle = puzzleByNumber(puzzleNumber)!;
@@ -90,6 +107,10 @@ export function CluelessScreen({
   const [input, setInput] = useState('');
   const [help, setHelp] = useState(showHelpInitially);
   const [shareNote, setShareNote] = useState<string | null>(null);
+  const [boosted, setBoosted] = useState(false);
+  const [reward, setReward] = useState<RunReward | null>(null);
+  const boostedRef = useRef(false);
+  boostedRef.current = boosted;
   const reported = useRef(false);
   const shareNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Nothing may be written until the restore attempt finishes, or the empty
@@ -111,8 +132,10 @@ export function CluelessScreen({
       return;
     }
     let cancelled = false;
-    void loadProgress(GAME_ID, puzzleNumber, isCluelessState).then((saved) => {
+    void loadProgressEnvelope(GAME_ID, puzzleNumber, isCluelessState).then((loaded) => {
       if (cancelled) return;
+      const saved = loaded?.state;
+      if (loaded?.meta?.boosted) setBoosted(true);
       const restoredState = saved
         ? rehydrate(saved, hintPolicy)
         : newPuzzle(puzzleNumber, hintPolicy);
@@ -151,15 +174,13 @@ export function CluelessScreen({
   // Persist after every change, once restore has run.
   useEffect(() => {
     if (!persist || !restored.current) return;
-    void saveProgress(GAME_ID, puzzleNumber, state);
-  }, [state, puzzleNumber, persist]);
+    void saveProgress(GAME_ID, puzzleNumber, state, { boosted });
+  }, [state, puzzleNumber, persist, boosted]);
 
-  function submit() {
-    if (!input.trim()) return;
+  function submitWord(word: string) {
     const before = state.status;
-    const next = reducer(state, { type: 'guess', word: input }, index);
-    dispatch({ type: 'guess', word: input });
-    setInput('');
+    const next = reducer(state, { type: 'guess', word }, index);
+    dispatch({ type: 'guess', word });
 
     const rejectionKind =
       next.rejection?.kind === 'not-a-word'
@@ -186,7 +207,13 @@ export function CluelessScreen({
       feedback('win');
       if (!reported.current) {
         reported.current = true;
-        onWin(next.guesses.length, assistanceContextForHintPolicy(next.hintPolicy));
+        void Promise.resolve(
+          onWin(next.guesses.length, assistanceContextForHintPolicy(next.hintPolicy), {
+            boosted: boostedRef.current,
+          }),
+        ).then((result) => {
+          if (result) setReward(result);
+        });
       }
     } else if (next.rejection?.kind === 'not-a-word') {
       feedback('wrong');
@@ -195,6 +222,23 @@ export function CluelessScreen({
       onScore?.(next.guesses.length, next.status === 'won');
     }
   }
+
+  function submit() {
+    if (!input.trim()) return;
+    submitWord(input);
+    setInput('');
+  }
+
+  const spendBoost = (kind: BoostKind): boolean => {
+    if (!persist || !onSpend?.(kind)) return false;
+    boostedRef.current = true;
+    setBoosted(true);
+    return true;
+  };
+
+  const warmerPrice = boostPrice('warmer-word');
+  const hintPrice = boostPrice('hint-now');
+  const warmer = state.status === 'playing' ? warmerWord(state, index) : null;
 
   useEffect(() => {
     return () => {
@@ -221,7 +265,7 @@ export function CluelessScreen({
         outcome: 'win',
         score_kind: 'guesses_used',
         method: outcome === 'shared' ? 'share_sheet' : 'clipboard',
-        is_new_best: false,
+        is_new_best: reward?.isNewBest ?? false,
       });
     }
   }
@@ -229,7 +273,7 @@ export function CluelessScreen({
   const won = state.status === 'won';
   const best = bestRank(state);
   const warmth = closeness(best, puzzle.rankedCount);
-  const accent = getGame(GAME_ID)?.accent ?? theme.violet;
+  const accent = palette.purple;
   const hintVisible = isHintVisible(state);
   const hintRemaining = Math.max(0, STANDARD_HINT_GUESS_THRESHOLD - state.guesses.length);
   const hasNextTutorial =
@@ -251,12 +295,13 @@ export function CluelessScreen({
       <GameHeader
         title="Clueless"
         subtitle={
-          levelName ??
-          `${pathPhase === 'team' ? 'TEAM RACE' : pathPhase === 'daily' ? 'DAILY VAULT' : 'LEVEL'} ${
-            levelNumber ?? puzzle.number
-          }`
+          levelName
+            ? `LEVEL ${levelNumber ?? puzzle.number} · ${levelName}`
+            : `${pathPhase === 'team' ? 'TEAM RACE' : pathPhase === 'daily' ? 'DAILY VAULT' : 'LEVEL'} ${
+                levelNumber ?? puzzle.number
+              }`
         }
-        accent={accent}
+        ribbon={palette.purple}
         onExit={onExit}
         onHelp={() => setHelp(true)}
       />
@@ -276,7 +321,7 @@ export function CluelessScreen({
           radius={radius.md}
           style={styles.hintCard}
         >
-          <Text style={[styles.hintLabel, hintVisible && { color: accent }]}>
+          <Text style={styles.hintLabel}>
             {hintVisible ? 'THEMATIC HINT' : 'HINT LOCKED'}
           </Text>
           <Text style={hintVisible ? styles.hintText : styles.hintCountdown}>
@@ -314,116 +359,164 @@ export function CluelessScreen({
       ) : null}
 
       {won ? (
-        <Surface
-          level={3}
-          raised
-          borderColor={theme.success}
-          radius={radius.lg}
-          style={styles.wonCard}
-        >
-          <View style={styles.wonSummary}>
-            <Mascot size={52} pose="celebrate" />
-            <View style={styles.wonCopy}>
-              <Text style={styles.wonEyebrow}>PUZZLE SOLVED</Text>
-              <Text style={styles.wonWord}>{puzzle.secret}</Text>
-              <Text style={styles.wonMeta}>
-                Found in {state.guesses.length} {state.guesses.length === 1 ? 'guess' : 'guesses'}
-              </Text>
-            </View>
+        <View style={styles.result}>
+          <View style={styles.rays} pointerEvents="none">
+            <Rays />
           </View>
-          <View style={styles.completion}>
-            <Button
-              title="Share result"
-              onPress={() => void onShare()}
-              variant="tonal"
-              color={accent}
-              accessibilityHint="Copies a spoiler-free result you can paste anywhere"
-            />
-            {shareNote ? (
-              <Text style={styles.shareNote} accessibilityLiveRegion="polite">
-                {shareNote}
-              </Text>
-            ) : null}
-            {pathPhase !== 'team' ? (
-              <>
-                <Text style={styles.completionCopy}>{completionCopy}</Text>
+          <View style={styles.stars}>
+            {reward ? <RewardPanel events={reward.events} boosted={reward.boosted} /> : null}
+          </View>
+          <ResultSheet
+            accessibilityLabel="Solved"
+            footer={
+              <View style={styles.footer}>
+                {pathPhase !== 'team' ? (
+                  <Button
+                    title="Continue"
+                    size="xl"
+                    tone="green"
+                    onPress={onExit}
+                    accessibilityHint="Return to the Clueless path"
+                  />
+                ) : null}
+                <View style={styles.roundRow}>
+                  {pathPhase !== 'team' ? (
+                    <RoundIconButton
+                      icon={<Text style={styles.roundGlyph}>⌂</Text>}
+                      accessibilityLabel="Home"
+                      onPress={onExit}
+                      tone="blue"
+                      size={52}
+                    />
+                  ) : null}
+                </View>
                 <Button
-                  title={hasNextTutorial ? 'Continue path' : 'Back to Clueless'}
-                  onPress={onExit}
-                  color={accent}
-                  accessibilityHint="Return to the Clueless path"
+                  title="Share result"
+                  tone="purple"
+                  size="md"
+                  onPress={() => void onShare()}
+                  accessibilityHint="Copies a spoiler-free result you can paste anywhere"
                 />
-              </>
-            ) : null}
-          </View>
-        </Surface>
+                {shareNote ? (
+                  <Text style={styles.shareNote} accessibilityLiveRegion="polite">
+                    {shareNote}
+                  </Text>
+                ) : null}
+              </View>
+            }
+          >
+            <DisplayTitle>SOLVED</DisplayTitle>
+            <ScoreWell
+              label={state.guesses.length === 1 ? 'GUESS' : 'GUESSES'}
+              value={String(state.guesses.length)}
+            />
+            <Text style={styles.wonWord}>{puzzle.secret}</Text>
+            {pathPhase !== 'team' ? <Text style={styles.completionCopy}>{completionCopy}</Text> : null}
+          </ResultSheet>
+          {reward ? <RewardCelebration events={reward.events} /> : null}
+        </View>
       ) : (
-        <TextField
-          accent={accent}
-          value={input}
-          onChangeText={setInput}
-          onSubmitEditing={submit}
-          placeholder="Type any word"
-          autoCapitalize="none"
-          autoCorrect={false}
-          autoComplete="off"
-          returnKeyType="go"
-          // Keeps focus so guesses can be typed back to back.
-          blurOnSubmit={false}
-          trailing={
-            <Button
-              title="Guess"
-              onPress={submit}
-              color={accent}
-              size="sm"
-              fullWidth={false}
-              disabled={!input.trim()}
-              accessibilityLabel="Submit guess"
+        <View style={styles.guessCard}>
+          {persist && onSpend && state.status === 'playing' ? (
+            <BoostBar
+              controls={[
+                {
+                  kind: 'warmer-word',
+                  label: 'Warmer word',
+                  glyph: '↑',
+                  price: warmerPrice,
+                  disabled: coins < warmerPrice || warmer === null,
+                  disabledReason:
+                    coinShortfall(coins, warmerPrice) ??
+                    (warmer === null ? 'No warmer word' : undefined),
+                  onPress: () => {
+                    if (!warmer || !spendBoost('warmer-word')) return;
+                    submitWord(warmer);
+                  },
+                },
+                ...(state.hintPolicy === 'guess_threshold'
+                  ? [
+                      {
+                        kind: 'hint-now' as const,
+                        label: 'Hint now',
+                        glyph: '?',
+                        price: hintPrice,
+                        disabled: coins < hintPrice,
+                        disabledReason: coinShortfall(coins, hintPrice),
+                        onPress: () => {
+                          if (!spendBoost('hint-now')) return;
+                          dispatch({ type: 'unlockHint' });
+                        },
+                      },
+                    ]
+                  : []),
+              ]}
             />
-          }
-        />
-      )}
-
-      {state.rejection ? (
-        <FeedbackBanner
-          tone={state.rejection.kind === 'already-guessed' ? 'warning' : 'danger'}
-          title={state.rejection.kind === 'already-guessed' ? 'Already on your board' : 'Try another word'}
-          body={
-            state.rejection.kind === 'not-a-word'
-              ? `“${state.rejection.word}” isn’t in this word list.`
-              : state.rejection.kind === 'already-guessed'
-                ? `You already tried “${state.rejection.word}”.`
-                : 'Type a word first.'
-          }
-        />
-      ) : null}
-
-      <ScrollView
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {state.guesses.length === 0 ? (
-          <EmptyState
-            title="Find the secret word"
-            body="Every guess is ranked by meaning, not spelling. Start broad, then follow the heat."
+          ) : null}
+          <TextField
             accent={accent}
-            art={<Text style={[styles.emptyGlyphText, { color: accent }]}>?</Text>}
-            actionLabel="See how it works"
-            onAction={() => setHelp(true)}
-          />
-        ) : (
-          state.guesses.map((g) => (
-            <GuessRow
-              key={g.word}
-              guess={g}
-              rankedCount={puzzle.rankedCount}
-              animate={g.word === state.lastWord}
+            value={input}
+            onChangeText={setInput}
+            onSubmitEditing={submit}
+            placeholder="Type any word"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="off"
+            returnKeyType="go"
+            blurOnSubmit={false}
+            trailing={
+              <Button
+                title="Guess"
+                onPress={submit}
+                tone="purple"
+                size="sm"
+                fullWidth={false}
+                disabled={!input.trim()}
+                accessibilityLabel="Submit guess"
             />
-          ))
-        )}
-      </ScrollView>
+          }
+        />
+          {state.rejection ? (
+            <FeedbackBanner
+              tone={state.rejection.kind === 'already-guessed' ? 'warning' : 'danger'}
+              title={state.rejection.kind === 'already-guessed' ? 'Already on your board' : 'Try another word'}
+              body={
+                state.rejection.kind === 'not-a-word'
+                  ? `“${state.rejection.word}” isn’t in this word list.`
+                  : state.rejection.kind === 'already-guessed'
+                    ? `You already tried “${state.rejection.word}”.`
+                    : 'Type a word first.'
+              }
+            />
+          ) : null}
+          <ScrollView
+            style={styles.list}
+            contentContainerStyle={styles.listContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {state.guesses.length === 0 ? (
+              <EmptyState
+                title="Find the secret word"
+                body="Every guess is ranked by meaning, not spelling. Start broad, then follow the heat."
+                accent={accent}
+                art={<Text style={styles.emptyGlyphText}>?</Text>}
+                actionLabel="See how it works"
+                onAction={() => setHelp(true)}
+              />
+            ) : (
+              state.guesses.map((g) => (
+                <GuessRow
+                  key={g.word}
+                  guess={g}
+                  rankedCount={puzzle.rankedCount}
+                  animate={g.word === state.lastWord}
+                />
+              ))
+            )}
+          </ScrollView>
+        </View>
+      )}
 
       <HowToPlay
         visible={help}
@@ -453,10 +546,23 @@ export function CluelessScreen({
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
-    backgroundColor: theme.bg,
+    ...screen.playfield,
     paddingHorizontal: space.lg,
     paddingBottom: space.sm,
+    gap: space.sm,
+  },
+  result: { flex: 1, minHeight: 0 },
+  rays: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
+  stars: { alignItems: 'center', marginBottom: -16, zIndex: 2 },
+  footer: { gap: space.sm },
+  roundRow: { flexDirection: 'row', justifyContent: 'center', gap: space.lg },
+  roundGlyph: { color: theme.onPill, fontSize: 22, lineHeight: 26 },
+  guessCard: {
+    flex: 1,
+    minHeight: 0,
+    backgroundColor: palette.paper,
+    borderRadius: radius.lg,
+    padding: space.md,
     gap: space.sm,
   },
   statsRow: { flexDirection: 'row', justifyContent: 'center', gap: space.sm },
@@ -478,29 +584,12 @@ const styles = StyleSheet.create({
   meterLabel: { ...type.caption, color: theme.textMuted },
   meterValue: { color: theme.text, fontFamily: font.bold, fontWeight: '700', fontVariant: ['tabular-nums'] },
 
-  wonCard: {
-    gap: space.md,
-  },
-  wonSummary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-  },
-  wonCopy: { flex: 1 },
-  wonEyebrow: { ...type.overline, color: theme.success },
-  wonWord: { ...type.title, color: theme.text, marginTop: 1 },
-  wonMeta: { ...type.caption, color: theme.textMuted, marginTop: 1 },
-  completion: {
-    gap: space.sm,
-    paddingTop: space.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
-  },
-  completionCopy: { ...type.body, color: theme.textMuted },
-  shareNote: { ...type.caption, color: theme.textMuted },
+  wonWord: { ...type.title, color: theme.text, marginTop: space.md, textAlign: 'center' },
+  completionCopy: { ...type.body, color: theme.textMuted, textAlign: 'center', marginTop: space.sm },
+  shareNote: { ...type.caption, color: theme.textMuted, textAlign: 'center' },
 
   list: { flex: 1 },
   listContent: { gap: 6, paddingBottom: space.lg },
-  emptyGlyphText: { ...type.display },
+  emptyGlyphText: { ...type.display, color: theme.text },
   exampleCaption: { ...type.caption, color: theme.textDim, marginBottom: 4 },
 });

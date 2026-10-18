@@ -1,6 +1,6 @@
 # Design System — WordKrush
 
-**Last updated:** 2026-08-25
+**Last updated:** 2026-10-18
 
 This is the source of truth for visual and interaction decisions across the
 hub and every game. Read it before adding a screen or component. It exists so
@@ -9,6 +9,28 @@ screens by hand."
 
 Product name, logo use, and brand colour live in
 [`docs/branding/`](branding/README.md). This file does not restyle the lockup.
+The wordmark stays on its own ink; screens do not.
+
+## Screen chrome (owner, 2026-10-18)
+
+The flat dark ink canvas is superseded. Every game shares one casual-game
+chrome. A game changes its ribbon colour and its accent, nothing else.
+Hexes live in `palette` in `src/ui/theme.ts` and are recorded in
+[`docs/branding/color.md`](branding/color.md).
+
+| Surface | Token |
+|---|---|
+| Page | `screen.page` / `palette.sand` (`#F4E4C4`) |
+| Playfield | `screen.playfield` / `palette.wood` (`#6B3E26`), plank `palette.plank` |
+| Cards, sheets, wells | `palette.paper` (`#FFF8EE`). `Surface` defaults to this. `variant="wood"` is the playfield. |
+| Text on sand or paper | `palette.brown` (`#3A2415`) |
+| Text on wood | `palette.paper` |
+| Primary CTA | Glossy green pill. White label. Face is a deeper shade of `#3DCC4A` so the label clears 4.5:1 under the gloss. |
+| Other pills | `tone` `purple`, `blue`, `coral` (white label), `ribbon` (yellow, brown label) |
+| Stars and titles | Gold `#FFC107`, orange edge, brown outline |
+| Inset scores | `theme.well` (brown) with paper text |
+
+`theme.bg` is sand. Do not paint a screen `#0A0817`. The logo still uses `brand`.
 
 ## Where this came from
 
@@ -114,12 +136,21 @@ Values live in `theme.ts` `interaction` — do not restyle them per screen.
 
 - Touch target minimum: 44×44 (`interaction.minTouch`). `hitSlop` makes up the
   difference on smaller glyphs — see `TopBar` and `IconButton`.
-- Pressed state: `PressableScale` — opacity `0.9`, native transform
-  `translateY: 3` + `scale: 0.97` (respects reduce-motion). Opacity-only on
-  web, where scale-on-press reads as janky with a mouse cursor still present.
+- Pressed state, bevel buttons (`Button`, `RoundIconButton`): the face
+  translates down by its bevel (6 / 5 / 4 px) over `motion.pressMs` (70ms) on
+  **web and native**, then springs back with `motion.snappy`. The old rule —
+  opacity-only on web, because a scale under a mouse cursor felt like jank —
+  is superseded. A short face translation reads as a press without the control
+  shrinking away from the pointer. Layout does not move; only `transform` does.
+  Reduce-motion snaps to the pressed offset.
+- Pressed state, other controls: `PressableScale` still scales on native only
+  (`0.97`) and exposes `pressed` so a bevel button can drive its own face.
+  Pass `translateOnPress={false}` when the face owns the vertical motion.
 - Disabled state: opacity 0.5, `accessibilityState.disabled`, and the control
-  must still explain *why* (a `SOON` / `DROPS` badge, not a card that silently
-  does nothing).
+  must still explain *why* (a `SOON` / `DROPS` badge, or `disabledReason` on
+  `RoundIconButton`).
+- Label floor: 11px. Do not dim a label with opacity; `theme.textMuted` already
+  clears 4.5:1 on sand and on paper.
 
 ## Component inventory
 
@@ -144,6 +175,17 @@ Located in `src/ui/components/`.
 | `IconButton` | 44pt icon hits on game headers | ✅ built |
 | `TextField` | Clueless guess input (and auth / team forms). Typed text uses Fredoka semibold; web hides the UA focus outline so only the designed shell border shows (D-030) | ✅ built |
 | `GameStartScreen` | per-game pre-run screens (was More-or-Less-only `HomeScreen`) | ✅ built |
+| `DisplayTitle` | Outlined gold titles (result, level-up). Not the logo. | ✅ built |
+| `StarRow` | Three stars, centre larger, staggered pop. `onStar` for sound. | ✅ built |
+| `StarBar` | Track with three markers that pop when crossed. | ✅ built |
+| `Rays` | 12 wedges, one turn per `rayPeriodMs`. Static under reduce-motion. | ✅ built |
+| `Confetti` | `Sparkle` burst-then-fall, dot or rect, at most 24. | ✅ built |
+| `CoinPill` / `CoinIcon` | Gold coin, Fredoka "K", counting total. | ✅ built |
+| `XpBadge` | Level number and thin bar. `onPress` opens badges. | ✅ built |
+| `CountUpText` | `useCountUp` as text. | ✅ built |
+| `RoundIconButton` | Round booster, ≥44px, optional badge and disabled reason. | ✅ built |
+| `Ribbon` | Level pill with folded tabs. | ✅ built |
+| `ResultSheet` | Scrolling body, sticky action footer. | ✅ built |
 
 ## Rollout plan
 
@@ -167,15 +209,25 @@ Located in `src/ui/components/`.
 Layout, presses, drawers, Wordfall tiles, and the More or Less count-up stay
 on React Native `Animated`. Lottie (`lottie-react-native`, D-032) is for the
 deer mascot and later celebration clips — not for board physics or text pills.
-Reduce-motion skips playback (`AccessibilityInfo.isReduceMotionEnabled`).
+Reduce-motion is one hook, `useReduceMotion`. It skips ray spin, confetti,
+star pops, and the button spring, and it shows the end state.
+
+Motion tokens on `motion`: `pressMs` 70, `popMs` 260, `staggerMs` 140,
+`countXpMs` 900, `rayPeriodMs` 20000, `shakeMs` 320, `coinFlyMs` 650, plus the
+existing `gentle` / `snappy` / `celebratory` springs. Pop-ins use
+`Easing.out(Easing.back(1.6))`. Animate only `transform` and `opacity`.
+
+These components do not call `feedback()`. They expose `onPress` / `onStar`
+so the screen can play a sound.
 
 ## Non-goals for this pass
 
 - No Reanimated. `PressableScale` uses React Native `Pressable` transforms.
   BoardView/Drawer keep their existing `Animated` springs.
-- No new theme (still one dark theme). A light theme or per-game background
-  swap is a product decision, not implied by this change — flag it as an
-  `[OPEN]` design question if it comes up.
+- No second theme beside this chrome. The 2026-10-18 owner decision replaced
+  the dark ink screens with sand, wood, and warm white. Per-game colour is a
+  ribbon and an accent, not a new background. The logo is not part of that
+  change.
 - No emoji-to-icon-font migration. Player-facing marks are `GameArtwork`
   bundles. Swapping to a real icon/mark system is tracked as its own decision
   because it touches every game's key art, not just layout.

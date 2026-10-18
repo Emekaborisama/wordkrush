@@ -40,6 +40,9 @@ export default defineConfig({
       'src/analytics/**/*.test.ts',
       'src/feedback/**/*.test.ts',
       'src/games/**/*.test.ts',
+      // New trees. Vitest does not discover tests outside this list.
+      'src/rewards/**/*.test.ts',
+      'src/onboarding/**/*.test.ts',
       'pipeline/**/*.test.ts',
       'scripts/**/*.test.mjs',
       // The Railway server owns the `/share/:id` Open Graph contract — status

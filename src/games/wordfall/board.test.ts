@@ -8,6 +8,7 @@ import {
   drawLetter,
   effectArea,
   findWords,
+  findWordPath,
   generateBoard,
   indexAt,
   isPlayable,
@@ -275,5 +276,27 @@ describe('drawLetter', () => {
     expect(counts.get('e')!).toBeGreaterThan(counts.get('z')! * 10);
     const vowels = ['a', 'e', 'i', 'o', 'u'].reduce((n, v) => n + (counts.get(v) ?? 0), 0);
     expect(vowels / 20000).toBeGreaterThan(0.3);
+  });
+});
+
+describe('findWordPath', () => {
+  const solver = {
+    words: new Set(['cat']),
+    prefixes: new Set(['c', 'ca']),
+    maxLength: 8,
+  };
+
+  it('returns the tiles of a real word', () => {
+    const board = boardFrom(['cat']);
+    const path = findWordPath(board, solver, []);
+    expect(path).toEqual([0, 1, 2]);
+    expect(path!.map((index) => board.tiles[index].letter).join('')).toBe('cat');
+  });
+
+  it('skips excluded words and crates', () => {
+    expect(findWordPath(boardFrom(['cat']), solver, ['cat'])).toBeNull();
+    const board = boardFrom(['xcat']);
+    board.tiles[0] = { ...board.tiles[0], crate: true };
+    expect(findWordPath(board, solver, [])).toEqual([1, 2, 3]);
   });
 });

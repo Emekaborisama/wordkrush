@@ -2,7 +2,7 @@ import { ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } fr
 import { pickerStatus, type PickerStatus } from '../games/campaign';
 import type { PathRow } from '../live/catalog';
 import { Badge, Surface } from './components';
-import { radius, space, theme, type } from './theme';
+import { contrastRatio, palette, radius, space, theme, type } from './theme';
 
 type Props = {
   rows: PathRow[];
@@ -65,7 +65,16 @@ export function CampaignPicker({
               {locked ? (
                 <LockMark />
               ) : (
-                <Text style={[styles.numberText, active && { color: theme.bg }]}>{row.number}</Text>
+                <Text
+                  style={[
+                    styles.numberText,
+                    active && {
+                      color: contrastRatio(palette.brown, accent) >= 4.5 ? palette.brown : theme.onPill,
+                    },
+                  ]}
+                >
+                  {row.number}
+                </Text>
               )}
             </View>
             <View style={styles.body}>
@@ -100,8 +109,8 @@ const styles = StyleSheet.create({
   list: { gap: space.sm, paddingBottom: space.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   number: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: theme.border,
@@ -115,7 +124,7 @@ const styles = StyleSheet.create({
   dim: { color: theme.textDim },
   description: { ...type.caption, color: theme.textMuted, marginTop: 2 },
   meta: { alignItems: 'flex-end' },
-  metaValue: { ...type.overline, color: theme.textDim, fontSize: 10 },
+  metaValue: { ...type.overline, color: theme.textDim, fontSize: 11 },
   lock: { width: 14, height: 16, alignItems: 'center' },
   lockShackle: {
     width: 8,

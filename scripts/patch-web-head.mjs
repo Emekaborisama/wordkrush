@@ -197,7 +197,7 @@ export function applySearchSurface(html, { ogImageUrl, googleSiteVerification } 
 
 /** Keep in sync with `WEB_VIEWPORT_CSS` in `src/ui/webViewport.ts`. */
 const viewportCss =
-  '<style id="wk-web-viewport">html,body{height:100%;height:100dvh;margin:0;background-color:#0A0817;overflow:hidden}body>div{height:100%}#wk-seo{color:#F4F0FF;padding:24px;font-family:system-ui,sans-serif}#wk-mascot canvas,#wk-mascot svg{max-width:100%!important;max-height:100%!important}#wk-wordfall-board,#wk-wordfall-board *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}#wk-wordfall-board{touch-action:none!important}</style>';
+  '<style id="wk-web-viewport">html,body{height:100%;height:100dvh;margin:0;background-color:#F4E4C4;overflow:hidden}body>div{height:100%}#wk-seo{color:#3A2415;padding:24px;font-family:system-ui,sans-serif}#wk-mascot canvas,#wk-mascot svg{max-width:100%!important;max-height:100%!important}#wk-wordfall-board,#wk-wordfall-board *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}#wk-wordfall-board{touch-action:none!important}</style>';
 
 /**
  * Attach the layout CSS the web build needs.

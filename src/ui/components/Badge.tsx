@@ -1,5 +1,5 @@
 import { StyleSheet, Text } from 'react-native';
-import { radius, theme, type, withAlpha } from '../theme';
+import { font, labelFloorPx, palette, radius, theme, withAlpha } from '../theme';
 
 type Props = {
   label: string;
@@ -24,9 +24,8 @@ export function Badge({ label, tone = 'neutral', color }: Props) {
   return (
     <Text
       style={[
-        type.overline,
         styles.badge,
-        { color: c, borderColor: withAlpha(c, 0.46), backgroundColor: withAlpha(c, 0.12) },
+        { color: palette.brown, borderColor: withAlpha(c, 0.55), backgroundColor: withAlpha(c, 0.16) },
       ]}
     >
       {label}
@@ -36,7 +35,10 @@ export function Badge({ label, tone = 'neutral', color }: Props) {
 
 const styles = StyleSheet.create({
   badge: {
-    fontSize: 8.5,
+    fontFamily: font.semibold,
+    fontWeight: '600',
+    fontSize: labelFloorPx,
+    letterSpacing: 0.8,
     borderWidth: 1,
     borderRadius: radius.pill,
     paddingHorizontal: 9,

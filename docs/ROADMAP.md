@@ -1,6 +1,6 @@
 # Roadmap & Task List
 
-**Last updated:** 2026-08-30
+**Last updated:** 2026-10-18
 **Board of record:** Superthread → *My Private Space* → **BestGame** board (team `tbJ3qEwK`, board `2`, lists: To do `8` / Doing `9` / Done `10`).
 
 Live status lives on the board, not here. This file exists so an LLM reading the repo cold knows what the work *is*, what blocks it, and what order it goes in — without needing board access.
@@ -58,7 +58,7 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 
 ## Track: UI
 
-- [ ] Home screen — game logo, Play, best streak, category picker
+- [ ] **Reward flow and game feel** (ST-106) — **Doing** on `st-106_reward_flow_and_game_feel_revamp`. Device rewards, the shared casual chrome, and the finished-run journey. Not merged.
 - [ ] Game screen — comparison panels, MORE/LESS controls, current streak
 - [ ] Count-up reveal — animate the hidden value after the answer
 - [x] Game over screen — final streak, best streak, replay/share — **Done** in 0.8.19; per-game emoji grid, clipboard/share sheet, no live-race or scores-row share yet

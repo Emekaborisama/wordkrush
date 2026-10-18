@@ -1,20 +1,16 @@
 /**
  * Design tokens.
  *
- * Two principles the rest of the UI leans on:
+ * The lockup (`brand`) is unchanged: the wordmark is not recoloured.
  *
- * 1. ELEVATION IS A RAMP, not two colours. Surfaces get lighter as they come
- *    forward, and each carries a hairline top highlight, which is what stops a
- *    dark UI reading as flat black rectangles.
- *
- * 2. PROXIMITY IS CONTINUOUS. Guess feedback interpolates hue smoothly instead
- *    of snapping between four buckets, so a rank of 900 and 1000 look subtly
- *    different rather than identical.
+ * Screens use the 2026-10-18 casual chrome (`palette`, `theme`, `screen`).
+ * Sand page, wood playfield, warm-white cards, glossy pills. The flat dark
+ * ink canvas is not the default. See docs/branding/color.md.
  */
 
 /**
- * Lockup colours from docs/branding/color.md. theme.bg / text / accent below
- * alias these so a screen never has to choose between "brand gold" and "accent".
+ * Lockup colours from docs/branding/color.md. These paint the logo only.
+ * Screen chrome does not alias them.
  */
 export const brand = {
   ink: '#0A0817',
@@ -25,86 +21,98 @@ export const brand = {
   purpleDeep: '#2E0854',
 } as const;
 
-export const theme = {
-  // Deep indigo rather than neutral black: playful colour can glow against it
-  // without the app turning into a wall of disconnected neon outlines.
-  bg: brand.ink,
-  bgElevated: '#121025',
-  card: '#1A1732',
-  cardHigh: '#241F43',
-  /** Hairline highlight for the top edge of a raised surface. */
-  edge: 'rgba(255,255,255,0.10)',
-  border: '#332D55',
-  borderStrong: '#4B4171',
-
-  text: brand.word,
-  textMuted: '#C5BED8',
-  textDim: '#87809E',
-
-  // WordKrush umbrella brand. Individual games use registry accents.
-  accent: brand.krush,
-  accentSoft: 'rgba(255,176,32,0.16)',
-  accentDim: '#3B2A10',
-  accentSecondary: brand.purple,
-  accentSecondarySoft: 'rgba(139,107,255,0.16)',
-  success: '#32E487',
-  successSoft: 'rgba(50,228,135,0.16)',
-  successDim: '#103624',
-  danger: '#FF5E72',
-  dangerSoft: 'rgba(255,94,114,0.16)',
-  dangerDim: '#3B1520',
-  warning: '#FFB020',
-  warningSoft: 'rgba(255,176,32,0.16)',
-  violet: '#9B78FF',
-  violetSoft: 'rgba(155,120,255,0.16)',
-  overlay: 'rgba(5,3,14,0.78)',
-} as const;
-
-export const radius = { sm: 12, md: 18, lg: 28, xl: 36, pill: 999 } as const;
-
-export const space = { xxs: 2, xs: 5, sm: 9, md: 14, lg: 20, xl: 28, xxl: 40, hero: 56 } as const;
-
 /**
- * Bundled, offline faces. Every text tier in the scale below uses one of these,
- * so the app reads as one typeface across all three games (D-027, superseding
- * D-026's display-only split).
+ * Owner hexes for the casual-game chrome (2026-10-18). Named here so screens
+ * never invent a one-off. `starEdge` is the orange star outline from the
+ * reference shots; the brief names the colour but not a hex.
  *
- * Symbol glyphs (✓ ✎ ◎ ⟷ ▤ ★ ≡) are deliberately NOT given a `fontFamily` —
- * Fredoka is a Latin display face and does not contain them, so naming it would
- * force a silent per-platform fallback at best and tofu at worst.
+ * `brownMuted` / `brownSoft` are label browns. The bright pills fail as small
+ * text on sand and paper, so secondary labels use these instead of opacity.
  */
-export const font = {
-  medium: 'Fredoka_500Medium',
-  semibold: 'Fredoka_600SemiBold',
-  bold: 'Fredoka_700Bold',
+export const palette = {
+  sand: '#F4E4C4',
+  wood: '#6B3E26',
+  plank: '#8B5A2B',
+  paper: '#FFF8EE',
+  brown: '#3A2415',
+  brownMuted: '#6B4630',
+  brownSoft: '#7A5340',
+  white: '#FFFFFF',
+  green: '#3DCC4A',
+  greenBevel: '#1E8A28',
+  purple: '#7B4FD6',
+  blue: '#2F9BFF',
+  coral: '#FF5A7A',
+  ribbon: '#FFC83D',
+  star: '#FFC107',
+  starEdge: '#E8780C',
 } as const;
 
-/**
- * Interaction constants. One pressed-state and one touch-target minimum for
- * the whole app, so `PressableScale` is the only place that decides what a
- * tap looks like — screens stop inventing their own opacity value.
- */
-export const interaction = {
-  pressedOpacity: 0.9,
-  pressedScale: 0.97,
-  pressedTranslateY: 3,
-  minTouch: 44,
-} as const;
+export const bevel = { lg: 6, md: 5, sm: 4, shadeAmount: 0.38 } as const;
 
-/**
- * Surface depth, back to front. Screens pick a level, not a raw token, so
- * "how far forward is this card" is a single decision made once here rather
- * than re-guessed per screen.
- */
-const ELEVATION = [
-  { backgroundColor: '#0A0817', borderColor: '#211C3A', borderTopColor: 'rgba(255,255,255,0.06)' }, // 0 — page
-  { backgroundColor: '#121025', borderColor: '#2A2547', borderTopColor: 'rgba(255,255,255,0.08)' }, // 1 — bgElevated
-  { backgroundColor: '#1A1732', borderColor: '#332D55', borderTopColor: 'rgba(255,255,255,0.10)' }, // 2 — card
-  { backgroundColor: '#241F43', borderColor: '#4B4171', borderTopColor: 'rgba(255,255,255,0.13)' }, // 3 — cardHigh
-] as const;
+/** Top highlight on a glossy face. */
+export const gloss = { alpha: 0.18, height: 0.46 } as const;
 
-export function elevation(level: 0 | 1 | 2 | 3) {
-  return ELEVATION[level];
+/** 1px top inner rim. */
+export const rim = { alpha: 0.35 } as const;
+
+/** Smallest size for text that must clear WCAG AA (under 18px). */
+export const labelFloorPx = 11;
+
+function normalizeHex(hex: string): string {
+  const raw = hex.trim().replace('#', '');
+  const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw.slice(0, 6);
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) {
+    throw new Error(`expected a hex colour, received ${hex}`);
+  }
+  return `#${full.toUpperCase()}`;
+}
+
+function channels(hex: string): [number, number, number] {
+  const n = parseInt(normalizeHex(hex).slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function toHex(r: number, g: number, b: number): string {
+  const byte = (n: number) =>
+    Math.max(0, Math.min(255, Math.round(n)))
+      .toString(16)
+      .padStart(2, '0')
+      .toUpperCase();
+  return `#${byte(r)}${byte(g)}${byte(b)}`;
+}
+
+function mixHex(hex: string, toward: [number, number, number], amount: number): string {
+  const t = Math.max(0, Math.min(1, amount));
+  const [r, g, b] = channels(hex);
+  return toHex(r + (toward[0] - r) * t, g + (toward[1] - g) * t, b + (toward[2] - b) * t);
+}
+
+/** Mix `hex` toward black. `amount` 0 returns the colour; 1 returns black. */
+export function shade(hex: string, amount: number): string {
+  return mixHex(hex, [0, 0, 0], amount);
+}
+
+/** Mix `hex` toward white. `amount` 0 returns the colour; 1 returns white. */
+export function tint(hex: string, amount: number): string {
+  return mixHex(hex, [255, 255, 255], amount);
+}
+
+function srgbChannel(c: number): number {
+  const s = c / 255;
+  return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+}
+
+function relativeLuminance(hex: string): number {
+  const [r, g, b] = channels(hex);
+  return 0.2126 * srgbChannel(r) + 0.7152 * srgbChannel(g) + 0.0722 * srgbChannel(b);
+}
+
+/** WCAG contrast ratio. Order does not matter. Hex colours only. */
+export function contrastRatio(fg: string, bg: string): number {
+  const lighter = Math.max(relativeLuminance(fg), relativeLuminance(bg));
+  const darker = Math.min(relativeLuminance(fg), relativeLuminance(bg));
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 /**
@@ -130,6 +138,167 @@ export function withAlpha(color: string, alpha: number): string {
 }
 
 /**
+ * White on `#3DCC4A` is about 2.11:1, and a 0.18 white gloss makes the top of
+ * the face even lighter. A white label needs a deeper shade of the same hue
+ * so the glyphs still clear 4.5:1 where the gloss sits.
+ */
+export function readableWhiteFace(hex: string): string {
+  const base = normalizeHex(hex);
+  const clears = (face: string) => contrastRatio(palette.white, tint(face, gloss.alpha)) >= 4.5;
+  if (clears(base)) return base;
+  for (let step = 1; step <= 100; step += 1) {
+    const face = shade(base, step / 100);
+    if (clears(face)) return face;
+  }
+  return shade(base, 1);
+}
+
+export type PillLabel = 'white' | 'brown';
+
+export type PillChrome = {
+  face: string;
+  bevel: string;
+  label: string;
+};
+
+/** Face, darker lip, and a label colour that clears 4.5:1 on that face. */
+export function pillChrome(hex: string, label: PillLabel): PillChrome {
+  if (label === 'brown') {
+    const face = normalizeHex(hex);
+    return { face, bevel: shade(face, bevel.shadeAmount), label: palette.brown };
+  }
+  const face = readableWhiteFace(hex);
+  return { face, bevel: shade(face, bevel.shadeAmount), label: palette.white };
+}
+
+export const pillTone = {
+  green: palette.green,
+  purple: palette.purple,
+  blue: palette.blue,
+  coral: palette.coral,
+  ribbon: palette.ribbon,
+} as const;
+
+export type PillTone = keyof typeof pillTone;
+
+/** Precomputed chrome for the five reference pills. */
+export const pill: Record<PillTone, PillChrome> = {
+  green: pillChrome(palette.green, 'white'),
+  purple: pillChrome(palette.purple, 'white'),
+  blue: pillChrome(palette.blue, 'white'),
+  coral: pillChrome(palette.coral, 'white'),
+  ribbon: pillChrome(palette.ribbon, 'brown'),
+};
+
+export const reward = {
+  gold: palette.star,
+  goldHot: palette.starEdge,
+  outline: palette.brown,
+  /** Unearned star. Sand reads on a warm-white card; it is a glyph, not body text. */
+  starOff: palette.sand,
+  xp: palette.purple,
+} as const;
+
+export const theme = {
+  bg: palette.sand,
+  bgElevated: palette.paper,
+  card: palette.paper,
+  cardHigh: tint(palette.paper, 0.55),
+  edge: 'rgba(58,36,21,0.10)',
+  border: shade(palette.sand, 0.12),
+  borderStrong: shade(palette.sand, 0.28),
+  text: palette.brown,
+  textMuted: palette.brownMuted,
+  textDim: palette.brownSoft,
+  /** Text on the wood playfield. */
+  onWood: palette.paper,
+  /** Text on a contrast-safe saturated pill. */
+  onPill: palette.white,
+  /** Inset best / score well. */
+  well: palette.brown,
+  accent: palette.green,
+  accentSoft: withAlpha(palette.green, 0.16),
+  accentDim: withAlpha(palette.green, 0.22),
+  accentSecondary: palette.purple,
+  accentSecondarySoft: withAlpha(palette.purple, 0.16),
+  success: palette.green,
+  successSoft: withAlpha(palette.green, 0.16),
+  successDim: palette.greenBevel,
+  danger: palette.coral,
+  dangerSoft: withAlpha(palette.coral, 0.16),
+  dangerDim: shade(palette.coral, 0.35),
+  warning: palette.star,
+  warningSoft: withAlpha(palette.star, 0.22),
+  violet: palette.purple,
+  violetSoft: withAlpha(palette.purple, 0.16),
+  wood: palette.wood,
+  plank: palette.plank,
+  overlay: 'rgba(58,36,21,0.46)',
+} as const;
+
+/**
+ * Page and playfield fills. Screens apply one of these instead of painting
+ * their own canvas. `theme.bg` is the same sand, so existing page roots that
+ * already use it leave the ink background behind.
+ */
+export const screen = {
+  page: { flex: 1, backgroundColor: palette.sand },
+  playfield: { flex: 1, backgroundColor: palette.wood },
+} as const;
+
+export const radius = { sm: 12, md: 18, lg: 28, xl: 36, pill: 999 } as const;
+
+export const space = { xxs: 2, xs: 5, sm: 9, md: 14, lg: 20, xl: 28, xxl: 40, hero: 56 } as const;
+
+/**
+ * Bundled, offline faces. Every text tier in the scale below uses one of these,
+ * so the app reads as one typeface across all three games (D-027, superseding
+ * D-026's display-only split).
+ *
+ * Symbol glyphs (✓ ✎ ◎ ⟷ ▤ ★ ≡ ‹) are deliberately NOT given a `fontFamily` —
+ * Fredoka is a Latin display face and does not contain them, so naming it would
+ * force a silent per-platform fallback at best and tofu at worst.
+ */
+export const font = {
+  medium: 'Fredoka_500Medium',
+  semibold: 'Fredoka_600SemiBold',
+  bold: 'Fredoka_700Bold',
+} as const;
+
+/**
+ * Interaction constants. One pressed-state and one touch-target minimum for
+ * the whole app, so `PressableScale` is the only place that decides what a
+ * tap looks like — screens stop inventing their own opacity value.
+ *
+ * Bevel buttons do not use `pressedTranslateY`. The face itself moves by its
+ * bevel. See `BevelFace`.
+ */
+export const interaction = {
+  pressedOpacity: 0.9,
+  pressedScale: 0.97,
+  pressedTranslateY: 3,
+  minTouch: 44,
+} as const;
+
+const PAPER_ELEVATION = [
+  { backgroundColor: palette.sand, borderColor: shade(palette.sand, 0.08), borderTopColor: 'rgba(255,255,255,0.55)' },
+  { backgroundColor: tint(palette.sand, 0.4), borderColor: shade(palette.sand, 0.1), borderTopColor: 'rgba(255,255,255,0.7)' },
+  { backgroundColor: palette.paper, borderColor: shade(palette.sand, 0.12), borderTopColor: 'rgba(255,255,255,0.9)' },
+  { backgroundColor: tint(palette.paper, 0.55), borderColor: shade(palette.sand, 0.16), borderTopColor: palette.white },
+] as const;
+
+const WOOD_ELEVATION = [
+  { backgroundColor: palette.wood, borderColor: shade(palette.wood, 0.25), borderTopColor: 'rgba(255,248,238,0.16)' },
+  { backgroundColor: tint(palette.wood, 0.08), borderColor: shade(palette.wood, 0.2), borderTopColor: 'rgba(255,248,238,0.22)' },
+  { backgroundColor: palette.plank, borderColor: shade(palette.plank, 0.18), borderTopColor: 'rgba(255,248,238,0.28)' },
+  { backgroundColor: tint(palette.plank, 0.14), borderColor: shade(palette.plank, 0.12), borderTopColor: 'rgba(255,248,238,0.36)' },
+] as const;
+
+export function elevation(level: 0 | 1 | 2 | 3, surface: 'paper' | 'wood' = 'paper') {
+  return (surface === 'wood' ? WOOD_ELEVATION : PAPER_ELEVATION)[level];
+}
+
+/**
  * Derives a game's full accent ramp from its one registry hex, so a hub card,
  * an active nav item, and a CTA button all agree on what "this game's colour"
  * means without each screen recomputing an alpha tint by hand.
@@ -139,14 +308,14 @@ export function gameAccentTokens(accent: string) {
     accent,
     /** Tinted fill — art tiles, active nav rows. */
     soft: withAlpha(accent, 0.16),
-    /** Near-black tint for a filled button on a dark background. */
+    /** Soft wash of the accent, for a tonal control on sand or paper. */
     dim: withAlpha(accent, 0.22),
     /** Same hex as the border colour of an accented outline control. */
     border: accent,
     /** Broad ambient colour used behind key art, never behind body copy. */
     glow: withAlpha(accent, 0.28),
-    /** Dark text on a bright CTA. */
-    ink: '#100E20',
+    /** Brown body ink. Pill labels use `pillChrome` instead: brown fails on purple. */
+    ink: palette.brown,
   } as const;
 }
 
@@ -173,14 +342,16 @@ export const frame = {
  */
 export const type = {
   hero: { fontFamily: font.bold, fontSize: 44, fontWeight: '700', letterSpacing: -1.2, lineHeight: 48 },
+  /** Outlined celebration titles. Tracking is −1, a hair looser than `hero`. */
+  displayXL: { fontFamily: font.bold, fontSize: 44, fontWeight: '700', letterSpacing: -1, lineHeight: 48 },
   display: { fontFamily: font.bold, fontSize: 36, fontWeight: '700', letterSpacing: -0.9, lineHeight: 41 },
   title: { fontFamily: font.semibold, fontSize: 23, fontWeight: '600', letterSpacing: -0.45, lineHeight: 28 },
   subtitle: { fontFamily: font.semibold, fontSize: 18, fontWeight: '600', letterSpacing: -0.2, lineHeight: 23 },
   body: { fontFamily: font.medium, fontSize: 15, fontWeight: '500', letterSpacing: -0.1, lineHeight: 22 },
   bodyStrong: { fontFamily: font.bold, fontSize: 15, fontWeight: '700', letterSpacing: -0.1, lineHeight: 22 },
   caption: { fontFamily: font.medium, fontSize: 13, fontWeight: '500', letterSpacing: 0, lineHeight: 18 },
-  /** Small-caps section labels. */
-  overline: { fontFamily: font.semibold, fontSize: 10.5, fontWeight: '600', letterSpacing: 1.45, lineHeight: 14 },
+  /** Small-caps section labels. Floor is 11px so they clear AA on sand and paper. */
+  overline: { fontFamily: font.semibold, fontSize: labelFloorPx, fontWeight: '600', letterSpacing: 1.45, lineHeight: 15 },
 } as const;
 
 /**
@@ -190,14 +361,14 @@ export const type = {
 export const shadow = {
   card: {
     shadowColor: '#000',
-    shadowOpacity: 0.42,
+    shadowOpacity: 0.18,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 9 },
     elevation: 7,
   },
   raised: {
     shadowColor: '#000',
-    shadowOpacity: 0.52,
+    shadowOpacity: 0.22,
     shadowRadius: 26,
     shadowOffset: { width: 0, height: 15 },
     elevation: 13,
@@ -216,7 +387,8 @@ export const shadow = {
  *
  * Springs, not linear timings — physical motion is what separates an interface
  * that feels built from one that feels animated. `gentle` is for surfaces
- * entering, `snappy` for direct responses to a tap.
+ * entering, `snappy` for direct responses to a tap. Pop-ins use
+ * `Easing.out(Easing.back(1.6))` over `popMs`.
  */
 export const motion = {
   gentle: { damping: 18, stiffness: 145, mass: 0.9 },
@@ -226,6 +398,13 @@ export const motion = {
   standardMs: 240,
   /** Duration for value counting, which should feel deliberate, not instant. */
   countMs: 620,
+  pressMs: 70,
+  popMs: 260,
+  staggerMs: 140,
+  countXpMs: 900,
+  rayPeriodMs: 20000,
+  shakeMs: 320,
+  coinFlyMs: 650,
 } as const;
 
 export function formatValue(n: number): string {

@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   valueRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   valueMd: { fontFamily: font.bold, fontSize: 30, fontWeight: '700', letterSpacing: -0.5 },
   tabular: { fontVariant: ['tabular-nums'] },
-  label: { color: theme.textDim, marginTop: 2 },
+  label: { color: theme.textMuted, marginTop: 2 },
   flame: {
     width: 18,
     height: 22,

@@ -232,6 +232,8 @@ anyone when the backend is configured; posting requires a session. Opening
 Scores while signed in is the retry boundary: `syncPendingScores` upserts
 unsynced rows to `global_scores` keyed by `(player_id, client_entry_id)` so a
 flaky retry cannot double-post, then marks only confirmed rows `synced`.
+A row with `boosted: true` fails `needsGlobalSync`, so a boosted run is never
+uploaded (D-065). It stays on the local board with a Boosted tag.
 Optional accounts use **Supabase Auth** (D-033, D-037): an email magic link, no
 password. The player enters an address, Supabase sends the link, and the
 session lands when they open it (web URL parse, or native PKCE exchange from
@@ -313,6 +315,22 @@ Reduce-motion skips playback. The web export fills `100dvh` so mobile URL-bar
 `100vh` does not clip the hub.
 
 ---
+
+## Journey 5a — A finished run becomes XP, stars, coins, and a daily chest
+
+`App.tsx` owns the end of a solo run. Before `recordScore`, it computes
+`isNewBest` from the board already on the device. A tie is not a new best.
+The saved row includes `boosted` when the run spent coins. `applyRun` then
+grants XP, stars, and coins, and the first finished run of the local day
+makes today's chest ready. `saveRewards` writes `wordkrush.rewards.v1`.
+A Wordfall loss takes the same path, including the daily flame. Live races
+skip rewards and never show boosts.
+
+The result sheet shows the stars, XP, and coins from the events `applyRun`
+returned. A level-up or milestone celebration opens after that sheet, not
+instead of the value reveal. More or Less still counts the hidden value up
+before the result. The hub chest reads locked ("Finish any run to open
+today's chest"), ready ("Open — Day N/7"), or claimed ("Back tomorrow").
 
 ## Journey 6 — A Wordfall level goes live on Monday
 
@@ -517,6 +535,7 @@ leftover column with Host / Join as a footer; on a laptop the roster sits in a
 left column and the picker on the right.
 
 **3. A lobby is 2–10 ready players, then a server seed.** [BUILT]
+Boosts stay hidden for the whole race, so a live score cannot be boosted.
 `create_match` / `join_match` / `set_ready` / `start_match`. Late joins after
 `started_at` are refused. The seed is assigned on start, not by the host
 client. Realtime on `matches` and `match_players` plus a 1.5s poll. Teams,

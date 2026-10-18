@@ -2,8 +2,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { getGame } from '../../games/registry';
 import { rankMatchScores } from '../../live/ranking';
 import type { LiveMatchSnapshot } from '../../live/types';
-import { Button, ScreenHeader, Surface } from '../components';
-import { space, theme, type } from '../theme';
+import { Button, DisplayTitle, Rays, ResultSheet, RoundIconButton, ScoreWell, StarRow } from '../components';
+import { screen, space, theme, type } from '../theme';
 
 type Props = {
   snapshot: LiveMatchSnapshot;
@@ -22,7 +22,6 @@ export function LiveResultsScreen({
 }: Props) {
   const { match, players } = snapshot;
   const game = getGame(match.gameId);
-  const accent = game?.accent ?? theme.accent;
   const ranked = rankMatchScores(
     match.gameId,
     players.map((player) => ({
@@ -31,25 +30,60 @@ export function LiveResultsScreen({
       complete: player.complete,
     })),
   );
+  const mine = ranked.find((row) => row.playerId === playerId);
+  const won = mine?.rank === 1;
 
   return (
     <View style={styles.root}>
-      <ScreenHeader
-        eyebrow="RACE OVER"
-        title={game?.name ?? match.gameId}
-        subtitle={
-          ranked.length > 0 && match.gameId === 'more-or-less'
-            ? `${players.find((p) => p.playerId === ranked[0].playerId)?.username ?? 'Player'} won · ${ranked[0].score} streak.`
-            : `Level ${match.levelNumber}`
+      {won ? (
+        <View style={styles.rays} pointerEvents="none">
+          <Rays />
+        </View>
+      ) : null}
+      <View style={styles.stars}>
+        <StarRow earned={0} animate={false} />
+      </View>
+      <ResultSheet
+        accessibilityLabel={won ? 'You win' : 'Game over'}
+        footer={
+          <View style={styles.footer}>
+            <Button title="Continue" size="xl" tone="green" onPress={onDone} />
+            <View style={styles.roundRow}>
+              <RoundIconButton
+                icon={<Text style={styles.roundGlyph}>⌂</Text>}
+                accessibilityLabel="Back to team"
+                onPress={onDone}
+                tone="blue"
+                size={52}
+              />
+            </View>
+          </View>
         }
-      />
-      <Surface style={styles.card}>
-        {ranked.map((row) => {
+      >
+        <DisplayTitle>{won ? 'YOU WIN' : 'GAME OVER'}</DisplayTitle>
+        <Text style={styles.gameName}>{game?.name ?? match.gameId}</Text>
+        <ScoreWell label="YOUR SCORE" value={String(mine?.score ?? 0)} />
+        <View style={styles.podium}>
+          {ranked.slice(0, 3).map((row) => {
+            const player = players.find((item) => item.playerId === row.playerId);
+            const self = row.playerId === playerId;
+            return (
+              <View key={row.playerId} style={[styles.placeCard, row.rank === 1 && styles.placeFirst]}>
+                <Text style={styles.placeRank}>{row.rank}</Text>
+                <Text style={styles.placeName} numberOfLines={1}>
+                  {self ? 'You' : player?.username ?? 'Player'}
+                </Text>
+                <Text style={styles.placeScore}>{row.score}</Text>
+              </View>
+            );
+          })}
+        </View>
+        {ranked.slice(3).map((row) => {
           const player = players.find((item) => item.playerId === row.playerId);
           const self = row.playerId === playerId;
           return (
             <View key={row.playerId} style={styles.row}>
-              <Text style={[styles.place, self && { color: accent }]}>{row.rank}</Text>
+              <Text style={styles.place}>{row.rank}</Text>
               <View style={styles.body}>
                 <Text style={styles.name}>
                   {player?.username ?? 'Player'}
@@ -62,25 +96,43 @@ export function LiveResultsScreen({
             </View>
           );
         })}
-      </Surface>
-      <Text style={styles.hint}>
-        {teamAdvanced ? 'Team path advanced.' : 'Team path stayed put — nobody completed.'}{' '}
-        {personalAdvanced
-          ? 'Your path moved up.'
-          : 'Your path did not move. Next solo run is still your own level.'}
-      </Text>
-      <Button title="Back to team" onPress={onDone} color={accent} />
+        <Text style={styles.hint}>
+          {teamAdvanced ? 'Team path advanced.' : 'Team path stayed put — nobody completed.'}{' '}
+          {personalAdvanced
+            ? 'Your path moved up.'
+            : 'Your path did not move. Next solo run is still your own level.'}
+        </Text>
+      </ResultSheet>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg, paddingHorizontal: space.lg, gap: space.md },
-  card: { gap: space.md },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  place: { ...type.display, color: theme.textDim, fontSize: 28, width: 36, textAlign: 'center' },
+  root: { ...screen.playfield, padding: space.md },
+  rays: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
+  stars: { alignItems: 'center', marginBottom: -16, zIndex: 2 },
+  footer: { gap: space.sm },
+  roundRow: { flexDirection: 'row', justifyContent: 'center' },
+  roundGlyph: { color: theme.onPill, fontSize: 22, lineHeight: 26 },
+  gameName: { ...type.subtitle, color: theme.text, textAlign: 'center', marginTop: space.sm },
+  podium: { width: '100%', flexDirection: 'row', gap: space.sm, marginTop: space.lg },
+  placeCard: {
+    flex: 1,
+    minHeight: 88,
+    borderRadius: 16,
+    backgroundColor: theme.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: space.sm,
+  },
+  placeFirst: { backgroundColor: theme.warningSoft },
+  placeRank: { ...type.title, color: theme.text },
+  placeName: { ...type.caption, color: theme.text, textAlign: 'center' },
+  placeScore: { ...type.bodyStrong, color: theme.text },
+  row: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.sm },
+  place: { ...type.subtitle, color: theme.text, width: 28, textAlign: 'center' },
   body: { flex: 1 },
-  name: { ...type.subtitle, color: theme.text, fontSize: 16 },
+  name: { ...type.bodyStrong, color: theme.text },
   meta: { ...type.caption, color: theme.textMuted, marginTop: 2 },
-  hint: { ...type.body, color: theme.textMuted },
+  hint: { ...type.body, color: theme.textMuted, textAlign: 'center', marginTop: space.md },
 });

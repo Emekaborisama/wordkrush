@@ -20,9 +20,12 @@ import {
   type WordfallContext,
 } from '../../games/wordfall/engine';
 import { analyze, scoreWord, specialFor, TRIGGERS } from '../../games/wordfall/linguistics';
+import { findWordPath } from '../../games/wordfall/board';
 import {
   isWordfallSave,
+  persistableWordfallState,
   rehydrate,
+  shouldReportOutcome,
   type WordfallSave,
 } from '../../games/wordfall/persistence';
 import {
@@ -36,24 +39,32 @@ import {
   unlockAfterWin,
 } from '../../games/wordfall/schedule';
 import type { Level, SpecialKind, WordfallState } from '../../games/wordfall/types';
-import { getGame } from '../../games/registry';
 import { buildShareText } from '../../games/wordfall/share';
 import { feedback } from '../../native/feedback';
 import { shareResult } from '../../native/share';
+import { boostPrice } from '../../rewards/wallet';
+import type { BoostKind } from '../../rewards/types';
 import { HowToPlay } from '../HowToPlay';
 import {
   Badge,
+  Button,
+  DisplayTitle,
   GameArtwork,
   GameHeader,
-  IconButton,
-  ResultPanel,
+  Rays,
+  ResultSheet,
+  RoundIconButton,
+  ScoreWell,
   Surface,
 } from '../components';
-import { Mascot } from '../lottie/Mascot';
-import { elevation, font, formatDuration, radius, space, theme, type } from '../theme';
+import { BoostBar, coinShortfall } from '../rewards/BoostBar';
+import type { RunReward } from '../rewards/RunReward';
+import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
+import { shouldShowTraceHint } from '../wordfall/coach';
+import { elevation, font, formatDuration, palette, radius, screen, space, theme, type } from '../theme';
 import { BoardView } from '../wordfall/BoardView';
 import { describeObjective, Hud, TracePreview } from '../wordfall/Hud';
-import { SPECIAL_VISUALS } from '../wordfall/visuals';
+import { SPECIAL_VISUALS, specialInk } from '../wordfall/visuals';
 
 const GAME_ID = 'wordfall';
 /**
@@ -62,7 +73,7 @@ const GAME_ID = 'wordfall';
  * in the middle of.
  */
 const SESSION = 'campaign';
-const ACCENT = getGame('wordfall')?.accent ?? theme.warning;
+const RIBBON = palette.ribbon;
 
 type LiveWordfall = {
   levelNumber: number;
@@ -70,24 +81,51 @@ type LiveWordfall = {
   onScore: (score: number, complete: boolean) => void;
 };
 
+type WordfallFinish = {
+  boosted: boolean;
+  movesLeft: number;
+  moves: number;
+  timeLeftMs: number | null;
+  timeLimitMs: number | null;
+  weekly: boolean;
+};
+
 type Props = {
   /** Called once per level cleared, with the score and how long it took. */
-  onLevelWon: (score: number, levelNumber: number, elapsedMs: number) => void;
+  onLevelWon: (
+    score: number,
+    levelNumber: number,
+    elapsedMs: number,
+    detail: WordfallFinish,
+  ) => void | Promise<RunReward | void>;
+  onLevelLost?: (
+    score: number,
+    levelNumber: number,
+    elapsedMs: number,
+    detail: WordfallFinish,
+  ) => void | Promise<RunReward | void>;
   onExit: () => void;
   showHelpInitially?: boolean;
   live?: LiveWordfall;
+  coins?: number;
+  onSpend?: (kind: BoostKind) => boolean;
 };
 
 export function WordfallScreen({
   onLevelWon,
+  onLevelLost,
   onExit,
   showHelpInitially = false,
   live,
+  coins = 0,
+  onSpend,
 }: Props) {
   const [loaded, setLoaded] = useState(Boolean(live));
   const [unlocked, setUnlocked] = useState(1);
   const [levelNumber, setLevelNumber] = useState(live?.levelNumber ?? 1);
   const [resume, setResume] = useState<WordfallState | null>(null);
+  const [runBoosted, setRunBoosted] = useState(false);
+  const [coachSeen, setCoachSeen] = useState(false);
   const [help, setHelp] = useState(showHelpInitially);
   const [picking, setPicking] = useState(false);
   /** Bumped to force a fresh board for the same level number. */
@@ -104,9 +142,12 @@ export function WordfallScreen({
       if (cancelled) return;
       if (save) {
         setUnlocked(save.unlocked);
-        if (save.state && levelByNumber(save.state.levelNumber)) {
-          setLevelNumber(save.state.levelNumber);
-          setResume(rehydrate(save.state));
+        if (save.traceCoachSeen) setCoachSeen(true);
+        const playable = save.state ? persistableWordfallState(save.state) : null;
+        if (playable && levelByNumber(playable.levelNumber)) {
+          setLevelNumber(playable.levelNumber);
+          setResume(rehydrate(playable));
+          setRunBoosted(save.boosted === true);
         } else {
           // A finished level clears the board but keeps the unlock. Opening at
           // level 1 in that case would send a returning player back to the
@@ -126,21 +167,28 @@ export function WordfallScreen({
   }, [live]);
 
   const persist = useCallback(
-    (state: WordfallState | null, unlockedNow: number) => {
+    (state: WordfallState | null, unlockedNow: number, boostedNow: boolean) => {
       if (live) return;
       // Nothing may be written before the restore completes, or a fresh empty
       // board would overwrite the saved one on launch.
       if (!loaded) return;
-      void saveProgress<WordfallSave>(GAME_ID, SESSION, { unlocked: unlockedNow, state });
+      const playable = state ? persistableWordfallState(state) : null;
+      const body: WordfallSave = {
+        unlocked: unlockedNow,
+        state: playable,
+        ...(playable && boostedNow ? { boosted: true } : {}),
+        ...(coachSeen ? { traceCoachSeen: true } : {}),
+      };
+      void saveProgress<WordfallSave>(GAME_ID, SESSION, body);
     },
-    [loaded, live],
+    [loaded, live, coachSeen],
   );
 
   // Stable identity, so the child's save effect fires on real state changes
   // rather than on every parent render.
   const handleStateChange = useCallback(
-    (state: WordfallState) => persist(state, unlocked),
-    [persist, unlocked],
+    (state: WordfallState) => persist(state, unlocked, runBoosted && state.status === 'playing'),
+    [persist, unlocked, runBoosted],
   );
 
   const level = levelByNumber(levelNumber)!;
@@ -166,16 +214,31 @@ export function WordfallScreen({
         // you read the instructions would be a bad joke.
         paused={help || picking}
         onScore={live?.onScore}
-        onWin={(score, elapsedMs) => {
+        coins={coins}
+        onSpend={live ? undefined : onSpend}
+        boosted={runBoosted}
+        onBoosted={() => setRunBoosted(true)}
+        coachSeen={coachSeen}
+        onCoachSeen={() => setCoachSeen(true)}
+        onWin={(score, elapsedMs, detail) => {
           if (!live) {
             const next = unlockAfterWin(unlocked, levelNumber);
             setUnlocked(next);
-            persist(null, next);
+            setRunBoosted(false);
+            persist(null, next, false);
           }
-          onLevelWon(score, levelNumber, elapsedMs);
+          return onLevelWon(score, levelNumber, elapsedMs, detail);
+        }}
+        onLose={(score, elapsedMs, detail) => {
+          if (!live) {
+            setRunBoosted(false);
+            persist(null, unlocked, false);
+          }
+          return onLevelLost?.(score, levelNumber, elapsedMs, detail);
         }}
         onNext={() => {
           setResume(null);
+          setRunBoosted(false);
           const upcoming = levelByNumber(levelNumber + 1);
           if (upcoming && isLevelPlayable(upcoming, unlockAfterWin(unlocked, levelNumber), new Date())) {
             setLevelNumber(upcoming.number);
@@ -184,6 +247,7 @@ export function WordfallScreen({
         }}
         onRetry={() => {
           setResume(null);
+          setRunBoosted(false);
           setAttempt((a) => a + 1);
         }}
       />
@@ -196,6 +260,7 @@ export function WordfallScreen({
         onSelect={(n) => {
           setPicking(false);
           setResume(null);
+          setRunBoosted(false);
           setLevelNumber(n);
           setAttempt((a) => a + 1);
         }}
@@ -206,7 +271,7 @@ export function WordfallScreen({
         onClose={() => setHelp(false)}
         title="How to play Wordfall"
         intro="Drag across touching letters to spell a word. What the word is made of decides what it leaves behind. New levels drop every Monday."
-        accent={ACCENT}
+        accent={RIBBON}
         steps={[
           {
             n: 1,
@@ -241,12 +306,12 @@ function TriggerLegend() {
         const visual = SPECIAL_VISUALS[trigger.kind];
         return (
           <View key={trigger.kind} style={styles.legendRow}>
-            <View style={[styles.legendGlyph, { borderColor: visual.color }]}>
-              <Text style={[styles.legendGlyphText, { color: visual.color }]}>{visual.glyph}</Text>
+            <View style={[styles.legendGlyph, { backgroundColor: visual.color, borderColor: visual.color }]}>
+              <Text style={[styles.legendGlyphText, { color: specialInk(visual.color) }]}>{visual.glyph}</Text>
             </View>
             <View style={styles.legendBody}>
               <Text style={styles.legendName}>
-                <Text style={{ color: visual.color }}>{trigger.label}</Text>
+                <Text style={styles.legendName}>{trigger.label}</Text>
                 <Text style={styles.legendCondition}> — {trigger.condition}</Text>
               </Text>
               <Text style={styles.legendEffect}>{trigger.effect}</Text>
@@ -268,11 +333,18 @@ function LevelPlay({
   onStateChange,
   onScore,
   onWin,
+  onLose,
   onNext,
   onRetry,
   onExit,
   onHelp,
   onPickLevel,
+  coins,
+  onSpend,
+  boosted,
+  onBoosted,
+  coachSeen,
+  onCoachSeen,
 }: {
   level: Level;
   resume: WordfallState | null;
@@ -283,12 +355,27 @@ function LevelPlay({
   hidePicker?: boolean;
   onStateChange: (state: WordfallState) => void;
   onScore?: (score: number, complete: boolean) => void;
-  onWin: (score: number, elapsedMs: number) => void;
+  onWin: (
+    score: number,
+    elapsedMs: number,
+    detail: WordfallFinish,
+  ) => void | Promise<RunReward | void>;
+  onLose: (
+    score: number,
+    elapsedMs: number,
+    detail: WordfallFinish,
+  ) => void | Promise<RunReward | void>;
   onNext: () => void;
   onRetry: () => void;
   onExit: () => void;
   onHelp: () => void;
   onPickLevel: () => void;
+  coins: number;
+  onSpend?: (kind: BoostKind) => boolean;
+  boosted: boolean;
+  onBoosted: () => void;
+  coachSeen: boolean;
+  onCoachSeen: () => void;
 }) {
   const ctx: WordfallContext = useMemo(() => createContext(level, DICTIONARY), [level]);
   const [state, dispatch] = useReducer(
@@ -302,8 +389,15 @@ function LevelPlay({
    * render that exposes it through `state` has run.
    */
   const pendingTrace = useRef<WordfallState | null>(null);
-  const reported = useRef(false);
+  const reported = useRef(!shouldReportOutcome(resume?.status ?? 'playing'));
   const [boardBounds, setBoardBounds] = useState({ width: 0, height: 0 });
+  const [reward, setReward] = useState<RunReward | null>(null);
+  const [paidHint, setPaidHint] = useState<readonly number[] | null>(null);
+  const [introDismissed, setIntroDismissed] = useState(false);
+  const [adaptiveDismissed, setAdaptiveDismissed] = useState(false);
+  const [singleTileReleases, setSingleTileReleases] = useState(0);
+  const boostedRef = useRef(boosted);
+  boostedRef.current = boosted;
 
   useEffect(() => {
     captureAnalytics('run_started', {
@@ -353,6 +447,15 @@ function LevelPlay({
     tracedCount.current = state.selection.length;
   }, [state.selection.length]);
 
+  const finishDetail = (current: WordfallState): WordfallFinish => ({
+    boosted: boostedRef.current,
+    movesLeft: current.movesLeft,
+    moves: level.moves,
+    timeLeftMs: timeLeftMs(current, ctx),
+    timeLimitMs: level.timeLimitMs ?? null,
+    weekly: level.availableFrom !== undefined,
+  });
+
   useEffect(() => {
     if (state.status === 'won' && !reported.current) {
       reported.current = true;
@@ -366,7 +469,9 @@ function LevelPlay({
         moves_left_bucket:
           state.movesLeft >= 5 ? '5_plus' : state.movesLeft >= 1 ? '1_4' : '0',
       });
-      onWin(state.score, state.elapsedMs);
+      void Promise.resolve(onWin(state.score, state.elapsedMs, finishDetail(state))).then((result) => {
+        if (result) setReward(result);
+      });
       onScore?.(state.score, true);
     } else if (state.status === 'lost' && !reported.current) {
       reported.current = true;
@@ -378,14 +483,8 @@ function LevelPlay({
         duration_ms: state.elapsedMs,
         failure_mode: failureMode,
       });
-      captureAnalytics('run_completed', {
-        game_id: 'wordfall',
-        outcome: 'loss',
-        score: state.score,
-        score_kind: 'points',
-        duration_ms: state.elapsedMs,
-        is_new_best: false,
-        level_number: level.number,
+      void Promise.resolve(onLose(state.score, state.elapsedMs, finishDetail(state))).then((result) => {
+        if (result) setReward(result);
       });
       onScore?.(state.score, false);
     }
@@ -397,6 +496,7 @@ function LevelPlay({
     state.movesLeft,
     level.number,
     onWin,
+    onLose,
     onScore,
     ctx,
   ]);
@@ -479,6 +579,15 @@ function LevelPlay({
     dispatch({ type: 'submit' });
     pendingTrace.current = null;
 
+    if (traceState.selection.length === 1) {
+      setSingleTileReleases((count) => count + 1);
+    }
+    if (traceState.selection.length >= 2) {
+      setIntroDismissed(true);
+      setAdaptiveDismissed(true);
+      onCoachSeen();
+    }
+
     const rejectionKind =
       after.rejection?.kind === 'too-short'
         ? 'too_short'
@@ -503,30 +612,72 @@ function LevelPlay({
   };
 
   const over = state.status !== 'playing';
+  const showCoach =
+    !hidePicker &&
+    state.status === 'playing' &&
+    shouldShowTraceHint({
+      seenIntro: coachSeen,
+      introDismissed,
+      singleTileReleases,
+      adaptiveDismissed,
+    });
+  const coachPath = showCoach ? findWordPath(state.board, ctx.solver, state.played) : null;
+
+  useEffect(() => {
+    if (!showCoach || coachSeen || introDismissed) return;
+    const timer = setTimeout(() => {
+      setIntroDismissed(true);
+      onCoachSeen();
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [showCoach, coachSeen, introDismissed, onCoachSeen]);
+
+  useEffect(() => {
+    if (!paidHint) return;
+    const timer = setTimeout(() => setPaidHint(null), 3000);
+    return () => clearTimeout(timer);
+  }, [paidHint]);
+
+  const spendBoost = (kind: BoostKind): boolean => {
+    if (!onSpend?.(kind)) return false;
+    boostedRef.current = true;
+    onBoosted();
+    return true;
+  };
+
+  const shufflePrice = boostPrice('shuffle');
+  const hintPrice = boostPrice('word-hint');
+  const extraPrice = boostPrice(level.timeLimitMs === undefined ? 'extra-moves' : 'extra-time');
+  const extraKind: BoostKind = level.timeLimitMs === undefined ? 'extra-moves' : 'extra-time';
+  const extraUsed =
+    extraKind === 'extra-moves' ? state.extraMovesGranted === true : (state.bonusMs ?? 0) > 0;
+  const hintTiles = findWordPath(state.board, ctx.solver, state.played);
 
   return (
     <View style={styles.play}>
       <GameHeader
         title="Wordfall"
         subtitle={`LEVEL ${level.number} · ${level.name.toUpperCase()}`}
-        accent={ACCENT}
+        ribbon={RIBBON}
         onExit={onExit}
-        sideWidth={92}
+        sideWidth={hidePicker ? 52 : 108}
         trailing={
           <View style={styles.headerActions}>
             {hidePicker ? null : (
-              <IconButton
-                icon={<Text style={styles.levelListMark}>≡</Text>}
+              <RoundIconButton
+                icon={<Text style={styles.headerGlyph}>≡</Text>}
                 accessibilityLabel="Choose a level"
                 onPress={onPickLevel}
-                color={ACCENT}
+                tone="blue"
+                size={44}
               />
             )}
-            <IconButton
-              icon={<Text style={styles.helpMark}>?</Text>}
+            <RoundIconButton
+              icon={<Text style={styles.headerGlyph}>?</Text>}
               accessibilityLabel="How to play"
               onPress={onHelp}
-              color={ACCENT}
+              tone="purple"
+              size={44}
             />
           </View>
         }
@@ -540,8 +691,58 @@ function LevelPlay({
         score={state.score}
         objectives={level.objectives}
         progress={state.progress}
-        accent={ACCENT}
+        accent={palette.green}
       />
+
+      {onSpend && state.status === 'playing' ? (
+        <BoostBar
+          controls={[
+            {
+              kind: 'shuffle',
+              label: 'Shuffle',
+              glyph: '⟳',
+              price: shufflePrice,
+              disabled: coins < shufflePrice,
+              disabledReason: coinShortfall(coins, shufflePrice),
+              onPress: () => {
+                if (!spendBoost('shuffle')) return;
+                dispatch({ type: 'boost', kind: 'shuffle' });
+              },
+            },
+            {
+              kind: 'word-hint',
+              label: 'Word hint',
+              glyph: '✦',
+              price: hintPrice,
+              disabled: coins < hintPrice || hintTiles === null,
+              disabledReason:
+                coinShortfall(coins, hintPrice) ?? (hintTiles === null ? 'No word to show' : undefined),
+              onPress: () => {
+                const path = findWordPath(state.board, ctx.solver, state.played);
+                if (!path || !spendBoost('word-hint')) return;
+                setPaidHint(path);
+              },
+            },
+            {
+              kind: extraKind,
+              label: extraKind === 'extra-moves' ? '+3 moves' : '+10s',
+              glyph: extraKind === 'extra-moves' ? '+3' : '+10',
+              price: extraPrice,
+              disabled: coins < extraPrice || extraUsed,
+              disabledReason: extraUsed
+                ? 'Already used this level'
+                : coinShortfall(coins, extraPrice),
+              onPress: () => {
+                if (extraUsed || !spendBoost(extraKind)) return;
+                dispatch({
+                  type: 'boost',
+                  kind: extraKind === 'extra-moves' ? 'extraMoves' : 'extraTime',
+                });
+              },
+            },
+          ]}
+        />
+      ) : null}
 
       <View
         style={styles.boardWrap}
@@ -557,14 +758,20 @@ function LevelPlay({
             board={state.board}
             selection={state.selection}
             lastPlay={state.lastPlay}
-            accent={ACCENT}
+            accent={RIBBON}
             maxWidth={boardBounds.width}
             maxHeight={boardBounds.height}
             disabled={over}
+            hintPath={paidHint ?? coachPath ?? undefined}
             onTrace={trace}
             onRelease={submit}
             onCancel={cancelTrace}
           />
+        ) : null}
+        {showCoach && coachPath ? (
+          <Text style={styles.coach} pointerEvents="none">
+            Drag through the glowing letters
+          </Text>
         ) : null}
       </View>
 
@@ -574,7 +781,7 @@ function LevelPlay({
         points={preview.points}
         special={preview.special}
         message={message}
-        accent={ACCENT}
+        accent={RIBBON}
       />
 
       {over && (
@@ -583,8 +790,10 @@ function LevelPlay({
           level={level}
           unlocked={unlocked}
           outOfTime={lostToClock(state, ctx)}
+          onExit={onExit}
           onNext={onNext}
           onRetry={onRetry}
+          reward={reward}
         />
       )}
     </View>
@@ -594,17 +803,20 @@ function LevelPlay({
 function LevelOutcome({
   state,
   level,
-  unlocked,
   outOfTime,
+  onExit,
   onNext,
   onRetry,
+  reward,
 }: {
   state: WordfallState;
   level: Level;
   unlocked: number;
   outOfTime: boolean;
+  onExit: () => void;
   onNext: () => void;
   onRetry: () => void;
+  reward: RunReward | null;
 }) {
   const won = state.status === 'won';
   const latest = lastReleasedNumber(LEVELS, new Date());
@@ -640,46 +852,76 @@ function LevelOutcome({
         outcome: won ? 'win' : 'loss',
         score_kind: 'points',
         method: outcome === 'shared' ? 'share_sheet' : 'clipboard',
-        is_new_best: false,
+        is_new_best: reward?.isNewBest ?? false,
       });
     }
   }
 
+  const primaryLabel = won && !finished ? 'Continue' : 'Try again';
+  const summary = `${state.played.length} ${state.played.length === 1 ? 'word' : 'words'} · ${formatDuration(
+    state.elapsedMs,
+  )}${
+    won && level.timeLimitMs === undefined && state.movesLeft > 0
+      ? ` · ${state.movesLeft} moves spare`
+      : ''
+  }${finished ? ' · All levels cleared' : ''}${outOfTime && !won ? ' · Out of time' : ''}`;
+
   return (
     <View style={styles.outcomeScrim}>
-      <ResultPanel
-        eyebrow={
-          finished
-            ? 'ALL LEVELS CLEARED'
-            : won
-              ? 'LEVEL COMPLETE'
-              : outOfTime
-                ? 'OUT OF TIME'
-                : 'OUT OF MOVES'
+      {won ? (
+        <View style={styles.rays} pointerEvents="none">
+          <Rays />
+        </View>
+      ) : null}
+      <View style={styles.stars}>
+        {reward ? <RewardPanel events={reward.events} boosted={reward.boosted} /> : null}
+      </View>
+      <ResultSheet
+        accessibilityLabel={won ? 'You win' : 'Game over'}
+        footer={
+          <View style={styles.outcomeFooter}>
+            <Button
+              title={primaryLabel}
+              size="xl"
+              tone="green"
+              onPress={won && !finished ? onNext : onRetry}
+            />
+            <View style={styles.roundRow}>
+              <RoundIconButton
+                icon={<Text style={styles.roundGlyph}>⌂</Text>}
+                accessibilityLabel="Back to Wordfall"
+                onPress={onExit}
+                tone="blue"
+                size={52}
+              />
+              <RoundIconButton
+                icon={<Text style={styles.roundGlyph}>↻</Text>}
+                accessibilityLabel="Replay"
+                onPress={onRetry}
+                tone="purple"
+                size={52}
+              />
+            </View>
+            <Button
+              title="Share result"
+              tone="blue"
+              size="md"
+              onPress={() => void onShare()}
+              accessibilityHint="Copies a spoiler-free result you can paste anywhere"
+            />
+            {shareNote ? (
+              <Text style={styles.shareNote} accessibilityLiveRegion="polite">
+                {shareNote}
+              </Text>
+            ) : null}
+          </View>
         }
-        title={finished ? 'Wordfall master!' : won ? 'Board crushed!' : 'Almost there.'}
-        value={state.score.toLocaleString('en-US')}
-        valueLabel="POINTS"
-        body={`${state.played.length} ${state.played.length === 1 ? 'word' : 'words'} · ${formatDuration(
-          state.elapsedMs,
-        )}${
-          won && level.timeLimitMs === undefined && state.movesLeft > 0
-            ? ` · ${state.movesLeft} moves spare`
-            : ''
-        }`}
-        accent={won ? ACCENT : theme.danger}
-        art={<Mascot size={64} pose={won ? 'celebrate' : 'wince'} />}
-        share={{ label: 'Share result', onPress: () => void onShare(), note: shareNote }}
-        primary={{
-          label: won && !finished ? 'Next level' : won ? 'Replay level' : 'Try again',
-          onPress: won && !finished ? onNext : onRetry,
-        }}
-        secondary={won && !finished ? { label: 'Replay level', onPress: onRetry } : undefined}
       >
+        <DisplayTitle>{won ? 'YOU WIN' : 'GAME OVER'}</DisplayTitle>
+        <ScoreWell label="POINTS" value={state.score.toLocaleString('en-US')} />
+        <Text style={styles.outcomeBody}>{summary}</Text>
         {!won ? (
-          // Naming what fell short is the difference between "try again" and
-          // knowing what to try differently.
-          <Surface level={1} radius={radius.md} borderColor={theme.danger} style={styles.missed}>
+          <View style={styles.missed}>
             <Text style={styles.missedTitle}>STILL TO DO</Text>
             {level.objectives.map((objective, index) => {
               const progress = state.progress[index] ?? 0;
@@ -692,9 +934,10 @@ function LevelOutcome({
                 </Text>
               );
             })}
-          </Surface>
+          </View>
         ) : null}
-      </ResultPanel>
+      </ResultSheet>
+      {reward ? <RewardCelebration events={reward.events} /> : null}
     </View>
   );
 }
@@ -725,7 +968,7 @@ function LevelPicker({
         <View style={styles.picker}>
           <View style={styles.pickerHandle} />
           <View style={styles.pickerHeader}>
-            <GameArtwork gameId={GAME_ID} accent={ACCENT} size={54} raised />
+            <GameArtwork gameId={GAME_ID} accent={RIBBON} size={54} raised />
             <View style={styles.pickerHeaderCopy}>
               <Text style={styles.pickerTitle}>Choose a level</Text>
               <Text style={styles.pickerIntro}>
@@ -751,7 +994,7 @@ function LevelPicker({
                   radius={radius.md}
                   disabled={locked}
                   onPress={() => onSelect(level.number)}
-                  borderColor={active ? ACCENT : undefined}
+                  borderColor={active ? RIBBON : undefined}
                   style={styles.pickerRow}
                   accessibilityRole="button"
                   accessibilityLabel={
@@ -765,13 +1008,13 @@ function LevelPicker({
                   <View
                     style={[
                       styles.pickerNumber,
-                      active && { backgroundColor: ACCENT, borderColor: ACCENT },
+                      active && { backgroundColor: RIBBON, borderColor: RIBBON },
                     ]}
                   >
                     {locked ? (
                       <LockMark />
                     ) : (
-                      <Text style={[styles.pickerNumberText, active && { color: theme.bg }]}>
+                      <Text style={[styles.pickerNumberText, active && { color: palette.brown }]}>
                         {level.number}
                       </Text>
                     )}
@@ -779,9 +1022,9 @@ function LevelPicker({
                   <View style={styles.pickerBody}>
                     <View style={styles.pickerNameRow}>
                       <Text style={[styles.pickerName, locked && styles.dim]}>{level.name}</Text>
-                      {fresh ? <Badge label="THIS WEEK" color={ACCENT} /> : null}
+                      {fresh ? <Badge label="THIS WEEK" color={RIBBON} /> : null}
                       {upcoming ? <Badge label={`DROPS ${formatDropDay(upcoming).toUpperCase()}`} /> : null}
-                      {active ? <Badge label="CURRENT" color={ACCENT} /> : null}
+                      {active ? <Badge label="CURRENT" color={RIBBON} /> : null}
                     </View>
                     <Text style={styles.pickerDescription} numberOfLines={2}>
                       {level.description}
@@ -822,26 +1065,33 @@ function LockMark() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg },
+  root: screen.playfield,
   play: { flex: 1, paddingHorizontal: space.md, paddingBottom: space.sm, gap: space.sm },
-  levelListMark: {
-    color: theme.text,
-    fontFamily: font.semibold,
-    fontSize: 21,
-    fontWeight: '600',
-    lineHeight: 22,
-  },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  helpMark: {
-    color: theme.text,
-    fontFamily: font.semibold,
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerGlyph: { color: theme.onPill, fontSize: 18, lineHeight: 20, fontWeight: '700' },
+  rays: { position: 'absolute', top: 24, left: 0, right: 0, alignItems: 'center' },
+  stars: { alignItems: 'center', marginBottom: -16, zIndex: 2 },
+  outcomeFooter: { gap: space.sm },
+  roundRow: { flexDirection: 'row', justifyContent: 'center', gap: space.lg },
+  roundGlyph: { color: theme.onPill, fontSize: 22, lineHeight: 26 },
+  shareNote: { ...type.caption, color: theme.textMuted, textAlign: 'center' },
+  outcomeBody: { ...type.caption, color: theme.textMuted, textAlign: 'center', marginTop: space.md },
 
   // The board takes whatever height is left and centres itself, so the HUD and
   // the read-out keep their positions on every screen size.
   boardWrap: { flex: 1, justifyContent: 'center' },
+  coach: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 8,
+    textAlign: 'center',
+    color: palette.brown,
+    fontFamily: font.bold,
+    fontWeight: '700',
+    fontSize: 14,
+    lineHeight: 18,
+  },
 
   outcomeScrim: {
     position: 'absolute',
@@ -850,9 +1100,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: theme.overlay,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: space.lg,
+    padding: space.md,
   },
   missed: {
     width: '100%',
@@ -897,8 +1145,8 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   pickerNumber: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
     backgroundColor: elevation(1).backgroundColor,
     borderWidth: 1,
@@ -917,7 +1165,7 @@ const styles = StyleSheet.create({
   pickerNameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   pickerName: { ...type.subtitle, color: theme.text },
   pickerDescription: { ...type.caption, color: theme.textMuted, marginTop: 3, lineHeight: 16 },
-  pickerGoals: { ...type.caption, color: ACCENT, marginTop: 4 },
+  pickerGoals: { ...type.caption, color: theme.textMuted, marginTop: 4 },
   pickerBudget: { width: 48, alignItems: 'flex-end' },
   pickerBudgetValue: {
     ...type.caption,
@@ -957,7 +1205,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: elevation(3).backgroundColor,
   },
-  legendGlyphText: { fontSize: 15, fontWeight: '900' },
+  legendGlyphText: { color: theme.onPill, fontSize: 15, fontWeight: '900' },
   legendBody: { flex: 1 },
   legendName: { ...type.bodyStrong },
   legendCondition: { color: theme.textMuted, fontFamily: font.semibold, fontWeight: '600' },

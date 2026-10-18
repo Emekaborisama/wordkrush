@@ -4,8 +4,8 @@ import type { AnalyticsConsent } from '../analytics/events';
 import { canVibrate } from '../native/haptics';
 import type { FeedbackChannel, FeedbackSettings } from '../settings/types';
 import { GAMES } from '../games/registry';
-import { BrandArtwork, GameArtwork, IconButton } from './components';
-import { font, radius, space, theme, type, withAlpha } from './theme';
+import { BrandArtwork, GameArtwork, RoundIconButton } from './components';
+import { font, labelFloorPx, radius, space, theme, type, withAlpha } from './theme';
 
 export type DrawerDestination =
   | { kind: 'hub' }
@@ -95,10 +95,12 @@ export function Drawer({
               <Text style={styles.brand}>WordKrush</Text>
               <Text style={styles.account}>{signedInAs ?? 'Playing as guest'}</Text>
             </View>
-            <IconButton
+            <RoundIconButton
               icon={<Text style={styles.closeMark}>×</Text>}
               accessibilityLabel="Close menu"
               onPress={onClose}
+              tone="purple"
+              size={44}
             />
           </View>
         </View>
@@ -242,7 +244,7 @@ function Item({
       <Text
         style={[
           styles.itemLabel,
-          active && [styles.itemLabelActive, { color: accent }],
+          active && styles.itemLabelActive,
           disabled && styles.itemDim,
         ]}
       >
@@ -279,44 +281,44 @@ const styles = StyleSheet.create({
     letterSpacing: -0.55,
   },
   account: { ...type.caption, color: theme.textMuted, fontSize: 11, marginTop: 1 },
-  closeMark: { color: theme.textMuted, fontFamily: font.semibold, fontSize: 24, lineHeight: 25 },
+  closeMark: { color: theme.onPill, fontSize: 22, lineHeight: 24 },
 
   sectionLabel: {
-    color: theme.textDim,
+    color: theme.textMuted,
     ...type.overline,
-    fontSize: 9,
+    fontSize: labelFloorPx,
     paddingHorizontal: 10,
     marginTop: 16,
     marginBottom: 6,
-    opacity: 0.7,
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 12,
+    minHeight: 44,
+    paddingVertical: 10,
     paddingHorizontal: 10,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   itemIcon: { width: 36, alignItems: 'center', justifyContent: 'center' },
-  itemGlyph: { color: theme.textMuted, fontFamily: font.semibold, fontSize: 17, fontWeight: '600' },
+  itemGlyph: { color: theme.textMuted, fontSize: 17 },
   itemLabel: {
-    color: theme.textMuted,
+    color: theme.text,
     fontFamily: font.medium,
     fontSize: 15,
     fontWeight: '500',
     flex: 1,
   },
   itemLabelActive: { fontFamily: font.semibold, fontWeight: '600' },
-  itemDim: { opacity: 0.5 },
+  itemDim: { color: theme.textMuted },
   trailing: {
-    color: theme.textDim,
+    color: theme.textMuted,
     fontFamily: font.semibold,
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontSize: labelFloorPx,
+    fontWeight: '600',
+    letterSpacing: 0.6,
     borderWidth: 1,
     borderColor: theme.border,
     borderRadius: radius.sm,
@@ -325,6 +327,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   spacer: { flex: 1 },
-  footer: { color: theme.textDim, fontFamily: font.medium, fontSize: 10, opacity: 0.5, padding: 10 },
-  pressed: { opacity: 0.7 },
+  footer: { color: theme.textMuted, fontFamily: font.medium, fontSize: labelFloorPx, padding: 10 },
+  pressed: { backgroundColor: theme.bg },
 });

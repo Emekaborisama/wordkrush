@@ -1,7 +1,7 @@
 import type { Profile } from '../auth/auth';
 import { supabase } from '../auth/client';
 import { normalizeCluelessScoreContext } from '../games/clueless/scoring';
-import type { ScoreBoard, ScoreEntry } from './types';
+import { needsGlobalSync, type ScoreBoard, type ScoreEntry } from './types';
 
 export type GlobalScore = {
   id: string;
@@ -139,21 +139,27 @@ export async function submitGlobalScore(
 }
 
 /** Uploads unsynced local runs and marks only confirmed submissions. A failed
- * network call leaves its row pending so a later app session can retry. */
+ * network call leaves its row pending so a later app session can retry.
+ * Boosted rows are skipped: they stay on this device and are never submitted. */
 export async function syncPendingScores(
   gameId: string,
   board: ScoreBoard,
   profile: Profile,
+  submit: (
+    gameId: string,
+    entry: ScoreEntry,
+    profile: Profile,
+  ) => Promise<SubmissionResult> = submitGlobalScore,
 ): Promise<ScoreBoard> {
   let changed = false;
   const history: ScoreEntry[] = [];
 
   for (const entry of board.history) {
-    if (entry.synced) {
+    if (!needsGlobalSync(entry)) {
       history.push(entry);
       continue;
     }
-    const result = await submitGlobalScore(gameId, entry, profile);
+    const result = await submit(gameId, entry, profile);
     if (result.ok) {
       changed = true;
       history.push({ ...entry, synced: true });

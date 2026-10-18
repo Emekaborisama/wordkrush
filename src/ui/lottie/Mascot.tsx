@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import deer from '../../../assets/lottie/deer.lottie';
 import { bundledAssetUri } from './bundledUri';
 import { LottiePlayer } from './LottiePlayer';
+import { useReduceMotion } from '../useReduceMotion';
 import { deerSlot, LOTTIE_CLIPS, mascotSize, type DeerPose } from './sources';
 
 type Props = {
@@ -17,7 +17,7 @@ type Props = {
  * backdrop layer already stripped). Decorative: hidden from assistive tech.
  */
 export function Mascot({ size = 56, pose = 'idle' }: Props) {
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const reduceMotion = useReduceMotion();
   const box = mascotSize(size);
   const clip = LOTTIE_CLIPS[deerSlot(pose)];
   const bundledUri = bundledAssetUri(
@@ -26,15 +26,6 @@ export function Mascot({ size = 56, pose = 'idle' }: Props) {
       ? (source) => Image.resolveAssetSource(source as never)
       : undefined,
   );
-
-  useEffect(() => {
-    void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-    const subscription = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      setReduceMotion,
-    );
-    return () => subscription.remove();
-  }, []);
 
   return (
     <View

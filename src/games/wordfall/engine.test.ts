@@ -741,3 +741,56 @@ describe('shipped timed levels', () => {
     expect([...limits].sort((a, b) => a - b)).toEqual(limits);
   });
 });
+
+describe('boosts', () => {
+  const rows = ['stone', 'rates', 'lined', 'coast', 'tenor'];
+
+  it('reshuffles without spending a move', () => {
+    const ctx = ctxFor();
+    const start = { ...stateWith(ctx, rows), selection: [0, 1, 2] };
+    const shuffled = reducer(start, { type: 'boost', kind: 'shuffle' }, ctx);
+    expect(shuffled.movesLeft).toBe(start.movesLeft);
+    expect(shuffled.seed).not.toBe(start.seed);
+    expect(shuffled.selection).toEqual([]);
+    expect(shuffled.status).toBe('playing');
+    expect(reducer(start, { type: 'boost', kind: 'shuffle' }, ctx).board).toEqual(shuffled.board);
+  });
+
+  it('adds three moves once', () => {
+    const ctx = ctxFor();
+    const start = stateWith(ctx, rows);
+    const boosted = reducer(start, { type: 'boost', kind: 'extraMoves' }, ctx);
+    expect(boosted.movesLeft).toBe(start.movesLeft + 3);
+    expect(boosted.extraMovesGranted).toBe(true);
+    expect(reducer(boosted, { type: 'boost', kind: 'extraMoves' }, ctx)).toBe(boosted);
+    const won = { ...start, status: 'won' as const };
+    expect(reducer(won, { type: 'boost', kind: 'extraMoves' }, ctx)).toBe(won);
+  });
+
+  it('adds ten seconds once, and the clock includes them', () => {
+    const ctx = ctxFor({
+      moves: 30,
+      timeLimitMs: 60_000,
+      objectives: [{ kind: 'words', target: 99 }],
+    });
+    const start = stateWith(ctx, rows);
+    const boosted = reducer(start, { type: 'boost', kind: 'extraTime' }, ctx);
+    expect(boosted.bonusMs).toBe(10_000);
+    expect(timeLeftMs(boosted, ctx)).toBe(70_000);
+    const stillPlaying = reducer(boosted, { type: 'tick', elapsedMs: 60_000 }, ctx);
+    expect(stillPlaying.status).toBe('playing');
+    expect(timeLeftMs(stillPlaying, ctx)).toBe(10_000);
+    const lost = reducer(stillPlaying, { type: 'tick', elapsedMs: 70_000 }, ctx);
+    expect(lost.status).toBe('lost');
+    expect(lost.elapsedMs).toBe(70_000);
+    expect(lostToClock(lost, ctx)).toBe(true);
+    expect(reducer(boosted, { type: 'boost', kind: 'extraTime' }, ctx)).toBe(boosted);
+  });
+
+  it('does not add time on an untimed level', () => {
+    const ctx = ctxFor();
+    const start = stateWith(ctx, rows);
+    expect(reducer(start, { type: 'boost', kind: 'extraTime' }, ctx)).toBe(start);
+    expect(timeLeftMs(start, ctx)).toBeNull();
+  });
+});

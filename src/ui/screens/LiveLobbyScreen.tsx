@@ -13,8 +13,8 @@ import {
 import { pathRowByNumber } from '../../live/catalog';
 import type { LiveMatchSnapshot } from '../../live/types';
 import { useMatch } from '../../live/useMatch';
-import { Button, FeedbackBanner, ScreenHeader, Surface } from '../components';
-import { space, theme, type } from '../theme';
+import { Button, FeedbackBanner, Ribbon, RoundIconButton, Surface } from '../components';
+import { palette, screen, space, theme, type } from '../theme';
 
 type Props = {
   matchId: string;
@@ -49,14 +49,13 @@ export function LiveLobbyScreen({ matchId, playerId, onRacing, onExit }: Props) 
     return (
       <View style={styles.root}>
         {error ? <FeedbackBanner title="Lobby unavailable" body={error} tone="danger" /> : null}
-        <Button title="Back" variant="ghost" onPress={onExit} />
+        <Button title="Back" tone="blue" size="md" onPress={onExit} />
       </View>
     );
   }
 
   const { match, players } = snapshot;
   const game = getGame(match.gameId);
-  const accent = game?.accent ?? theme.accent;
   const row = pathRowByNumber(match.gameId, match.levelNumber);
   const self = players.find((player) => player.playerId === playerId);
   const isHost = match.hostId === playerId;
@@ -115,11 +114,23 @@ export function LiveLobbyScreen({ matchId, playerId, onRacing, onExit }: Props) 
 
   return (
     <View style={styles.root}>
-      <ScreenHeader
-        eyebrow="LOBBY"
-        title={game?.name ?? match.gameId}
-        subtitle={`${row?.name ?? `Level ${match.levelNumber}`} · ${players.length} of ${LIVE_MAX_PLAYERS}`}
-      />
+      <View style={styles.header}>
+        <RoundIconButton
+          icon={<Text style={styles.backGlyph}>‹</Text>}
+          accessibilityLabel="Leave lobby"
+          onPress={() => void handleLeave()}
+          tone="blue"
+          size={44}
+        />
+        <Ribbon
+          label={(game?.name ?? 'LOBBY').toUpperCase()}
+          color={match.gameId === 'clueless' ? palette.purple : palette.ribbon}
+        />
+        <View style={styles.headerSpacer} />
+      </View>
+      <Text style={styles.levelLine}>
+        {`${row?.name ?? `Level ${match.levelNumber}`} · ${players.length} of ${LIVE_MAX_PLAYERS}`}
+      </Text>
       {actionError ? <FeedbackBanner title="Couldn’t update lobby" body={actionError} tone="danger" /> : null}
 
       <Surface style={styles.card}>
@@ -129,7 +140,7 @@ export function LiveLobbyScreen({ matchId, playerId, onRacing, onExit }: Props) 
               {player.username}
               {player.playerId === playerId ? ' (you)' : ''}
             </Text>
-            <Text style={[styles.ready, player.ready && { color: accent }]}>
+            <Text style={[styles.ready, player.ready && styles.readyOn]}>
               {player.ready ? 'READY' : 'WAIT'}
             </Text>
           </View>
@@ -147,16 +158,18 @@ export function LiveLobbyScreen({ matchId, playerId, onRacing, onExit }: Props) 
       <View style={styles.actions}>
         <Button
           title={self?.ready ? 'Unready' : 'Ready up'}
+          tone="blue"
+          size="md"
           onPress={() => void toggleReady()}
-          color={accent}
           disabled={busy}
         />
         {isHost ? (
-          <Button title="Start race" onPress={() => void handleStart()} color={accent} disabled={busy || !canStart} />
+          <Button title="Start race" size="xl" tone="green" onPress={() => void handleStart()} disabled={busy || !canStart} />
         ) : null}
         <Button
           title={isHost ? 'Cancel lobby' : 'Leave'}
-          variant="ghost"
+          tone="coral"
+          size="md"
           onPress={() => void handleLeave()}
           disabled={busy}
         />
@@ -166,7 +179,12 @@ export function LiveLobbyScreen({ matchId, playerId, onRacing, onExit }: Props) 
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg, paddingHorizontal: space.lg, gap: space.md },
+  root: { ...screen.page, paddingHorizontal: space.lg, paddingTop: space.sm, gap: space.md },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerSpacer: { width: 44 },
+  backGlyph: { color: theme.onPill, fontSize: 22, lineHeight: 24, fontWeight: '700' },
+  levelLine: { ...type.body, color: theme.text, textAlign: 'center' },
+  readyOn: { color: theme.successDim },
   card: { gap: space.sm },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   name: { ...type.bodyStrong, color: theme.text },
