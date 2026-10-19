@@ -2,7 +2,8 @@ import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'rea
 import { Animated, Easing, PanResponder, Platform, StyleSheet, Text, View } from 'react-native';
 import { colOf, rowOf } from '../../games/wordfall/board';
 import type { Board, PlayResult, SpecialKind } from '../../games/wordfall/types';
-import { font, palette, radius, shade, theme, type } from '../theme';
+import { BlockTile, StrokeText } from '../components';
+import { palette, tone } from '../theme';
 import { WORDFALL_BOARD_WEB_ID } from '../webViewport';
 import {
   CLEAR_HOLD_MS,
@@ -12,9 +13,11 @@ import {
   playJuiceKey,
   type ClearGhost,
 } from './clearJuice';
-import { SPECIAL_VISUALS, TILE, specialInk } from './visuals';
+import { SPECIAL_VISUALS } from './visuals';
 
-const GAP = 6;
+const GAP = 5;
+/** The kit's cyan board frame: border plus padding round the tiles. */
+const FRAME_INSET = 9;
 
 type Props = {
   board: Board;
@@ -98,8 +101,8 @@ export function BoardView({
 
   const horizontalGaps = GAP * (board.width - 1);
   const verticalGaps = GAP * (board.height - 1);
-  const tileFromWidth = (maxWidth - horizontalGaps) / board.width;
-  const tileFromHeight = (maxHeight - verticalGaps) / board.height;
+  const tileFromWidth = (maxWidth - FRAME_INSET * 2 - horizontalGaps) / board.width;
+  const tileFromHeight = (maxHeight - FRAME_INSET * 2 - verticalGaps) / board.height;
   const tileSize = Math.max(0, Math.min(tileFromWidth, tileFromHeight));
   const width = tileSize > 0 ? tileSize * board.width + horizontalGaps : 0;
   const height = tileSize > 0 ? tileSize * board.height + verticalGaps : 0;
@@ -190,6 +193,9 @@ export function BoardView({
   const selectedAt = new Map(selection.map((index, order) => [index, order]));
 
   return (
+    // The frame is a separate view outside the measured board, so hit-testing
+    // still reads tile positions straight off the board's own origin.
+    <View style={styles.frame} onLayout={() => measure()}>
     <View
       ref={containerRef}
       nativeID={WORDFALL_BOARD_WEB_ID}
@@ -238,9 +244,10 @@ export function BoardView({
               top={rowOf(board, ghost.index) * (tileSize + GAP)}
             />
           ))}
-          {stamp && juiceKey ? <ChainStamp key={juiceKey} label={stamp} accent={accent} /> : null}
+          {stamp && juiceKey ? <ChainStamp key={juiceKey} label={stamp} /> : null}
         </>
       )}
+    </View>
     </View>
   );
 }
@@ -289,8 +296,8 @@ function TracePath({
               top: (from.y + to.y) / 2 - thickness / 2,
               width: length,
               height: thickness,
-              backgroundColor: accent,
-              opacity: 0.55,
+              backgroundColor: palette.white,
+              opacity: 0.85,
               borderRadius: thickness / 2,
               transform: [{ rotate: `${angle}deg` }],
             }}
@@ -379,7 +386,8 @@ const TileView = memo(function TileView({
   useEffect(() => {
     if (justBorn) return;
     Animated.spring(scale, {
-      toValue: selected ? 1.1 : 1,
+      // A small lift only: anything bigger pushes edge tiles past the frame.
+      toValue: selected ? 1.05 : 1,
       damping: 16,
       stiffness: 320,
       mass: 0.6,
@@ -408,7 +416,6 @@ const TileView = memo(function TileView({
   }, [justBorn, juiceKey, scale]);
 
   const visual = special ? SPECIAL_VISUALS[special] : null;
-  const ink = visual ? specialInk(visual.color) : theme.text;
 
   return (
     <Animated.View
@@ -417,57 +424,42 @@ const TileView = memo(function TileView({
       pointerEvents="none"
       style={[
         styles.tile,
-        {
-          width: size,
-          height: size,
-          left,
-          top,
-          transform: [{ translateY: drop }, { scale }],
-        },
-        crate && styles.crate,
-        !crate && selected && {
-          backgroundColor: accent,
-          borderColor: accent,
-          borderBottomColor: shade(accent, 0.35),
-        },
-        !crate && !selected && hinted && {
-          borderColor: palette.star,
-          borderBottomColor: palette.starEdge,
-        },
-        !crate && !selected && visual && {
-          backgroundColor: visual.color,
-          borderColor: shade(visual.color, 0.12),
-          borderBottomColor: shade(visual.color, 0.35),
-        },
+        { width: size, height: size, left, top, transform: [{ translateY: drop }, { scale }] },
       ]}
-      accessibilityLabel={
-        crate ? 'Blocked crate' : special ? `${letter}, ${special} tile` : letter
-      }
+      accessibilityLabel={crate ? 'Blocked crate' : special ? `${letter}, ${special} tile` : letter}
     >
       {crate ? (
-        <Text style={[styles.crateMark, { fontSize: size * 0.4 }]}>▤</Text>
+        <BlockTile size={size} color="stone" stud={false}>
+          <CrateMark size={size} />
+        </BlockTile>
       ) : (
-        <>
-          <Text
-            style={[
-              styles.letter,
-              { fontSize: size * 0.46 },
-              selected && styles.letterSelected,
-              !selected && visual && { color: ink },
-            ]}
-          >
-            {letter.toUpperCase()}
-          </Text>
-          {visual && !selected && (
-            <Text style={[styles.glyph, { color: ink, fontSize: size * 0.26 }]}>
-              {visual.glyph}
-            </Text>
-          )}
-        </>
+        <BlockTile
+          size={size}
+          color={selected ? 'gold' : visual ? visual.cube : 'cream'}
+          state={selected ? 'selected' : 'normal'}
+          letter={letter.toUpperCase()}
+        >
+          {visual && !selected ? (
+            <Text style={[styles.glyph, { fontSize: Math.max(9, size * 0.22) }]}>{visual.glyph}</Text>
+          ) : null}
+        </BlockTile>
       )}
+      {!crate && !selected && hinted ? (
+        <View pointerEvents="none" style={[styles.hint, { borderRadius: size * 0.22 }]} />
+      ) : null}
     </Animated.View>
   );
 });
+
+/** Plank marks on a stone cube: a crate that only a special can break. */
+function CrateMark({ size }: { size: number }) {
+  const bar = Math.max(2, size * 0.08);
+  return (
+    <View style={[styles.crateMark, { width: size * 0.56, height: size * 0.56, borderWidth: bar, borderRadius: size * 0.08 }]}>
+      <View style={[styles.crateSlat, { height: bar, transform: [{ rotate: '-45deg' }] }]} />
+    </View>
+  );
+}
 
 function PuffGhost({
   ghost,
@@ -505,23 +497,14 @@ function PuffGhost({
     <View pointerEvents="none" style={{ position: 'absolute', left, top, width: size, height: size }}>
       <Animated.View
         pointerEvents="none"
-        style={[
-          styles.tile,
-          {
-            width: size,
-            height: size,
-            transform: [{ scale }],
-            opacity,
-          },
-          ghost.crate && styles.crate,
-        ]}
+        style={[styles.tile, { width: size, height: size, transform: [{ scale }], opacity }]}
       >
         {ghost.crate ? (
-          <Text style={[styles.crateMark, { fontSize: size * 0.4 }]}>▤</Text>
+          <BlockTile size={size} color="stone" stud={false}>
+            <CrateMark size={size} />
+          </BlockTile>
         ) : (
-          <Text style={[styles.letter, { fontSize: size * 0.46 }]}>
-            {ghost.letter.toUpperCase()}
-          </Text>
+          <BlockTile size={size} color="gold" letter={ghost.letter.toUpperCase()} />
         )}
       </Animated.View>
       {[0, 1, 2, 3, 4, 5].map((i) => {
@@ -562,13 +545,7 @@ function PuffGhost({
   );
 }
 
-function ChainStamp({
-  label,
-  accent,
-}: {
-  label: 'CRUSH' | 'NOVA';
-  accent: string;
-}) {
+function ChainStamp({ label }: { label: 'CRUSH' | 'NOVA' }) {
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -591,47 +568,54 @@ function ChainStamp({
 
   return (
     <Animated.View pointerEvents="none" style={[styles.stamp, { transform: [{ scale }], opacity }]}>
-      <Text style={[styles.stampText, { color: accent }]}>{label}</Text>
+      <StrokeText size={44} color={palette.gold} stroke={palette.goldEdge} strokeWidth={3} depth={3}>
+        {label}
+      </StrokeText>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  frame: {
+    alignSelf: 'center',
+    padding: FRAME_INSET - 3,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: palette.frameDeep,
+    borderTopColor: '#7FE0F6',
+    backgroundColor: palette.frame,
+  },
   board: { width: '100%', position: 'relative', alignSelf: 'center' },
-  tile: {
-    position: 'absolute',
-    backgroundColor: TILE.face,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: TILE.faceEdge,
-    borderBottomWidth: 4,
-    borderBottomColor: TILE.faceDepth,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  letter: {
-    ...type.title,
-    color: theme.text,
-    fontFamily: font.bold,
-    fontWeight: '700',
-  },
-  // Selected tiles are the yellow ribbon. Brown stays readable; sand does not.
-  letterSelected: { color: palette.brown },
+  tile: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   glyph: {
     position: 'absolute',
     top: 2,
     right: 4,
-    fontWeight: '900',
+    color: palette.white,
+    textShadowColor: palette.navyDeep,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
-  crate: {
-    backgroundColor: TILE.crate,
-    borderColor: TILE.crateEdge,
-    borderBottomColor: TILE.crateDepth,
+  hint: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    bottom: -2,
+    left: -2,
+    // White, not gold: gold is what a traced tile turns, and a hint must
+    // never look already selected.
+    borderWidth: 3,
+    borderColor: palette.white,
+    shadowColor: palette.white,
+    shadowOpacity: 0.95,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
   },
-  crateMark: { color: TILE.crateMark },
+  crateMark: { borderColor: '#6E7F92', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  crateSlat: { width: '140%', backgroundColor: '#6E7F92' },
   puffDot: {
     position: 'absolute',
-    backgroundColor: TILE.faceEdge,
+    backgroundColor: tone.gold.top,
   },
   stamp: {
     position: 'absolute',
@@ -641,12 +625,5 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  stampText: {
-    ...type.title,
-    fontFamily: font.bold,
-    fontSize: 42,
-    lineHeight: 48,
-    fontWeight: '700',
   },
 });

@@ -303,16 +303,22 @@ traces at the board boundary; its web-only CSS scope disables browser text
 selection, touch callouts, and touch actions there, so mouse, trackpad, and
 iPad-finger drags trace tiles rather than highlight their letters. Game data remains bundled
 JSON; missing Supabase keys still leave every title playable. Splash uses the
-black lockup in `assets/logo/`; auth uses the clear lockup; drawer and top bar
-use the W mark via `BrandArtwork`. The hub list scrolls under that top bar —
-the deer is a clipped mascot at the end of the game list, not a second lockup
-(`src/ui/lottie/Mascot.tsx`, pose `idle`). Outcome screens reuse the same
-component with `celebrate` or `wince` (More or Less game over, Wordfall
-level result, Clueless solved). Clip URLs live in `LOTTIE_CLIPS`; deer poses
-play the bundled `assets/lottie/deer.lottie` and do not fall back to
-lottie.host while that file still has a white backdrop (D-032, D-050).
-Reduce-motion skips playback. The web export fills `100dvh` so mobile URL-bar
-`100vh` does not clip the hub.
+black lockup in `assets/logo/`. Every screen follows the Block Blast UI kit
+(`docs/DESIGN_SYSTEM.md`, D-067): `App.tsx` paints a full-bleed
+`SkyBackground` (the menu sky, or the play sky behind a board and its result)
+and keeps the app in a phone-width column (`COLUMN_MAX_WIDTH`, 560px) on wide
+screens. Menu screens get the kit's coral `TopBar` (daily flame, block logo,
+coins; or back, block logo, coins); game and result screens hide it. There is no
+drawer: Home's bottom row opens Settings, Scores, Teams and Account, and the
+gold Play there reopens the game with the most recent `playedAt` across the
+score boards (More or Less before anything has been played). Settings is a
+pop-up (`src/ui/SettingsPopup.tsx`) holding the sound / vibration switches,
+Account, Scores, Teams and Send feedback. The deer mascot is no longer on
+screen; `src/ui/lottie/` stays in the repo unused. The dev-only `?kit` page
+(`src/ui/dev/`) renders every design-system primitive for review. The web
+export fills `100dvh` so mobile URL-bar `100vh` does not clip the hub, and the
+pre-JS shell paints the kit's navy (`scripts/patch-web-head.mjs`) so nothing
+flashes another colour before the sky draws.
 
 ---
 
@@ -588,9 +594,9 @@ Quick map of where each journey step lives:
 | Piece | Where | Status |
 |---|---|---|
 | App shell (iOS + web) | `App.tsx`, `index.ts`, `app.json` | [BUILT] — WordKrush hub, lockup splash `#0A0817`, `expo-font`; web at wordKrush.com uses `100dvh`; phone is full-bleed, laptop is a 1080px column (D-051) |
-| Brand kit | `assets/logo/`, `docs/branding/`, `BrandArtwork` | [BUILT] — black lockup on splash; clear lockup on auth/Android; W mark on icon, drawer, top bar |
-| Mascot (deer) | `src/ui/lottie/`, `LOTTIE_CLIPS`, `assets/lottie/deer.lottie` | [BUILT] — hub + outcome poses; bundled file only until lottie.host drops the white plate (D-050); flame/burst CDN rows empty (D-032) |
-| Display type | `@expo-google-fonts/fredoka`, `src/ui/theme.ts` | [BUILT] — every text tier, all three games; symbol glyphs stay on the system face (D-030) |
+| Brand kit | `assets/logo/`, `docs/branding/`, `BrandArtwork`, `BlockLogo` | [BUILT] — black lockup on splash, favicons and share cards; in the app the WORD-KRUSH! block logo (kit style) on the top bar and the first visit |
+| Mascot (deer) | `src/ui/lottie/`, `LOTTIE_CLIPS`, `assets/lottie/deer.lottie` | [PARKED] — off screen since 0.10.0: the Block Blast kit has no mascot. Code and asset kept (D-032, D-050) |
+| Display type | `@expo-google-fonts/exo-2`, `src/ui/fonts.ts`, `src/ui/theme.ts` | [BUILT] — Exo 2 on every app text tier (stand-in for the kit's Neuron, D-067); Fredoka stays for the server's share cards |
 | Fairness guard + difficulty bands | `src/games/more-or-less/pairing.ts` (+ 9 tests) | [BUILT] |
 | Engine reducer, pair selector, scoring | `src/games/more-or-less/engine.ts` | [BUILT] |
 | Bundled game data | `src/data/categories/*.json` | [BUILT: dir, populated on first export] |

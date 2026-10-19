@@ -1,8 +1,61 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
-import { STAR_COUNT, STAR_OUTLINE_OFFSETS, starLabel, starScale, staggerDelay } from '../motion';
-import { motion, reward } from '../theme';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
+import Svg, { Defs, Ellipse, LinearGradient, Path, Stop } from 'react-native-svg';
+import { STAR_COUNT, starLabel, starScale, staggerDelay } from '../motion';
+import { starPath } from '../shapes';
+import { motion, palette, reward, shade } from '../theme';
 import { useReduceMotion } from '../useReduceMotion';
+import { useSvgId } from './Gradient';
+
+export type StarSurface = 'coral' | 'cream' | 'sky';
+
+const EMPTY: Record<StarSurface, { fill: string; edge: string }> = {
+  coral: { fill: reward.starOff, edge: shade(reward.starOff, 0.3) },
+  cream: { fill: reward.starOffLight, edge: shade(reward.starOffLight, 0.25) },
+  sky: { fill: '#2B78C2', edge: '#1B5592' },
+};
+
+/**
+ * The kit's chubby gold star: rounded tips, light-to-orange gradient, dark
+ * amber outline, a pale inner bevel and a white glint. Unearned stars are a
+ * darker silhouette of whatever they sit on, as in the kit's "LEVEL 2" popup.
+ */
+export function KitStar({
+  size,
+  filled,
+  surface = 'coral',
+}: {
+  size: number;
+  filled: boolean;
+  surface?: StarSurface;
+}) {
+  const id = useSvgId('star');
+  const empty = EMPTY[surface];
+  return (
+    <Svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+      <Defs>
+        <LinearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset={0} stopColor="#FFF27A" />
+          <Stop offset={0.5} stopColor={palette.gold} />
+          <Stop offset={1} stopColor={palette.goldDeep} />
+        </LinearGradient>
+      </Defs>
+      {filled ? (
+        <>
+          <Path d={starPath(32, 35, 29)} fill={palette.goldEdge} />
+          <Path d={starPath(32, 33, 28)} fill={`url(#${id})`} stroke={reward.outline} strokeWidth={3} strokeLinejoin="round" />
+          <Path d={starPath(32, 33, 17)} fill="rgba(255,255,255,0.28)" />
+          <Ellipse cx={23} cy={20} rx={5} ry={3} fill="rgba(255,255,255,0.9)" transform="rotate(-35 23 20)" />
+        </>
+      ) : (
+        <>
+          <Path d={starPath(32, 33, 28)} fill={empty.fill} stroke={empty.edge} strokeWidth={3} strokeLinejoin="round" />
+          <Path d={starPath(32, 37, 20)} fill="rgba(0,0,0,0.12)" />
+        </>
+      )}
+    </Svg>
+  );
+}
 
 export type StarRowProps = {
   /** How many of the three stars are earned. */
@@ -12,16 +65,24 @@ export type StarRowProps = {
   /** Fired as each earned star pops, so the screen can play a sound. */
   onStar?: (index: number) => void;
   accessibilityLabel?: string;
+  /** Side of the outer stars; the centre one is larger. */
+  size?: number;
+  /** What the row sits on, which decides the unearned colour. */
+  surface?: StarSurface;
 };
 
-const SIDE = 36;
-
 /**
- * Three stars, centre larger and raised. Earned stars are gold with an orange
- * outline. The pop is staggered; reduce-motion shows the end state.
- * The glyph is a system ★ — no fontFamily.
+ * Three stars, centre larger and raised. Earned stars pop in with a stagger;
+ * reduce-motion shows the end state.
  */
-export function StarRow({ earned, animate = true, onStar, accessibilityLabel }: StarRowProps) {
+export function StarRow({
+  earned,
+  animate = true,
+  onStar,
+  accessibilityLabel,
+  size = 44,
+  surface = 'coral',
+}: StarRowProps) {
   const reduceMotion = useReduceMotion();
   const onStarRef = useRef(onStar);
   onStarRef.current = onStar;
@@ -40,16 +101,14 @@ export function StarRow({ earned, animate = true, onStar, accessibilityLabel }: 
   }, [animate, earned, reduceMotion]);
 
   return (
-    <View
-      accessibilityRole="image"
-      accessibilityLabel={accessibilityLabel ?? starLabel(earned)}
-      style={styles.row}
-    >
+    <View accessibilityRole="image" accessibilityLabel={accessibilityLabel ?? starLabel(earned)} style={styles.row}>
       {Array.from({ length: STAR_COUNT }, (_, index) => (
-        <Star
+        <PopStar
           key={index}
           index={index}
+          size={Math.round(size * starScale(index))}
           filled={index < earned}
+          surface={surface}
           animate={animate && !reduceMotion && index < earned}
         />
       ))}
@@ -57,7 +116,19 @@ export function StarRow({ earned, animate = true, onStar, accessibilityLabel }: 
   );
 }
 
-function Star({ index, filled, animate }: { index: number; filled: boolean; animate: boolean }) {
+function PopStar({
+  index,
+  size,
+  filled,
+  surface,
+  animate,
+}: {
+  index: number;
+  size: number;
+  filled: boolean;
+  surface: StarSurface;
+  animate: boolean;
+}) {
   const scale = useRef(new Animated.Value(animate ? 0 : 1)).current;
   const delay = staggerDelay(index, motion.staggerMs);
 
@@ -71,40 +142,25 @@ function Star({ index, filled, animate }: { index: number; filled: boolean; anim
       toValue: 1,
       duration: motion.popMs,
       delay,
-      easing: Easing.out(Easing.back(1.6)),
+      easing: Easing.out(Easing.back(2)),
       useNativeDriver: true,
     });
     anim.start();
     return () => anim.stop();
   }, [animate, delay, scale]);
 
-  const size = SIDE * starScale(index);
-  const color = filled ? reward.gold : reward.starOff;
   return (
     <Animated.View
       accessibilityElementsHidden
-      importantForAccessibility="no"
-      style={[styles.star, index === 1 && styles.centre, { transform: [{ scale }] }]}
+      importantForAccessibility="no-hide-descendants"
+      style={[index === 1 && styles.centre, { transform: [{ scale }, { rotate: index === 0 ? '-8deg' : index === 2 ? '8deg' : '0deg' }] }]}
     >
-      {filled
-        ? STAR_OUTLINE_OFFSETS.map(([x, y]) => (
-            <Text
-              key={`${x},${y}`}
-              style={[styles.glyph, styles.copy, { fontSize: size, color: reward.goldHot, transform: [{ translateX: x }, { translateY: y }] }]}
-            >
-              ★
-            </Text>
-          ))
-        : null}
-      <Text style={[styles.glyph, { fontSize: size, lineHeight: size + 4, color }]}>★</Text>
+      <KitStar size={size} filled={filled} surface={surface} />
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 6 },
-  star: { alignItems: 'center', justifyContent: 'center' },
-  centre: { marginBottom: 8 },
-  glyph: { textAlign: 'center' },
-  copy: { position: 'absolute', left: 0, right: 0, textAlign: 'center' },
+  row: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 2 },
+  centre: { marginBottom: 10 },
 });

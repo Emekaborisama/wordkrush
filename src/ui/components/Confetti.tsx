@@ -10,7 +10,7 @@ export type ConfettiProps = {
   shape?: SparkleShape;
 };
 
-const DEFAULT_COLORS = [palette.star, palette.ribbon, palette.coral, palette.green, palette.purple] as const;
+const DEFAULT_COLORS = [palette.gold, palette.orange, palette.coral, palette.green, palette.purple] as const;
 
 /**
  * A short burst that then falls. Built on `Sparkle` so the particle ceiling

@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { closeness } from '../games/clueless/engine';
 import type { Guess } from '../games/clueless/types';
-import { elevation, font, motion, proximityColor, radius, space, theme, type, withAlpha } from './theme';
+import { font, motion, palette, proximityColor, space, tone, withAlpha } from './theme';
 
 /**
- * One guess in the list.
+ * One guess in the list: a cream row like the kit's level rows, a heat bar
+ * across it in the proximity colour, and the rank on a chip of that colour.
  *
  * The newest row animates: the bar springs out to its width while the rank
  * counts up to its value. Older rows render statically — animating the whole
@@ -22,7 +23,7 @@ export function GuessRow({
 }) {
   const fraction = closeness(guess.rank, rankedCount);
   const isWin = guess.rank === 1;
-  const color = isWin ? theme.success : proximityColor(fraction);
+  const color = isWin ? tone.green.bottom : proximityColor(fraction);
 
   // `width` cannot use the native driver, so this stays on the JS thread —
   // acceptable because only one row animates at a time.
@@ -67,12 +68,15 @@ export function GuessRow({
         },
       ]}
     >
+      {/* A cold guess has no heat, so it draws no bar at all — a sliver read
+          as a rendering fault. */}
+      {guess.rank === null ? null : (
       <Animated.View
         style={[
           styles.bar,
           {
             backgroundColor: color,
-            opacity: 0.18,
+            opacity: 0.38,
             width: grow.interpolate({
               inputRange: [0, 1],
               // Never fully empty: a very cold guess should still read as a
@@ -82,6 +86,7 @@ export function GuessRow({
           },
         ]}
       />
+      )}
       {/* Soft inner edge on the bar's leading edge gives it a lit quality
           instead of looking like a flat block of colour. */}
       <View style={styles.sheen} pointerEvents="none" />
@@ -90,13 +95,8 @@ export function GuessRow({
         <Text style={[styles.word, isWin && styles.wordWin]} numberOfLines={1}>
           {guess.word}
         </Text>
-        <View
-          style={[
-            styles.rankBadge,
-            { backgroundColor: withAlpha(color, 0.16), borderColor: withAlpha(color, 0.44) },
-          ]}
-        >
-          <Text style={[styles.rank, { color }, isWin && styles.rankWin]}>
+        <View style={[styles.rankBadge, { backgroundColor: color, borderColor: withAlpha(palette.ink, 0.35) }]}>
+          <Text style={[styles.rank, isWin && styles.rankWin]}>
             {guess.rank === null ? 'COLD' : isWin ? '✓' : `#${shown.toLocaleString()}`}
           </Text>
         </View>
@@ -105,16 +105,14 @@ export function GuessRow({
   );
 }
 
-const depth = elevation(2);
-
 const styles = StyleSheet.create({
   row: {
-    height: 52,
-    borderRadius: radius.md,
-    backgroundColor: depth.backgroundColor,
-    borderWidth: 1,
-    borderColor: depth.borderColor,
-    borderTopColor: depth.borderTopColor,
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: palette.creamFill,
+    borderWidth: 2,
+    borderColor: palette.creamEdge,
+    borderBottomColor: palette.white,
     justifyContent: 'center',
     overflow: 'hidden',
   },
@@ -124,8 +122,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    height: 1,
-    backgroundColor: depth.borderTopColor,
+    height: 4,
+    backgroundColor: withAlpha(palette.white, 0.45),
   },
   content: {
     flexDirection: 'row',
@@ -134,31 +132,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     gap: space.sm,
   },
-  word: {
-    ...type.bodyStrong,
-    color: theme.text,
-    flex: 1,
-    // Text sits over both the bar and the empty track, so it needs a shadow to
-    // stay legible against either.
-    textShadowColor: 'rgba(0,0,0,0.55)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  wordWin: { ...type.subtitle, color: theme.text },
+  word: { fontFamily: font.black, fontSize: 17, lineHeight: 22, color: palette.ink, flex: 1 },
+  wordWin: { fontSize: 19 },
   rankBadge: {
-    minWidth: 58,
+    minWidth: 64,
     minHeight: 30,
     paddingHorizontal: space.sm,
-    borderRadius: radius.pill,
-    borderWidth: 1,
+    borderRadius: 10,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   rank: {
-    ...type.caption,
-    fontFamily: font.semibold,
-    fontWeight: '600',
+    fontFamily: font.black,
+    fontSize: 14,
+    lineHeight: 18,
+    color: palette.white,
     fontVariant: ['tabular-nums'],
+    textShadowColor: palette.navyDeep,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
-  rankWin: { ...type.subtitle },
+  rankWin: { fontSize: 17 },
 });

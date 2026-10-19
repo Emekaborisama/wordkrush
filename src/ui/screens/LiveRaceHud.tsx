@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { PathGameId } from '../../games/campaign';
 import type { LivePlayer } from '../../live/types';
 import { remainingMs } from '../../live/types';
-import { formatDuration, palette, space, theme, type } from '../theme';
+import { font, formatDuration, palette, space } from '../theme';
 
 type Props = {
   gameId: PathGameId;
@@ -11,6 +11,9 @@ type Props = {
   players: LivePlayer[];
   selfId: string;
 };
+
+/** The last ten seconds turn the clock red, like Block King's timer. */
+const URGENT_MS = 10_000;
 
 function scoreLabel(gameId: PathGameId, player: LivePlayer): string {
   if (gameId === 'clueless') {
@@ -22,6 +25,10 @@ function scoreLabel(gameId: PathGameId, player: LivePlayer): string {
   return player.complete ? `${player.score} ★` : `${player.score}`;
 }
 
+/**
+ * Race strip over a live board: a cream clock pill that turns red near the
+ * end, and a chip per racer (gold rim on you).
+ */
 export function LiveRaceHud({ gameId, endsAt, players, selfId }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -29,12 +36,13 @@ export function LiveRaceHud({ gameId, endsAt, players, selfId }: Props) {
     return () => clearInterval(id);
   }, []);
   const left = remainingMs(endsAt, new Date(now));
+  const urgent = left <= URGENT_MS;
 
   return (
     <View style={styles.root} pointerEvents="none">
-      <View style={styles.clock}>
-        <Text style={styles.clockLabel}>RACE</Text>
-        <Text style={styles.clockValue}>{formatDuration(left)}</Text>
+      <View style={[styles.clock, urgent && styles.clockUrgent]}>
+        <Text style={[styles.clockLabel, urgent && styles.onRed]}>RACE</Text>
+        <Text style={[styles.clockValue, urgent && styles.onRed]}>{formatDuration(left)}</Text>
       </View>
       <View style={styles.rivals}>
         {players.map((player) => {
@@ -54,32 +62,34 @@ export function LiveRaceHud({ gameId, endsAt, players, selfId }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    paddingHorizontal: space.md,
-    paddingTop: space.xs,
-    gap: space.xs,
-  },
+  root: { paddingHorizontal: space.md, paddingTop: space.xs, gap: space.xs },
   clock: {
     alignSelf: 'center',
-    backgroundColor: palette.paper,
+    backgroundColor: palette.creamFill,
     borderRadius: 999,
+    borderWidth: 2.5,
+    borderColor: palette.creamEdge,
     paddingHorizontal: space.md,
-    paddingVertical: 6,
+    paddingVertical: 4,
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: space.xs,
   },
-  clockLabel: { ...type.overline, color: theme.textDim },
-  clockValue: { ...type.subtitle, color: theme.text, fontSize: 16 },
+  clockUrgent: { backgroundColor: palette.red, borderColor: palette.redDeep },
+  clockLabel: { fontFamily: font.heavy, fontSize: 11, letterSpacing: 1, color: palette.inkSoft },
+  clockValue: { fontFamily: font.black, fontSize: 18, color: palette.ink, fontVariant: ['tabular-nums'] },
+  onRed: { color: palette.white },
   rivals: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
   rival: {
-    backgroundColor: palette.paper,
-    borderRadius: 999,
+    backgroundColor: palette.creamFill,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: palette.creamEdge,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 3,
     maxWidth: 140,
   },
-  self: { borderWidth: 2, borderColor: palette.green },
-  rivalName: { ...type.caption, color: theme.textMuted, fontSize: 11 },
-  rivalScore: { ...type.bodyStrong, color: theme.text, fontSize: 12 },
+  self: { borderColor: palette.goldDeep, backgroundColor: '#FFF3B8' },
+  rivalName: { fontFamily: font.heavy, fontSize: 11, color: palette.inkSoft },
+  rivalScore: { fontFamily: font.black, fontSize: 13, color: palette.ink },
 });

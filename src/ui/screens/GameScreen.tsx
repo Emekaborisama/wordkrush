@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
-import { ImageBackground, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, ImageBackground, StyleSheet, Text, View } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import { streakBucket } from '../../analytics/events';
 import {
@@ -20,20 +20,27 @@ import { BoostBar, coinShortfall } from '../rewards/BoostBar';
 import { feedback } from '../../native/feedback';
 import { HowToPlay } from '../HowToPlay';
 import { Sparkle } from '../Sparkle';
-import { Button, FeedbackBanner, GameHeader, ProgressPill, Surface } from '../components';
 import {
-  font,
-  formatValue,
-  interaction,
-  motion,
-  palette,
-  radius,
-  screen,
-  space,
-  theme,
-  type,
-} from '../theme';
+  afterModalClose,
+  Button,
+  ComboBanner,
+  CreamBox,
+  CreamText,
+  FeedbackBanner,
+  GameHeader,
+  GameIcon,
+  GlossFace,
+  Gradient,
+  HudPanel,
+  PanelText,
+  PausePopup,
+  PopupModal,
+  ScoreBurst,
+  StrokeText,
+} from '../components';
+import { font, formatValue, motion, palette, space, tone } from '../theme';
 import { useCountUp } from '../useCountUp';
+import { useReduceMotion } from '../useReduceMotion';
 
 type Props = {
   category: Category & { provisional?: boolean };
@@ -78,6 +85,7 @@ export function GameScreen({
   const onSeenRef = useRef(labelRound?.onSeen);
   onSeenRef.current = labelRound?.onSeen;
   const accent = palette.green;
+  const [paused, setPaused] = useState(false);
   const [help, setHelp] = useState(false);
   const [boosted, setBoosted] = useState(false);
   const boostedRef = useRef(false);
@@ -225,34 +233,57 @@ export function GameScreen({
   const chancePrice = boostPrice('second-chance');
   const showBoosts = persist && onSpend !== undefined && state.status === 'playing';
 
+  // Juice, Block King style: a gold "+1" from the card on a right call, a
+  // banner on a milestone streak, a red flash and a shake on a miss.
+  const reduceMotion = useReduceMotion();
+  const [burstKey, setBurstKey] = useState(0);
+  const [combo, setCombo] = useState<string | null>(null);
+  const shake = useRef(new Animated.Value(0)).current;
+  const flash = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (state.lastGuessCorrect === true) {
+      setBurstKey((key) => key + 1);
+      const word = COMBO_WORDS[state.streak];
+      if (word) setCombo(word);
+    }
+    if (state.lastGuessCorrect === false) {
+      flash.setValue(0);
+      Animated.sequence([
+        Animated.timing(flash, { toValue: 1, duration: 110, useNativeDriver: true }),
+        Animated.timing(flash, { toValue: 0, duration: 520, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      ]).start();
+      if (!reduceMotion) {
+        shake.setValue(0);
+        Animated.sequence(
+          [-9, 9, -6, 6, -3, 0].map((toValue) =>
+            Animated.timing(shake, { toValue, duration: motion.shakeMs / 6, useNativeDriver: true }),
+          ),
+        ).start();
+      }
+    }
+    // Same trigger as the judgement sound above: once per answer.
+  }, [state.lastGuessCorrect, state.right.id]);
+
+  const raceGoal = targetStreak != null;
+  const offerOpen = state.status === 'over' && chance === 'offer' && persist;
+
   return (
     <View style={styles.root}>
-      <GameHeader
-        title="More or Less"
-        subtitle={category.name}
-        ribbon={palette.ribbon}
-        onExit={onExit}
-        onHelp={() => setHelp(true)}
-      />
+      <GameHeader title="More or Less" subtitle={category.name} onExit={onExit} onHelp={() => setHelp(true)} />
 
-      <View style={styles.statsRow}>
-        <ProgressPill label="STREAK" value={state.streak} color={accent} />
-        <ProgressPill label="BEST" value={state.bestStreak} color={theme.accentSecondary} />
-        {labelRound ? (
-          <ProgressPill
-            label="SEEN"
-            value={`${labelRound.seenCount}/${labelRound.total}`}
-            color={theme.accent}
-          />
+      <View style={styles.hud}>
+        <HudPanel label="Streak" value={state.streak} />
+        <HudPanel label="Best" value={state.bestStreak} />
+        {raceGoal ? (
+          <HudPanel label="Goal" value={targetStreak} />
+        ) : labelRound ? (
+          <HudPanel label="Seen" value={`${labelRound.seenCount}/${labelRound.total}`} />
         ) : null}
       </View>
 
-      <View style={styles.arena}>
-        <Card
-          item={state.left}
-          metricLabel={category.metricLabel}
-          value={state.left.value}
-        />
+      <Animated.View style={[styles.board, { transform: [{ translateX: shake }] }]}>
+        <Card item={state.left} metricLabel={category.metricLabel} value={state.left.value} footRoom />
         <Card
           item={state.right}
           metricLabel={category.metricLabel}
@@ -266,65 +297,43 @@ export function GameScreen({
             })
           }
         />
-        {/* Floating badge rather than its own row — every pixel it doesn't
+        {/* Floating disc rather than its own row — every pixel it doesn't
             take is a pixel the images get. */}
-        <Surface
-          level={0}
-          padded={false}
-          radius={radius.pill}
-          style={styles.vsBadge}
-          accessibilityRole="text"
-          accessibilityLabel="versus"
-        >
-          <Text style={styles.vsText}>VS</Text>
-        </Surface>
-      </View>
+        <View style={styles.vs} pointerEvents="none" accessibilityRole="text" accessibilityLabel="versus">
+          <GlossFace tone={tone.red} lip={3} radius={24} faceStyle={styles.vsFace}>
+            <StrokeText size={17} stroke={tone.red.outline} strokeWidth={1.8} depth={1}>
+              VS
+            </StrokeText>
+          </GlossFace>
+        </View>
+        <Animated.View pointerEvents="none" style={[styles.flash, { opacity: flash }]} />
+        {burstKey > 0 ? <ScoreBurst key={burstKey} text="+1" style={styles.burst} /> : null}
+        {combo ? <ComboBanner key={combo} text={combo} onDone={() => setCombo(null)} /> : null}
+      </Animated.View>
 
       {state.status === 'playing' ? (
         <View style={styles.actions}>
-          <Text style={styles.prompt}>
-            Does <Text style={styles.promptStrong}>{state.right.label}</Text> have more or less than{' '}
-            <Text style={styles.promptStrong}>{state.left.label}</Text>?
-          </Text>
-          {showBoosts ? (
-            <BoostBar
-              controls={[
-                {
-                  kind: 'skip-pair',
-                  label: 'Skip pair',
-                  glyph: '>>',
-                  price: skipPrice,
-                  disabled: coins < skipPrice,
-                  disabledReason: coinShortfall(coins, skipPrice),
-                  onPress: () => {
-                    if (!spendBoost('skip-pair')) return;
-                    dispatch({
-                      type: 'restore',
-                      state: skipChallenger(state, pool, preferRef.current),
-                    });
-                  },
-                },
-              ]}
-            />
-          ) : null}
-          <View style={styles.buttonRow}>
+          <StrokeText size={15} stroke={palette.navyDeep} strokeWidth={1.5} depth={0} lineHeight={20} numberOfLines={2}>
+            {`Does ${state.right.label} have more or less than ${state.left.label}?`}
+          </StrokeText>
+          <View style={styles.choices}>
             <Button
               title="More"
               size="lg"
               tone="green"
               onPress={() => submitGuess('more')}
               accessibilityHint={`${state.right.label} has more ${category.metricLabel}`}
-              leading={<Text style={styles.choiceArrow}>↑</Text>}
-              style={styles.choiceButton}
+              leading={<GameIcon name="arrowUp" size={26} color={tone.green.outline} />}
+              style={styles.choice}
             />
             <Button
               title="Less"
               size="lg"
-              tone="coral"
+              tone="red"
               onPress={() => submitGuess('less')}
               accessibilityHint={`${state.right.label} has fewer ${category.metricLabel}`}
-              leading={<Text style={styles.choiceArrow}>↓</Text>}
-              style={styles.choiceButton}
+              leading={<GameIcon name="arrowDown" size={26} color={tone.red.outline} />}
+              style={styles.choice}
             />
           </View>
         </View>
@@ -349,32 +358,33 @@ export function GameScreen({
                   : 'The final values are revealed above.'
             }
           />
-          {state.status === 'over' && chance === 'offer' && persist ? (
-            <View style={styles.offer}>
-              <Text style={styles.offerTitle}>{`Keep your streak — ${chancePrice} coins`}</Text>
-              <Button
-                title="Second chance"
-                tone="green"
-                size="md"
-                disabled={coins < chancePrice}
-                onPress={() => {
-                  if (!spendBoost('second-chance')) return;
-                  chanceUsed.current = true;
-                  setChance('done');
-                  dispatch({
-                    type: 'restore',
-                    state: secondChance(state, pool, preferRef.current),
-                  });
-                }}
-              />
-              {coins < chancePrice ? (
-                <Text style={styles.offerNote}>{coinShortfall(coins, chancePrice)}</Text>
-              ) : null}
-              <Button title="No thanks" tone="purple" size="md" onPress={() => setChance('done')} />
-            </View>
-          ) : null}
         </View>
       )}
+
+      <BoostBar
+        onPause={() => setPaused(true)}
+        controls={
+          showBoosts
+            ? [
+                {
+                  kind: 'skip-pair',
+                  label: 'Skip pair',
+                  icon: 'skip',
+                  price: skipPrice,
+                  disabled: coins < skipPrice,
+                  disabledReason: coinShortfall(coins, skipPrice),
+                  onPress: () => {
+                    if (!spendBoost('skip-pair')) return;
+                    dispatch({
+                      type: 'restore',
+                      state: skipChallenger(state, pool, preferRef.current),
+                    });
+                  },
+                },
+              ]
+            : []
+        }
+      />
 
       {/* Provenance: the claim on screen must match what the data supports.
           Image credits are not decoration — CC BY / CC BY-SA require them. */}
@@ -385,10 +395,62 @@ export function GameScreen({
           {state.left.updatedAt}
           {category.provisional ? ' · provisional' : ''}
         </Text>
-        <Text style={styles.credits} numberOfLines={2}>
+        <Text style={styles.provenance} numberOfLines={2}>
           {imageCredits([state.left, state.right])}
         </Text>
       </View>
+
+      {/* The kit's "More Lives?" pop-up: the run is over unless the player
+          pays to keep the streak. Same 5 s window and coin check as before. */}
+      <PopupModal
+        visible={offerOpen}
+        onClose={() => setChance('done')}
+        dismissable={false}
+        hideClose
+        title="Keep your streak?"
+        ribbon="banner"
+        width={340}
+      >
+        <CreamBox style={styles.offerBox}>
+          <GameIcon name="heart" size={64} />
+          <View style={styles.flex}>
+            <CreamText variant="label">YOUR STREAK</CreamText>
+            <CreamText variant="title">{`${state.streak} in a row`}</CreamText>
+          </View>
+        </CreamBox>
+        <Button
+          title={`Second chance · ${chancePrice}`}
+          tone="green"
+          size="md"
+          disabled={coins < chancePrice}
+          leading={<GameIcon name="coin" size={26} />}
+          onPress={() => {
+            if (!spendBoost('second-chance')) return;
+            chanceUsed.current = true;
+            setChance('done');
+            dispatch({
+              type: 'restore',
+              state: secondChance(state, pool, preferRef.current),
+            });
+          }}
+        />
+        {coins < chancePrice ? <PanelText>{coinShortfall(coins, chancePrice) ?? ''}</PanelText> : null}
+        <Button title="No thanks" tone="blue" size="md" onPress={() => setChance('done')} />
+      </PopupModal>
+
+      <PausePopup
+        visible={paused}
+        onResume={() => setPaused(false)}
+        onHelp={() => {
+          setPaused(false);
+          afterModalClose(() => setHelp(true));
+        }}
+        onLeave={() => {
+          setPaused(false);
+          onExit();
+        }}
+        note={persist ? 'Your run is saved.' : undefined}
+      />
 
       <HowToPlay
         visible={help}
@@ -431,12 +493,21 @@ export function imageCredits(items: Item[]): string {
   return credits.length ? `Images — ${credits.join(' · ')}` : '';
 }
 
+/** Streak milestones that earn the kit's big celebration word. */
+const COMBO_WORDS: Readonly<Record<number, string>> = { 5: 'GREAT!', 10: 'AMAZING!', 20: 'UNSTOPPABLE!' };
+
+/**
+ * One contender, framed like a tile on the kit's board: the photo inside a
+ * white rim, the name and number in white outlined type on a dark foot band.
+ * The rim turns green or red once the hidden number is revealed.
+ */
 function Card({
   item,
   metricLabel,
   value,
   highlight,
   sparkling = false,
+  footRoom = false,
   onImageError,
 }: {
   item: Item;
@@ -444,49 +515,52 @@ function Card({
   value: number | null;
   highlight?: boolean;
   sparkling?: boolean;
+  /** Keep the copy clear of the VS disc that sits on this card's foot. */
+  footRoom?: boolean;
   onImageError?: () => void;
 }) {
-  const borderColor = highlight === undefined ? undefined : highlight ? palette.green : palette.coral;
+  const rim = highlight === undefined ? palette.white : highlight ? tone.green.bottom : palette.red;
 
   // Images are a bonus, never a requirement: a remote fetch can fail offline,
   // and a rare item may still lack a freely-licensed file. Either way the
   // card keeps the same shape and the game plays exactly the same.
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(item.imageUrl) && !imageFailed;
-  const ink = showImage ? theme.onWood : theme.text;
-  const muted = showImage ? palette.sand : theme.textMuted;
 
   const content = (
-    <View style={styles.cardBody}>
-      <Text style={[styles.cardLabel, { color: ink }]} numberOfLines={2} adjustsFontSizeToFit>
+    <View style={[styles.cardBody, footRoom && styles.footRoom]}>
+      <StrokeText size={22} stroke={palette.ink} strokeWidth={2} depth={1.5} numberOfLines={2} lineHeight={27}>
         {item.label}
-      </Text>
+      </StrokeText>
       {value === null ? (
-        <Text style={[styles.hidden, { color: ink }]}>? ? ?</Text>
+        <StrokeText size={32} stroke={palette.ink} strokeWidth={2.2} depth={2} letterSpacing={6}>
+          ? ? ?
+        </StrokeText>
       ) : (
         <>
           {/* Wrapper is the anchor the burst radiates from, so particles
               originate at the number rather than the card centre. */}
           <View style={styles.valueWrap}>
-            <Text style={[styles.value, { color: ink }]}>{formatValue(value)}</Text>
+            <StrokeText
+              size={32}
+              color="#FFE45C"
+              stroke={palette.goldEdge}
+              strokeWidth={2.4}
+              depth={2}
+              textStyle={styles.tabular}
+            >
+              {formatValue(value)}
+            </StrokeText>
             <Sparkle active={sparkling} />
           </View>
-          <Text style={[styles.metric, { color: muted }]}>{metricLabel}</Text>
+          <Text style={styles.metric}>{metricLabel}</Text>
         </>
       )}
     </View>
   );
 
   return (
-    <Surface
-      level={2}
-      padded={false}
-      raised
-      radius={radius.xl}
-      borderColor={borderColor}
-      style={styles.card}
-      accessibilityLabel={item.label}
-    >
+    <View style={[styles.card, { borderColor: rim }]} accessibilityLabel={item.label}>
       {showImage ? (
         <ImageBackground
           source={{ uri: item.imageUrl }}
@@ -498,111 +572,83 @@ function Card({
             onImageError?.();
           }}
         >
-          {/* Scrim: photos vary wildly in brightness, and white text on a pale
-              image is unreadable. A flat dark wash plus a heavier band behind the
-              text keeps every card legible without hiding the picture. */}
-          <View style={styles.scrim} pointerEvents="none" />
-          <View style={styles.scrimBottom} pointerEvents="none" />
+          {/* Photos vary wildly in brightness; a dark foot band keeps the
+              outlined name and number legible without hiding the picture. */}
+          <View style={styles.scrim} pointerEvents="none">
+            <Gradient colors={['rgba(8,24,56,0)', 'rgba(8,24,56,0.55)', 'rgba(8,24,56,0.88)']} locations={[0, 0.45, 1]} />
+          </View>
           {content}
         </ImageBackground>
       ) : (
-        <View style={[styles.cardFill, styles.cardPlain, { backgroundColor: palette.paper }]}>
-          {content}
-        </View>
+        <View style={[styles.cardFill, styles.cardPlain]}>{content}</View>
       )}
-    </Surface>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
-    ...screen.playfield,
+    flex: 1,
     paddingHorizontal: space.md,
-    paddingVertical: space.sm,
+    paddingTop: space.xs,
+    paddingBottom: space.xs,
     gap: space.sm,
   },
-  statsRow: { flexDirection: 'row', justifyContent: 'center', gap: space.sm },
-
-  arena: { flex: 1, gap: space.sm, justifyContent: 'center', position: 'relative' },
+  hud: { flexDirection: 'row', gap: space.sm },
+  board: {
+    flex: 1,
+    minHeight: 0,
+    gap: 6,
+    padding: 6,
+    borderRadius: 22,
+    backgroundColor: palette.frame,
+    borderWidth: 3,
+    borderColor: palette.frameDeep,
+    borderTopColor: '#7FE0F6',
+  },
   card: {
     flex: 1,
+    minHeight: 120,
+    borderRadius: 16,
+    borderWidth: 4,
     overflow: 'hidden',
-    minHeight: 145,
+    backgroundColor: palette.navyDeep,
   },
   cardFill: { flex: 1, justifyContent: 'flex-end' },
-  cardImage: { borderRadius: radius.xl - 1 },
-  cardPlain: { justifyContent: 'center' },
-  scrim: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(8,6,20,0.34)',
-  },
-  scrimBottom: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: '62%',
-    backgroundColor: 'rgba(8,6,20,0.76)',
-  },
-  cardBody: { paddingHorizontal: space.lg, paddingVertical: space.lg, alignItems: 'center' },
+  cardImage: { borderRadius: 12 },
+  cardPlain: { justifyContent: 'center', backgroundColor: palette.well },
+  scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '72%' },
+  cardBody: { paddingHorizontal: space.md, paddingVertical: space.sm, alignItems: 'center', gap: 2 },
+  footRoom: { paddingBottom: 28 },
   valueWrap: { alignItems: 'center', justifyContent: 'center' },
-  cardLabel: {
-    ...type.title,
-    color: theme.text,
+  tabular: { fontVariant: ['tabular-nums'] },
+  metric: {
+    fontFamily: font.heavy,
+    fontSize: 12,
+    lineHeight: 15,
+    color: palette.white,
     textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.85)',
+    textShadowColor: palette.navyDeep,
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
+    textShadowRadius: 2,
   },
-  value: {
-    ...type.display,
-    fontVariant: ['tabular-nums'],
-    marginTop: space.xs,
-    textShadowColor: 'rgba(0,0,0,0.85)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
+  vs: { position: 'absolute', top: '50%', alignSelf: 'center', marginTop: -26, zIndex: 3 },
+  vsFace: { width: 48, height: 48 },
+  flash: { ...StyleSheet.absoluteFill, borderRadius: 19, backgroundColor: 'rgba(239,62,79,0.42)' },
+  burst: { position: 'absolute', top: '70%', left: '50%' },
+  // Fixed, so the board does not jump between the question and the reveal.
+  actions: { gap: space.sm, height: 124, justifyContent: 'flex-end' },
+  choices: { flexDirection: 'row', gap: space.sm },
+  choice: { flex: 1 },
+  offerBox: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  flex: { flex: 1 },
+  // Required credits, set quietly: small navy on the pale foot of the sky.
+  provenance: {
+    fontFamily: font.body,
+    fontSize: 11,
+    lineHeight: 14,
+    color: palette.navyDeep,
+    textAlign: 'center',
+    opacity: 0.8,
   },
-  metric: { ...type.caption, color: theme.textMuted, marginTop: 1, textAlign: 'center' },
-  hidden: {
-    ...type.display,
-    color: theme.text,
-    marginTop: space.xs,
-    letterSpacing: 5,
-  },
-
-  vsBadge: {
-    position: 'absolute',
-    alignSelf: 'center',
-    top: '50%',
-    marginTop: -interaction.minTouch / 2,
-    width: interaction.minTouch,
-    height: interaction.minTouch,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-    pointerEvents: 'none',
-  },
-  vsText: { ...type.overline, color: theme.textMuted },
-
-  actions: { gap: space.sm, minHeight: 112, justifyContent: 'flex-end' },
-  offer: { gap: space.xs },
-  offerTitle: { ...type.body, color: theme.text, textAlign: 'center', fontWeight: '700' },
-  offerNote: { ...type.caption, color: theme.textMuted, textAlign: 'center' },
-  prompt: { ...type.caption, color: theme.onWood, textAlign: 'center', lineHeight: 18 },
-  promptStrong: { color: theme.onWood, fontFamily: font.bold, fontWeight: '700' },
-  buttonRow: { flexDirection: 'row', gap: space.sm },
-  choiceButton: { flex: 1 },
-  choiceArrow: {
-    color: theme.onPill,
-    fontSize: 21,
-    fontWeight: '700',
-    lineHeight: 22,
-  },
-
-  provenance: { ...type.overline, color: theme.onWood, textAlign: 'center' },
-  credits: { ...type.overline, color: theme.onWood, textAlign: 'center', marginTop: 2 },
 });

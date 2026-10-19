@@ -16,33 +16,40 @@ introduce a third hex for the same role.
 
 `brand` paints the lockup only. It is not the screen canvas.
 
-## Screen chrome (owner, 2026-10-18)
+## Screen chrome: the Block Blast kit (owner, 2026-10-18, ST-112)
 
-These hexes replace the flat dark ink screens. They do not replace the logo.
-`palette` in `src/ui/theme.ts` is the code copy. Do not invent another hex for
-the same role.
+Every screen follows the Block Blast UI kit (Room 8 Studio). These hexes are
+the kit's five main colours plus the gradient ends, rims and lips sampled from
+its screens. `kit`, `palette`, `cube` and `tone` in `src/ui/theme.ts` are the
+code copy. They do not replace the logo. Do not invent another hex for the
+same role.
 
 | Token | Hex | Role |
 |---|---|---|
-| `palette.sand` | `#F4E4C4` | Page behind the playfield. `theme.bg`, `screen.page` |
-| `palette.wood` | `#6B3E26` | Playfield. `screen.playfield` |
-| `palette.plank` | `#8B5A2B` | Lighter wood |
-| `palette.paper` | `#FFF8EE` | Cards, result sheets, input wells, text on wood |
-| `palette.brown` | `#3A2415` | Text on sand or paper. Display-title outline |
-| `palette.green` | `#3DCC4A` | Primary CTA identity. Gloss and non-text green |
-| `palette.greenBevel` | `#1E8A28` | Named green lip. A white label sits on a deeper shade of `palette.green`, because white on `#3DCC4A` is about 2.11:1 |
-| `palette.purple` | `#7B4FD6` | Purple pill, XP badge |
-| `palette.blue` | `#2F9BFF` | Blue pill |
-| `palette.coral` | `#FF5A7A` | Coral pill |
-| `palette.ribbon` | `#FFC83D` | Level ribbon. Brown label |
-| `palette.star` | `#FFC107` | Stars, coin, gold titles |
-| `palette.starEdge` | `#E8780C` | Orange star outline. The shots name the colour; this is the hex |
+| `kit.coral` / `palette.coral` | `#F15D70` | Pop-up panel body (kit main colour) |
+| `kit.sky` / `palette.sky` | `#6BB9E0` | Sky (kit main colour) |
+| `kit.cream` / `palette.cream` | `#FFE1BE` | Inner boxes (kit main colour) |
+| `kit.green` / `palette.green` | `#62AC25` | Primary CTA identity (kit main colour) |
+| `kit.teal` / `palette.teal` | `#2DADBD` | Ribbon title tab (kit main colour) |
+| `palette.coralTop` / `coralBottom` | `#FB8F99` / `#E6556A` | Panel gradient ends |
+| `palette.coralEdge` | `#C43C53` | Panel keyline; outline of white copy on coral |
+| `palette.creamFill` / `creamEdge` / `creamShade` | `#FFEAD3` / `#EEC39B` / `#F7D5B3` | Cream box fill, rim, sunken top band |
+| `palette.navy` / `navyDeep` | `#285FAD` / `#173F7E` | Page backdrop behind the sky; deep outline |
+| `palette.skyTop` / `skyMid` / `skyBottom` | `#2F7FDB` / `#58AEEA` / `#B8EAF8` | Menu sky gradient |
+| `palette.playTop` / `playBottom` | `#41B2E1` / `#97DEF2` | Gameplay sky gradient |
+| `palette.frame` / `frameDeep` / `well` | `#38C5EA` / `#179BC8` / `#C2EEFA` | Board frame, its rim, empty cells |
+| `palette.ink` / `inkSoft` | `#173A63` / `#3D5D85` | Text on cream or white |
+| `palette.tealInk` | `#0E6874` | The kit's teal labels on cream (Music / SFX) |
+| `palette.red` / `redDeep` | `#EF3E4F` / `#B21F38` | Close disc, HUD tabs, banner ribbon |
+| `palette.gold` / `goldDeep` / `goldEdge` | `#FFC928` / `#F29A0B` / `#A85A00` | Stars, coins, hero Play |
 
-`palette.brownMuted` (`#6B4630`) is the secondary label. It clears 4.5:1 on
-sand and on paper, which opacity-dimmed text did not.
+Glossy faces (`tone.green`, `blue`, `gold`, `red`, `purple`, `teal`, `coral`,
+`sky`, `grey`) each carry `top`, `bottom`, `lip` and `outline`; the green,
+blue and gold ends were sampled from the kit's Terms, Connect and Contact us
+buttons. Cubes (`cube.*`) are the board colours.
 
-Reward gold is `palette.star`. The title outline is `palette.brown`. Neither
-is a new brand colour for the logo. `reward` in `theme.ts` points at these.
+The sand / wood / paper / brown chrome from 0.9.0 is superseded. Its names
+survive in `palette` only as deprecated aliases while code migrates.
 
 ## Games
 
@@ -57,8 +64,11 @@ brand; they sit on the same ink.
 
 ## Contrast
 
-Body copy on a screen is `palette.brown` on `palette.sand` or `palette.paper`.
-Text on wood is `palette.paper`. A white pill label sits on the contrast-safe
-face from `readableWhiteFace`, not on the raw bright green. The lockup still
-uses `brand.word` on `brand.ink`. Do not set body text in star gold or in the
-bright pill colours: those are fills.
+Copy on cream or white is `palette.ink` (navy) or `palette.inkSoft`; both clear
+4.5:1 on every cream and on the board well, and `palette.tealInk` clears it on
+cream. Copy on coral, sky or a glossy face is white with an outline in the
+surface's darkest shade (`palette.coralEdge`, `palette.navyDeep`,
+`tone.*.outline`), which clears 4.5:1 against the white glyph — the kit's own
+treatment. Long copy goes in a cream box, never as paragraphs of white on
+colour. The lockup still uses `brand.word` on `brand.ink`. `theme.test.ts`
+asserts these pairs.

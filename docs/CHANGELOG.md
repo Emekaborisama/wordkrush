@@ -6,6 +6,25 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.10.0] - 2026-10-18
+
+### Changed
+- **Every screen follows the Block Blast UI kit.** The sand / wood chrome from 0.9.0 is gone. Menus sit on a blue sky with sun rays and clouds; every card is the kit's coral pop-up with a white rim, a teal ribbon title and a red close disc; long copy sits in cream boxes; buttons are glossy rounded rectangles (green Play, blue, gold, red) with outlined white labels. Type is Exo 2, the closest free match to the kit's Neuron.
+- **Home is the kit's home screen.** A coral top bar with the daily flame, the WORD-KRUSH! block logo and your coins; a level strip; the daily chest as a Claim card; one pop-up card per game with its own green Play; and the kit's bottom row — Settings and Scores, a big gold Play that reopens the game you played last, Teams and Account.
+- **The menu drawer is gone.** Sound, Vibration, Account, Scores, Teams and Send feedback live in the kit's Settings pop-up, opened from the gear on Home.
+- **A game's start screen is the kit's LEVEL pop-up**: the game on the tab, its art and pitch, the goal in a cream box (Clueless shows its three sparks and the vault as cubes), your best, and a green Play.
+- **Every game plays on the kit's game screen**: cream HUD panels with red tabs, the board in a cyan frame, and a booster dock of green tiles with prices beside a gold gear that pauses the game. More or Less frames both photos on the board and answers with glossy More / Less; Clueless ranks guesses as cream rows with heat-coloured chips; Wordfall's letters are cream studded cubes, specials are coloured cubes and crates are stone, with a star bar that fills as the goals do.
+- **Results are the kit's result pop-up**: stars on the blue scroll, coin and XP chips, the score in a cream pill, and Play again / Continue with Home, Scores and Share squares. A personal best in More or Less raises Block King's NEW RECORD! banner over a trophy; a solved Clueless word is spelled in cubes. The second chance is the kit's More Lives? pop-up.
+- **Wordfall's level map is the kit's Levels pop-up**: numbers drawn in little cubes, the current level in gold, locked levels in stone.
+- **Juice from Block King**: a gold +1 bursts from a right More or Less call, milestone streaks and Wordfall chains throw a GREAT! / CASCADE! / KRUSH! banner, and a miss shakes the board red.
+- **First visit** opens on the kit's hero: the block logo drops in, a hand taps a cube, and a gold Play starts More or Less.
+
+- **Pop-ups make room for the keyboard**, and a Feedback draft is no longer lost to a tap outside the card. A pop-up opened from another one (How to play from Pause, Feedback from Settings) waits for the first to close, so iOS shows it; Wordfall's clock stays stopped in between.
+- **Analytics:** the gold Play on Home reports `game_selected` with `source: 'quick_play'`; a game's own Play still reports `hub`. `drawer` no longer occurs.
+
+### Removed
+- The deer mascot from Home and the first visit (the kit has no mascot). The Lottie module stays in the repo, unused.
+
 ## [0.9.1] - 2026-10-18
 
 ### Changed

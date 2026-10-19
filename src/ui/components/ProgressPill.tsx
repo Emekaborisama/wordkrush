@@ -1,69 +1,20 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { font, gameAccentTokens, labelFloorPx, radius, space, theme } from '../theme';
+import { HudPanel } from './HudPanel';
 
 type Props = {
   label: string;
   value: string | number;
+  /** Kept so existing call sites compile; the kit HUD is one colour. */
   color?: string;
   icon?: ReactNode;
   urgent?: boolean;
 };
 
-export function ProgressPill({
-  label,
-  value,
-  color = theme.text,
-  icon,
-  urgent = false,
-}: Props) {
-  const tint = urgent ? theme.danger : color;
-  const tokens = gameAccentTokens(tint);
-  return (
-    <View
-      style={[
-        styles.root,
-        {
-          borderColor: urgent ? tokens.border : tokens.glow,
-          backgroundColor: urgent ? tokens.dim : tokens.soft,
-        },
-      ]}
-      accessibilityLabel={`${label}: ${value}`}
-    >
-      {icon}
-      <View>
-        <Text style={styles.value}>{value}</Text>
-        <Text style={styles.label}>{label}</Text>
-      </View>
-    </View>
-  );
+/**
+ * In-play counter. Now the kit's HUD panel (cream, red tab); kept under its
+ * old name so call sites read the same.
+ */
+export function ProgressPill({ label, value, urgent = false }: Props) {
+  const tab = label.charAt(0) + label.slice(1).toLowerCase();
+  return <HudPanel label={tab} value={value} urgent={urgent} />;
 }
-
-const styles = StyleSheet.create({
-  root: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-  },
-  value: {
-    color: theme.text,
-    fontFamily: font.bold,
-    fontSize: 21,
-    fontWeight: '700',
-    lineHeight: 23,
-    fontVariant: ['tabular-nums'],
-  },
-  label: {
-    color: theme.textMuted,
-    fontFamily: font.semibold,
-    fontWeight: '600',
-    fontSize: labelFloorPx,
-    letterSpacing: 1.1,
-    lineHeight: 14,
-  },
-});

@@ -1,9 +1,3 @@
-import {
-  Fredoka_500Medium,
-  Fredoka_600SemiBold,
-  Fredoka_700Bold,
-  useFonts,
-} from '@expo-google-fonts/fredoka';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -41,6 +35,7 @@ import {
   type Profile,
 } from './src/auth/auth';
 import { isBackendConfigured } from './src/auth/client';
+import appConfig from './app.json';
 import categoryData from './src/data/categories/wikipedia-popularity.json';
 import {
   cluelessSoloLevelByNumber,
@@ -126,19 +121,18 @@ import { joinMatch, postMatchScore } from './src/live/api';
 import type { LiveMatchSnapshot } from './src/live/types';
 import { clearExistingMembership } from './src/teams/api';
 import { parseTeamInviteUrl } from './src/teams/codes';
-import { Drawer, type DrawerDestination } from './src/ui/Drawer';
-import { CoinPill, XpBadge } from './src/ui/components';
+import { afterModalClose, CoinsPill, SkyBackground, StreakPill, TopBar } from './src/ui/components';
 import { parentOf, type Parent } from './src/ui/navigation';
 import { installWebHistory, noteWebNavigation } from './src/ui/webHistory';
 import { OnboardingScreen } from './src/ui/screens/OnboardingScreen';
 import type { RunReward } from './src/ui/rewards/RunReward';
 import { FeedbackPrompt } from './src/ui/FeedbackPrompt';
-import { TopBar } from './src/ui/TopBar';
+import { SettingsPopup } from './src/ui/SettingsPopup';
 import { AccountScreen } from './src/ui/screens/AccountScreen';
 import { CluelessScreen } from './src/ui/screens/CluelessScreen';
 import { GameOverScreen } from './src/ui/screens/GameOverScreen';
 import { GameScreen } from './src/ui/screens/GameScreen';
-import { GameStartScreen, StartDetail } from './src/ui/screens/GameStartScreen';
+import { GameStartScreen, PathRail, StartDetail } from './src/ui/screens/GameStartScreen';
 import { HubScreen } from './src/ui/screens/HubScreen';
 import { LiveLobbyScreen } from './src/ui/screens/LiveLobbyScreen';
 import { LivePlayShell } from './src/ui/screens/LivePlayShell';
@@ -146,9 +140,10 @@ import { LiveResultsScreen } from './src/ui/screens/LiveResultsScreen';
 import { ScoresScreen } from './src/ui/screens/ScoresScreen';
 import { TeamsScreen } from './src/ui/screens/TeamsScreen';
 import { WordfallScreen } from './src/ui/screens/WordfallScreen';
-import { LAPTOP_MAX_WIDTH, isWideLayout } from './src/ui/layout';
-import { palette, theme } from './src/ui/theme';
+import { COLUMN_MAX_WIDTH, isWideLayout } from './src/ui/layout';
+import { theme } from './src/ui/theme';
 import { ensureWebViewport } from './src/ui/webViewport';
+import { useAppFonts } from './src/ui/fonts';
 
 const snapshot = categoryData as CategorySnapshot;
 const category: Category & { provisional?: boolean } = snapshot;
@@ -203,8 +198,6 @@ function startDetailFor(
     const total = labelRound?.round.itemIds.length ?? category.items.length;
     return (
       <StartDetail
-        ribbon
-        ribbonColor={palette.ribbon}
         label={labelRound ? roundLabel(labelRound) : 'THIS SET'}
         title={`${seen} / ${total} names seen`}
         meta={
@@ -220,8 +213,6 @@ function startDetailFor(
     if (!clueless.ready) {
       return (
         <StartDetail
-          ribbon
-          ribbonColor={palette.purple}
           label="SOLO PATH"
           title="Finding your next clue…"
           meta="Your path is safely stored on this device."
@@ -232,8 +223,6 @@ function startDetailFor(
     if (!clueless.currentLevel) {
       return (
         <StartDetail
-          ribbon
-          ribbonColor={palette.purple}
           label="DAILY VAULT"
           title="More vaults arrive in an app update"
           meta="You cleared the bundled path. Keep the flame going in the other games meanwhile."
@@ -242,37 +231,33 @@ function startDetailFor(
       );
     }
     const level = clueless.currentLevel;
-    const tutorialRail = [1, 2, 3]
-      .map((number) => (number <= clueless.progress.completedThrough ? '●' : '○'))
-      .join(' — ');
-    const vaultNode = level.phase === 'daily' ? (clueless.availability === 'playable' ? '✦' : '◇') : '◇';
     const unlockMeta =
       clueless.nextUnlockAt && clueless.availability === 'waiting'
         ? localUnlockCopy(clueless.nextUnlockAt, clueless.now)
         : level.description;
+    // One line each: where you are, the path as cubes, and what clearing it
+    // unlocks — no heading repeated under another heading.
     return (
       <>
         <StartDetail
-          ribbon
-          ribbonColor={palette.purple}
-          label={
-            clueless.availability === 'waiting'
-              ? `VAULT ${level.number}`
-              : `LEVEL ${level.number} · ${level.name}`
-          }
+          label={clueless.availability === 'waiting' ? `VAULT ${level.number}` : `LEVEL ${level.number}`}
           title={
             clueless.availability === 'waiting'
               ? `Vault ${level.number} is sealed`
               : level.phase === 'daily'
                 ? 'Daily Vault'
-                : 'Solo path'
+                : level.name
           }
           meta={unlockMeta}
           accent={accent}
         />
+        <PathRail
+          cleared={clueless.progress.completedThrough}
+          vaultOpen={level.phase === 'daily' && clueless.availability === 'playable'}
+        />
         <StartDetail
           label="YOUR PATH"
-          title={`${tutorialRail}  →  ${vaultNode}`}
+          title=""
           meta={
             clueless.progress.completedThrough < 3
               ? 'Clear the three sparks to reach the Daily Vault.'
@@ -286,8 +271,6 @@ function startDetailFor(
   if (gameId === 'wordfall') {
     return (
       <StartDetail
-        ribbon
-        ribbonColor={palette.ribbon}
         label="WORDFALL"
         title="Campaign levels"
         meta="A new level drops every Monday"
@@ -341,11 +324,7 @@ function LiveMaybe({
 }
 
 export default function App() {
-  const [fontsLoaded, fontError] = useFonts({
-    Fredoka_500Medium,
-    Fredoka_600SemiBold,
-    Fredoka_700Bold,
-  });
+  const [fontsLoaded, fontError] = useAppFonts();
   const { width } = useWindowDimensions();
   const wide = isWideLayout(width);
   const [screen, setScreen] = useState<Screen>({ name: 'hub' });
@@ -356,11 +335,11 @@ export default function App() {
   const [cluelessPathNow, setCluelessPathNow] = useState(() => new Date());
   const [profile, setProfile] = useState<Profile | null>(null);
   const [pendingInvite, setPendingInvite] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [streak, setStreak] = useState<DailyStreak>(EMPTY_STREAK);
   const [rewards, setRewards] = useState<RewardsState>(EMPTY_REWARDS);
   const [onboarding, setOnboarding] = useState<OnboardingState | null>(null);
-  const [chestOpenDay, setChestOpenDay] = useState<number | null>(null);
+  const [chestOpen, setChestOpen] = useState<{ day: number; coins: number } | null>(null);
   const [feedbackSettings, setFeedbackSettings] =
     useState<FeedbackSettings>(DEFAULT_FEEDBACK_SETTINGS);
   const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent>('granted');
@@ -810,13 +789,15 @@ export default function App() {
       captureAnalytics('daily_chest_claimed', { chest_day: day });
     }
     feedback('chest');
-    setChestOpenDay(day);
+    const coins = claimed.events.reduce((total, event) => (event.kind === 'coins' ? total + event.amount : total), 0);
+    setChestOpen({ day, coins });
   };
 
-  // The game screen owns the whole viewport during play, so the chrome is
-  // hidden there — a menu bar over a live round is a mis-tap waiting to happen.
-  // Every game now plays under `game`, so the one check covers all three.
-  const showChrome = screen.name !== 'game';
+  // Game and result screens own the whole viewport, as in the kit: a top bar
+  // over a live round is a mis-tap waiting to happen, and a result pop-up sits
+  // straight on the dimmed board.
+  const playing = screen.name === 'game' || screen.name === 'over' || screen.name === 'live-results';
+  const showChrome = !playing;
   const activeSoloCluelessLevel =
     screen.name === 'game' && screen.gameId === 'clueless' && !screen.live
       ? cluelessSoloLevelByNumber(screen.cluelessLevelNumber ?? currentCluelessLevelNumber)
@@ -831,17 +812,6 @@ export default function App() {
       ? puzzleForCluelessTeamLevel(activeTeamCluelessLevel)
       : undefined;
   const activeGameId = 'gameId' in screen ? screen.gameId : undefined;
-  const activeKind: DrawerDestination['kind'] =
-    screen.name === 'hub'
-      ? 'hub'
-      : screen.name === 'scores'
-        ? 'scores'
-        : screen.name === 'auth'
-          ? 'account'
-          : screen.name === 'teams' || screen.name === 'live-lobby' || screen.name === 'live-results'
-            ? 'teams'
-            : 'game';
-
   /**
    * Flips one feedback channel. Applied to the effect layer immediately so the
    * tap that turns sound back on is itself audible, then persisted; a failed
@@ -864,42 +834,43 @@ export default function App() {
     return () => setScreen(applyParent(parent));
   };
 
-  const navigate = (to: DrawerDestination) => {
-    if (to.kind === 'hub') setScreen({ name: 'hub' });
-    else if (to.kind === 'game') {
-      captureAnalytics('game_selected', { game_id: to.gameId, source: 'drawer' });
-      openGameHome(to.gameId);
+  /**
+   * Quick play from the hub's gold button: the game played most recently,
+   * More or Less before anything has been played.
+   */
+  const quickPlayGameId = (): string => {
+    let latest: { gameId: string; at: number } | null = null;
+    for (const [gameId, board] of Object.entries(boards)) {
+      for (const entry of board.history) {
+        const at = Date.parse(entry.playedAt);
+        if (Number.isFinite(at) && (!latest || at > latest.at)) latest = { gameId, at };
+      }
     }
-    else if (to.kind === 'scores') setScreen({ name: 'scores', gameId: to.gameId });
-    else if (to.kind === 'teams') setScreen({ name: 'teams' });
-    else setScreen({ name: 'auth', returnGameId: activeGameId });
+    return latest && getGame(latest.gameId)?.status === 'available' ? latest.gameId : MORE_OR_LESS;
   };
+
 
   if (!fontsLoaded && !fontError) {
     return (
       <SafeAreaView style={styles.loading}>
-        <StatusBar barStyle="dark-content" backgroundColor={theme.bg} />
+        <StatusBar barStyle="light-content" backgroundColor={theme.bg} />
         <ActivityIndicator color={theme.accent} size="large" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.safe, wide && styles.safeLaptop]}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.bg} />
-      <View style={styles.glowViolet} pointerEvents="none" />
-      <View style={styles.glowCoral} pointerEvents="none" />
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.bg} />
+      {/* Full-bleed backdrop: the menu sky, or the calmer play sky behind a
+          board and its result pop-up. The column sits on top of it. */}
+      <SkyBackground variant={playing ? 'play' : 'sky'} />
       <View style={[styles.frame, wide && styles.frameLaptop]}>
         {showChrome && !showOnboarding && (
           <TopBar
-            onMenu={() => setMenuOpen(true)}
             onBack={chromeBack()}
-            hud={
-              <>
-                <XpBadge level={progress.level} progress={progress.fraction} />
-                <CoinPill count={rewards.coins} />
-              </>
-            }
+            left={<StreakPill streak={streak} today={todayKey} />}
+            right={<CoinsPill coins={rewards.coins} />}
           />
         )}
 
@@ -919,15 +890,25 @@ export default function App() {
             streak={streak}
             chest={todayChest}
             chestDay={todayChestDay}
-            chestOpen={chestOpenDay !== null}
+            chestClaim={chestOpen}
             onOpenChest={openChest}
-            onChestClosed={() => setChestOpenDay(null)}
+            onChestClosed={() => setChestOpen(null)}
+            level={progress.level}
+            levelProgress={progress.fraction}
             labelRoundsPassed={labelProgress.roundsPassed}
             onPlay={(gameId) => {
               captureAnalytics('game_selected', { game_id: gameId, source: 'hub' });
               openGameHome(gameId);
             }}
+            onQuickPlay={() => {
+              const gameId = quickPlayGameId();
+              captureAnalytics('game_selected', { game_id: gameId, source: 'quick_play' });
+              openGameHome(gameId);
+            }}
             onScores={() => setScreen({ name: 'scores', gameId: MORE_OR_LESS })}
+            onSettings={() => setSettingsOpen(true)}
+            onTeams={() => setScreen({ name: 'teams' })}
+            onAccount={() => setScreen({ name: 'auth' })}
           />
         )}
 
@@ -1122,6 +1103,7 @@ export default function App() {
         {screen.name === 'home' && (
           <GameStartScreen
             gameId={screen.gameId}
+            onClose={() => setScreen({ name: 'hub' })}
             board={
               screen.gameId === 'clueless'
                 ? boardForCluelessAssistanceContext(
@@ -1147,7 +1129,7 @@ export default function App() {
               else setScreen({ name: 'teams' });
             }}
             raceDisabled={!isBackendConfigured}
-            raceLabel={isBackendConfigured ? 'Race with team' : 'Race with team (offline)'}
+            raceLabel={isBackendConfigured ? 'Race team' : 'Race (offline)'}
             raceHint={
               isBackendConfigured
                 ? `A live race is ${LIVE_ROSTER_LABEL} players on the same board.`
@@ -1435,17 +1417,30 @@ export default function App() {
           />
         )}
 
-        <Drawer
-          open={menuOpen}
-          onClose={() => setMenuOpen(false)}
-          onNavigate={navigate}
-          activeGameId={activeGameId}
-          activeKind={activeKind}
-          signedInAs={profile?.username ?? null}
+        <SettingsPopup
+          visible={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
           feedbackSettings={feedbackSettings}
           onToggleFeedback={toggleFeedback}
+          signedInAs={profile?.username ?? null}
+          onAccount={() => {
+            setSettingsOpen(false);
+            setScreen({ name: 'auth', returnGameId: activeGameId });
+          }}
+          onScores={() => {
+            setSettingsOpen(false);
+            setScreen({ name: 'scores', gameId: activeGameId ?? MORE_OR_LESS });
+          }}
+          onTeams={() => {
+            setSettingsOpen(false);
+            setScreen({ name: 'teams' });
+          }}
           canSendFeedback={isFeedbackConfigured()}
-          onSendFeedback={() => setShowFeedback(true)}
+          onSendFeedback={() => {
+            setSettingsOpen(false);
+            afterModalClose(() => setShowFeedback(true));
+          }}
+          version={appConfig.expo.version}
         />
         <FeedbackPrompt
           visible={showFeedback}
@@ -1468,38 +1463,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.bg,
   },
-  safeLaptop: {
-    alignItems: 'center',
-    paddingHorizontal: 28,
-  },
-  glowViolet: {
-    position: 'absolute',
-    width: 460,
-    height: 460,
-    borderRadius: 230,
-    backgroundColor: theme.accentSecondarySoft,
-    top: -250,
-    right: -180,
-  },
-  glowCoral: {
-    position: 'absolute',
-    width: 360,
-    height: 360,
-    borderRadius: 180,
-    backgroundColor: theme.accentSoft,
-    bottom: -220,
-    left: -170,
-  },
   frame: {
     flex: 1,
     alignSelf: 'stretch',
     width: '100%',
-    backgroundColor: theme.bg,
     overflow: 'hidden',
   },
   frameLaptop: {
-    maxWidth: LAPTOP_MAX_WIDTH,
+    maxWidth: COLUMN_MAX_WIDTH,
     alignSelf: 'center',
-    marginHorizontal: 'auto',
   },
 });

@@ -1,15 +1,16 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { palette, space, theme } from '../theme';
-import { Ribbon } from './Ribbon';
-import { RoundIconButton } from './RoundIconButton';
+import { StyleSheet, View } from 'react-native';
+import { GameIcon } from '../icons/GameIcon';
+import { space, tone } from '../theme';
+import { RibbonTitle } from './RibbonTitle';
+import { SquareButton } from './SquareButton';
 
 type Props = {
   title: string;
   subtitle?: string;
-  /** Kept so existing call sites compile. The ribbon colour is `ribbon`. */
+  /** Kept so existing call sites compile; the kit's title tab is teal. */
   accent?: string;
-  /** Level ribbon fill. Defaults to the yellow ribbon. Clueless passes purple. */
+  /** Tab fill override. */
   ribbon?: string;
   onExit?: () => void;
   onHelp?: () => void;
@@ -19,47 +20,37 @@ type Props = {
 };
 
 /**
- * In-play header: round back, a level ribbon, round help.
- * The ribbon label is the level line when a screen has one, otherwise the game name.
+ * In-play header from the kit's game screen: sky back square, the level on
+ * a small teal title tab, help square. The tab reads the level line when a
+ * screen has one, otherwise the game name.
  */
-export function GameHeader({
-  title,
-  subtitle,
-  ribbon = palette.ribbon,
-  onExit,
-  onHelp,
-  leading,
-  trailing,
-  sideWidth = 52,
-}: Props) {
+export function GameHeader({ title, subtitle, ribbon, onExit, onHelp, leading, trailing, sideWidth = 52 }: Props) {
   const label = (subtitle ?? title).toUpperCase();
   return (
     <View style={styles.root}>
-      <View style={[styles.side, { width: sideWidth }]}>
+      <View style={[styles.side, { minWidth: sideWidth }]}>
         {leading ??
           (onExit ? (
-            <RoundIconButton
-              icon={<Text style={styles.glyph}>‹</Text>}
+            <SquareButton
+              icon={<GameIcon name="back" size={24} color={tone.sky.outline} />}
               accessibilityLabel="Leave game"
               onPress={onExit}
-              tone="blue"
+              tone="sky"
               size={44}
             />
           ) : null)}
       </View>
-
       <View style={styles.copy}>
-        <Ribbon label={label} color={ribbon} />
+        <RibbonTitle label={label} color={ribbon} size="sm" />
       </View>
-
-      <View style={[styles.side, styles.trailing, { width: sideWidth }]}>
+      <View style={[styles.side, styles.trailing, { minWidth: sideWidth }]}>
         {trailing ??
           (onHelp ? (
-            <RoundIconButton
-              icon={<Text style={styles.glyph}>?</Text>}
+            <SquareButton
+              icon={<GameIcon name="help" size={24} color={tone.sky.outline} />}
               accessibilityLabel="How to play"
               onPress={onHelp}
-              tone="purple"
+              tone="sky"
               size={44}
             />
           ) : null)}
@@ -69,14 +60,8 @@ export function GameHeader({
 }
 
 const styles = StyleSheet.create({
-  root: {
-    minHeight: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-  },
-  side: { width: 52, alignItems: 'flex-start', justifyContent: 'center' },
-  trailing: { alignItems: 'flex-end' },
-  copy: { flex: 1, alignItems: 'center' },
-  glyph: { color: theme.onPill, fontSize: 22, lineHeight: 24, fontWeight: '700' },
+  root: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  side: { alignItems: 'flex-start', justifyContent: 'center' },
+  trailing: { alignItems: 'flex-end', flexDirection: 'row', justifyContent: 'flex-end', gap: space.xs },
+  copy: { flex: 1, minWidth: 0, alignItems: 'center' },
 });

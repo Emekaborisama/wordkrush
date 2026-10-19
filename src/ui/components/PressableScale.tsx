@@ -17,7 +17,7 @@ type Props = Omit<PressableProps, 'children'> & {
 /**
  * The one pressed-state for controls that are not bevel pills.
  *
- * Scale-on-press only runs on native. A bevel button (`BevelFace`) depresses
+ * Scale-on-press only runs on native. A glossy button (`GlossFace`) sinks
  * its face on web and native instead, and opts out of this translate.
  */
 export function PressableScale({

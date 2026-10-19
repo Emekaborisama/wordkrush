@@ -1,6 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { font, interaction, palette, radius } from '../theme';
+import { StyleSheet, View } from 'react-native';
+import { GameIcon } from '../icons/GameIcon';
+import { interaction, palette, radius } from '../theme';
 import { PressableScale } from './PressableScale';
+import { StrokeText } from './StrokeText';
 
 export type XpBadgeProps = {
   level: number;
@@ -8,40 +10,43 @@ export type XpBadgeProps = {
   progress: number;
   onPress?: () => void;
   accessibilityLabel?: string;
+  /** The thin bar under the star; off where a wider bar sits beside it. */
+  showBar?: boolean;
 };
 
 /**
- * Level number in a purple circle plus a thin bar. `onPress` is how a screen
- * opens the badges sheet. This component does not navigate.
+ * Player level as a kit gold star with the number on it, over a thin purple
+ * XP bar. `onPress` is how a screen opens more detail; this does not navigate.
  */
-export function XpBadge({ level, progress, onPress, accessibilityLabel }: XpBadgeProps) {
+export function XpBadge({ level, progress, onPress, accessibilityLabel, showBar = true }: XpBadgeProps) {
   const label = accessibilityLabel ?? `Level ${level}`;
   const fraction = Math.max(0, Math.min(1, progress));
   const body = (
     <View style={styles.body}>
-      <View style={styles.circle}>
-        <Text style={styles.level}>{level}</Text>
+      <View style={styles.star}>
+        <GameIcon name="star" size={40} />
+        <View style={styles.number} pointerEvents="none">
+          <StrokeText size={14} stroke={palette.goldEdge} strokeWidth={1.5} depth={1}>
+            {level}
+          </StrokeText>
+        </View>
       </View>
-      <View style={styles.track}>
-        <View style={[styles.fill, { width: `${fraction * 100}%` }]} />
-      </View>
+      {showBar ? (
+        <View style={styles.track}>
+          <View style={[styles.fill, { width: `${fraction * 100}%` }]} />
+        </View>
+      ) : null}
     </View>
   );
   if (!onPress) {
     return (
-      <View accessibilityLabel={label} style={styles.hit}>
+      <View accessible accessibilityLabel={label} style={styles.hit}>
         {body}
       </View>
     );
   }
   return (
-    <PressableScale
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      translateOnPress={false}
-      style={styles.hit}
-    >
+    <PressableScale onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={styles.hit}>
       {body}
     </PressableScale>
   );
@@ -49,16 +54,17 @@ export function XpBadge({ level, progress, onPress, accessibilityLabel }: XpBadg
 
 const styles = StyleSheet.create({
   hit: { minWidth: interaction.minTouch, minHeight: interaction.minTouch, alignItems: 'center', justifyContent: 'center' },
-  body: { alignItems: 'center', gap: 4 },
-  circle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: palette.purple,
-    alignItems: 'center',
-    justifyContent: 'center',
+  body: { alignItems: 'center', gap: 2 },
+  star: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  number: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center', paddingTop: 3 },
+  track: {
+    width: 40,
+    height: 6,
+    borderRadius: radius.pill,
+    backgroundColor: palette.navyDeep,
+    borderWidth: 1,
+    borderColor: palette.white,
+    overflow: 'hidden',
   },
-  level: { color: palette.white, fontFamily: font.bold, fontWeight: '700', fontSize: 14 },
-  track: { width: 36, height: 4, borderRadius: radius.pill, backgroundColor: palette.sand, overflow: 'hidden' },
   fill: { height: '100%', backgroundColor: palette.purple, borderRadius: radius.pill },
 });

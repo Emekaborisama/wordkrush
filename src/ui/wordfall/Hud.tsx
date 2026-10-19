@@ -1,35 +1,42 @@
 import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import type { Objective, SpecialKind } from '../../games/wordfall/types';
-import { Surface } from '../components';
-import {
-  elevation,
-  font,
-  formatDuration,
-  gameAccentTokens,
-  radius,
-  space,
-  theme,
-  type,
-} from '../theme';
-import { SPECIAL_VISUALS, specialInk } from './visuals';
+import { BlockTile, GameIcon, HudPanel, StarBar, StrokeText } from '../components';
+import type { IconName } from '../icons/GameIcon';
+import { font, formatDuration, palette, space, tone } from '../theme';
+import { SPECIAL_VISUALS } from './visuals';
 
-/** One line of player-facing copy per objective kind. */
-export function describeObjective(objective: Objective): { icon: string; label: string } {
+/** One line of player-facing copy per objective kind, and its kit icon. */
+export function describeObjective(objective: Objective): { icon: string; art: IconName | null; label: string } {
   switch (objective.kind) {
     case 'score':
-      return { icon: '◎', label: 'Score' };
+      return { icon: '◎', art: 'target', label: 'Score' };
     case 'words':
-      return { icon: '✎', label: 'Words' };
+      return { icon: '✎', art: 'book', label: 'Words' };
     case 'length':
-      return { icon: '⟷', label: `${objective.minLength}+ letters` };
+      return { icon: '⟷', art: 'ruler', label: `${objective.minLength}+ letters` };
     case 'crates':
-      return { icon: '▤', label: 'Crates' };
+      return { icon: '▤', art: 'crate', label: 'Crates' };
     case 'letter':
-      return { icon: objective.letter.toUpperCase(), label: `Clear ${objective.letter.toUpperCase()}` };
+      return { icon: objective.letter.toUpperCase(), art: null, label: `Clear ${objective.letter.toUpperCase()}` };
   }
 }
 
+/** Mean completion across a level's objectives, 0–1: what the star bar shows. */
+export function objectiveCompletion(objectives: readonly Objective[], progress: readonly number[]): number {
+  if (objectives.length === 0) return 0;
+  const total = objectives.reduce(
+    (sum, objective, index) => sum + Math.min(1, (progress[index] ?? 0) / Math.max(1, objective.target)),
+    0,
+  );
+  return total / objectives.length;
+}
+
+/**
+ * The kit's HUD: Moves (or Time), Goal and Score on cream panels with red
+ * tabs, the star bar under them filling as the goals complete, and the level
+ * brief in one outlined line.
+ */
 export function Hud({
   levelDescription,
   movesLeft,
@@ -38,7 +45,6 @@ export function Hud({
   score,
   objectives,
   progress,
-  accent,
 }: {
   levelDescription: string;
   movesLeft: number;
@@ -48,126 +54,84 @@ export function Hud({
   score: number;
   objectives: Objective[];
   progress: number[];
-  accent: string;
+  /** Kept so call sites compile; the kit HUD is one colour. */
+  accent?: string;
 }) {
   const timed = timeLeftMs !== null;
-  // The last ten seconds, or the last three moves, turn urgent. In both cases
-  // the LABEL changes as well as the colour — colour alone is not a signal
-  // every player can see.
+  // The last ten seconds, or the last three moves, turn urgent. The LABEL
+  // changes as well as the colour — colour alone is not a signal every
+  // player can see.
   const urgent = timed ? timeLeftMs <= 10_000 : movesLeft <= 3;
   const remaining = timed ? Math.max(0, timeLeftMs / (timeLimitMs || 1)) : 1;
-  const tokens = gameAccentTokens(accent);
-  const danger = gameAccentTokens(theme.danger);
 
   return (
     <View style={styles.hud}>
-      <View style={styles.topRow}>
-        {/* One slot, two meanings. A timed level is a race and an untimed one
-            is a puzzle; showing both counters would leave one of them as
-            decoration the player has to learn to ignore. */}
-        <Surface
-          level={2}
-          radius={radius.md}
-          borderColor={urgent ? danger.border : undefined}
-          style={[styles.stat, urgent && { backgroundColor: danger.soft }]}
-        >
-          <Text style={styles.statLabel}>
-            {timed ? (urgent ? 'HURRY' : 'TIME') : urgent ? 'MOVES LEFT' : 'MOVES'}
-          </Text>
-          <Text style={[styles.statValue, urgent && { color: theme.danger }]}>
-            {timed ? formatDuration(timeLeftMs) : movesLeft}
-          </Text>
-        </Surface>
-
-        <Surface
-          level={2}
-          radius={radius.md}
-          borderColor={tokens.glow}
-          style={[styles.stat, styles.statRight]}
-        >
-          <Text style={styles.statLabel}>SCORE</Text>
-          <Text style={styles.statValue}>{score.toLocaleString('en-US')}</Text>
-        </Surface>
+      <View style={styles.row}>
+        <HudPanel
+          label={timed ? (urgent ? 'Hurry!' : 'Time') : urgent ? 'Last moves' : 'Moves'}
+          value={timed ? formatDuration(timeLeftMs) : movesLeft}
+          urgent={urgent}
+          style={styles.moves}
+        />
+        <HudPanel label="Goal" style={styles.goalPanel} accessibilityLabel={goalLabel(objectives, progress)}>
+          <View style={styles.goals}>
+            {objectives.map((objective, i) => (
+              <GoalChip key={`${objective.kind}-${i}`} objective={objective} progress={progress[i] ?? 0} />
+            ))}
+          </View>
+        </HudPanel>
+        <HudPanel label="Score" value={score} style={styles.score} />
       </View>
 
-      {/* A draining bar reads faster than a number under pressure — you can see
-          how much is left without parsing digits. */}
-      {timed && (
-        <View style={styles.timeTrack} accessibilityElementsHidden importantForAccessibility="no">
+      {/* A draining bar reads faster than a number under pressure. */}
+      {timed ? (
+        <View style={styles.timeTrack} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           <View
             style={[
               styles.timeFill,
-              {
-                width: `${remaining * 100}%`,
-                backgroundColor: urgent ? theme.danger : accent,
-              },
+              { width: `${remaining * 100}%`, backgroundColor: urgent ? palette.red : palette.lime },
             ]}
           />
         </View>
-      )}
+      ) : null}
+      <StarBar progress={objectiveCompletion(objectives, progress)} />
 
-      <Text style={styles.brief} numberOfLines={2}>
+      <StrokeText size={13} stroke={palette.navyDeep} strokeWidth={1.3} depth={0} numberOfLines={2} lineHeight={17}>
         {levelDescription}
-      </Text>
-
-      <View style={styles.goals}>
-        {objectives.map((objective, i) => (
-          <GoalChip
-            key={`${objective.kind}-${i}`}
-            objective={objective}
-            progress={progress[i] ?? 0}
-            accent={accent}
-          />
-        ))}
-      </View>
+      </StrokeText>
     </View>
   );
 }
 
-function GoalChip({
-  objective,
-  progress,
-  accent,
-}: {
-  objective: Objective;
-  progress: number;
-  accent: string;
-}) {
-  const { icon, label } = describeObjective(objective);
-  const done = progress >= objective.target;
-  const fraction = Math.min(1, progress / objective.target);
-  const tokens = gameAccentTokens(accent);
+function goalLabel(objectives: readonly Objective[], progress: readonly number[]): string {
+  return `Goal: ${objectives
+    .map((objective, i) => `${describeObjective(objective).label} ${Math.min(progress[i] ?? 0, objective.target)} of ${objective.target}`)
+    .join(', ')}`;
+}
 
+function GoalChip({ objective, progress }: { objective: Objective; progress: number }) {
+  const { art, icon } = describeObjective(objective);
+  const done = progress >= objective.target;
   return (
-    <Surface
-      level={1}
-      padded={false}
-      radius={radius.md}
-      borderColor={done ? tokens.border : undefined}
-      style={styles.goal}
-    >
-      <Text style={styles.goalIcon}>{done ? '✓' : icon}</Text>
-      <View style={styles.goalBody}>
-        <Text style={styles.goalLabel} numberOfLines={1}>
-          {label}
-        </Text>
-        <Text style={styles.goalCount}>
-          {/* Capped so a score objective does not read "4210/2800". */}
-          {Math.min(progress, objective.target).toLocaleString('en-US')}
-          <Text style={styles.goalTarget}>/{objective.target.toLocaleString('en-US')}</Text>
-        </Text>
-      </View>
-      <View style={styles.goalTrack}>
-        <View
-          style={[styles.goalFill, { width: `${fraction * 100}%`, backgroundColor: accent }]}
-        />
-      </View>
-    </Surface>
+    <View style={styles.goal}>
+      {done ? (
+        <GameIcon name="check" size={26} color={tone.green.outline} />
+      ) : art ? (
+        <GameIcon name={art} size={26} />
+      ) : (
+        <BlockTile size={24} color="cream" letter={icon} />
+      )}
+      <Text style={[styles.goalCount, done && styles.goalDone]}>
+        {/* Capped so a score objective does not read "4210/2800". */}
+        {Math.min(progress, objective.target).toLocaleString('en-US')}
+        <Text style={styles.goalTarget}>/{objective.target.toLocaleString('en-US')}</Text>
+      </Text>
+    </View>
   );
 }
 
 /**
- * The live read-out under the board.
+ * The live read-out under the board, in a cream pill.
  *
  * This is where the game teaches its own rules. Showing the special a word is
  * about to earn WHILE it is being traced is what turns "make long words" into
@@ -180,7 +144,6 @@ export function TracePreview({
   points,
   special,
   message,
-  accent,
 }: {
   word: string;
   valid: boolean;
@@ -188,10 +151,10 @@ export function TracePreview({
   special: SpecialKind | null;
   /** Shown when nothing is being traced — the last result or an error. */
   message: { text: string; tone: 'good' | 'bad' | 'quiet' } | null;
-  accent: string;
+  /** Kept so call sites compile. */
+  accent?: string;
 }) {
   const pulse = useRef(new Animated.Value(0)).current;
-  const tokens = gameAccentTokens(accent);
 
   useEffect(() => {
     Animated.spring(pulse, {
@@ -204,15 +167,16 @@ export function TracePreview({
   }, [valid, word, pulse]);
 
   if (word.length === 0) {
-    const tone =
-      message?.tone === 'good'
-        ? theme.text
-        : message?.tone === 'bad'
-          ? theme.dangerDim
-          : theme.textDim;
     return (
       <View style={styles.preview}>
-        <Text style={[styles.previewIdle, { color: tone }]} numberOfLines={1}>
+        <Text
+          style={[
+            styles.previewIdle,
+            message?.tone === 'good' && styles.idleGood,
+            message?.tone === 'bad' && styles.idleBad,
+          ]}
+          numberOfLines={1}
+        >
           {message?.text ?? 'Drag across letters to spell a word'}
         </Text>
       </View>
@@ -225,25 +189,20 @@ export function TracePreview({
     <Animated.View
       style={[
         styles.preview,
-        valid && { borderColor: tokens.border },
+        valid && styles.previewValid,
         { transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.03] }) }] },
       ]}
     >
       <Text style={[styles.previewWord, !valid && styles.previewWordDim]} numberOfLines={1}>
         {word.toUpperCase()}
       </Text>
-
       {valid && (
         <>
-          <Text style={styles.previewPoints}>
-            +{points.toLocaleString('en-US')}
-          </Text>
+          <Text style={styles.previewPoints}>+{points.toLocaleString('en-US')}</Text>
           {visual && (
-            <View style={[styles.previewBadge, { backgroundColor: visual.color, borderColor: visual.color }]}>
-              <Text style={[styles.previewGlyph, { color: specialInk(visual.color) }]}>{visual.glyph}</Text>
-              <Text style={[styles.previewBadgeText, { color: specialInk(visual.color) }]}>
-                {special!.toUpperCase()}
-              </Text>
+            <View style={styles.previewBadge}>
+              <BlockTile size={22} color={visual.cube} letter={visual.glyph} />
+              <Text style={styles.previewBadgeText}>{special!.toUpperCase()}</Text>
             </View>
           )}
         </>
@@ -252,87 +211,45 @@ export function TracePreview({
   );
 }
 
-const raised = elevation(3);
-
 const styles = StyleSheet.create({
-  hud: { gap: space.sm },
-
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  stat: {
-    flex: 1,
-    minHeight: 54,
-    justifyContent: 'center',
-    paddingVertical: space.xs,
-  },
-  statRight: { alignItems: 'flex-end' },
-  statLabel: { ...type.overline, color: theme.textDim },
-  statValue: { ...type.title, color: theme.text, fontVariant: ['tabular-nums'], marginTop: 1 },
-
+  hud: { gap: 6 },
+  row: { flexDirection: 'row', gap: space.xs },
+  moves: { flex: 0.8 },
+  goalPanel: { flex: 1.7 },
+  score: { flex: 1 },
+  goals: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', columnGap: 8, rowGap: 2 },
+  goal: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  goalCount: { fontFamily: font.black, fontSize: 20, lineHeight: 24, color: palette.ink, fontVariant: ['tabular-nums'] },
+  goalDone: { color: tone.green.lip },
+  goalTarget: { fontFamily: font.heavy, fontSize: 15, color: palette.inkSoft },
   timeTrack: {
-    height: 5,
-    borderRadius: 2,
-    backgroundColor: elevation(2).backgroundColor,
-    overflow: 'hidden',
-    marginTop: -3,
-  },
-  timeFill: { height: '100%', borderRadius: 2 },
-  brief: { ...type.caption, color: theme.onWood, textAlign: 'center', paddingHorizontal: space.sm },
-
-  goals: { flexDirection: 'row', gap: space.sm },
-  goal: {
-    flex: 1,
-    position: 'relative',
-    paddingHorizontal: space.sm,
-    paddingTop: 6,
-    paddingBottom: 5,
-    gap: 4,
-  },
-  goalIcon: {
-    position: 'absolute',
-    top: 6,
-    right: 7,
-    color: theme.textDim,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  goalBody: { gap: 1 },
-  goalLabel: { ...type.overline, color: theme.textDim },
-  goalCount: { ...type.bodyStrong, color: theme.text, fontVariant: ['tabular-nums'] },
-  goalTarget: { color: theme.textDim, fontFamily: font.semibold, fontWeight: '600' },
-  goalTrack: {
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: elevation(1).backgroundColor,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: palette.navyDeep,
     overflow: 'hidden',
   },
-  goalFill: { height: '100%', borderRadius: 2 },
+  timeFill: { height: '100%', borderRadius: 3 },
 
   preview: {
-    minHeight: 52,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.md,
-    backgroundColor: raised.backgroundColor,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: raised.borderColor,
-    borderTopColor: raised.borderTopColor,
+    backgroundColor: palette.creamFill,
+    borderRadius: 24,
+    borderWidth: 2.5,
+    borderColor: palette.creamEdge,
+    borderBottomColor: palette.white,
     paddingHorizontal: space.md,
   },
-  previewIdle: { ...type.caption, textAlign: 'center' },
-  previewWord: { ...type.title, color: theme.text, letterSpacing: 1.5 },
-  previewWordDim: { color: theme.textDim },
-  previewPoints: { ...type.bodyStrong, color: theme.text, fontVariant: ['tabular-nums'] },
-  previewBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderWidth: 1,
-    borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  previewGlyph: { ...type.caption, color: theme.onPill, fontWeight: '900' },
-  previewBadgeText: { ...type.overline, color: theme.onPill },
+  previewValid: { borderColor: tone.green.bottom },
+  previewIdle: { fontFamily: font.heavy, fontSize: 14, lineHeight: 18, color: palette.inkSoft, textAlign: 'center' },
+  idleGood: { color: tone.green.lip },
+  idleBad: { color: palette.redDeep },
+  previewWord: { fontFamily: font.black, fontSize: 22, lineHeight: 27, letterSpacing: 1.5, color: palette.ink },
+  previewWordDim: { color: palette.inkSoft },
+  previewPoints: { fontFamily: font.black, fontSize: 18, color: tone.green.lip, fontVariant: ['tabular-nums'] },
+  previewBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  previewBadgeText: { fontFamily: font.black, fontSize: 12, letterSpacing: 0.8, color: palette.ink },
 });

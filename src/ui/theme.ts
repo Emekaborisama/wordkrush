@@ -3,9 +3,11 @@
  *
  * The lockup (`brand`) is unchanged: the wordmark is not recoloured.
  *
- * Screens use the 2026-10-18 casual chrome (`palette`, `theme`, `screen`).
- * Sand page, wood playfield, warm-white cards, glossy pills. The flat dark
- * ink canvas is not the default. See docs/branding/color.md.
+ * Every screen follows the Block Blast UI kit (owner decision, 2026-10-18 —
+ * see docs/DESIGN_SYSTEM.md). Sky backdrop, coral popups with a white rim and
+ * a teal ribbon title, cream inset boxes, glossy rounded-rectangle buttons,
+ * cream HUD panels with red tabs, a cyan board, and a green booster dock.
+ * The sand / wood chrome from earlier on 2026-10-18 is superseded.
  */
 
 /**
@@ -22,39 +24,125 @@ export const brand = {
 } as const;
 
 /**
- * Owner hexes for the casual-game chrome (2026-10-18). Named here so screens
- * never invent a one-off. `starEdge` is the orange star outline from the
- * reference shots; the brief names the colour but not a hex.
- *
- * `brownMuted` / `brownSoft` are label browns. The bright pills fail as small
- * text on sand and paper, so secondary labels use these instead of opacity.
+ * Block Blast's five "main colors", exactly as the kit names them.
+ * Everything in `palette` is either one of these or sampled from the kit's
+ * screens (gradient ends, rims, lips), so screens never invent a one-off.
  */
-export const palette = {
-  sand: '#F4E4C4',
-  wood: '#6B3E26',
-  plank: '#8B5A2B',
-  paper: '#FFF8EE',
-  brown: '#3A2415',
-  brownMuted: '#6B4630',
-  brownSoft: '#7A5340',
-  white: '#FFFFFF',
-  green: '#3DCC4A',
-  greenBevel: '#1E8A28',
-  purple: '#7B4FD6',
-  blue: '#2F9BFF',
-  coral: '#FF5A7A',
-  ribbon: '#FFC83D',
-  star: '#FFC107',
-  starEdge: '#E8780C',
+export const kit = {
+  coral: '#F15D70',
+  sky: '#6BB9E0',
+  cream: '#FFE1BE',
+  green: '#62AC25',
+  teal: '#2DADBD',
 } as const;
 
-export const bevel = { lg: 6, md: 5, sm: 4, shadeAmount: 0.38 } as const;
+export const palette = {
+  ...kit,
+  white: '#FFFFFF',
 
-/** Top highlight on a glossy face. */
-export const gloss = { alpha: 0.18, height: 0.46 } as const;
+  // Popup panel: light salmon at the top, the kit coral in the middle,
+  // deeper coral at the foot. White 4px rim, coral keyline just inside it.
+  coralTop: '#FB8F99',
+  coralBottom: '#E6556A',
+  coralEdge: '#C43C53',
+
+  // Cream inset box (Music / SFX, Goal, level rows) and its rim.
+  creamFill: '#FFEAD3',
+  creamEdge: '#EEC39B',
+  creamShade: '#F7D5B3',
+
+  // Menu backdrop: deep sky at the top, pale horizon under the clouds.
+  navy: '#285FAD',
+  navyDeep: '#173F7E',
+  skyTop: '#2F7FDB',
+  skyMid: '#58AEEA',
+  skyBottom: '#B8EAF8',
+  cloudShade: '#D3EFFA',
+
+  // Play field: lighter cyan sky, cyan board frame, pale empty cells,
+  // light tray and the translucent booster dock.
+  playTop: '#41B2E1',
+  playBottom: '#97DEF2',
+  frame: '#38C5EA',
+  frameDeep: '#179BC8',
+  well: '#C2EEFA',
+  tray: '#ABE5F5',
+  dock: '#D8F4FC',
+
+  // Ink. Navy on cream / white; teal for the kit's labels on cream.
+  ink: '#173A63',
+  inkSoft: '#3D5D85',
+  tealInk: '#0E6874',
+
+  // Accents.
+  red: '#EF3E4F',
+  redDeep: '#B21F38',
+  gold: '#FFC928',
+  goldDeep: '#F29A0B',
+  goldEdge: '#A85A00',
+  orange: '#FFB31F',
+  blue: '#2EB4EC',
+  purple: '#9C5BEF',
+  pink: '#FF7EB6',
+  lime: '#8BD43A',
+
+} as const;
+
+/**
+ * Cube colours for `BlockTile`, the logo and the level digits. The kit's
+ * boards use these seven, plus cream for letter tiles and stone for locked
+ * cells.
+ */
+export const cube = {
+  red: '#FF5D6E',
+  orange: '#FFA23A',
+  yellow: '#FFCD38',
+  green: '#7BD453',
+  teal: '#35CFC6',
+  blue: '#3E9BFF',
+  purple: '#A46BF5',
+  pink: '#FF86C3',
+  cream: '#FFF2DF',
+  stone: '#9DB2C8',
+  gold: '#FFD447',
+} as const;
+
+export type CubeColor = keyof typeof cube;
+
+/** Glossy face: light top, saturated foot, darker lip, darkest outline. */
+export type GlossTone = {
+  top: string;
+  bottom: string;
+  lip: string;
+  outline: string;
+};
+
+/**
+ * Button faces sampled from the kit (Connect, Terms, Contact us, Play) and
+ * extended to the other accents. `outline` also strokes the white label.
+ */
+export const tone = {
+  green: { top: '#A3E63A', bottom: '#4AB41F', lip: '#2F8012', outline: '#245F0C' },
+  blue: { top: '#93EEFB', bottom: '#2EB9E6', lip: '#1A86B8', outline: '#11628A' },
+  gold: { top: '#FFE53D', bottom: '#F4A91E', lip: '#C97905', outline: '#8C4F00' },
+  red: { top: '#FF8E8E', bottom: '#EC3D4F', lip: '#B2223A', outline: '#7F1428' },
+  purple: { top: '#D2A6FF', bottom: '#9558EC', lip: '#6634BE', outline: '#4A2190' },
+  teal: { top: '#A0E6EC', bottom: '#30BFCB', lip: '#1C8C98', outline: '#126771' },
+  coral: { top: '#FFA2A6', bottom: '#F15D70', lip: '#C33B52', outline: '#8C2438' },
+  sky: { top: '#A9E6FF', bottom: '#4FA9EC', lip: '#2B78C2', outline: '#1B5592' },
+  grey: { top: '#EEF2F6', bottom: '#AEB9C6', lip: '#808C9A', outline: '#5B6676' },
+} as const satisfies Record<string, GlossTone>;
+
+export type Tone = keyof typeof tone;
+
+/** Bevel lip heights in px, by control size. */
+export const bevel = { lg: 6, md: 5, sm: 4, shadeAmount: 0.3 } as const;
+
+/** Top highlight band on a glossy face. */
+export const gloss = { alpha: 0.26, height: 0.48 } as const;
 
 /** 1px top inner rim. */
-export const rim = { alpha: 0.35 } as const;
+export const rim = { alpha: 0.45 } as const;
 
 /** Smallest size for text that must clear WCAG AA (under 18px). */
 export const labelFloorPx = 11;
@@ -138,84 +226,46 @@ export function withAlpha(color: string, alpha: number): string {
 }
 
 /**
- * White on `#3DCC4A` is about 2.11:1, and a 0.18 white gloss makes the top of
- * the face even lighter. A white label needs a deeper shade of the same hue
- * so the glyphs still clear 4.5:1 where the gloss sits.
+ * A glossy tone derived from any hex, for the rare control whose colour is
+ * data (a game accent) rather than one of the named `tone`s.
  */
-export function readableWhiteFace(hex: string): string {
+export function toneFrom(hex: string): GlossTone {
   const base = normalizeHex(hex);
-  const clears = (face: string) => contrastRatio(palette.white, tint(face, gloss.alpha)) >= 4.5;
-  if (clears(base)) return base;
-  for (let step = 1; step <= 100; step += 1) {
-    const face = shade(base, step / 100);
-    if (clears(face)) return face;
-  }
-  return shade(base, 1);
+  return {
+    top: tint(base, 0.42),
+    bottom: base,
+    lip: shade(base, bevel.shadeAmount),
+    outline: shade(base, 0.5),
+  };
 }
-
-export type PillLabel = 'white' | 'brown';
-
-export type PillChrome = {
-  face: string;
-  bevel: string;
-  label: string;
-};
-
-/** Face, darker lip, and a label colour that clears 4.5:1 on that face. */
-export function pillChrome(hex: string, label: PillLabel): PillChrome {
-  if (label === 'brown') {
-    const face = normalizeHex(hex);
-    return { face, bevel: shade(face, bevel.shadeAmount), label: palette.brown };
-  }
-  const face = readableWhiteFace(hex);
-  return { face, bevel: shade(face, bevel.shadeAmount), label: palette.white };
-}
-
-export const pillTone = {
-  green: palette.green,
-  purple: palette.purple,
-  blue: palette.blue,
-  coral: palette.coral,
-  ribbon: palette.ribbon,
-} as const;
-
-export type PillTone = keyof typeof pillTone;
-
-/** Precomputed chrome for the five reference pills. */
-export const pill: Record<PillTone, PillChrome> = {
-  green: pillChrome(palette.green, 'white'),
-  purple: pillChrome(palette.purple, 'white'),
-  blue: pillChrome(palette.blue, 'white'),
-  coral: pillChrome(palette.coral, 'white'),
-  ribbon: pillChrome(palette.ribbon, 'brown'),
-};
 
 export const reward = {
-  gold: palette.star,
-  goldHot: palette.starEdge,
-  outline: palette.brown,
-  /** Unearned star. Sand reads on a warm-white card; it is a glyph, not body text. */
-  starOff: palette.sand,
+  gold: palette.gold,
+  goldHot: palette.goldDeep,
+  outline: palette.goldEdge,
+  /** Unearned star on a coral panel: a darker coral silhouette, as in the kit. */
+  starOff: palette.coralEdge,
+  /** Unearned star on cream or white. */
+  starOffLight: palette.creamEdge,
   xp: palette.purple,
 } as const;
 
 export const theme = {
-  bg: palette.sand,
-  bgElevated: palette.paper,
-  card: palette.paper,
-  cardHigh: tint(palette.paper, 0.55),
-  edge: 'rgba(58,36,21,0.10)',
-  border: shade(palette.sand, 0.12),
-  borderStrong: shade(palette.sand, 0.28),
-  text: palette.brown,
-  textMuted: palette.brownMuted,
-  textDim: palette.brownSoft,
-  /** Text on the wood playfield. */
-  onWood: palette.paper,
-  /** Text on a contrast-safe saturated pill. */
+  /** Behind everything; the sky paints over it. */
+  bg: palette.navy,
+  bgElevated: palette.creamFill,
+  card: palette.creamFill,
+  cardHigh: palette.white,
+  edge: withAlpha(palette.ink, 0.12),
+  border: palette.creamEdge,
+  borderStrong: shade(palette.creamEdge, 0.18),
+  /** Navy ink on cream or white. On sky or coral, text is white and outlined. */
+  text: palette.ink,
+  textMuted: palette.inkSoft,
+  textDim: palette.inkSoft,
+  /** White text on coral, sky, and glossy faces (always outlined). */
+  onColor: palette.white,
   onPill: palette.white,
-  /** Inset best / score well. */
-  well: palette.brown,
   accent: palette.green,
   accentSoft: withAlpha(palette.green, 0.16),
   accentDim: withAlpha(palette.green, 0.22),
@@ -223,79 +273,87 @@ export const theme = {
   accentSecondarySoft: withAlpha(palette.purple, 0.16),
   success: palette.green,
   successSoft: withAlpha(palette.green, 0.16),
-  successDim: palette.greenBevel,
-  danger: palette.coral,
-  dangerSoft: withAlpha(palette.coral, 0.16),
-  dangerDim: shade(palette.coral, 0.35),
-  warning: palette.star,
-  warningSoft: withAlpha(palette.star, 0.22),
+  successDim: tone.green.lip,
+  danger: palette.red,
+  dangerSoft: withAlpha(palette.red, 0.16),
+  dangerDim: palette.redDeep,
+  warning: palette.gold,
+  warningSoft: withAlpha(palette.gold, 0.24),
   violet: palette.purple,
   violetSoft: withAlpha(palette.purple, 0.16),
-  wood: palette.wood,
-  plank: palette.plank,
-  overlay: 'rgba(58,36,21,0.46)',
+  /** Dark-blue scrim behind a popup. */
+  overlay: 'rgba(14, 38, 84, 0.62)',
 } as const;
 
 /**
- * Page and playfield fills. Screens apply one of these instead of painting
- * their own canvas. `theme.bg` is the same sand, so existing page roots that
- * already use it leave the ink background behind.
+ * Page fills. `SkyBackground` paints the real sky; these are the solid
+ * fallbacks a root view uses so nothing flashes white before it draws.
  */
 export const screen = {
-  page: { flex: 1, backgroundColor: palette.sand },
-  playfield: { flex: 1, backgroundColor: palette.wood },
+  page: { flex: 1, backgroundColor: palette.skyMid },
+  playfield: { flex: 1, backgroundColor: palette.playTop },
 } as const;
 
-export const radius = { sm: 12, md: 18, lg: 28, xl: 36, pill: 999 } as const;
+export const radius = { sm: 12, md: 16, lg: 22, xl: 28, pill: 999 } as const;
 
 export const space = { xxs: 2, xs: 5, sm: 9, md: 14, lg: 20, xl: 28, xxl: 40, hero: 56 } as const;
 
 /**
- * Bundled, offline faces. Every text tier in the scale below uses one of these,
- * so the app reads as one typeface across all three games (D-027, superseding
- * D-026's display-only split).
+ * Exo 2 stands in for the kit's Neuron (commercial): the same squarish,
+ * chunky letterforms. Black for headlines, buttons, ribbons and numbers;
+ * Bold for descriptions; ExtraBold for small labels.
  *
- * Symbol glyphs (✓ ✎ ◎ ⟷ ▤ ★ ≡ ‹) are deliberately NOT given a `fontFamily` —
- * Fredoka is a Latin display face and does not contain them, so naming it would
- * force a silent per-platform fallback at best and tofu at worst.
+ * Never pair these with `fontWeight`. Each weight is its own family, and on
+ * web a `fontWeight` above the registered 400 makes the browser fake a bolder
+ * face on top of an already heavy one.
+ *
+ * `medium` / `semibold` / `bold` are the names screens used before the
+ * rebuild; they map onto the nearest Exo 2 face.
  */
 export const font = {
-  medium: 'Fredoka_500Medium',
-  semibold: 'Fredoka_600SemiBold',
-  bold: 'Fredoka_700Bold',
+  body: 'Exo2_700Bold',
+  heavy: 'Exo2_800ExtraBold',
+  black: 'Exo2_900Black',
+  medium: 'Exo2_600SemiBold',
+  semibold: 'Exo2_700Bold',
+  bold: 'Exo2_800ExtraBold',
 } as const;
 
 /**
  * Interaction constants. One pressed-state and one touch-target minimum for
  * the whole app, so `PressableScale` is the only place that decides what a
- * tap looks like — screens stop inventing their own opacity value.
+ * tap looks like.
  *
  * Bevel buttons do not use `pressedTranslateY`. The face itself moves by its
- * bevel. See `BevelFace`.
+ * lip. See `GlossFace`.
  */
 export const interaction = {
   pressedOpacity: 0.9,
-  pressedScale: 0.97,
+  pressedScale: 0.96,
   pressedTranslateY: 3,
   minTouch: 44,
 } as const;
 
-const PAPER_ELEVATION = [
-  { backgroundColor: palette.sand, borderColor: shade(palette.sand, 0.08), borderTopColor: 'rgba(255,255,255,0.55)' },
-  { backgroundColor: tint(palette.sand, 0.4), borderColor: shade(palette.sand, 0.1), borderTopColor: 'rgba(255,255,255,0.7)' },
-  { backgroundColor: palette.paper, borderColor: shade(palette.sand, 0.12), borderTopColor: 'rgba(255,255,255,0.9)' },
-  { backgroundColor: tint(palette.paper, 0.55), borderColor: shade(palette.sand, 0.16), borderTopColor: palette.white },
+/**
+ * Depth for the legacy `Surface`. Level 0 is the backdrop; 1–3 are cream
+ * boxes that get lighter as they come forward.
+ */
+const CREAM_ELEVATION = [
+  { backgroundColor: palette.skyMid, borderColor: withAlpha(palette.white, 0.35), borderTopColor: withAlpha(palette.white, 0.6) },
+  { backgroundColor: palette.creamShade, borderColor: palette.creamEdge, borderTopColor: tint(palette.creamShade, 0.4) },
+  { backgroundColor: palette.creamFill, borderColor: palette.creamEdge, borderTopColor: palette.white },
+  { backgroundColor: palette.white, borderColor: palette.creamEdge, borderTopColor: palette.white },
 ] as const;
 
-const WOOD_ELEVATION = [
-  { backgroundColor: palette.wood, borderColor: shade(palette.wood, 0.25), borderTopColor: 'rgba(255,248,238,0.16)' },
-  { backgroundColor: tint(palette.wood, 0.08), borderColor: shade(palette.wood, 0.2), borderTopColor: 'rgba(255,248,238,0.22)' },
-  { backgroundColor: palette.plank, borderColor: shade(palette.plank, 0.18), borderTopColor: 'rgba(255,248,238,0.28)' },
-  { backgroundColor: tint(palette.plank, 0.14), borderColor: shade(palette.plank, 0.12), borderTopColor: 'rgba(255,248,238,0.36)' },
+const FRAME_ELEVATION = [
+  { backgroundColor: palette.frameDeep, borderColor: shade(palette.frameDeep, 0.2), borderTopColor: withAlpha(palette.white, 0.25) },
+  { backgroundColor: palette.frame, borderColor: palette.frameDeep, borderTopColor: withAlpha(palette.white, 0.4) },
+  { backgroundColor: palette.well, borderColor: palette.frameDeep, borderTopColor: palette.white },
+  { backgroundColor: palette.white, borderColor: palette.frame, borderTopColor: palette.white },
 ] as const;
 
-export function elevation(level: 0 | 1 | 2 | 3, surface: 'paper' | 'wood' = 'paper') {
-  return (surface === 'wood' ? WOOD_ELEVATION : PAPER_ELEVATION)[level];
+export function elevation(level: 0 | 1 | 2 | 3, surface: 'cream' | 'frame' = 'cream') {
+  return (surface === 'frame' ? FRAME_ELEVATION : CREAM_ELEVATION)[level];
 }
 
 /**
@@ -306,16 +364,16 @@ export function elevation(level: 0 | 1 | 2 | 3, surface: 'paper' | 'wood' = 'pap
 export function gameAccentTokens(accent: string) {
   return {
     accent,
-    /** Tinted fill — art tiles, active nav rows. */
+    /** Tinted fill — art tiles, active rows. */
     soft: withAlpha(accent, 0.16),
-    /** Soft wash of the accent, for a tonal control on sand or paper. */
+    /** Soft wash of the accent, for a tonal control on cream. */
     dim: withAlpha(accent, 0.22),
     /** Same hex as the border colour of an accented outline control. */
     border: accent,
     /** Broad ambient colour used behind key art, never behind body copy. */
     glow: withAlpha(accent, 0.28),
-    /** Brown body ink. Pill labels use `pillChrome` instead: brown fails on purple. */
-    ink: palette.brown,
+    /** Navy body ink on cream. */
+    ink: palette.ink,
   } as const;
 }
 
@@ -334,24 +392,19 @@ export const frame = {
 } as const;
 
 /**
- * Type scale.
- *
- * Display sizes get NEGATIVE tracking — large text set at default spacing looks
- * loose and amateurish, which is the single most common giveaway in app
- * typography. Small caps labels get positive tracking for the opposite reason.
+ * Type scale. Exo 2 only — see `font`. No `fontWeight` anywhere.
  */
 export const type = {
-  hero: { fontFamily: font.bold, fontSize: 44, fontWeight: '700', letterSpacing: -1.2, lineHeight: 48 },
-  /** Outlined celebration titles. Tracking is −1, a hair looser than `hero`. */
-  displayXL: { fontFamily: font.bold, fontSize: 44, fontWeight: '700', letterSpacing: -1, lineHeight: 48 },
-  display: { fontFamily: font.bold, fontSize: 36, fontWeight: '700', letterSpacing: -0.9, lineHeight: 41 },
-  title: { fontFamily: font.semibold, fontSize: 23, fontWeight: '600', letterSpacing: -0.45, lineHeight: 28 },
-  subtitle: { fontFamily: font.semibold, fontSize: 18, fontWeight: '600', letterSpacing: -0.2, lineHeight: 23 },
-  body: { fontFamily: font.medium, fontSize: 15, fontWeight: '500', letterSpacing: -0.1, lineHeight: 22 },
-  bodyStrong: { fontFamily: font.bold, fontSize: 15, fontWeight: '700', letterSpacing: -0.1, lineHeight: 22 },
-  caption: { fontFamily: font.medium, fontSize: 13, fontWeight: '500', letterSpacing: 0, lineHeight: 18 },
-  /** Small-caps section labels. Floor is 11px so they clear AA on sand and paper. */
-  overline: { fontFamily: font.semibold, fontSize: labelFloorPx, fontWeight: '600', letterSpacing: 1.45, lineHeight: 15 },
+  hero: { fontFamily: font.black, fontSize: 44, letterSpacing: -0.4, lineHeight: 50 },
+  displayXL: { fontFamily: font.black, fontSize: 40, letterSpacing: -0.3, lineHeight: 46 },
+  display: { fontFamily: font.black, fontSize: 32, letterSpacing: -0.2, lineHeight: 38 },
+  title: { fontFamily: font.black, fontSize: 24, letterSpacing: 0, lineHeight: 29 },
+  subtitle: { fontFamily: font.heavy, fontSize: 18, letterSpacing: 0, lineHeight: 23 },
+  body: { fontFamily: font.body, fontSize: 15, letterSpacing: 0, lineHeight: 21 },
+  bodyStrong: { fontFamily: font.heavy, fontSize: 15, letterSpacing: 0, lineHeight: 21 },
+  caption: { fontFamily: font.body, fontSize: 13, letterSpacing: 0, lineHeight: 18 },
+  /** Small labels. Floor is 11px so they clear AA on cream. */
+  overline: { fontFamily: font.heavy, fontSize: labelFloorPx, letterSpacing: 1.1, lineHeight: 14 },
 } as const;
 
 /**
@@ -360,24 +413,24 @@ export const type = {
  */
 export const shadow = {
   card: {
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 9 },
+    shadowColor: '#0B2A5C',
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
     elevation: 7,
   },
   raised: {
-    shadowColor: '#000',
-    shadowOpacity: 0.22,
-    shadowRadius: 26,
-    shadowOffset: { width: 0, height: 15 },
+    shadowColor: '#0B2A5C',
+    shadowOpacity: 0.34,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
     elevation: 13,
   },
   glow: {
-    shadowColor: theme.accent,
-    shadowOpacity: 0.3,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 8 },
+    shadowColor: palette.gold,
+    shadowOpacity: 0.55,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
     elevation: 9,
   },
 } as const;
@@ -402,9 +455,10 @@ export const motion = {
   popMs: 260,
   staggerMs: 140,
   countXpMs: 900,
-  rayPeriodMs: 20000,
+  rayPeriodMs: 30000,
   shakeMs: 320,
   coinFlyMs: 650,
+  burstMs: 900,
 } as const;
 
 export function formatValue(n: number): string {

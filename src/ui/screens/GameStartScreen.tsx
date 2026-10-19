@@ -1,20 +1,34 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { getGame } from '../../games/registry';
 import type { ScoreBoard } from '../../scores/types';
-import { Badge, Button, GameArtwork, Ribbon, Stat, Surface } from '../components';
-import { font, screen, space, theme, type } from '../theme';
+import {
+  BlockTile,
+  Button,
+  CreamBox,
+  CreamText,
+  GameArtwork,
+  GameIcon,
+  Panel,
+  PanelDivider,
+  PanelText,
+  Stat,
+  StrokeText,
+} from '../components';
+import { palette, space, tone } from '../theme';
 
 type Props = {
   gameId: string;
   board: ScoreBoard;
   onPlay: () => void;
   onScores: () => void;
-  /** Game-specific block at the top of the status card — today's category, level, etc. */
+  /** The pop-up's red close disc: back to the hub. */
+  onClose?: () => void;
+  /** Game-specific goal — today's set, the spark path, the campaign. */
   detail?: ReactNode;
   /** Small print under everything. */
   footer?: string;
-  /** Overrides the CTA label. Defaults to "Play now". */
+  /** Overrides the CTA label. Defaults to "Play". */
   playLabel?: string;
   /** Used while game-specific resume state is still resolving. */
   playDisabled?: boolean;
@@ -26,16 +40,16 @@ type Props = {
 };
 
 /**
- * The screen between the hub and a run, shared by every game.
- *
- * Every title gets the same shape — art, a level ribbon, one stats card,
- * then a green Play — so entering Clueless feels like entering More or Less.
+ * The screen between the hub and a run, shared by every game: the kit's
+ * "LEVEL 2" pop-up — the game on the tab, its art and pitch, the goal in a
+ * cream box, the player's best, and one green Play.
  */
 export function GameStartScreen({
   gameId,
   board,
   onPlay,
   onScores,
+  onClose,
   detail,
   footer,
   playLabel = 'Play',
@@ -46,150 +60,165 @@ export function GameStartScreen({
   raceHint,
 }: Props) {
   const game = getGame(gameId);
-  const accent = game?.accent ?? theme.accent;
+  const accent = game?.accent ?? palette.green;
   const { bestStreak, totalRuns } = board;
   const played = totalRuns > 0;
-
-  const bestLabel = `${game?.scoreDirection === 'lower' ? 'FEWEST' : 'BEST'} ${(
-    game?.scoreNoun ?? 'score'
-  ).toUpperCase()}`;
+  const bestLabel = `${game?.scoreDirection === 'lower' ? 'FEWEST' : 'BEST'} ${(game?.scoreNoun ?? 'score').toUpperCase()}`;
 
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.hero}>
-        <GameArtwork gameId={gameId} accent={accent} size={120} raised />
-        {game?.badge ? <Badge label={game.badge} color={accent} /> : null}
-        <Text style={styles.title}>{game?.name ?? 'Play'}</Text>
-        <Text style={styles.subtitle}>{game?.blurb ?? game?.tagline ?? ''}</Text>
-      </View>
+    <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <Panel title={game?.name ?? 'Play'} onClose={onClose} closeLabel="Back to all games">
+        <View style={styles.hero}>
+          <GameArtwork gameId={gameId} accent={accent} size={92} raised />
+          <View style={styles.flex}>
+            {game?.badge ? (
+              <StrokeText size={13} stroke={palette.coralEdge} strokeWidth={1.2} depth={0} align="left">
+                {game.badge}
+              </StrokeText>
+            ) : null}
+            <CreamBox style={styles.blurb}>
+              <CreamText style={styles.blurbText}>{game?.blurb ?? game?.tagline ?? ''}</CreamText>
+            </CreamBox>
+          </View>
+        </View>
+        <PanelDivider />
 
-      <View style={styles.bottom}>
-        {detail ? <View style={styles.detailSlot}>{detail}</View> : null}
-
-        {played ? (
-          <Surface level={2} style={styles.status}>
-            <View style={styles.stats}>
-              <View style={styles.statCell}>
-                <Stat value={bestStreak} label={bestLabel} size="md" align="left" color={theme.text} />
-              </View>
-              <View style={styles.statCell}>
-                <Stat
-                  value={totalRuns}
-                  label={totalRuns === 1 ? 'RUN' : 'RUNS'}
-                  size="md"
-                  align="left"
-                />
-              </View>
-            </View>
-          </Surface>
+        {detail ? (
+          <CreamBox style={styles.goal}>
+            <CreamText variant="teal" style={styles.center}>
+              Goal
+            </CreamText>
+            {detail}
+          </CreamBox>
         ) : null}
 
-        <View style={styles.actions}>
-          <Button
-            title={playLabel}
-            size="xl"
-            tone="green"
-            onPress={onPlay}
-            disabled={playDisabled}
-          />
-          {onRace ? (
-            <>
-              <Button
-                title={raceLabel}
-                tone="blue"
-                size="md"
-                onPress={onRace}
-                disabled={raceDisabled}
-              />
-              {raceHint ? <Text style={styles.raceHint}>{raceHint}</Text> : null}
-            </>
-          ) : null}
-          <Button title="View scores" tone="purple" size="md" onPress={onScores} />
-        </View>
+        {played ? (
+          <View style={styles.stats}>
+            <CreamBox style={styles.flex}>
+              <Stat value={bestStreak} label={bestLabel} />
+            </CreamBox>
+            <CreamBox style={styles.flex}>
+              <Stat value={totalRuns} label={totalRuns === 1 ? 'RUN' : 'RUNS'} />
+            </CreamBox>
+          </View>
+        ) : null}
 
-        {footer ? <Text style={styles.footer}>{footer}</Text> : null}
-      </View>
+        <Button
+          title={playLabel}
+          size="lg"
+          tone="green"
+          onPress={onPlay}
+          disabled={playDisabled}
+          leading={playDisabled ? undefined : <GameIcon name="play" size={26} color={tone.green.outline} />}
+        />
+        <View style={styles.pair}>
+          {onRace ? (
+            <Button
+              title={raceLabel}
+              tone="blue"
+              size="sm"
+              onPress={onRace}
+              disabled={raceDisabled}
+              style={styles.flex}
+            />
+          ) : null}
+          <Button title="Scores" tone="purple" size="sm" onPress={onScores} style={styles.flex} />
+        </View>
+        {onRace && raceHint ? <PanelText>{raceHint}</PanelText> : null}
+      </Panel>
+
+      {footer ? (
+        <StrokeText size={12} stroke={palette.navyDeep} strokeWidth={1.2} depth={0} style={styles.footer}>
+          {footer}
+        </StrokeText>
+      ) : null}
     </ScrollView>
   );
 }
 
 /**
- * Shared shape for the `detail` slot.
+ * One line of a game's goal, inside the start card's cream box: a small teal
+ * label, the goal in navy, and a quieter line of detail.
  *
- * Wordfall and Clueless pass `ribbon` so the level is a hanging ribbon on the
- * sand page. The stats card stays separate, under this block.
+ * `ribbon`, `ribbonColor` and `accent` are kept so call sites compile; the
+ * kit draws every goal the same way.
  */
 export function StartDetail({
   label,
   title,
   meta,
-  accent,
-  ribbon = false,
-  ribbonColor,
 }: {
   label: string;
   title: string;
   meta?: string;
-  accent: string;
+  accent?: string;
   ribbon?: boolean;
   ribbonColor?: string;
 }) {
-  if (ribbon) {
-    return (
-      <View style={styles.ribbonBlock}>
-        <Ribbon label={label.toUpperCase()} color={ribbonColor ?? accent} />
-        <Text style={styles.detailTitle}>{title}</Text>
-        {meta ? <Text style={styles.detailMeta}>{meta}</Text> : null}
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.detailCopy}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailTitle}>{title}</Text>
-      {meta ? <Text style={styles.detailMeta}>{meta}</Text> : null}
+    <View style={styles.detail} accessible accessibilityLabel={[label, title, meta].filter(Boolean).join('. ')}>
+      <CreamText variant="label" style={styles.center}>
+        {label}
+      </CreamText>
+      {title ? (
+        <CreamText variant="title" style={styles.center}>
+          {title}
+        </CreamText>
+      ) : null}
+      {meta ? <CreamText style={[styles.center, styles.meta]}>{meta}</CreamText> : null}
+    </View>
+  );
+}
+
+/**
+ * Clueless's way to the Daily Vault as a row of cubes: three sparks (green
+ * when cleared, gold for the one you are on, stone when still ahead), then
+ * the vault — a chest when it can be opened, a lock while it is sealed.
+ */
+export function PathRail({ cleared, vaultOpen }: { cleared: number; vaultOpen: boolean }) {
+  const label = `${Math.min(cleared, 3)} of 3 sparks cleared, vault ${vaultOpen ? 'open' : 'sealed'}`;
+  return (
+    <View style={styles.rail} accessible accessibilityLabel={label}>
+      {[1, 2, 3].map((n) => (
+        <BlockTile
+          key={n}
+          size={36}
+          color={n <= cleared ? 'green' : 'stone'}
+          state={n === cleared + 1 ? 'selected' : 'normal'}
+          letter={n <= cleared ? undefined : String(n)}
+        >
+          {n <= cleared ? <GameIcon name="check" size={20} color={tone.green.outline} /> : null}
+        </BlockTile>
+      ))}
+      <GameIcon name="arrowUp" size={22} color={palette.inkSoft} style={styles.arrow} />
+      <BlockTile size={44} color={vaultOpen ? 'gold' : 'stone'} stud={false}>
+        <GameIcon name={vaultOpen ? 'chest' : 'lock'} size={vaultOpen ? 34 : 24} color={palette.ink} />
+      </BlockTile>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: screen.page,
-  content: { flexGrow: 1, paddingHorizontal: space.lg, paddingBottom: space.md },
-  hero: { alignItems: 'center', paddingTop: space.md, gap: space.xs },
-  title: { ...type.hero, color: theme.text, fontSize: 40, lineHeight: 44, marginTop: space.xs },
-  subtitle: {
-    ...type.body,
-    color: theme.textMuted,
-    textAlign: 'center',
-    maxWidth: 340,
-    marginTop: space.xxs,
+  rail: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: space.xs },
+  arrow: { transform: [{ rotate: '90deg' }] },
+  root: { flex: 1 },
+  content: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: space.md,
+    paddingTop: space.lg,
+    paddingBottom: space.xl,
+    gap: space.md,
   },
-  bottom: { gap: space.md, paddingTop: space.lg },
-  detailSlot: { gap: space.md },
-  status: { gap: space.md },
-  stats: { flexDirection: 'row' },
-  statCell: { flex: 1 },
-  actions: { gap: space.sm },
-  ribbonBlock: { alignItems: 'center', gap: space.xs },
-  detailCopy: { alignItems: 'center' },
-  detailLabel: { ...type.overline, color: theme.textDim, textAlign: 'center' },
-  detailTitle: { ...type.subtitle, color: theme.text, fontSize: 16, marginTop: 1, textAlign: 'center' },
-  detailMeta: { ...type.caption, color: theme.textMuted, marginTop: 1, textAlign: 'center' },
-  footer: {
-    color: theme.textDim,
-    fontFamily: font.medium,
-    fontSize: 11,
-    textAlign: 'center',
-    marginTop: space.xs,
-  },
-  raceHint: {
-    ...type.caption,
-    color: theme.textMuted,
-    textAlign: 'center',
-  },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  blurb: { marginTop: 4, paddingVertical: space.xs + 2, paddingHorizontal: space.sm },
+  blurbText: { fontSize: 13, lineHeight: 18 },
+  flex: { flex: 1, minWidth: 0 },
+  goal: { gap: space.sm },
+  center: { textAlign: 'center' },
+  stats: { flexDirection: 'row', gap: space.sm },
+  pair: { flexDirection: 'row', gap: space.sm },
+  detail: { gap: 2 },
+  meta: { fontSize: 13, lineHeight: 18, color: palette.inkSoft },
+  footer: { alignSelf: 'center' },
 });

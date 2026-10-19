@@ -3,14 +3,14 @@
     "name": "WordKrush",
     "slug": "wordkrush",
     "scheme": "wordkrush",
-    "version": "0.9.1",
+    "version": "0.10.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F4E4C4"
+      "backgroundColor": "#58AEEA"
     },
     "ios": {
       "supportsTablet": true,
