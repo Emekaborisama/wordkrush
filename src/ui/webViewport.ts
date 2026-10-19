@@ -11,7 +11,10 @@ export const WORDFALL_BOARD_WEB_ID = 'wk-wordfall-board';
  */
 export const WEB_VIEWPORT_CSS = [
   `html,body{height:100%;height:100dvh;margin:0;background-color:${palette.navy};overflow:hidden}`,
-  'body>div{height:100%}',
+  // Only the app root fills the screen. React Native Web's empty modal hosts
+  // are body>div siblings too; at full height they gave the hidden body a
+  // screen of scroll room each, so focus could shift the whole app up.
+  '#root{height:100%}',
   '#wk-mascot canvas,#wk-mascot svg{max-width:100%!important;max-height:100%!important}',
   // A desktop mouse and iPad trackpad otherwise start the browser's text
   // selection over a tile before the RN responder can trace it. Limit this to

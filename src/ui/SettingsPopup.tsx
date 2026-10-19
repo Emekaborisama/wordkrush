@@ -69,6 +69,9 @@ export function SettingsPopup({
             />
           </View>
         ) : null}
+        {/* True because the audio mode mixes (src/native/sound.ts): game
+            sounds play over the player's own music instead of pausing it. */}
+        <CreamText style={styles.music}>Got music on? Keep it playing. Your Afrobeats play on under the game sounds.</CreamText>
       </CreamBox>
       <Button
         title={signedInAs ? 'Account' : 'Sign in'}
@@ -99,4 +102,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
   pair: { flexDirection: 'row', gap: space.sm },
   half: { flex: 1 },
+  music: { paddingTop: space.xs, fontSize: 13, lineHeight: 18 },
 });

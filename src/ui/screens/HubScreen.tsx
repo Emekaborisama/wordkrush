@@ -19,6 +19,7 @@ import {
   StrokeText,
   XpBadge,
 } from '../components';
+import { LagosBanner } from '../lagos/LagosBanner';
 import { font, palette, space, tone } from '../theme';
 
 type Props = {
@@ -41,6 +42,10 @@ type Props = {
   onSettings: () => void;
   onTeams: () => void;
   onAccount: () => void;
+  /** Opens I Sabi Lagos. */
+  onLagos: () => void;
+  /** True until the player has opened I Sabi Lagos once: it wears a NEW tag. */
+  lagosFresh: boolean;
   labelRoundsPassed?: number;
 };
 
@@ -67,6 +72,8 @@ export function HubScreen({
   onSettings,
   onTeams,
   onAccount,
+  onLagos,
+  lagosFresh,
   labelRoundsPassed,
 }: Props) {
   // Four squares and the gold Play must fit a 360px phone.
@@ -86,6 +93,7 @@ export function HubScreen({
             </View>
           </View>
         </CreamBox>
+        <LagosBanner onPress={onLagos} fresh={lagosFresh} />
         <ChestCard status={chest} day={chestDay} onOpen={onOpenChest} />
         {/* The kit's list pop-up: every game a cream row with its own Play,
             so the three fit above the home row and the gold Play stays the

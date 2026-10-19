@@ -10,6 +10,7 @@ import {
   type Guess,
 } from '../../games/more-or-less/engine';
 import { isGameState, isResumable, matchesDataset } from '../../games/more-or-less/persistence';
+import { starThresholds } from '../../games/more-or-less/labelPath';
 import type { RatioBand } from '../../games/more-or-less/pairing';
 import type { Category, Item } from '../../games/more-or-less/types';
 import { clearProgress, loadProgressEnvelope, saveProgress } from '../../games/progress';
@@ -36,8 +37,11 @@ import {
   PausePopup,
   PopupModal,
   ScoreBurst,
+  StarBar,
   StrokeText,
 } from '../components';
+import { danfo } from '../lagos/danfoTheme';
+import { RoadProgress } from '../lagos/RoadProgress';
 import { font, formatValue, motion, palette, space, tone } from '../theme';
 import { useCountUp } from '../useCountUp';
 import { useReduceMotion } from '../useReduceMotion';
@@ -61,6 +65,18 @@ type Props = {
     preferUnseenIds: readonly string[];
     onSeen: (ids: string[]) => void;
   };
+  /**
+   * A level run: the streak that clears it. The run keeps going past it —
+   * the streak still counts — but reaching it is celebrated on the board.
+   */
+  levelGoal?: { target: number; label: string; stop?: string };
+  /** I Sabi Lagos: danfo colours, the road progress strip and pidgin. */
+  lagos?: boolean;
+  /**
+   * Which saved run this is. Defaults to the category, so a level run and
+   * another mode on the same label never resume each other.
+   */
+  session?: string;
 };
 
 export function GameScreen({
@@ -77,7 +93,11 @@ export function GameScreen({
   onScore,
   onDone,
   labelRound,
+  levelGoal,
+  lagos = false,
+  session,
 }: Props) {
+  const slot = session ?? category.id;
   const poolRef = useRef(category.items);
   const pool: Item[] = poolRef.current;
   const preferRef = useRef(labelRound?.preferUnseenIds);
@@ -114,7 +134,7 @@ export function GameScreen({
       return;
     }
     let cancelled = false;
-    void loadProgressEnvelope('more-or-less', category.id, isGameState).then((saved) => {
+    void loadProgressEnvelope('more-or-less', slot, isGameState).then((saved) => {
       if (cancelled) return;
       const state = saved?.state;
       const canResume = Boolean(state && isResumable(state) && matchesDataset(state, pool));
@@ -135,13 +155,13 @@ export function GameScreen({
     return () => {
       cancelled = true;
     };
-  }, [category.id, persist]);
+  }, [category.id, slot, persist]);
 
   useEffect(() => {
     if (!persist || !restored.current) return;
     if (state.status === 'over') void clearProgress('more-or-less');
-    else void saveProgress('more-or-less', category.id, state, { boosted });
-  }, [state, category.id, persist, boosted]);
+    else void saveProgress('more-or-less', slot, state, { boosted });
+  }, [state, slot, persist, boosted]);
 
   useEffect(() => {
     onScore?.(state.streak, targetStreak != null ? state.streak >= targetStreak : false);
@@ -244,7 +264,10 @@ export function GameScreen({
   useEffect(() => {
     if (state.lastGuessCorrect === true) {
       setBurstKey((key) => key + 1);
-      const word = COMBO_WORDS[state.streak];
+      // Reaching a level's target outranks a streak milestone on the same answer.
+      const cleared = persist && levelGoal !== undefined && state.streak === levelGoal.target;
+      const word = cleared ? (lagos ? 'YOU SABI!' : 'LEVEL CLEARED!') : COMBO_WORDS[state.streak];
+      if (cleared) feedback('win');
       if (word) setCombo(word);
     }
     if (state.lastGuessCorrect === false) {
@@ -270,17 +293,30 @@ export function GameScreen({
 
   return (
     <View style={styles.root}>
-      <GameHeader title="More or Less" subtitle={category.name} onExit={onExit} onHelp={() => setHelp(true)} />
+      <GameHeader
+        title={lagos ? 'I Sabi Lagos' : 'More or Less'}
+        subtitle={levelGoal ? levelGoal.label : category.name}
+        ribbon={lagos ? danfo.sign : undefined}
+        onExit={onExit}
+        onHelp={() => setHelp(true)}
+      />
 
       <View style={styles.hud}>
         <HudPanel label="Streak" value={state.streak} />
         <HudPanel label="Best" value={state.bestStreak} />
         {raceGoal ? (
           <HudPanel label="Goal" value={targetStreak} />
+        ) : levelGoal ? (
+          <HudPanel label="Goal" value={levelGoal.target} />
         ) : labelRound ? (
           <HudPanel label="Seen" value={`${labelRound.seenCount}/${labelRound.total}`} />
         ) : null}
       </View>
+      {levelGoal && lagos ? (
+        <RoadProgress streak={state.streak} target={levelGoal.target} stop={levelGoal.stop ?? 'Lagos'} />
+      ) : levelGoal ? (
+        <LevelStarBar streak={state.streak} target={levelGoal.target} />
+      ) : null}
 
       <Animated.View style={[styles.board, { transform: [{ translateX: shake }] }]}>
         <Card item={state.left} metricLabel={category.metricLabel} value={state.left.value} footRoom />
@@ -300,15 +336,15 @@ export function GameScreen({
         {/* Floating disc rather than its own row — every pixel it doesn't
             take is a pixel the images get. */}
         <View style={styles.vs} pointerEvents="none" accessibilityRole="text" accessibilityLabel="versus">
-          <GlossFace tone={tone.red} lip={3} radius={24} faceStyle={styles.vsFace}>
-            <StrokeText size={17} stroke={tone.red.outline} strokeWidth={1.8} depth={1}>
+          <GlossFace tone={lagos ? tone.danfo : tone.red} lip={3} radius={24} faceStyle={styles.vsFace}>
+            <StrokeText size={17} stroke={lagos ? tone.danfo.outline : tone.red.outline} strokeWidth={1.8} depth={1}>
               VS
             </StrokeText>
           </GlossFace>
         </View>
         <Animated.View pointerEvents="none" style={[styles.flash, { opacity: flash }]} />
         {burstKey > 0 ? <ScoreBurst key={burstKey} text="+1" style={styles.burst} /> : null}
-        {combo ? <ComboBanner key={combo} text={combo} onDone={() => setCombo(null)} /> : null}
+        {combo ? <ComboBanner key={combo} text={combo} onDone={() => setCombo(null)} style={styles.overVs} /> : null}
       </Animated.View>
 
       {state.status === 'playing' ? (
@@ -345,8 +381,12 @@ export function GameScreen({
               correct
                 ? targetStreak != null && state.streak >= targetStreak
                   ? 'Target reached!'
-                  : 'Nice call!'
-                : 'Not this time'
+                  : lagos
+                    ? 'You sabi!'
+                    : 'Nice call!'
+                : lagos
+                  ? 'Wahala!'
+                  : 'Not this time'
             }
             body={
               correct
@@ -474,11 +514,17 @@ export function GameScreen({
             title: 'Keep the streak alive',
             body: 'Get it right and the winner slides left to face a new challenger. One wrong answer ends the run.',
           },
-          {
-            n: 4,
-            title: 'Clear the set',
-            body: 'See every name in this set to unlock the next. The names will not change until you do.',
-          },
+          levelGoal
+            ? {
+                n: 4,
+                title: 'Clear the level',
+                body: `Reach a streak of ${levelGoal.target} to clear it and open the next label. Keep going for more stars.`,
+              }
+            : {
+                n: 4,
+                title: 'Clear the set',
+                body: 'See every name in this set to unlock the next. The names will not change until you do.',
+              },
         ]}
       />
     </View>
@@ -586,6 +632,12 @@ function Card({
   );
 }
 
+/** The level's three star streaks as marks on one bar that ends at three stars. */
+function LevelStarBar({ streak, target }: { streak: number; target: number }) {
+  const [one, two, three] = starThresholds(target);
+  return <StarBar progress={streak / three} thresholds={[one / three, two / three, 1]} />;
+}
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -635,7 +687,9 @@ const styles = StyleSheet.create({
   vs: { position: 'absolute', top: '50%', alignSelf: 'center', marginTop: -26, zIndex: 3 },
   vsFace: { width: 48, height: 48 },
   flash: { ...StyleSheet.absoluteFill, borderRadius: 19, backgroundColor: 'rgba(239,62,79,0.42)' },
-  burst: { position: 'absolute', top: '70%', left: '50%' },
+  burst: { position: 'absolute', top: '70%', left: '50%', zIndex: 4 },
+  // The banner reads across the VS disc, so it has to sit above it.
+  overVs: { zIndex: 4 },
   // Fixed, so the board does not jump between the question and the reveal.
   actions: { gap: space.sm, height: 124, justifyContent: 'flex-end' },
   choices: { flexDirection: 'row', gap: space.sm },

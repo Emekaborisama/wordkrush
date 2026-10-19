@@ -60,6 +60,9 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 
 - [x] **Reward flow and game feel** (ST-106) — **Done** in 0.9.0. Device rewards and the finished-run journey shipped; its sand / wood chrome was replaced by ST-112 the same day.
 - [x] **Every screen follows the Block Blast kit** (ST-112) — **Done** in 0.10.0. Owner asked for the whole flow to follow the Block Blast UI kit (Room 8 Studio) exactly, with Block King for juice: sky backdrops, coral pop-ups with ribbon titles, cream boxes, glossy buttons, HUD panels, cube boards, booster dock, Exo 2. See `docs/DESIGN_SYSTEM.md` and D-067.
+- [x] **More or Less levels, I Sabi Lagos, Wordfall glow** (ST-113) — **Done** in 0.11.0. Seven label levels with stars; the `/isabilagos` danfo route with seven Lagos stops; a danfo ride between levels; Wordfall's traced word lights gold. Spotify-stream and X-trend labels wait on a licensed source (D-068).
+- [ ] **Millionaire-style lifelines for More or Less** — owner idea (2026-10-19): "phone a friend" and similar help during a run. Not started.
+- [ ] **Play random people live** — owner idea (2026-10-19): quick-match against a stranger, alongside private team races (ST-83). Not started.
 - [ ] Game screen — comparison panels, MORE/LESS controls, current streak
 - [ ] Count-up reveal — animate the hidden value after the answer
 - [x] Game over screen — final streak, best streak, replay/share — **Done** in 0.8.19; per-game emoji grid, clipboard/share sheet, no live-race or scores-row share yet

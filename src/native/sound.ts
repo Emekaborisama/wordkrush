@@ -56,6 +56,7 @@ let audioModeReady = false;
 async function ensureAudioMode(): Promise<void> {
   if (audioModeReady) return;
   audioModeReady = true;
+  preferAmbientWebAudio();
   try {
     await setAudioModeAsync({
       playsInSilentMode: false,
@@ -64,6 +65,24 @@ async function ensureAudioMode(): Promise<void> {
     });
   } catch {
     /* older device or unsupported browser — defaults are close enough */
+  }
+}
+
+/**
+ * The web half of `mixWithOthers`. On an iPhone a page's sounds otherwise
+ * pause whatever the player was listening to; Safari's Audio Session API
+ * (`navigator.audioSession`, 16.4+) set to "ambient" mixes instead. Elsewhere
+ * the property is absent and browsers already mix, so this does nothing.
+ */
+function preferAmbientWebAudio(): void {
+  if (typeof navigator === 'undefined') return;
+  try {
+    const session: unknown = Reflect.get(navigator, 'audioSession');
+    if (typeof session === 'object' && session !== null && 'type' in session) {
+      Reflect.set(session, 'type', 'ambient');
+    }
+  } catch {
+    /* a browser that refuses the change keeps its default */
   }
 }
 

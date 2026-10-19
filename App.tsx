@@ -46,7 +46,18 @@ import {
   cluelessTeamLevelByNumber,
   puzzleForCluelessTeamLevel,
 } from './src/data/clueless/campaign';
+import { labelCategory } from './src/data/more-or-less/labelCategories';
+import { labelLevel, labelPath } from './src/data/more-or-less/labelPaths';
 import { moreOrLessLevelByNumber } from './src/data/more-or-less/levels';
+import {
+  bestStreakFor,
+  EMPTY_LABEL_PATH,
+  nextLevelNumber,
+  recordLevelRun,
+  type LabelPathId,
+  type LabelPathProgress,
+} from './src/games/more-or-less/labelPath';
+import { loadLabelPathProgress, saveLabelPathProgress } from './src/games/more-or-less/labelPath-storage';
 import { applyMatchUnlocks, LIVE_ROSTER_LABEL, playerCountBucket, type PathGameId } from './src/games/campaign';
 import { loadPersonalUnlocked, savePersonalUnlocked } from './src/games/campaignStorage';
 import {
@@ -95,6 +106,7 @@ import { EMPTY_BOARD, isNewBest, needsGlobalSync, type ScoreBoard, type ScoreDir
 import { loadStreak, markPlayedToday } from './src/streak/storage';
 import { dayKey, EMPTY_STREAK, type DailyStreak } from './src/streak/types';
 import { applyFeedbackSettings, feedback } from './src/native/feedback';
+import { loadLagosSeen, markLagosSeen } from './src/onboarding/lagos';
 import { loadOnboarding, markOnboardingComplete } from './src/onboarding/storage';
 import { COMPLETED_ONBOARDING, type OnboardingState } from './src/onboarding/types';
 import { chestStatus, claimChest, nextChestDay } from './src/rewards/chest';
@@ -123,7 +135,12 @@ import { clearExistingMembership } from './src/teams/api';
 import { parseTeamInviteUrl } from './src/teams/codes';
 import { afterModalClose, CoinsPill, SkyBackground, StreakPill, TopBar } from './src/ui/components';
 import { parentOf, type Parent } from './src/ui/navigation';
-import { installWebHistory, noteWebNavigation } from './src/ui/webHistory';
+import { installWebHistory, noteWebNavigation, openedAtLagosPath, syncLagosPath } from './src/ui/webHistory';
+import { LabelLevelCard } from './src/ui/LabelLevelCard';
+import { LabelLevelsPopup } from './src/ui/LabelLevelsPopup';
+import { DanfoRide, type DanfoRideStop } from './src/ui/lagos/DanfoRide';
+import { LagosAnnouncement } from './src/ui/lagos/LagosBanner';
+import { LagosScreen } from './src/ui/screens/LagosScreen';
 import { OnboardingScreen } from './src/ui/screens/OnboardingScreen';
 import type { RunReward } from './src/ui/rewards/RunReward';
 import { FeedbackPrompt } from './src/ui/FeedbackPrompt';
@@ -158,11 +175,34 @@ type LiveRun = {
   endsAt: string | null;
 };
 
+/** A More or Less run on one level of a label path. */
+type MolLevelRef = { path: LabelPathId; number: number };
+
+/** What a finished level run did for its path, for the result screen. */
+type MolLevelResult = MolLevelRef & { cleared: boolean; clearedNow: boolean };
+
 type Screen =
   | { name: 'hub' }
   | { name: 'home'; gameId: string }
-  | { name: 'game'; gameId: string; seed: number; cluelessLevelNumber?: number; live?: LiveRun }
-  | { name: 'over'; gameId: string; state: GameState; entryId: string; isNewBest: boolean; boosted: boolean; events: RewardEvent[] }
+  | { name: 'lagos' }
+  | {
+      name: 'game';
+      gameId: string;
+      seed: number;
+      cluelessLevelNumber?: number;
+      live?: LiveRun;
+      molLevel?: MolLevelRef;
+    }
+  | {
+      name: 'over';
+      gameId: string;
+      state: GameState;
+      entryId: string;
+      isNewBest: boolean;
+      boosted: boolean;
+      events: RewardEvent[];
+      molLevel?: MolLevelResult;
+    }
   | { name: 'scores'; gameId: string; highlightId?: string }
   | { name: 'auth'; returnTo?: 'teams' | 'scores'; returnGameId?: string }
   | { name: 'teams' }
@@ -281,6 +321,36 @@ function startDetailFor(
   return null;
 }
 
+/** More or Less' start pop-up goal: the chosen level of the main label path. */
+function WorldLevelCard({
+  number,
+  progress,
+  setLine,
+  onLevels,
+  onCity,
+}: {
+  number: number;
+  progress: LabelPathProgress;
+  /** Popularity's weekly set progress, shown on that level only. */
+  setLine: string;
+  onLevels: () => void;
+  onCity: () => void;
+}) {
+  const levels = labelPath('world');
+  const level = levels[number - 1] ?? levels[0];
+  if (!level) return null;
+  return (
+    <LabelLevelCard
+      level={level}
+      levelCount={levels.length}
+      best={bestStreakFor(progress, level.number)}
+      extra={level.categoryId === snapshot.id ? setLine : undefined}
+      onLevels={onLevels}
+      onCity={onCity}
+    />
+  );
+}
+
 function localUnlockCopy(unlockAt: Date, now: Date): string {
   const remainingMs = Math.max(0, unlockAt.getTime() - now.getTime());
   const totalMinutes = Math.ceil(remainingMs / 60_000);
@@ -352,6 +422,22 @@ export default function App() {
     emptyProgress(FIRST_ROUND_ID),
   );
   const [labelJustPassed, setLabelJustPassed] = useState(false);
+  const [labelPaths, setLabelPaths] = useState<Record<LabelPathId, LabelPathProgress>>({
+    world: EMPTY_LABEL_PATH,
+    lagos: EMPTY_LABEL_PATH,
+  });
+  // The level a player picked on each path; null follows the first uncleared one.
+  const [labelChoice, setLabelChoice] = useState<Record<LabelPathId, number | null>>({ world: null, lagos: null });
+  const [levelsOpen, setLevelsOpen] = useState<LabelPathId | null>(null);
+  const [lagosSeen, setLagosSeen] = useState(true);
+  const [lagosAnnouncement, setLagosAnnouncement] = useState(false);
+  // The danfo carrying the player to a level; `board` starts it under the cover.
+  const [ride, setRide] = useState<(DanfoRideStop & { board: () => void }) | null>(null);
+  const rideCount = useRef(0);
+  // Opened at /isabilagos: skip the welcome and go straight to the route.
+  const arrivedAtLagos = useRef(openedAtLagosPath());
+  // Finished the welcome in an earlier session: the "NEW" news is for them.
+  const returningPlayer = useRef(false);
   const [boardsResult, setBoardsResult] = useState<'loaded' | 'fallback'>('loaded');
   const startupAt = useRef(Date.now());
   const openedReported = useRef(false);
@@ -377,7 +463,9 @@ export default function App() {
   const todayChestDay = nextChestDay(rewards, todayKey) ?? (rewards.chest.day >= 1 ? rewards.chest.day : 1);
   const hasScoreHistory = Object.values(boards).some((board) => board.totalRuns > 0);
   const showOnboarding =
-    onboarding !== null && !onboarding.completed && boardsReady && !hasScoreHistory;
+    onboarding !== null && !onboarding.completed && boardsReady && !hasScoreHistory && !arrivedAtLagos.current;
+  const selectedLevel = (path: LabelPathId): number =>
+    labelChoice[path] ?? nextLevelNumber(labelPaths[path], labelPath(path).length);
 
   const dismissOnboarding = () => {
     setOnboarding(COMPLETED_ONBOARDING);
@@ -387,6 +475,7 @@ export default function App() {
   const applyParent = (parent: Parent): Screen => {
     if (parent.name === 'hub') return { name: 'hub' };
     if (parent.name === 'home') return { name: 'home', gameId: parent.gameId };
+    if (parent.name === 'lagos') return { name: 'lagos' };
     return { name: 'teams' };
   };
 
@@ -446,8 +535,22 @@ export default function App() {
       setStreakReady(true);
     });
     void loadRewards().then(setRewards);
-    void loadOnboarding().then(setOnboarding);
+    void loadOnboarding().then((loaded) => {
+      returningPlayer.current = loaded.completed;
+      setOnboarding(loaded);
+    });
     void loadRoundProgress(FIRST_ROUND_ID).then(setLabelProgress);
+    void Promise.all([loadLabelPathProgress('world'), loadLabelPathProgress('lagos')]).then(([world, lagos]) =>
+      setLabelPaths({ world, lagos }),
+    );
+    void loadLagosSeen().then((seen) => {
+      setLagosSeen(seen);
+      if (arrivedAtLagos.current) {
+        setScreen({ name: 'lagos' });
+        if (!seen) void markLagosSeen();
+        setLagosSeen(true);
+      }
+    });
     void loadCluelessPathProgress().then((progress) => {
       setCluelessPath(progress);
       setCluelessPathReady(true);
@@ -506,6 +609,17 @@ export default function App() {
   const boardFor = (gameId: string) => boards[gameId] ?? EMPTY_BOARD;
   const labelResolved = resolveRound(snapshot, labelProgress);
   const soloPool = soloCategory(snapshot, labelProgress);
+  /** The category a level plays. Popularity keeps its weekly set. */
+  const levelCategory = (ref: MolLevelRef): CategorySnapshot => {
+    const level = labelLevel(ref.path, ref.number);
+    if (!level || level.categoryId === snapshot.id) return soloPool;
+    return labelCategory(level.categoryId) ?? soloPool;
+  };
+  const molRef = screen.name === 'game' && screen.gameId === MORE_OR_LESS && !screen.live ? screen.molLevel : undefined;
+  const molLevel = molRef ? labelLevel(molRef.path, molRef.number) : undefined;
+  const molCategory = molRef ? levelCategory(molRef) : soloPool;
+  // Popularity's weekly sets only advance on Popularity runs.
+  const molTracksSet = molCategory.id === snapshot.id;
   const currentCluelessLevelNumber = currentCluelessPathLevel(cluelessPath);
   const currentCluelessLevel = cluelessSoloLevelByNumber(currentCluelessLevelNumber);
   const currentCluelessAvailability = availabilityForCluelessPathLevel(
@@ -521,6 +635,10 @@ export default function App() {
     setScreen({ name: 'home', gameId });
   };
   const startGame = (gameId: string) => {
+    if (gameId === MORE_OR_LESS) {
+      startLevel('world');
+      return;
+    }
     if (
       gameId === 'clueless' &&
       (!cluelessPathReady ||
@@ -536,6 +654,39 @@ export default function App() {
       seed: randomSeed(),
       cluelessLevelNumber: gameId === 'clueless' ? currentCluelessLevel?.number : undefined,
     });
+  };
+
+  /** Boards a level of a label path: More or Less' levels or I Sabi Lagos. */
+  const startLevel = (path: LabelPathId, number = selectedLevel(path)) => {
+    setLabelJustPassed(false);
+    setLabelChoice((current) => ({ ...current, [path]: number }));
+    setScreen({ name: 'game', gameId: MORE_OR_LESS, seed: randomSeed(), molLevel: { path, number } });
+  };
+
+  /** Boards a level by danfo: the bus pulls in with the stop's name, then the level shows. */
+  const rideToLevel = (path: LabelPathId, number = selectedLevel(path)) => {
+    const level = labelLevel(path, number);
+    if (!level) return;
+    if (ride) return;
+    rideCount.current += 1;
+    const lagos = path === 'lagos';
+    setRide({
+      key: rideCount.current,
+      eyebrow: lagos ? `STOP ${level.number}` : `LEVEL ${level.number}`,
+      title: lagos ? level.stop ?? level.name : level.name,
+      subtitle: lagos ? level.name : undefined,
+      lagos,
+      board: () => startLevel(path, number),
+    });
+  };
+
+  const openLagos = () => {
+    if (!lagosSeen) {
+      setLagosSeen(true);
+      void markLagosSeen();
+    }
+    setLagosAnnouncement(false);
+    setScreen({ name: 'lagos' });
   };
 
   const startLiveRace = (snapshot: LiveMatchSnapshot) => {
@@ -595,6 +746,24 @@ export default function App() {
       return handled;
     });
   }, []);
+
+  // A returning player hears about I Sabi Lagos once, on the hub. A first
+  // visit already has the welcome; it finds the banner afterwards.
+  useEffect(() => {
+    const returning = returningPlayer.current || hasScoreHistory;
+    if (lagosSeen || !returning || screen.name !== 'hub') return;
+    const timer = setTimeout(() => setLagosAnnouncement(true), 900);
+    return () => clearTimeout(timer);
+  }, [lagosSeen, hasScoreHistory, screen.name]);
+
+  // `/isabilagos` names the Lagos route and its runs, so the address a player
+  // copies opens it.
+  useEffect(() => {
+    const inLagos =
+      screen.name === 'lagos' ||
+      ((screen.name === 'game' || screen.name === 'over') && screen.molLevel?.path === 'lagos');
+    syncLagosPath(inLagos);
+  }, [screen]);
 
   useEffect(() => {
     if (!historyReady.current) {
@@ -834,6 +1003,23 @@ export default function App() {
     return () => setScreen(applyParent(parent));
   };
 
+  /** The result screen's level block, with "Next" wired when there is one. */
+  const overLevel = (result: MolLevelResult | undefined) => {
+    if (!result) return undefined;
+    const level = labelLevel(result.path, result.number);
+    if (!level) return undefined;
+    const next = labelLevel(result.path, result.number + 1);
+    return {
+      number: level.number,
+      label: result.path === 'lagos' ? level.stop ?? level.name : level.name,
+      targetStreak: level.targetStreak,
+      cleared: result.cleared,
+      clearedNow: result.clearedNow,
+      lagos: result.path === 'lagos',
+      onNext: next ? () => rideToLevel(result.path, next.number) : undefined,
+    };
+  };
+
   /**
    * Quick play from the hub's gold button: the game played most recently,
    * More or Less before anything has been played.
@@ -909,6 +1095,21 @@ export default function App() {
             onSettings={() => setSettingsOpen(true)}
             onTeams={() => setScreen({ name: 'teams' })}
             onAccount={() => setScreen({ name: 'auth' })}
+            onLagos={() => {
+              captureAnalytics('game_selected', { game_id: MORE_OR_LESS, source: 'hub' });
+              openLagos();
+            }}
+            lagosFresh={!lagosSeen}
+          />
+        )}
+
+        {screen.name === 'lagos' && (
+          <LagosScreen
+            levels={labelPath('lagos')}
+            progress={labelPaths.lagos}
+            selected={selectedLevel('lagos')}
+            onSelect={(number) => setLabelChoice((current) => ({ ...current, lagos: number }))}
+            onPlay={() => rideToLevel('lagos')}
           />
         )}
 
@@ -1122,7 +1323,9 @@ export default function App() {
                     : currentCluelessLevel?.phase === 'daily'
                       ? 'Open Daily Vault'
                       : 'Play level'
-                : undefined
+                : screen.gameId === MORE_OR_LESS
+                  ? `Play level ${selectedLevel('world')}`
+                  : undefined
             }
             onRace={() => {
               if (!profile) setScreen({ name: 'auth', returnTo: 'teams', returnGameId: screen.gameId });
@@ -1136,7 +1339,15 @@ export default function App() {
                 : undefined
             }
             onScores={() => setScreen({ name: 'scores', gameId: screen.gameId })}
-            detail={startDetailFor(
+            detail={screen.gameId === MORE_OR_LESS ? (
+              <WorldLevelCard
+                number={selectedLevel('world')}
+                progress={labelPaths.world}
+                setLine={`${labelResolved.seenCount} / ${labelResolved.round.itemIds.length} names seen in this set`}
+                onLevels={() => setLevelsOpen('world')}
+                onCity={openLagos}
+              />
+            ) : startDetailFor(
               screen.gameId,
               soloPool,
               {
@@ -1169,12 +1380,29 @@ export default function App() {
             // Remounting per seed guarantees a clean run rather than relying on
             // the reducer's initializer, which React only calls on first mount.
             key={screen.seed}
-            category={screen.live ? category : soloPool}
+            category={screen.live ? category : molCategory}
             seed={screen.seed}
-            bestStreak={boardFor(screen.gameId).bestStreak}
+            bestStreak={
+              molRef ? bestStreakFor(labelPaths[molRef.path], molRef.number) : boardFor(screen.gameId).bestStreak
+            }
             persist={!screen.live}
+            session={molRef ? `level:${molRef.path}:${molRef.number}` : undefined}
+            lagos={molRef?.path === 'lagos'}
+            levelGoal={
+              molLevel && molRef
+                ? {
+                    target: molLevel.targetStreak,
+                    label:
+                      molRef.path === 'lagos'
+                        ? `STOP ${molLevel.number} · ${(molLevel.stop ?? molLevel.name).toUpperCase()}`
+                        : `LEVEL ${molLevel.number} · ${molLevel.name.toUpperCase()}`,
+                    // The danfo drives from this stop toward the next one.
+                    stop: labelLevel(molRef.path, molRef.number + 1)?.stop ?? molLevel.stop,
+                  }
+                : undefined
+            }
             labelRound={
-              screen.live
+              screen.live || !molTracksSet
                 ? undefined
                 : {
                     seenCount: labelResolved.seenCount,
@@ -1192,7 +1420,7 @@ export default function App() {
             band={
               screen.live
                 ? moreOrLessLevelByNumber(screen.live.levelNumber)?.band
-                : undefined
+                : molLevel?.band
             }
             targetStreak={
               screen.live
@@ -1216,24 +1444,50 @@ export default function App() {
                 : undefined
             }
             onExit={() =>
-              screen.live ? setScreen({ name: 'teams' }) : setScreen({ name: 'home', gameId: screen.gameId })
+              screen.live
+                ? setScreen({ name: 'teams' })
+                : molRef?.path === 'lagos'
+                  ? setScreen({ name: 'lagos' })
+                  : setScreen({ name: 'home', gameId: screen.gameId })
             }
             coins={rewards.coins}
             onSpend={screen.live ? undefined : (kind) => spendBoost(kind, 'more-or-less')}
             onGameOver={async (state, detail) => {
               if (screen.live) return;
               const entryId = makeEntryId();
-              const roundResult = recordSeen(snapshot, labelProgress, state.seenIds);
-              setLabelProgress(roundResult.progress);
-              setLabelJustPassed(roundResult.justPassed);
-              await saveRoundProgress(roundResult.progress);
-              if (roundResult.justPassed) {
-                captureAnalytics('label_round_passed', {
-                  game_id: 'more-or-less',
-                  round_id: labelResolved.round.id,
-                  rounds_passed: roundResult.progress.roundsPassed,
-                  item_count: labelResolved.round.itemIds.length,
-                });
+              const playedCategory = molCategory;
+              let setCleared = false;
+              if (molTracksSet) {
+                const roundResult = recordSeen(snapshot, labelProgress, state.seenIds);
+                setLabelProgress(roundResult.progress);
+                setLabelJustPassed(roundResult.justPassed);
+                setCleared = roundResult.justPassed;
+                await saveRoundProgress(roundResult.progress);
+                if (roundResult.justPassed) {
+                  captureAnalytics('label_round_passed', {
+                    game_id: 'more-or-less',
+                    round_id: labelResolved.round.id,
+                    rounds_passed: roundResult.progress.roundsPassed,
+                    item_count: labelResolved.round.itemIds.length,
+                  });
+                }
+              } else {
+                setLabelJustPassed(false);
+              }
+              let levelResult: MolLevelResult | undefined;
+              if (molRef && molLevel) {
+                const recorded = recordLevelRun(labelPaths[molRef.path], molLevel, state.streak);
+                if (recorded.progress !== labelPaths[molRef.path]) {
+                  setLabelPaths((current) => ({ ...current, [molRef.path]: recorded.progress }));
+                  await saveLabelPathProgress(molRef.path, recorded.progress);
+                }
+                // A first clear moves the start screen on to the next level.
+                if (recorded.clearedNow) setLabelChoice((current) => ({ ...current, [molRef.path]: null }));
+                levelResult = {
+                  ...molRef,
+                  cleared: state.streak >= molLevel.targetStreak,
+                  clearedNow: recorded.clearedNow,
+                };
               }
               const reward = await finishRun({
                 gameId: screen.gameId,
@@ -1241,7 +1495,7 @@ export default function App() {
                 entry: {
                   id: entryId,
                   streak: state.streak,
-                  categoryId: category.id,
+                  categoryId: playedCategory.id,
                   playedAt: new Date().toISOString(),
                   seed: screen.seed,
                   boosted: detail.boosted,
@@ -1251,16 +1505,20 @@ export default function App() {
                   runId: entryId,
                   streak: state.streak,
                   isNewBest: fresh,
-                  setCleared: roundResult.justPassed,
+                  setCleared,
                   boosted: detail.boosted,
+                  ...(molRef && molLevel
+                    ? { level: { key: `${molRef.path}:${molRef.number}`, targetStreak: molLevel.targetStreak } }
+                    : {}),
                 }),
                 analytics: {
                   game_id: 'more-or-less',
                   outcome: 'loss',
                   score: state.streak,
                   score_kind: 'streak',
-                  category_id: category.id,
+                  category_id: playedCategory.id,
                   relaxed_rounds: state.relaxedRounds,
+                  ...(molRef ? { level_number: molRef.number } : {}),
                 },
               });
               setScreen({
@@ -1271,6 +1529,7 @@ export default function App() {
                 isNewBest: reward.isNewBest,
                 boosted: reward.boosted,
                 events: reward.events,
+                molLevel: levelResult,
               });
             }}
           />
@@ -1311,14 +1570,19 @@ export default function App() {
         {screen.name === 'over' && (
           <GameOverScreen
             state={screen.state}
-            category={soloPool}
+            category={screen.molLevel ? levelCategory(screen.molLevel) : soloPool}
             board={boardFor(screen.gameId)}
-            labelRound={{
-              roundsPassed: labelProgress.roundsPassed,
-              remaining: labelResolved.remaining,
-              justPassed: labelJustPassed,
-              caughtUp: labelResolved.caughtUp,
-            }}
+            labelRound={
+              screen.molLevel && levelCategory(screen.molLevel).id !== snapshot.id
+                ? undefined
+                : {
+                    roundsPassed: labelProgress.roundsPassed,
+                    remaining: labelResolved.remaining,
+                    justPassed: labelJustPassed,
+                    caughtUp: labelResolved.caughtUp,
+                  }
+            }
+            level={overLevel(screen.molLevel)}
             isNewBest={screen.isNewBest}
             boosted={screen.boosted}
             events={screen.events}
@@ -1329,7 +1593,8 @@ export default function App() {
                 streak_bucket: streakBucket(screen.state.streak),
                 is_new_best: screen.isNewBest,
               });
-              startGame(screen.gameId);
+              if (screen.molLevel) startLevel(screen.molLevel.path, screen.molLevel.number);
+              else startGame(screen.gameId);
             }}
             onHome={() => {
               captureAnalytics('game_over_action', {
@@ -1338,7 +1603,7 @@ export default function App() {
                 streak_bucket: streakBucket(screen.state.streak),
                 is_new_best: screen.isNewBest,
               });
-              setScreen({ name: 'hub' });
+              setScreen(screen.molLevel?.path === 'lagos' ? { name: 'lagos' } : { name: 'hub' });
             }}
             onScores={() => {
               captureAnalytics('game_over_action', {
@@ -1417,6 +1682,31 @@ export default function App() {
           />
         )}
 
+        {levelsOpen ? (
+          <LabelLevelsPopup
+            visible
+            onClose={() => setLevelsOpen(null)}
+            title={levelsOpen === 'lagos' ? 'Stops' : 'Levels'}
+            levels={labelPath(levelsOpen)}
+            progress={labelPaths[levelsOpen]}
+            selected={selectedLevel(levelsOpen)}
+            lagos={levelsOpen === 'lagos'}
+            onSelect={(number) => {
+              const path = levelsOpen;
+              setLabelChoice((current) => ({ ...current, [path]: number }));
+              setLevelsOpen(null);
+            }}
+          />
+        ) : null}
+        <LagosAnnouncement
+          visible={lagosAnnouncement && screen.name === 'hub' && !showOnboarding}
+          onEnter={openLagos}
+          onLater={() => {
+            setLagosAnnouncement(false);
+            setLagosSeen(true);
+            void markLagosSeen();
+          }}
+        />
         <SettingsPopup
           visible={settingsOpen}
           onClose={() => setSettingsOpen(false)}
@@ -1447,6 +1737,7 @@ export default function App() {
           identity={toFeedbackIdentity(profile)}
           onClose={() => setShowFeedback(false)}
         />
+        <DanfoRide ride={ride} onCovered={() => ride?.board()} onDone={() => setRide(null)} />
       </View>
     </SafeAreaView>
   );

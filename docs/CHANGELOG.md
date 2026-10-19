@@ -6,6 +6,26 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.11.0] - 2026-10-19
+
+### Added
+- **More or Less plays level by level.** Seven levels, each with its own label: Popularity, Music stars, Movies, Football stars, World cities, Food and Hit songs. A level clears at a streak target (5 to 8). Stars come at the target, at half again, and at double. Clearing a level opens the next; **All levels** picks any open one. The star bar on the game screen marks all three. Popularity keeps its weekly name sets.
+- **I Sabi Lagos, at wordkrush.com/isabilagos.** More or Less for people who know Lagos, laid out as a danfo route with seven stops: Ojuelegba, Yaba, Obalende, CMS, Lekki, Ikeja and Oshodi. Each stop is a Lagos label: places, Naija food, Afrobeats stars, Nollywood, Afrobeats hits, Naija football and wild Lagos stories. A danfo drives along the road as your streak builds. Wins are called "You sabi!" and misses "Wahala!". Home has a yellow I Sabi Lagos card with a NEW tag. A returning player sees a one-time "I Sabi Lagos don land!" pop-up. The link opens straight onto the route and skips the welcome.
+- **A danfo carries you to your next level.** **Next level**, **Next stop** and **Oya, enter!** play a short ride: the bus pulls in under the stop's sign while the conductor calls it, then drives off as the level opens. With reduce motion on, the bus stays parked and the screen only fades.
+- **Wordfall words light up.** A traced tile turns into a yellow cube and pops. Once the trace spells a playable word, its tiles turn gold and glow and the thread joining them turns gold. When the word is played, its points burst out of it.
+- **Settings tells players their music keeps playing.** Game sounds play over the player's own music. On iPhone Safari, the web build now asks for an ambient audio session, so a sound no longer pauses Spotify.
+
+### Fixed
+- **The web app no longer slides up out of view.** A full-height CSS rule matched React Native Web's empty modal hosts as well as the app root. Each host gave the hidden page a screen of scroll room, so focus could shift the whole app upward with no way back.
+- **More or Less banners draw above the VS disc.** "LEVEL CLEARED!" and the +1 burst used to sit behind it.
+
+### Data
+- **13 new bundled categories**, all measured in monthly Wikipedia pageviews (D-012) with freely licensed images. World: music stars, hit songs, movies, football stars, world cities and food. Lagos: places, food, Afrobeats stars, Afrobeats hits, Nollywood, Lagos stories and football. When a song or film has no free image, it shows its artist's or lead actor's photo (`imageTerm`). Every term is the canonical article; no redirects or disambiguation pages. Values are provisional, like Popularity's.
+- **The pipeline survives Wikimedia rate limits.** A 429 is retried with backoff and honours `Retry-After` (`politeFetch`). Only the Popularity snapshot carries label rounds.
+
+### Analytics
+- `screen_viewed` gains `screen_name: 'lagos'`. More or Less `run_completed` carries `level_number` on level runs. Lagos runs report their `category_id` (`lagos-*`).
+
 ## [0.10.0] - 2026-10-18
 
 ### Changed

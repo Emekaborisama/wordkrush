@@ -37,7 +37,7 @@ export type AnalyticsEvents = {
     session_result: 'signed_in' | 'guest';
   };
   screen_viewed: {
-    screen_name: 'hub' | 'home' | 'game' | 'over' | 'scores' | 'auth' | 'teams' | 'live-lobby' | 'live-results';
+    screen_name: 'hub' | 'home' | 'lagos' | 'game' | 'over' | 'scores' | 'auth' | 'teams' | 'live-lobby' | 'live-results';
     game_id?: string;
   };
   game_selected: CommonGameProperties & {

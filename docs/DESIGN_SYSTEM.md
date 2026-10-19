@@ -63,7 +63,7 @@ palette   kit + sampled ends: coralTop/coralBottom/coralEdge, creamFill/creamEdg
           frame/frameDeep/well/tray/dock, ink/inkSoft/tealInk, red/redDeep,
           gold/goldDeep/goldEdge, orange, blue, purple, pink, lime
 cube      cube colours: red orange yellow green teal blue purple pink cream stone gold
-tone      glossy faces {top, bottom, lip, outline}: green blue gold red purple teal coral sky grey
+tone      glossy faces {top, bottom, lip, outline}: green blue gold red purple teal coral sky grey danfo
 font      black (Exo2_900Black) heavy (800) body (700) — legacy names medium/semibold/bold map onto them
 type      hero displayXL display title subtitle body bodyStrong caption overline — no fontWeight
 ```
@@ -224,11 +224,39 @@ dock. Before the first guess: a `?` cube and "Find the secret word".
 
 **Wordfall** — cream `BlockTile` letter tiles (navy letters) in the frame;
 specials are coloured studded cubes carrying their shape glyph; crates are
-stone cubes; the traced path turns tiles gold with a white glow line; trace
-preview in a cream pill; Shuffle / Word hint / +3 moves in the dock. The level
+stone cubes. A traced tile becomes a yellow cube and pops (1.16, settling at
+1.05). Once the trace spells a playable word (`traceValid`), its tiles turn
+gold with one shared breathing halo and the thread turns gold with a white
+edge. The played word's points burst from the word's centroid (`ScoreBurst`,
+drawn after the tiles so it sits on top on web). Trace preview sits in a cream
+pill; Shuffle / Word hint / +3 moves in the dock. The level
 map is the kit's **Levels** pop-up: rows with `BlockDigits` numbers, name,
 move budget, stars and best points; the current row glows gold; locked rows
 are stone with a lock.
+
+**More or Less levels** — the level pop-up's Goal box is `LabelLevelCard`:
+the level number in `BlockDigits`, its label, the star thresholds and **All
+levels** (the kit's Levels pop-up, `LabelLevelsPopup`). Under the HUD a
+`StarBar` marks the three star streaks. Reaching the target throws "LEVEL
+CLEARED!".
+
+**I Sabi Lagos** (`src/ui/lagos/`, `LagosScreen`) is the same kit with a danfo
+layer on top. Buttons, panels and the HUD are still the kit's; danfo colours
+only paint the Lagos pieces (`danfoTheme.ts`, plus `tone.danfo` for the yellow
+glossy button). Its pieces:
+- `DanfoBus` — side-on SVG bus: yellow body with two black stripes, roof-rack
+  bags and a destination board.
+- `RoadSign` — green stop sign.
+- `RoadProgress` — the bus drives the road towards the next stop as the
+  streak builds.
+- `LagosScene` — skyline, Third Mainland bridge, and a bus looping the road.
+- `LagosWordmark` — "I SABI" outlined, with "LAGOS!" in gold.
+- `LagosBanner` — the hub card with a NEW badge.
+- `LagosAnnouncement` — a one-time "NEW!" pop-up.
+- `DanfoRide` — the between-levels ride.
+
+Copy is pidgin from one table (`lagosCopy`): "Oya, enter!", "You sabi!",
+"Wahala!".
 
 ### Results
 
@@ -282,7 +310,11 @@ Values live in `theme.ts` `interaction` — do not restyle them per screen.
 
 React Native `Animated` only (no Reanimated). Springs for presses and
 entrances, `Easing.out(Easing.back(1.6))` for pop-ins, `motion.burstMs` for
-score bursts. Reduce-motion (`useReduceMotion`) shows end states: no ray spin,
+score bursts. Moving to another level is a `DanfoRide`, about 1.9 s: the cover
+fades in (180 ms), the level swaps in underneath, the bus arrives (520 ms) and
+holds (650 ms), then the words fade as the bus leaves and the cover lifts.
+Banners and bursts on the More or Less board sit above the VS disc
+(`zIndex` 4). Reduce-motion (`useReduceMotion`) shows end states: no ray spin,
 no confetti, no pops, bursts appear in place.
 
 ## Daily streak

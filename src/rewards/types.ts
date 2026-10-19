@@ -104,6 +104,11 @@ export type RunSummary =
       isNewBest: boolean;
       setCleared: boolean;
       boosted: boolean;
+      /**
+       * A level run: stars follow the level's own target (target, half again,
+       * double) and are kept per level under `more-or-less:<path>:<n>`.
+       */
+      level?: { key: string; targetStreak: number };
     }
   | {
       gameId: 'clueless';

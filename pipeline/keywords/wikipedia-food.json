@@ -1,0 +1,211 @@
+{
+  "category": {
+    "id": "wikipedia-food",
+    "name": "Food",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to exist on 2026-10-19. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "Bagel",
+      "term": "Bagel"
+    },
+    {
+      "label": "Banana",
+      "term": "Banana"
+    },
+    {
+      "label": "Biryani",
+      "term": "Biryani"
+    },
+    {
+      "label": "Bobotie",
+      "term": "Bobotie"
+    },
+    {
+      "label": "Bread",
+      "term": "Bread"
+    },
+    {
+      "label": "Burrito",
+      "term": "Burrito"
+    },
+    {
+      "label": "Chakalaka",
+      "term": "Chakalaka"
+    },
+    {
+      "label": "Cheese",
+      "term": "Cheese"
+    },
+    {
+      "label": "Cheesecake",
+      "term": "Cheesecake"
+    },
+    {
+      "label": "Croissant",
+      "term": "Croissant"
+    },
+    {
+      "label": "Curry",
+      "term": "Curry"
+    },
+    {
+      "label": "Doughnut",
+      "term": "Doughnut"
+    },
+    {
+      "label": "Dumpling",
+      "term": "Dumpling"
+    },
+    {
+      "label": "Falafel",
+      "term": "Falafel"
+    },
+    {
+      "label": "French fries",
+      "term": "French fries"
+    },
+    {
+      "label": "Fried chicken",
+      "term": "Fried chicken"
+    },
+    {
+      "label": "Fufu",
+      "term": "Fufu"
+    },
+    {
+      "label": "Hamburger",
+      "term": "Hamburger"
+    },
+    {
+      "label": "Honey",
+      "term": "Honey"
+    },
+    {
+      "label": "Hot dog",
+      "term": "Hot dog"
+    },
+    {
+      "label": "Hummus",
+      "term": "Hummus"
+    },
+    {
+      "label": "Ice cream",
+      "term": "Ice cream"
+    },
+    {
+      "label": "Injera",
+      "term": "Injera"
+    },
+    {
+      "label": "Jollof rice",
+      "term": "Jollof rice"
+    },
+    {
+      "label": "Kebab",
+      "term": "Kebab"
+    },
+    {
+      "label": "Kenkey",
+      "term": "Kenkey"
+    },
+    {
+      "label": "Kimchi",
+      "term": "Kimchi"
+    },
+    {
+      "label": "Lasagna",
+      "term": "Lasagna"
+    },
+    {
+      "label": "Macaron",
+      "term": "Macaron"
+    },
+    {
+      "label": "Mango",
+      "term": "Mango"
+    },
+    {
+      "label": "Moi moi",
+      "term": "Moin moin"
+    },
+    {
+      "label": "Nutella",
+      "term": "Nutella"
+    },
+    {
+      "label": "Paella",
+      "term": "Paella"
+    },
+    {
+      "label": "Pancake",
+      "term": "Pancake"
+    },
+    {
+      "label": "Pasta",
+      "term": "Pasta"
+    },
+    {
+      "label": "Peanut butter",
+      "term": "Peanut butter"
+    },
+    {
+      "label": "Pho",
+      "term": "Pho"
+    },
+    {
+      "label": "Pineapple",
+      "term": "Pineapple"
+    },
+    {
+      "label": "Popcorn",
+      "term": "Popcorn"
+    },
+    {
+      "label": "Rice",
+      "term": "Rice"
+    },
+    {
+      "label": "Shawarma",
+      "term": "Shawarma"
+    },
+    {
+      "label": "Spaghetti",
+      "term": "Spaghetti"
+    },
+    {
+      "label": "Strawberry",
+      "term": "Strawberry"
+    },
+    {
+      "label": "Suya",
+      "term": "Suya"
+    },
+    {
+      "label": "Taco",
+      "term": "Taco"
+    },
+    {
+      "label": "Tea",
+      "term": "Tea"
+    },
+    {
+      "label": "Tiramisu",
+      "term": "Tiramisu"
+    },
+    {
+      "label": "Ugali",
+      "term": "Ugali"
+    },
+    {
+      "label": "Waffle",
+      "term": "Waffle"
+    },
+    {
+      "label": "Watermelon",
+      "term": "Watermelon"
+    }
+  ]
+}

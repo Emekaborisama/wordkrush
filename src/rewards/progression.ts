@@ -43,6 +43,7 @@ import {
   type StoredStars,
   type XpReason,
 } from './types';
+import { levelStars } from '../games/more-or-less/labelPath';
 
 /** Lifetime XP required to already be `level` (level 1 is 0). */
 export function cumulativeXpForLevel(level: number): number {
@@ -71,7 +72,7 @@ export function levelProgress(xp: number): {
 export function starsKey(run: RunSummary): string {
   switch (run.gameId) {
     case 'more-or-less':
-      return 'more-or-less:best';
+      return run.level ? `more-or-less:${run.level.key}` : 'more-or-less:best';
     case 'clueless':
       return `clueless:${run.levelNumber}`;
     case 'wordfall':
@@ -82,6 +83,7 @@ export function starsKey(run: RunSummary): string {
 export function starsFor(run: RunSummary): StarCount {
   switch (run.gameId) {
     case 'more-or-less':
+      if (run.level) return levelStars(run.level.targetStreak, run.streak);
       if (run.streak >= MOL_STAR_STREAKS.three) return 3;
       if (run.streak >= MOL_STAR_STREAKS.two) return 2;
       if (run.streak >= MOL_STAR_STREAKS.one) return 1;

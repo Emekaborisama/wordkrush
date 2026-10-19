@@ -36,6 +36,16 @@ describe('parentOf', () => {
     expect(parentOf({ name: 'auth' })).toEqual({ name: 'hub' });
   });
 
+  it('roots I Sabi Lagos at the hub and sends its runs back to the route', () => {
+    expect(parentOf({ name: 'lagos' })).toEqual({ name: 'hub' });
+    expect(parentOf({ name: 'game', gameId: 'more-or-less', molLevel: { path: 'lagos' } })).toEqual({ name: 'lagos' });
+    expect(parentOf({ name: 'over', gameId: 'more-or-less', molLevel: { path: 'lagos' } })).toEqual({ name: 'lagos' });
+    expect(parentOf({ name: 'game', gameId: 'more-or-less', molLevel: { path: 'world' } })).toEqual({
+      name: 'home',
+      gameId: 'more-or-less',
+    });
+  });
+
   it('sends the lobby and the race result back to teams', () => {
     expect(parentOf({ name: 'live-lobby' })).toEqual({ name: 'teams' });
     expect(parentOf({ name: 'live-results' })).toEqual({ name: 'teams' });
