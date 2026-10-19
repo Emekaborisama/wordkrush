@@ -1,0 +1,163 @@
+{
+  "category": {
+    "id": "lagos-food",
+    "name": "Naija food",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to exist on 2026-10-19. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "Abacha",
+      "term": "Abacha (food)"
+    },
+    {
+      "label": "Afang soup",
+      "term": "Afang soup"
+    },
+    {
+      "label": "Agege bread",
+      "term": "Agege bread"
+    },
+    {
+      "label": "Akara",
+      "term": "Akara"
+    },
+    {
+      "label": "Amala",
+      "term": "Amala (food)"
+    },
+    {
+      "label": "Banga soup",
+      "term": "Palm nut soup"
+    },
+    {
+      "label": "Chapman",
+      "term": "Chapman (drink)"
+    },
+    {
+      "label": "Chin chin",
+      "term": "Chin chin"
+    },
+    {
+      "label": "Dodo (fried plantain)",
+      "term": "Fried plantain"
+    },
+    {
+      "label": "Eba",
+      "term": "Eba"
+    },
+    {
+      "label": "Edikang ikong",
+      "term": "Edikang ikong"
+    },
+    {
+      "label": "Efo riro",
+      "term": "Efo riro"
+    },
+    {
+      "label": "Egusi soup",
+      "term": "Egusi"
+    },
+    {
+      "label": "Ewa agoyin",
+      "term": "Ewa aganyin"
+    },
+    {
+      "label": "Fried rice",
+      "term": "Fried rice"
+    },
+    {
+      "label": "Fufu",
+      "term": "Fufu"
+    },
+    {
+      "label": "Garri",
+      "term": "Garri"
+    },
+    {
+      "label": "Indomie",
+      "term": "Indomie"
+    },
+    {
+      "label": "Isi ewu",
+      "term": "Isi ewu"
+    },
+    {
+      "label": "Jollof rice",
+      "term": "Jollof rice"
+    },
+    {
+      "label": "Kilishi",
+      "term": "Kilishi"
+    },
+    {
+      "label": "Kunu",
+      "term": "Kunu"
+    },
+    {
+      "label": "Maggi",
+      "term": "Maggi"
+    },
+    {
+      "label": "Malta",
+      "term": "Malta (soft drink)"
+    },
+    {
+      "label": "Masa",
+      "term": "Masa (Nigerian food)"
+    },
+    {
+      "label": "Moi moi",
+      "term": "Moin moin"
+    },
+    {
+      "label": "Nkwobi",
+      "term": "Nkwobi"
+    },
+    {
+      "label": "Ofada rice",
+      "term": "Ofada rice"
+    },
+    {
+      "label": "Ogbono soup",
+      "term": "Ogbono soup"
+    },
+    {
+      "label": "Okra soup",
+      "term": "Okra soup"
+    },
+    {
+      "label": "Palm wine",
+      "term": "Palm wine"
+    },
+    {
+      "label": "Pepper soup",
+      "term": "Peppersoup"
+    },
+    {
+      "label": "Pounded yam",
+      "term": "Pounded yam"
+    },
+    {
+      "label": "Puff-puff",
+      "term": "Puff-puff"
+    },
+    {
+      "label": "Suya",
+      "term": "Suya"
+    },
+    {
+      "label": "Tuwo shinkafa",
+      "term": "Tuwon shinkafa"
+    },
+    {
+      "label": "Ukwa",
+      "term": "Ukwa"
+    },
+    {
+      "label": "Zobo",
+      "term": "Hibiscus tea"
+    }
+  ]
+}

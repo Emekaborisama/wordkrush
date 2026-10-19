@@ -795,11 +795,11 @@ function LevelPlay({
             board={state.board}
             selection={state.selection}
             lastPlay={state.lastPlay}
-            accent={RIBBON}
             maxWidth={boardBounds.width}
             maxHeight={boardBounds.height}
             disabled={over}
             hintPath={paidHint ?? coachPath ?? undefined}
+            traceValid={preview.valid}
             onTrace={trace}
             onRelease={submit}
             onCancel={cancelTrace}

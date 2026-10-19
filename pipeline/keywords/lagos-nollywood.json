@@ -1,0 +1,171 @@
+{
+  "category": {
+    "id": "lagos-nollywood",
+    "name": "Nollywood",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to exist on 2026-10-19. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "A Tribe Called Judah",
+      "term": "A Tribe Called Judah",
+      "imageTerm": "Funke Akindele"
+    },
+    {
+      "label": "Basketmouth",
+      "term": "Basketmouth"
+    },
+    {
+      "label": "Battle on Buka Street",
+      "term": "Battle on Buka Street",
+      "imageTerm": "Funke Akindele"
+    },
+    {
+      "label": "Big Brother Naija",
+      "term": "Big Brother Naija",
+      "imageTerm": "Ebuka Obi-Uchendu"
+    },
+    {
+      "label": "Bobrisky",
+      "term": "Bobrisky"
+    },
+    {
+      "label": "Bovi",
+      "term": "Bovi"
+    },
+    {
+      "label": "Denrele Edun",
+      "term": "Denrele Edun"
+    },
+    {
+      "label": "Femi Adebayo",
+      "term": "Femi Adebayo"
+    },
+    {
+      "label": "Funke Akindele",
+      "term": "Funke Akindele"
+    },
+    {
+      "label": "Genevieve Nnaji",
+      "term": "Genevieve Nnaji"
+    },
+    {
+      "label": "Ini Edo",
+      "term": "Ini Edo"
+    },
+    {
+      "label": "Jagun Jagun",
+      "term": "Jagun Jagun",
+      "imageTerm": "Femi Adebayo"
+    },
+    {
+      "label": "Jide Kosoko",
+      "term": "Jide Kosoko"
+    },
+    {
+      "label": "Jim Iyke",
+      "term": "Jim Iyke"
+    },
+    {
+      "label": "Joke Silva",
+      "term": "Joke Silva"
+    },
+    {
+      "label": "Kate Henshaw",
+      "term": "Kate Henshaw"
+    },
+    {
+      "label": "King of Boys",
+      "term": "King of Boys",
+      "imageTerm": "Sola Sobowale"
+    },
+    {
+      "label": "Kunle Afolayan",
+      "term": "Kunle Afolayan"
+    },
+    {
+      "label": "Lionheart",
+      "term": "Lionheart (2018 film)",
+      "imageTerm": "Genevieve Nnaji"
+    },
+    {
+      "label": "Living in Bondage",
+      "term": "Living in Bondage",
+      "imageTerm": "Kenneth Okonkwo"
+    },
+    {
+      "label": "Mercy Johnson",
+      "term": "Mercy Johnson"
+    },
+    {
+      "label": "Mr Macaroni",
+      "term": "Mr Macaroni"
+    },
+    {
+      "label": "Nkem Owoh",
+      "term": "Nkem Owoh"
+    },
+    {
+      "label": "Odunlade Adekola",
+      "term": "Odunlade Adekola"
+    },
+    {
+      "label": "Olu Jacobs",
+      "term": "Olu Jacobs"
+    },
+    {
+      "label": "Omotola Jalade",
+      "term": "Omotola Jalade Ekeinde"
+    },
+    {
+      "label": "Osas Ighodaro",
+      "term": "Osas Ighodaro"
+    },
+    {
+      "label": "Pete Edochie",
+      "term": "Pete Edochie"
+    },
+    {
+      "label": "Ramsey Nouah",
+      "term": "Ramsey Nouah"
+    },
+    {
+      "label": "Regina Daniels",
+      "term": "Regina Daniels"
+    },
+    {
+      "label": "Rita Dominic",
+      "term": "Rita Dominic"
+    },
+    {
+      "label": "RMD",
+      "term": "Richard Mofe-Damijo"
+    },
+    {
+      "label": "Sola Sobowale",
+      "term": "Sola Sobowale"
+    },
+    {
+      "label": "The Wedding Party",
+      "term": "The Wedding Party (2016 film)",
+      "imageTerm": "Adesua Etomi"
+    },
+    {
+      "label": "Toke Makinwa",
+      "term": "Toke Makinwa"
+    },
+    {
+      "label": "Tonto Dikeh",
+      "term": "Tonto Dikeh"
+    },
+    {
+      "label": "Toyin Abraham",
+      "term": "Toyin Abraham"
+    },
+    {
+      "label": "Yul Edochie",
+      "term": "Yul Edochie"
+    }
+  ]
+}

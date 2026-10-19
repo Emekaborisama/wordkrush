@@ -17,6 +17,8 @@
  * attribution that CC BY / CC BY-SA legally require.
  */
 
+import { politeFetch } from './politeFetch';
+
 const API = 'https://en.wikipedia.org/w/api.php';
 const MEDIA_LIST = 'https://en.wikipedia.org/api/rest_v1/page/media-list';
 const USER_AGENT = 'wordkrush/0.1 (https://wordkrush.com)';
@@ -158,7 +160,7 @@ export function selectFallbackCandidates(
 
 async function get(params: Record<string, string>): Promise<any> {
   const url = `${API}?${new URLSearchParams({ ...params, format: 'json', formatversion: '2' })}`;
-  const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
+  const res = await politeFetch(url, { headers: { 'User-Agent': USER_AGENT } });
   if (!res.ok) throw new Error(`Wikipedia API ${res.status} for ${JSON.stringify(params)}`);
   return res.json();
 }
@@ -177,7 +179,7 @@ async function fetchLeadFileName(article: string): Promise<string | null> {
 
 async function listPageMedia(article: string): Promise<string[]> {
   const restUrl = `${MEDIA_LIST}/${encodeURIComponent(article.replace(/ /g, '_'))}`;
-  const res = await fetch(restUrl, { headers: { 'User-Agent': USER_AGENT } });
+  const res = await politeFetch(restUrl, { headers: { 'User-Agent': USER_AGENT } });
   if (res.ok) {
     const data: { items?: Array<{ type?: string; title?: string }> } = await res.json();
     return (data.items ?? [])

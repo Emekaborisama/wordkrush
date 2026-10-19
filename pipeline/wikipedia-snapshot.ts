@@ -16,9 +16,16 @@ const CHANGELOG_PATH = fileURLToPath(new URL('../docs/CHANGELOG.md', import.meta
 const PACKAGE_JSON_PATH = fileURLToPath(new URL('../package.json', import.meta.url));
 const APP_JSON_PATH = fileURLToPath(new URL('../app.json', import.meta.url));
 
+/**
+ * One row of a keyword file. `imageTerm` names a different article to take the
+ * card photo from, for an article whose own lead image is non-free — a song or
+ * an album shows its artist, a film its lead. The value is always `term`'s.
+ */
+export type KeywordItem = { label: string; term: string; imageTerm?: string };
+
 export type KeywordFile = {
   category: { id: string; name: string; metricLabel: string; unit: string };
-  items: { label: string; term: string }[];
+  items: KeywordItem[];
 };
 
 export type BundledItem = {
@@ -237,21 +244,25 @@ export function keywordByItemId(
 
 export async function measureKeywords(
   categoryId: string,
-  keywords: { label: string; term: string }[],
+  keywords: KeywordItem[],
   previous: BundledItem[] = [],
 ): Promise<{ items: BundledItem[]; omitted: number; sourceName: string }> {
   const source = createWikipediaSource();
   const terms = keywords.map((item) => item.term);
   const volumes = await source.fetchVolumes(terms);
-  const { images, failed } = await fetchImages(terms, 800);
-  const failedIds = new Set(failed.map((term) => itemId(categoryId, term)));
+  const imageArticle = (item: KeywordItem) => item.imageTerm ?? item.term;
+  const { images, failed } = await fetchImages([...new Set(keywords.map(imageArticle))], 800);
+  const failedArticles = new Set(failed);
+  const failedIds = new Set(
+    keywords.filter((item) => failedArticles.has(imageArticle(item))).map((item) => itemId(categoryId, item.term)),
+  );
   const updatedAt = new Date().toISOString().slice(0, 10);
 
   const fetched = keywords
     .map((item) => {
       const value = volumes.get(item.term);
       if (value === undefined) return null;
-      const image = images.get(item.term);
+      const image = images.get(imageArticle(item));
       return {
         id: itemId(categoryId, item.term),
         categoryId,
@@ -297,15 +308,21 @@ export async function buildWikipediaPopularitySnapshot(
     .filter((item) => !file.items.some((row) => row.term === item.term));
   const keywords = [...file.items, ...extraKeywords];
   const measured = await measureKeywords(categoryId, keywords, previous?.items ?? []);
+  // Label rounds are Popularity's weekly sets. Other categories play their
+  // whole list, so they carry no rounds that could go stale as items change.
   const rounds =
-    previous?.rounds && previous.rounds.length > 0 ? previous.rounds : defaultRounds(measured.items);
+    categoryId !== DEFAULT_CATEGORY_ID
+      ? undefined
+      : previous?.rounds && previous.rounds.length > 0
+        ? previous.rounds
+        : defaultRounds(measured.items);
 
   return {
     keywordCount: keywords.length,
     snapshot: {
       ...file.category,
       provisional: true,
-      rounds,
+      ...(rounds ? { rounds } : {}),
       items: measured.items,
     },
   };

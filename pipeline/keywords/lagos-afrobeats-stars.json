@@ -1,0 +1,187 @@
+{
+  "category": {
+    "id": "lagos-afrobeats-stars",
+    "name": "Afrobeats stars",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to exist on 2026-10-19. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "2Baba",
+      "term": "2Baba"
+    },
+    {
+      "label": "9ice",
+      "term": "9ice"
+    },
+    {
+      "label": "Adekunle Gold",
+      "term": "Adekunle Gold"
+    },
+    {
+      "label": "Asake",
+      "term": "Asake"
+    },
+    {
+      "label": "Ayra Starr",
+      "term": "Ayra Starr"
+    },
+    {
+      "label": "BNXN",
+      "term": "Bnxn"
+    },
+    {
+      "label": "Burna Boy",
+      "term": "Burna Boy"
+    },
+    {
+      "label": "CKay",
+      "term": "CKay"
+    },
+    {
+      "label": "D'banj",
+      "term": "D'banj"
+    },
+    {
+      "label": "Davido",
+      "term": "Davido"
+    },
+    {
+      "label": "Don Jazzy",
+      "term": "Don Jazzy"
+    },
+    {
+      "label": "Ebenezer Obey",
+      "term": "Ebenezer Obey"
+    },
+    {
+      "label": "Fela Kuti",
+      "term": "Fela Kuti"
+    },
+    {
+      "label": "Femi Kuti",
+      "term": "Femi Kuti"
+    },
+    {
+      "label": "Fireboy DML",
+      "term": "Fireboy DML"
+    },
+    {
+      "label": "Flavour",
+      "term": "Flavour (musician)"
+    },
+    {
+      "label": "Joeboy",
+      "term": "Joeboy"
+    },
+    {
+      "label": "King Sunny Adé",
+      "term": "King Sunny Adé"
+    },
+    {
+      "label": "Kizz Daniel",
+      "term": "Kizz Daniel"
+    },
+    {
+      "label": "Lagbaja",
+      "term": "Lagbaja"
+    },
+    {
+      "label": "Mohbad",
+      "term": "MohBad"
+    },
+    {
+      "label": "Mr Eazi",
+      "term": "Mr Eazi"
+    },
+    {
+      "label": "Naira Marley",
+      "term": "Naira Marley"
+    },
+    {
+      "label": "Odumodublvck",
+      "term": "Odumodublvck"
+    },
+    {
+      "label": "Olamide",
+      "term": "Olamide"
+    },
+    {
+      "label": "Omah Lay",
+      "term": "Omah Lay"
+    },
+    {
+      "label": "P-Square",
+      "term": "P-Square"
+    },
+    {
+      "label": "Patoranking",
+      "term": "Patoranking"
+    },
+    {
+      "label": "Phyno",
+      "term": "Phyno"
+    },
+    {
+      "label": "Portable",
+      "term": "Portable (musician)"
+    },
+    {
+      "label": "Rema",
+      "term": "Rema (musician)"
+    },
+    {
+      "label": "Sade",
+      "term": "Sade (singer)"
+    },
+    {
+      "label": "Seun Kuti",
+      "term": "Seun Kuti"
+    },
+    {
+      "label": "Shallipopi",
+      "term": "Shallipopi"
+    },
+    {
+      "label": "Simi",
+      "term": "Simi (singer)"
+    },
+    {
+      "label": "Tekno",
+      "term": "Tekno (musician)"
+    },
+    {
+      "label": "Tems",
+      "term": "Tems"
+    },
+    {
+      "label": "Teni",
+      "term": "Teni (singer)"
+    },
+    {
+      "label": "Timaya",
+      "term": "Timaya"
+    },
+    {
+      "label": "Tiwa Savage",
+      "term": "Tiwa Savage"
+    },
+    {
+      "label": "Victony",
+      "term": "Victony"
+    },
+    {
+      "label": "Wande Coal",
+      "term": "Wande Coal"
+    },
+    {
+      "label": "Wizkid",
+      "term": "Wizkid"
+    },
+    {
+      "label": "Yemi Alade",
+      "term": "Yemi Alade"
+    }
+  ]
+}

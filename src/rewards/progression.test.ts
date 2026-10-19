@@ -101,6 +101,15 @@ describe('starsFor', () => {
     ).toBe(3);
   });
 
+  it('scores a More or Less level run against that level’s target', () => {
+    const level = { key: 'lagos:3', targetStreak: 6 };
+    expect(starsFor(mol({ streak: 5, level }))).toBe(0);
+    expect(starsFor(mol({ streak: 6, level }))).toBe(1);
+    expect(starsFor(mol({ streak: 9, level }))).toBe(2);
+    expect(starsFor(mol({ streak: 12, level }))).toBe(3);
+    expect(starsKey(mol({ level }))).toBe('more-or-less:lagos:3');
+  });
+
   it('keeps one best per level and one More or Less best', () => {
     expect(starsKey(mol())).toBe('more-or-less:best');
     expect(starsKey(clueless({ levelNumber: 4 }))).toBe('clueless:4');

@@ -1,0 +1,333 @@
+{
+  "id": "lagos-moments",
+  "name": "Lagos stories",
+  "metricLabel": "monthly Wikipedia pageviews",
+  "unit": "count",
+  "provisional": true,
+  "items": [
+    {
+      "id": "lagos-moments.bola-tinubu",
+      "categoryId": "lagos-moments",
+      "label": "Bola Tinubu",
+      "value": 38845,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/77/Bola_Tinubu_portrait.jpg/960px-Bola_Tinubu_portrait.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Nosa Asemota",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.aliko-dangote",
+      "categoryId": "lagos-moments",
+      "label": "Aliko Dangote",
+      "value": 38512,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Al_Shabani_at_the_acquisition_of_Dangote_Cement_by_ICD_in_2014_%28cropped%29.jpg/960px-Al_Shabani_at_the_acquisition_of_Dangote_Cement_by_ICD_in_2014_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Saba Dubai",
+      "imageLicense": "CC BY 3.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.jollof-rice",
+      "categoryId": "lagos-moments",
+      "label": "Jollof wars",
+      "value": 23392,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/Jollof_Rice_with_Stew.jpg/960px-Jollof_Rice_with_Stew.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Noahalorwu",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.advance-fee-scam",
+      "categoryId": "lagos-moments",
+      "label": "Yahoo boys (419)",
+      "value": 8501,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/81/Scam_letter_posted_within_South_Africa.jpg/960px-Scam_letter_posted_within_South_Africa.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "HelenOnline",
+      "imageLicense": "CC BY-SA 3.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.babajide-sanwo-olu",
+      "categoryId": "lagos-moments",
+      "label": "Babajide Sanwo-Olu",
+      "value": 3275,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/93/Babajide_sanwo_olu_official_portrait.jpg/960px-Babajide_sanwo_olu_official_portrait.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Ademola Olaniran",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.1966-nigerian-coup-d-tat",
+      "categoryId": "lagos-moments",
+      "label": "1966 coup",
+      "value": 3190,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2b/Major_Gen._J.T.U._Aguiyi_Ironsi_%28cropped%29.jpg/960px-Major_Gen._J.T.U._Aguiyi_Ironsi_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Unknown authorUnknown author",
+      "imageLicense": "Public domain",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.end-sars",
+      "categoryId": "lagos-moments",
+      "label": "EndSARS protests",
+      "value": 2824,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Protesters_at_the_endSARS_protest_in_Lagos%2C_Nigeria_92_-_cropped.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Kaizenify",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.dana-air-flight-0992",
+      "categoryId": "lagos-moments",
+      "label": "Dana Air crash (2012)",
+      "value": 2277,
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.kalakuta-republic",
+      "categoryId": "lagos-moments",
+      "label": "Kalakuta Republic",
+      "value": 1704,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/1/12/Fela_Kuti_circa_1986.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Distributed by Celluloid Records",
+      "imageLicense": "Public domain",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.oba-of-lagos",
+      "categoryId": "lagos-moments",
+      "label": "Oba of Lagos",
+      "value": 1670,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/d/df/Oba_Lagos060602-N-8637R-006_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "U.S. Navy photo by Journalist 1st Class Kurt Riggs",
+      "imageLicense": "Public domain",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.third-mainland-bridge",
+      "categoryId": "lagos-moments",
+      "label": "Third Mainland Bridge",
+      "value": 1619,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7e/Aerial-shot-of-makoko-community-in-lagos-3-third-mainland-bridge-aview2.jpg/960px-Aerial-shot-of-makoko-community-in-lagos-3-third-mainland-bridge-aview2.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "S.aderogba",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.festac-77",
+      "categoryId": "lagos-moments",
+      "label": "FESTAC '77",
+      "value": 1235,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/Idia_mask_BM_Af1910_5-13_1.jpg/960px-Idia_mask_BM_Af1910_5-13_1.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Andreas Praefcke",
+      "imageLicense": "Public domain",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.eyo-festival",
+      "categoryId": "lagos-moments",
+      "label": "Eyo festival",
+      "value": 1115,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Eyo_Olokun.jpg/960px-Eyo_Olokun.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Slashme",
+      "imageLicense": "CC BY-SA 3.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.2020-lekki-shooting",
+      "categoryId": "lagos-moments",
+      "label": "Lekki toll gate shooting",
+      "value": 991,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/Lekki-toll-gate-lagos.jpg/960px-Lekki-toll-gate-lagos.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "S.aderogba",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.area-boys",
+      "categoryId": "lagos-moments",
+      "label": "Area boys",
+      "value": 989,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Map_of_the_Local_Government_Areas_of_Lagos.png?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Bohr",
+      "imageLicense": "CC BY-SA 3.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.synagogue-church-of-all-nations",
+      "categoryId": "lagos-moments",
+      "label": "Synagogue Church collapse (2014)",
+      "value": 944,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/Synagogue-Church_of_all_Nations.jpg/960px-Synagogue-Church_of_all_Nations.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Hallo503",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.2002-lagos-armoury-explosion",
+      "categoryId": "lagos-moments",
+      "label": "Ikeja armoury explosion (2002)",
+      "value": 885,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/14/Oke_Afa_Memorial_Arcade_01.jpg/960px-Oke_Afa_Memorial_Arcade_01.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "ReoMartins",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.all-africa-music-awards",
+      "categoryId": "lagos-moments",
+      "label": "AFRIMA",
+      "value": 824,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/Oriental_Hotel_1.jpg/960px-Oriental_Hotel_1.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Kaizen Photography",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.reduction-of-lagos",
+      "categoryId": "lagos-moments",
+      "label": "Bombardment of Lagos (1851)",
+      "value": 800,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/James_George_Philp_-_British_Men_o%27_War_Attacked_by_the_King_of_Lagos_GAC_GAC_6427.jpg/960px-James_George_Philp_-_British_Men_o%27_War_Attacked_by_the_King_of_Lagos_GAC_GAC_6427.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "James George Philp",
+      "imageLicense": "Public domain",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.power-holding-company-of-nigeria",
+      "categoryId": "lagos-moments",
+      "label": "NEPA",
+      "value": 632,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/Electricity_workers.jpg/960px-Electricity_workers.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Unique koncept",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.okada-motorcycle-taxi-",
+      "categoryId": "lagos-moments",
+      "label": "Okada",
+      "value": 558,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/2/25/Okada.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Andy Waite",
+      "imageLicense": "CC BY-SA 3.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.lagos-treaty-of-cession",
+      "categoryId": "lagos-moments",
+      "label": "Lagos Treaty of Cession",
+      "value": 527,
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.ebola-in-nigeria",
+      "categoryId": "lagos-moments",
+      "label": "Ebola in Lagos (2014)",
+      "value": 428,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/0/0d/Nigeria_Map_Ebola_2014.png?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "BrianGroen",
+      "imageLicense": "Public domain",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.2021-lagos-high-rise-collapse",
+      "categoryId": "lagos-moments",
+      "label": "Ikoyi building collapse (2021)",
+      "value": 298,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2e/Ikoyi_and_Beyond.jpg/960px-Ikoyi_and_Beyond.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Reginald Bassey",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.occupy-nigeria",
+      "categoryId": "lagos-moments",
+      "label": "Occupy Nigeria (2012)",
+      "value": 290,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e0/Occupy_Nigeria_rally_in_Ojota_Temi.jpg/960px-Occupy_Nigeria_rally_in_Ojota_Temi.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Temi KOGBE",
+      "imageLicense": "CC BY-SA 2.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.danfo",
+      "categoryId": "lagos-moments",
+      "label": "Danfo",
+      "value": 244,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/The_Danfo_of_Lagos.jpg/960px-The_Danfo_of_Lagos.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Oluwolehammond",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.lagos-fashion-week",
+      "categoryId": "lagos-moments",
+      "label": "Lagos Fashion Week",
+      "value": 239,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/LFDW3_-135.jpg/960px-LFDW3_-135.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Chidi \"Lex Ash\" Ashimole",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.felabration",
+      "categoryId": "lagos-moments",
+      "label": "Felabration",
+      "value": 174,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/1/12/Fela_Kuti_circa_1986.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Distributed by Celluloid Records",
+      "imageLicense": "Public domain",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.lagos-city-marathon",
+      "categoryId": "lagos-moments",
+      "label": "Lagos City Marathon",
+      "value": 89,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Closing_gala_at_the_Lagos_Marathon_2020_11_07_17_646000.jpeg/960px-Closing_gala_at_the_Lagos_Marathon_2020_11_07_17_646000.jpeg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Kaizenify",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-moments.gidi-culture-festival",
+      "categoryId": "lagos-moments",
+      "label": "Gidi Culture Festival",
+      "value": 63,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cd/GidiCultureFestival.jpg/960px-GidiCultureFestival.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Anuel Modebe",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    }
+  ]
+}

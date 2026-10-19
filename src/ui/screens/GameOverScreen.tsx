@@ -21,6 +21,7 @@ import {
   SquareButton,
 } from '../components';
 import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
+import { danfo } from '../lagos/danfoTheme';
 import { font, formatValue, palette, space, tone } from '../theme';
 
 type Props = {
@@ -39,6 +40,19 @@ type Props = {
     justPassed: boolean;
     caughtUp: boolean;
   };
+  /** The level this run played, and what it did for the path. */
+  level?: {
+    number: number;
+    label: string;
+    targetStreak: number;
+    /** This run reached the target. */
+    cleared: boolean;
+    /** It was the first time, so the next level just opened. */
+    clearedNow: boolean;
+    lagos: boolean;
+    /** Play the next level; omitted on the last one. */
+    onNext?: () => void;
+  };
 };
 
 export function GameOverScreen({
@@ -52,6 +66,7 @@ export function GameOverScreen({
   boosted,
   events,
   labelRound,
+  level,
 }: Props) {
   const rank = rankOf(board, state.streak);
   const [shareNote, setShareNote] = useState<string | null>(null);
@@ -95,14 +110,24 @@ export function GameOverScreen({
     }
   }
 
+  const nextOpen = level?.cleared && level.onNext;
   const footer = (
     <>
+      {nextOpen ? (
+        <Button
+          title={level.lagos ? 'Next stop' : 'Next level'}
+          size="lg"
+          tone={level.lagos ? 'danfo' : 'green'}
+          onPress={level.onNext!}
+          leading={<GameIcon name="play" size={26} color={level.lagos ? tone.danfo.outline : tone.green.outline} />}
+        />
+      ) : null}
       <Button
-        title="Play again"
-        size="lg"
-        tone="green"
+        title={level && !level.cleared ? 'Try again' : 'Play again'}
+        size={nextOpen ? 'md' : 'lg'}
+        tone={nextOpen ? 'sky' : 'green'}
         onPress={onPlayAgain}
-        leading={<GameIcon name="retry" size={26} color={tone.green.outline} />}
+        leading={<GameIcon name="retry" size={nextOpen ? 22 : 26} color={nextOpen ? tone.sky.outline : tone.green.outline} />}
       />
       <View style={styles.squares}>
         <SquareButton
@@ -148,15 +173,43 @@ export function GameOverScreen({
         </View>
       ) : null}
       <Panel
-        title={personalBest ? 'NEW RECORD!' : 'GAME OVER'}
-        ribbon="banner"
-        ribbonColor={personalBest ? palette.red : tone.red.lip}
+        title={
+          level?.cleared
+            ? level.lagos
+              ? 'YOU SABI!'
+              : 'LEVEL CLEARED!'
+            : personalBest
+              ? 'NEW RECORD!'
+              : level?.lagos
+                ? 'WAHALA!'
+                : 'GAME OVER'
+        }
+        ribbon={level?.cleared ? 'tab' : 'banner'}
+        ribbonColor={level?.cleared ? (level.lagos ? danfo.sign : undefined) : personalBest ? palette.red : tone.red.lip}
         scroll
         footer={footer}
         style={styles.panel}
         accessibilityLabel={personalBest ? 'Game over. New personal best.' : 'Game over'}
       >
         <RewardPanel events={events} boosted={boosted} />
+        {level ? (
+          <CreamBox>
+            <CreamText variant="label" style={styles.center}>
+              {`${level.lagos ? 'STOP' : 'LEVEL'} ${level.number} · ${level.label.toUpperCase()}`}
+            </CreamText>
+            <CreamText variant="title" style={styles.center}>
+              {level.clearedNow
+                ? level.onNext
+                  ? `Cleared! ${level.lagos ? 'Next stop' : 'Next level'} is open.`
+                  : level.lagos
+                    ? 'You sabi Lagos die! Route complete.'
+                    : 'Cleared — every level done!'
+                : level.cleared
+                  ? 'Cleared again'
+                  : `Reach ${level.targetStreak} to clear it`}
+            </CreamText>
+          </CreamBox>
+        ) : null}
         <ScoreWell label={state.streak === 1 ? 'ROUND' : 'ROUNDS'} value={String(state.streak)} />
         <View style={styles.chips}>
           <Text style={styles.chip}>{`Rank #${rank}`}</Text>

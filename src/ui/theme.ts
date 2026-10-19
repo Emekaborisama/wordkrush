@@ -131,6 +131,8 @@ export const tone = {
   coral: { top: '#FFA2A6', bottom: '#F15D70', lip: '#C33B52', outline: '#8C2438' },
   sky: { top: '#A9E6FF', bottom: '#4FA9EC', lip: '#2B78C2', outline: '#1B5592' },
   grey: { top: '#EEF2F6', bottom: '#AEB9C6', lip: '#808C9A', outline: '#5B6676' },
+  /** I Sabi Lagos: the danfo's yellow. */
+  danfo: { top: '#FFE974', bottom: '#FFC21A', lip: '#C98800', outline: '#5A3C00' },
 } as const satisfies Record<string, GlossTone>;
 
 export type Tone = keyof typeof tone;

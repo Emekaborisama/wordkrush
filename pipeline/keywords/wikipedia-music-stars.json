@@ -1,0 +1,175 @@
+{
+  "category": {
+    "id": "wikipedia-music-stars",
+    "name": "Music stars",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to exist on 2026-10-19. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "Adele",
+      "term": "Adele"
+    },
+    {
+      "label": "Ariana Grande",
+      "term": "Ariana Grande"
+    },
+    {
+      "label": "Bad Bunny",
+      "term": "Bad Bunny"
+    },
+    {
+      "label": "Beyoncé",
+      "term": "Beyoncé"
+    },
+    {
+      "label": "Billie Eilish",
+      "term": "Billie Eilish"
+    },
+    {
+      "label": "Bob Marley",
+      "term": "Bob Marley"
+    },
+    {
+      "label": "Bruno Mars",
+      "term": "Bruno Mars"
+    },
+    {
+      "label": "BTS",
+      "term": "BTS"
+    },
+    {
+      "label": "Burna Boy",
+      "term": "Burna Boy"
+    },
+    {
+      "label": "Cardi B",
+      "term": "Cardi B"
+    },
+    {
+      "label": "Chappell Roan",
+      "term": "Chappell Roan"
+    },
+    {
+      "label": "Coldplay",
+      "term": "Coldplay"
+    },
+    {
+      "label": "Doja Cat",
+      "term": "Doja Cat"
+    },
+    {
+      "label": "Drake",
+      "term": "Drake (musician)"
+    },
+    {
+      "label": "Dua Lipa",
+      "term": "Dua Lipa"
+    },
+    {
+      "label": "Ed Sheeran",
+      "term": "Ed Sheeran"
+    },
+    {
+      "label": "Elvis Presley",
+      "term": "Elvis Presley"
+    },
+    {
+      "label": "Eminem",
+      "term": "Eminem"
+    },
+    {
+      "label": "Frank Sinatra",
+      "term": "Frank Sinatra"
+    },
+    {
+      "label": "Freddie Mercury",
+      "term": "Freddie Mercury"
+    },
+    {
+      "label": "Harry Styles",
+      "term": "Harry Styles"
+    },
+    {
+      "label": "Justin Bieber",
+      "term": "Justin Bieber"
+    },
+    {
+      "label": "Kanye West",
+      "term": "Kanye West"
+    },
+    {
+      "label": "Karol G",
+      "term": "Karol G"
+    },
+    {
+      "label": "Kendrick Lamar",
+      "term": "Kendrick Lamar"
+    },
+    {
+      "label": "Lady Gaga",
+      "term": "Lady Gaga"
+    },
+    {
+      "label": "Madonna",
+      "term": "Madonna"
+    },
+    {
+      "label": "Metallica",
+      "term": "Metallica"
+    },
+    {
+      "label": "Nicki Minaj",
+      "term": "Nicki Minaj"
+    },
+    {
+      "label": "Olivia Rodrigo",
+      "term": "Olivia Rodrigo"
+    },
+    {
+      "label": "Post Malone",
+      "term": "Post Malone"
+    },
+    {
+      "label": "Rihanna",
+      "term": "Rihanna"
+    },
+    {
+      "label": "Sabrina Carpenter",
+      "term": "Sabrina Carpenter"
+    },
+    {
+      "label": "Shakira",
+      "term": "Shakira"
+    },
+    {
+      "label": "Snoop Dogg",
+      "term": "Snoop Dogg"
+    },
+    {
+      "label": "SZA",
+      "term": "SZA"
+    },
+    {
+      "label": "Taylor Swift",
+      "term": "Taylor Swift"
+    },
+    {
+      "label": "The Weeknd",
+      "term": "The Weeknd"
+    },
+    {
+      "label": "Travis Scott",
+      "term": "Travis Scott"
+    },
+    {
+      "label": "Whitney Houston",
+      "term": "Whitney Houston"
+    },
+    {
+      "label": "Wizkid",
+      "term": "Wizkid"
+    }
+  ]
+}

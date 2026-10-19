@@ -1,0 +1,175 @@
+{
+  "category": {
+    "id": "wikipedia-football-stars",
+    "name": "Football stars",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to exist on 2026-10-19. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "Andrés Iniesta",
+      "term": "Andrés Iniesta"
+    },
+    {
+      "label": "Bukayo Saka",
+      "term": "Bukayo Saka"
+    },
+    {
+      "label": "Cole Palmer",
+      "term": "Cole Palmer"
+    },
+    {
+      "label": "Cristiano Ronaldo",
+      "term": "Cristiano Ronaldo"
+    },
+    {
+      "label": "David Beckham",
+      "term": "David Beckham"
+    },
+    {
+      "label": "Didier Drogba",
+      "term": "Didier Drogba"
+    },
+    {
+      "label": "Diego Maradona",
+      "term": "Diego Maradona"
+    },
+    {
+      "label": "Erling Haaland",
+      "term": "Erling Haaland"
+    },
+    {
+      "label": "Franz Beckenbauer",
+      "term": "Franz Beckenbauer"
+    },
+    {
+      "label": "Gareth Bale",
+      "term": "Gareth Bale"
+    },
+    {
+      "label": "Gianluigi Buffon",
+      "term": "Gianluigi Buffon"
+    },
+    {
+      "label": "Harry Kane",
+      "term": "Harry Kane"
+    },
+    {
+      "label": "Jay-Jay Okocha",
+      "term": "Jay-Jay Okocha"
+    },
+    {
+      "label": "Johan Cruyff",
+      "term": "Johan Cruyff"
+    },
+    {
+      "label": "Jude Bellingham",
+      "term": "Jude Bellingham"
+    },
+    {
+      "label": "Kaká",
+      "term": "Kaká"
+    },
+    {
+      "label": "Kevin De Bruyne",
+      "term": "Kevin De Bruyne"
+    },
+    {
+      "label": "Kylian Mbappé",
+      "term": "Kylian Mbappé"
+    },
+    {
+      "label": "Lamine Yamal",
+      "term": "Lamine Yamal"
+    },
+    {
+      "label": "Lionel Messi",
+      "term": "Lionel Messi"
+    },
+    {
+      "label": "Luka Modrić",
+      "term": "Luka Modrić"
+    },
+    {
+      "label": "Mohamed Salah",
+      "term": "Mohamed Salah"
+    },
+    {
+      "label": "Neymar",
+      "term": "Neymar"
+    },
+    {
+      "label": "Paul Pogba",
+      "term": "Paul Pogba"
+    },
+    {
+      "label": "Pelé",
+      "term": "Pelé"
+    },
+    {
+      "label": "Phil Foden",
+      "term": "Phil Foden"
+    },
+    {
+      "label": "Robert Lewandowski",
+      "term": "Robert Lewandowski"
+    },
+    {
+      "label": "Ronaldinho",
+      "term": "Ronaldinho"
+    },
+    {
+      "label": "Ronaldo",
+      "term": "Ronaldo (Brazilian footballer)"
+    },
+    {
+      "label": "Sadio Mané",
+      "term": "Sadio Mané"
+    },
+    {
+      "label": "Samuel Eto'o",
+      "term": "Samuel Eto'o"
+    },
+    {
+      "label": "Sergio Ramos",
+      "term": "Sergio Ramos"
+    },
+    {
+      "label": "Son Heung-min",
+      "term": "Son Heung-min"
+    },
+    {
+      "label": "Thierry Henry",
+      "term": "Thierry Henry"
+    },
+    {
+      "label": "Victor Osimhen",
+      "term": "Victor Osimhen"
+    },
+    {
+      "label": "Vinícius Júnior",
+      "term": "Vinícius Júnior"
+    },
+    {
+      "label": "Virgil van Dijk",
+      "term": "Virgil van Dijk"
+    },
+    {
+      "label": "Wayne Rooney",
+      "term": "Wayne Rooney"
+    },
+    {
+      "label": "Xavi",
+      "term": "Xavi"
+    },
+    {
+      "label": "Zinedine Zidane",
+      "term": "Zinedine Zidane"
+    },
+    {
+      "label": "Zlatan Ibrahimović",
+      "term": "Zlatan Ibrahimović"
+    }
+  ]
+}

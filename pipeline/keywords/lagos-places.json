@@ -1,0 +1,211 @@
+{
+  "category": {
+    "id": "lagos-places",
+    "name": "Lagos places",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to exist on 2026-10-19. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "Agege",
+      "term": "Agege"
+    },
+    {
+      "label": "Ajah",
+      "term": "Ajah, Lagos"
+    },
+    {
+      "label": "Ajegunle",
+      "term": "Ajegunle"
+    },
+    {
+      "label": "Alaba Market",
+      "term": "Alaba International Market"
+    },
+    {
+      "label": "Apapa",
+      "term": "Apapa"
+    },
+    {
+      "label": "Badagry",
+      "term": "Badagry"
+    },
+    {
+      "label": "Balogun Market",
+      "term": "Balogun Market"
+    },
+    {
+      "label": "Banana Island",
+      "term": "Banana Island, Lagos"
+    },
+    {
+      "label": "Bar Beach",
+      "term": "Bar Beach, Lagos"
+    },
+    {
+      "label": "Carter Bridge",
+      "term": "Carter Bridge"
+    },
+    {
+      "label": "Computer Village",
+      "term": "Computer Village"
+    },
+    {
+      "label": "Dangote Refinery",
+      "term": "Dangote refinery"
+    },
+    {
+      "label": "Eko Atlantic",
+      "term": "Eko Atlantic"
+    },
+    {
+      "label": "Eko Bridge",
+      "term": "Eko Bridge"
+    },
+    {
+      "label": "Eko Hotels",
+      "term": "Eko Hotels and Suites"
+    },
+    {
+      "label": "Epe",
+      "term": "Epe, Lagos State"
+    },
+    {
+      "label": "Festac Town",
+      "term": "Festac Town"
+    },
+    {
+      "label": "Freedom Park",
+      "term": "Freedom Park (Lagos)"
+    },
+    {
+      "label": "Idumota",
+      "term": "Idumota Market"
+    },
+    {
+      "label": "Ikeja",
+      "term": "Ikeja"
+    },
+    {
+      "label": "Ikeja City Mall",
+      "term": "Ikeja City Mall"
+    },
+    {
+      "label": "Ikorodu",
+      "term": "Ikorodu"
+    },
+    {
+      "label": "Ikoyi",
+      "term": "Ikoyi"
+    },
+    {
+      "label": "Lagos Airport (MMIA)",
+      "term": "Murtala Muhammed International Airport"
+    },
+    {
+      "label": "Lagos Blue Line",
+      "term": "Lagos Rail Mass Transit"
+    },
+    {
+      "label": "Lagos BRT",
+      "term": "Lagos Bus Rapid Transit System"
+    },
+    {
+      "label": "Lagos Island",
+      "term": "Lagos Island"
+    },
+    {
+      "label": "Lagos Lagoon",
+      "term": "Lagos Lagoon"
+    },
+    {
+      "label": "Lagos–Ibadan Expressway",
+      "term": "Lagos–Ibadan Expressway"
+    },
+    {
+      "label": "LASU",
+      "term": "Lagos State University"
+    },
+    {
+      "label": "Lekki",
+      "term": "Lekki"
+    },
+    {
+      "label": "Lekki Conservation Centre",
+      "term": "Lekki Conservation Centre"
+    },
+    {
+      "label": "Lekki–Ikoyi Link Bridge",
+      "term": "Lekki-Ikoyi Link Bridge"
+    },
+    {
+      "label": "Makoko",
+      "term": "Makoko"
+    },
+    {
+      "label": "Mushin",
+      "term": "Mushin, Lagos"
+    },
+    {
+      "label": "National Stadium, Surulere",
+      "term": "National Stadium, Lagos"
+    },
+    {
+      "label": "National Theatre",
+      "term": "National Theatre, Nigeria"
+    },
+    {
+      "label": "New Afrika Shrine",
+      "term": "New Afrika Shrine"
+    },
+    {
+      "label": "Nike Art Gallery",
+      "term": "Nike Art Gallery"
+    },
+    {
+      "label": "Obalende",
+      "term": "Obalende"
+    },
+    {
+      "label": "Ojuelegba",
+      "term": "Ojuelegba"
+    },
+    {
+      "label": "Oshodi",
+      "term": "Oshodi-Isolo"
+    },
+    {
+      "label": "Surulere",
+      "term": "Surulere"
+    },
+    {
+      "label": "Tafawa Balewa Square",
+      "term": "Tafawa Balewa Square"
+    },
+    {
+      "label": "Tarkwa Bay",
+      "term": "Tarkwa Bay Beach"
+    },
+    {
+      "label": "Teslim Balogun Stadium",
+      "term": "Teslim Balogun Stadium"
+    },
+    {
+      "label": "Third Mainland Bridge",
+      "term": "Third Mainland Bridge"
+    },
+    {
+      "label": "UNILAG",
+      "term": "University of Lagos"
+    },
+    {
+      "label": "Victoria Island",
+      "term": "Victoria Island"
+    },
+    {
+      "label": "Yaba",
+      "term": "Yaba, Lagos"
+    }
+  ]
+}

@@ -2,8 +2,9 @@ import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'rea
 import { Animated, Easing, PanResponder, Platform, StyleSheet, Text, View } from 'react-native';
 import { colOf, rowOf } from '../../games/wordfall/board';
 import type { Board, PlayResult, SpecialKind } from '../../games/wordfall/types';
-import { BlockTile, StrokeText } from '../components';
-import { palette, tone } from '../theme';
+import { BlockTile, ScoreBurst, StrokeText } from '../components';
+import { cube, palette, withAlpha } from '../theme';
+import { useReduceMotion } from '../useReduceMotion';
 import { WORDFALL_BOARD_WEB_ID } from '../webViewport';
 import {
   CLEAR_HOLD_MS,
@@ -22,8 +23,6 @@ const FRAME_INSET = 9;
 type Props = {
   board: Board;
   selection: number[];
-  /** Colour for the trace path and selected tiles — the level's accent. */
-  accent: string;
   /** Called as the finger enters a tile. The engine decides what it means. */
   onTrace: (index: number) => void;
   /** Finger lifted — play the traced word. */
@@ -37,12 +36,13 @@ type Props = {
   lastPlay: PlayResult | null;
   /** Tile indexes to glow. The coach and the word hint. Does not take touches. */
   hintPath?: readonly number[];
+  /** The traced letters already spell a playable word: the trace lights up. */
+  traceValid?: boolean;
 };
 
 export function BoardView({
   board,
   selection,
-  accent,
   onTrace,
   onRelease,
   onCancel,
@@ -51,6 +51,7 @@ export function BoardView({
   disabled = false,
   lastPlay,
   hintPath,
+  traceValid = false,
 }: Props) {
   const containerRef = useRef<View>(null);
   /**
@@ -191,6 +192,9 @@ export function BoardView({
   };
 
   const selectedAt = new Map(selection.map((index, order) => [index, order]));
+  const lit = traceValid && selection.length > 0;
+  const litPulse = useLitPulse(lit);
+  const burst = juiceKey && lastPlay ? burstPoint(board, lastPlay.cleared, tileSize) : null;
 
   return (
     // The frame is a separate view outside the measured board, so hit-testing
@@ -213,7 +217,7 @@ export function BoardView({
             board={board}
             selection={selection}
             tileSize={tileSize}
-            accent={accent}
+            lit={lit}
           />
           {board.tiles.map((tile, index) => (
             <TileView
@@ -228,8 +232,9 @@ export function BoardView({
               left={colOf(board, index) * (tileSize + GAP)}
               top={rowOf(board, index) * (tileSize + GAP)}
               order={selectedAt.get(index)}
+              lit={lit && selectedAt.has(index)}
+              litPulse={litPulse}
               hinted={hintPath?.includes(index) === true}
-              accent={accent}
               dropHoldMs={dropHoldMs}
               justBorn={bornId === tile.id}
               juiceKey={juiceKey}
@@ -245,6 +250,16 @@ export function BoardView({
             />
           ))}
           {stamp && juiceKey ? <ChainStamp key={juiceKey} label={stamp} /> : null}
+          {/* After the tiles on purpose: web hit-testing reads tiles by their
+              order among labelled elements, and the burst's text is labelled. */}
+          {burst && lastPlay ? (
+            <ScoreBurst
+              key={`burst-${juiceKey}`}
+              text={`+${lastPlay.points.toLocaleString('en-US')}`}
+              big={lastPlay.points >= 200 || lastPlay.chain >= 2}
+              style={{ position: 'absolute', left: burst.x, top: burst.y }}
+            />
+          ) : null}
         </>
       )}
     </View>
@@ -257,12 +272,13 @@ function TracePath({
   board,
   selection,
   tileSize,
-  accent,
+  lit,
 }: {
   board: Board;
   selection: number[];
   tileSize: number;
-  accent: string;
+  /** A playable word: the thread turns gold and glows. */
+  lit: boolean;
 }) {
   if (selection.length < 2) return null;
   const pitch = tileSize + GAP;
@@ -280,12 +296,12 @@ function TracePath({
         const dy = to.y - from.y;
         const length = Math.hypot(dx, dy);
         const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-        const thickness = Math.max(6, tileSize * 0.18);
+        const thickness = Math.max(6, tileSize * (lit ? 0.24 : 0.18));
         return (
           <View
             key={`${selection[i]}-${index}`}
             pointerEvents="none"
-            style={{
+            style={[{
               position: 'absolute',
               // Laid out centred on the midpoint of the two tiles and rotated
               // about its own centre — the default origin. Anchoring at the
@@ -296,11 +312,13 @@ function TracePath({
               top: (from.y + to.y) / 2 - thickness / 2,
               width: length,
               height: thickness,
-              backgroundColor: palette.white,
-              opacity: 0.85,
+              backgroundColor: lit ? palette.gold : palette.white,
+              borderWidth: lit ? 2 : 0,
+              borderColor: palette.white,
+              opacity: lit ? 1 : 0.85,
               borderRadius: thickness / 2,
               transform: [{ rotate: `${angle}deg` }],
-            }}
+            }, lit && styles.threadGlow]}
           />
         );
       })}
@@ -322,8 +340,9 @@ const TileView = memo(function TileView({
   left,
   top,
   order,
+  lit,
+  litPulse,
   hinted = false,
-  accent,
   dropHoldMs,
   justBorn,
   juiceKey,
@@ -336,9 +355,12 @@ const TileView = memo(function TileView({
   top: number;
   /** Position in the current trace, or undefined if not selected. */
   order: number | undefined;
+  /** Part of a trace that already spells a word. */
+  lit: boolean;
+  /** Shared 0–1 pulse that every lit tile's halo breathes with. */
+  litPulse: Animated.Value;
   /** Coach or word-hint glow. Visual only. */
   hinted?: boolean;
-  accent: string;
   dropHoldMs: number;
   justBorn: boolean;
   juiceKey: string;
@@ -385,14 +407,23 @@ const TileView = memo(function TileView({
 
   useEffect(() => {
     if (justBorn) return;
-    Animated.spring(scale, {
-      // A small lift only: anything bigger pushes edge tiles past the frame.
+    // Touching a tile pops it, then it settles a hair proud of the board.
+    // The settle stays small: anything bigger pushes edge tiles past the frame.
+    const settle = Animated.spring(scale, {
       toValue: selected ? 1.05 : 1,
       damping: 16,
       stiffness: 320,
       mass: 0.6,
       useNativeDriver: true,
-    }).start();
+    });
+    if (!selected) {
+      settle.start();
+      return;
+    }
+    Animated.sequence([
+      Animated.timing(scale, { toValue: 1.16, duration: 80, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      settle,
+    ]).start();
   }, [selected, scale, justBorn]);
 
   useEffect(() => {
@@ -428,6 +459,15 @@ const TileView = memo(function TileView({
       ]}
       accessibilityLabel={crate ? 'Blocked crate' : special ? `${letter}, ${special} tile` : letter}
     >
+      {lit ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.litHalo,
+            { borderRadius: size * 0.3, opacity: litPulse.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] }) },
+          ]}
+        />
+      ) : null}
       {crate ? (
         <BlockTile size={size} color="stone" stud={false}>
           <CrateMark size={size} />
@@ -435,8 +475,10 @@ const TileView = memo(function TileView({
       ) : (
         <BlockTile
           size={size}
-          color={selected ? 'gold' : visual ? visual.cube : 'cream'}
-          state={selected ? 'selected' : 'normal'}
+          // Tracing turns a tile yellow; once the trace spells a word every
+          // tile in it lights up gold.
+          color={lit ? 'gold' : selected ? 'yellow' : visual ? visual.cube : 'cream'}
+          state={lit ? 'selected' : 'normal'}
           letter={letter.toUpperCase()}
         >
           {visual && !selected ? (
@@ -491,7 +533,7 @@ function PuffGhost({
     inputRange: [0, 1],
     outputRange: [1, 0],
   });
-  const dotSize = size * 0.16;
+  const dotSize = size * 0.18;
 
   return (
     <View pointerEvents="none" style={{ position: 'absolute', left, top, width: size, height: size }}>
@@ -507,9 +549,9 @@ function PuffGhost({
           <BlockTile size={size} color="gold" letter={ghost.letter.toUpperCase()} />
         )}
       </Animated.View>
-      {[0, 1, 2, 3, 4, 5].map((i) => {
-        const angle = (i / 6) * Math.PI * 2;
-        const distance = size * (i % 2 === 0 ? 0.58 : 0.38);
+      {SPARK_COLORS.map((color, i) => {
+        const angle = (i / SPARK_COLORS.length) * Math.PI * 2 + 0.3;
+        const distance = size * (i % 2 === 0 ? 0.72 : 0.46);
         const translateX = progress.interpolate({
           inputRange: [0, 1],
           outputRange: [0, Math.cos(angle) * distance],
@@ -529,6 +571,7 @@ function PuffGhost({
             style={[
               styles.puffDot,
               {
+                backgroundColor: color,
                 width: dotSize,
                 height: dotSize,
                 borderRadius: dotSize / 2,
@@ -575,6 +618,43 @@ function ChainStamp({ label }: { label: 'CRUSH' | 'NOVA' }) {
   );
 }
 
+/** Sparks a cleared tile throws, in the board's cube colours. */
+const SPARK_COLORS = [cube.yellow, cube.red, cube.teal, cube.purple, cube.orange, cube.green, cube.pink, cube.blue] as const;
+
+/** One looping 0–1 value for every lit tile, so the word breathes as one. */
+function useLitPulse(active: boolean): Animated.Value {
+  const reduceMotion = useReduceMotion();
+  const pulse = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!active || reduceMotion) {
+      pulse.setValue(active ? 1 : 0);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 420, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.25, duration: 420, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [active, reduceMotion, pulse]);
+  return pulse;
+}
+
+/** Centre of the tiles a word cleared, where its points burst from. */
+function burstPoint(board: Board, cleared: readonly number[], tileSize: number): { x: number; y: number } | null {
+  if (cleared.length === 0 || tileSize <= 0) return null;
+  const pitch = tileSize + GAP;
+  let x = 0;
+  let y = 0;
+  for (const index of cleared) {
+    x += colOf(board, index) * pitch + tileSize / 2;
+    y += rowOf(board, index) * pitch + tileSize / 2;
+  }
+  return { x: x / cleared.length, y: y / cleared.length };
+}
+
 const styles = StyleSheet.create({
   frame: {
     alignSelf: 'center',
@@ -615,7 +695,28 @@ const styles = StyleSheet.create({
   crateSlat: { width: '140%', backgroundColor: '#6E7F92' },
   puffDot: {
     position: 'absolute',
-    backgroundColor: tone.gold.top,
+    borderWidth: 1.5,
+    borderColor: palette.white,
+  },
+  litHalo: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    bottom: -5,
+    left: -5,
+    backgroundColor: withAlpha(palette.gold, 0.55),
+    borderWidth: 2,
+    borderColor: palette.white,
+    shadowColor: palette.gold,
+    shadowOpacity: 1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  threadGlow: {
+    shadowColor: palette.gold,
+    shadowOpacity: 0.9,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
   },
   stamp: {
     position: 'absolute',
