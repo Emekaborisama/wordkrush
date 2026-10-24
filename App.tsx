@@ -106,6 +106,7 @@ import { EMPTY_BOARD, isNewBest, needsGlobalSync, type ScoreBoard, type ScoreDir
 import { loadStreak, markPlayedToday } from './src/streak/storage';
 import { dayKey, EMPTY_STREAK, type DailyStreak } from './src/streak/types';
 import { applyFeedbackSettings, feedback } from './src/native/feedback';
+import { setMusicEnabled, setMusicTrack } from './src/native/music';
 import { loadLagosSeen, markLagosSeen } from './src/onboarding/lagos';
 import { loadOnboarding, markOnboardingComplete } from './src/onboarding/storage';
 import { COMPLETED_ONBOARDING, type OnboardingState } from './src/onboarding/types';
@@ -560,6 +561,7 @@ export default function App() {
     void loadFeedbackSettings().then((stored) => {
       setFeedbackSettings(stored);
       applyFeedbackSettings(stored);
+      setMusicEnabled(stored.music);
     });
     void initializeAnalytics().then((storedConsent) => {
       setAnalyticsConsent(storedConsent);
@@ -764,6 +766,11 @@ export default function App() {
       ((screen.name === 'game' || screen.name === 'over') && screen.molLevel?.path === 'lagos');
     syncLagosPath(inLagos);
   }, [screen]);
+
+  // The menu groove everywhere but a game; the play groove inside one.
+  useEffect(() => {
+    setMusicTrack(screen.name === 'game' ? 'play' : 'menu');
+  }, [screen.name]);
 
   useEffect(() => {
     if (!historyReady.current) {
@@ -990,10 +997,12 @@ export default function App() {
     const next = toggleChannel(feedbackSettings, channel);
     setFeedbackSettings(next);
     applyFeedbackSettings(next);
+    setMusicEnabled(next.music);
     void saveFeedbackSettings(next);
     // Demonstrate what was just switched on. Gating happens inside `feedback`,
     // so enabling vibration buzzes without also making noise, and vice versa.
-    if (next[channel]) feedback('correct');
+    // Music demonstrates itself by starting.
+    if (next[channel] && channel !== 'music') feedback('correct');
   };
 
   const chromeBack = (): (() => void) | undefined => {
@@ -1062,9 +1071,14 @@ export default function App() {
 
         {showOnboarding ? (
           <OnboardingScreen
-            onPlay={() => {
+            onPick={(pick) => {
               dismissOnboarding();
-              startGame(MORE_OR_LESS);
+              if (pick === 'lagos') {
+                openLagos();
+                return;
+              }
+              captureAnalytics('game_selected', { game_id: pick, source: 'first_visit' });
+              openGameHome(pick);
             }}
             onExplore={dismissOnboarding}
           />

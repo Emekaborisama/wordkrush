@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { font, palette, tone } from '../theme';
+import { useHeightClass } from '../useHeightClass';
 import { Gradient } from './Gradient';
 import { StrokeText } from './StrokeText';
 
@@ -22,19 +23,21 @@ export type HudPanelProps = {
  */
 export function HudPanel({ label, value, children, urgent = false, style, accessibilityLabel }: HudPanelProps) {
   const shown = typeof value === 'number' ? value.toLocaleString('en-US') : value;
+  // Shorter on a short screen, so the board keeps its room.
+  const compact = useHeightClass() !== 'regular';
   return (
     <View
       accessible
       accessibilityLabel={accessibilityLabel ?? (shown === undefined ? label : `${label}: ${shown}`)}
       style={[styles.wrap, style]}
     >
-      <View style={[styles.panel, urgent && styles.urgent]}>
+      <View style={[styles.panel, compact && styles.panelCompact, urgent && styles.urgent]}>
         <View pointerEvents="none" style={styles.inset} />
         {shown === undefined ? (
           children
         ) : (
           <StrokeText
-            size={24}
+            size={compact ? 20 : 24}
             color={urgent ? '#FFE3E3' : palette.white}
             stroke={urgent ? palette.redDeep : palette.ink}
             strokeWidth={2.2}
@@ -74,6 +77,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     overflow: 'hidden',
   },
+  panelCompact: { minHeight: 40, paddingTop: 8, paddingBottom: 0 },
   urgent: { backgroundColor: '#FFE0DA', borderColor: palette.red },
   inset: { position: 'absolute', top: 0, left: 0, right: 0, height: 5, backgroundColor: palette.creamShade },
   tab: {

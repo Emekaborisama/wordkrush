@@ -33,7 +33,7 @@ export function buildShareText(input: MoreOrLessShareInput): string {
   if (photos) shareData.photos = photos;
 
   return composeShare({
-    title: 'WordKrush · More or Less',
+    title: 'WordKrush · Higher or Lower',
     grid: moreOrLessGrid(input.streak),
     standing: moreOrLessStanding(input),
     verdict: moreOrLessVerdict(input.streak),

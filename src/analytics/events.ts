@@ -41,8 +41,11 @@ export type AnalyticsEvents = {
     game_id?: string;
   };
   game_selected: CommonGameProperties & {
-    /** `quick_play` is the hub's gold Play; `drawer` predates 0.10.0. */
-    source: 'hub' | 'quick_play' | 'drawer';
+    /**
+     * `quick_play` is the hub's gold Play; `first_visit` is a tile on the
+     * first-visit picker (0.12.0); `drawer` predates 0.10.0.
+     */
+    source: 'hub' | 'quick_play' | 'first_visit' | 'drawer';
   };
   run_started: CommonGameProperties & CluelessLevelProperties & {
     is_resume: boolean;

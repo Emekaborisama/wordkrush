@@ -61,6 +61,9 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 - [x] **Reward flow and game feel** (ST-106) — **Done** in 0.9.0. Device rewards and the finished-run journey shipped; its sand / wood chrome was replaced by ST-112 the same day.
 - [x] **Every screen follows the Block Blast kit** (ST-112) — **Done** in 0.10.0. Owner asked for the whole flow to follow the Block Blast UI kit (Room 8 Studio) exactly, with Block King for juice: sky backdrops, coral pop-ups with ribbon titles, cream boxes, glossy buttons, HUD panels, cube boards, booster dock, Exo 2. See `docs/DESIGN_SYSTEM.md` and D-067.
 - [x] **More or Less levels, I Sabi Lagos, Wordfall glow** (ST-113) — **Done** in 0.11.0. Seven label levels with stars; the `/isabilagos` danfo route with seven Lagos stops; a danfo ride between levels; Wordfall's traced word lights gold. Spotify-stream and X-trend labels wait on a licensed source (D-068).
+- [x] **Music, first-visit picker, Higher or Lower name, short-phone layout** (ST-114) — **Done** in 0.12.0. Original Afrobeats loops with a Music switch (D-069); a game picker on the first visit; More or Less renamed Higher or Lower for players; side-by-side cards and a compact HUD on SE-sized screens.
+- [ ] **Better sound effects** — owner asked (2026-10-24). Kenney's CC0 interface, jingle and casino packs are the candidates. They need converting from Ogg for iOS and auditioning by the owner. Not started.
+- [ ] **A better popularity number than Wikipedia pageviews** — owner asked (2026-10-24). Needs an owner decision on the source and its licence (D-012). Not started.
 - [ ] **Millionaire-style lifelines for More or Less** — owner idea (2026-10-19): "phone a friend" and similar help during a run. Not started.
 - [ ] **Play random people live** — owner idea (2026-10-19): quick-match against a stranger, alongside private team races (ST-83). Not started.
 - [ ] Game screen — comparison panels, MORE/LESS controls, current streak

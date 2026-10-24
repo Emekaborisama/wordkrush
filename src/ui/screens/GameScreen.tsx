@@ -44,6 +44,7 @@ import { danfo } from '../lagos/danfoTheme';
 import { RoadProgress } from '../lagos/RoadProgress';
 import { font, formatValue, motion, palette, space, tone } from '../theme';
 import { useCountUp } from '../useCountUp';
+import { useHeightClass } from '../useHeightClass';
 import { useReduceMotion } from '../useReduceMotion';
 
 type Props = {
@@ -290,11 +291,14 @@ export function GameScreen({
 
   const raceGoal = targetStreak != null;
   const offerOpen = state.status === 'over' && chance === 'offer' && persist;
+  // A short phone (SE, or any phone with the browser bars showing) puts the
+  // two photos side by side: two tall tiles instead of two squashed strips.
+  const short = useHeightClass() !== 'regular';
 
   return (
     <View style={styles.root}>
       <GameHeader
-        title={lagos ? 'I Sabi Lagos' : 'More or Less'}
+        title={lagos ? 'I Sabi Lagos' : 'Higher or Lower'}
         subtitle={levelGoal ? levelGoal.label : category.name}
         ribbon={lagos ? danfo.sign : undefined}
         onExit={onExit}
@@ -318,9 +322,10 @@ export function GameScreen({
         <LevelStarBar streak={state.streak} target={levelGoal.target} />
       ) : null}
 
-      <Animated.View style={[styles.board, { transform: [{ translateX: shake }] }]}>
-        <Card item={state.left} metricLabel={category.metricLabel} value={state.left.value} footRoom />
+      <Animated.View style={[styles.board, short && styles.boardRow, { transform: [{ translateX: shake }] }]}>
+        <Card item={state.left} metricLabel={category.metricLabel} value={state.left.value} footRoom={!short} compact={short} />
         <Card
+          compact={short}
           item={state.right}
           metricLabel={category.metricLabel}
           value={revealed ? counted.value : null}
@@ -335,7 +340,7 @@ export function GameScreen({
         />
         {/* Floating disc rather than its own row — every pixel it doesn't
             take is a pixel the images get. */}
-        <View style={styles.vs} pointerEvents="none" accessibilityRole="text" accessibilityLabel="versus">
+        <View style={[styles.vs, short && styles.vsRow]} pointerEvents="none" accessibilityRole="text" accessibilityLabel="versus">
           <GlossFace tone={lagos ? tone.danfo : tone.red} lip={3} radius={24} faceStyle={styles.vsFace}>
             <StrokeText size={17} stroke={lagos ? tone.danfo.outline : tone.red.outline} strokeWidth={1.8} depth={1}>
               VS
@@ -343,19 +348,19 @@ export function GameScreen({
           </GlossFace>
         </View>
         <Animated.View pointerEvents="none" style={[styles.flash, { opacity: flash }]} />
-        {burstKey > 0 ? <ScoreBurst key={burstKey} text="+1" style={styles.burst} /> : null}
+        {burstKey > 0 ? <ScoreBurst key={burstKey} text="+1" style={[styles.burst, short && styles.burstRow]} /> : null}
         {combo ? <ComboBanner key={combo} text={combo} onDone={() => setCombo(null)} style={styles.overVs} /> : null}
       </Animated.View>
 
       {state.status === 'playing' ? (
-        <View style={styles.actions}>
-          <StrokeText size={15} stroke={palette.navyDeep} strokeWidth={1.5} depth={0} lineHeight={20} numberOfLines={2}>
-            {`Does ${state.right.label} have more or less than ${state.left.label}?`}
+        <View style={[styles.actions, short && styles.actionsShort]}>
+          <StrokeText size={short ? 14 : 15} stroke={palette.navyDeep} strokeWidth={1.5} depth={0} lineHeight={short ? 18 : 20} numberOfLines={2}>
+            {`${state.right.label}: higher or lower than ${state.left.label}?`}
           </StrokeText>
           <View style={styles.choices}>
             <Button
-              title="More"
-              size="lg"
+              title="Higher"
+              size={short ? 'md' : 'lg'}
               tone="green"
               onPress={() => submitGuess('more')}
               accessibilityHint={`${state.right.label} has more ${category.metricLabel}`}
@@ -363,8 +368,8 @@ export function GameScreen({
               style={styles.choice}
             />
             <Button
-              title="Less"
-              size="lg"
+              title="Lower"
+              size={short ? 'md' : 'lg'}
               tone="red"
               onPress={() => submitGuess('less')}
               accessibilityHint={`${state.right.label} has fewer ${category.metricLabel}`}
@@ -374,7 +379,7 @@ export function GameScreen({
           </View>
         </View>
       ) : (
-        <View style={styles.actions}>
+        <View style={[styles.actions, short && styles.actionsShort]}>
           <FeedbackBanner
             tone={correct ? 'success' : 'danger'}
             title={
@@ -428,17 +433,24 @@ export function GameScreen({
 
       {/* Provenance: the claim on screen must match what the data supports.
           Image credits are not decoration — CC BY / CC BY-SA require them. */}
-      <View>
-        <Text style={styles.provenance}>
-          {category.metricLabel} ·{' '}
-          {state.left.source?.startsWith('wikipedia') ? 'Wikipedia' : state.left.source} ·{' '}
-          {state.left.updatedAt}
-          {category.provisional ? ' · provisional' : ''}
+      {short ? (
+        // One small block on a short screen: the same claim and credits, less height.
+        <Text style={[styles.provenance, styles.provenanceShort]} numberOfLines={2}>
+          {`${category.metricLabel} · ${state.left.source?.startsWith('wikipedia') ? 'Wikipedia' : state.left.source} · ${state.left.updatedAt}${category.provisional ? ' · provisional' : ''} · ${imageCredits([state.left, state.right])}`}
         </Text>
-        <Text style={styles.provenance} numberOfLines={2}>
-          {imageCredits([state.left, state.right])}
-        </Text>
-      </View>
+      ) : (
+        <View>
+          <Text style={styles.provenance}>
+            {category.metricLabel} ·{' '}
+            {state.left.source?.startsWith('wikipedia') ? 'Wikipedia' : state.left.source} ·{' '}
+            {state.left.updatedAt}
+            {category.provisional ? ' · provisional' : ''}
+          </Text>
+          <Text style={styles.provenance} numberOfLines={2}>
+            {imageCredits([state.left, state.right])}
+          </Text>
+        </View>
+      )}
 
       {/* The kit's "More Lives?" pop-up: the run is over unless the player
           pays to keep the streak. Same 5 s window and coin check as before. */}
@@ -495,19 +507,19 @@ export function GameScreen({
       <HowToPlay
         visible={help}
         onClose={() => setHelp(false)}
-        title="How to play More or Less"
+        title="How to play Higher or Lower"
         accent={accent}
-        intro="Two things, one revealed number. Guess whether the hidden one is bigger or smaller."
+        intro="Two things, one revealed number. Guess whether the hidden one is higher or lower."
         steps={[
           {
             n: 1,
             title: 'Read the left card',
-            body: 'It shows its real monthly Wikipedia pageviews.',
+            body: `It shows its real number: ${category.metricLabel}.`,
           },
           {
             n: 2,
             title: 'Judge the right card',
-            body: 'Tap MORE if you think it gets more views than the left one, LESS if fewer.',
+            body: 'Tap HIGHER if you think its number is higher than the left one, LOWER if it is lower.',
           },
           {
             n: 3,
@@ -554,6 +566,7 @@ function Card({
   highlight,
   sparkling = false,
   footRoom = false,
+  compact = false,
   onImageError,
 }: {
   item: Item;
@@ -563,6 +576,8 @@ function Card({
   sparkling?: boolean;
   /** Keep the copy clear of the VS disc that sits on this card's foot. */
   footRoom?: boolean;
+  /** A half-width tile on a short screen: smaller type. */
+  compact?: boolean;
   onImageError?: () => void;
 }) {
   const rim = highlight === undefined ? palette.white : highlight ? tone.green.bottom : palette.red;
@@ -575,11 +590,18 @@ function Card({
 
   const content = (
     <View style={[styles.cardBody, footRoom && styles.footRoom]}>
-      <StrokeText size={22} stroke={palette.ink} strokeWidth={2} depth={1.5} numberOfLines={2} lineHeight={27}>
+      <StrokeText
+        size={compact ? 18 : 22}
+        stroke={palette.ink}
+        strokeWidth={2}
+        depth={1.5}
+        numberOfLines={2}
+        lineHeight={compact ? 22 : 27}
+      >
         {item.label}
       </StrokeText>
       {value === null ? (
-        <StrokeText size={32} stroke={palette.ink} strokeWidth={2.2} depth={2} letterSpacing={6}>
+        <StrokeText size={compact ? 26 : 32} stroke={palette.ink} strokeWidth={2.2} depth={2} letterSpacing={6}>
           ? ? ?
         </StrokeText>
       ) : (
@@ -588,7 +610,7 @@ function Card({
               originate at the number rather than the card centre. */}
           <View style={styles.valueWrap}>
             <StrokeText
-              size={32}
+              size={compact ? 24 : 32}
               color="#FFE45C"
               stroke={palette.goldEdge}
               strokeWidth={2.4}
@@ -599,14 +621,16 @@ function Card({
             </StrokeText>
             <Sparkle active={sparkling} />
           </View>
-          <Text style={styles.metric}>{metricLabel}</Text>
+          <Text style={[styles.metric, compact && styles.metricCompact]} numberOfLines={compact ? 1 : undefined}>
+            {metricLabel}
+          </Text>
         </>
       )}
     </View>
   );
 
   return (
-    <View style={[styles.card, { borderColor: rim }]} accessibilityLabel={item.label}>
+    <View style={[styles.card, compact && styles.cardCompact, { borderColor: rim }]} accessibilityLabel={item.label}>
       {showImage ? (
         <ImageBackground
           source={{ uri: item.imageUrl }}
@@ -658,6 +682,7 @@ const styles = StyleSheet.create({
     borderColor: palette.frameDeep,
     borderTopColor: '#7FE0F6',
   },
+  boardRow: { flexDirection: 'row' },
   card: {
     flex: 1,
     minHeight: 120,
@@ -666,6 +691,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: palette.navyDeep,
   },
+  cardCompact: { minHeight: 0, minWidth: 0 },
   cardFill: { flex: 1, justifyContent: 'flex-end' },
   cardImage: { borderRadius: 12 },
   cardPlain: { justifyContent: 'center', backgroundColor: palette.well },
@@ -684,14 +710,19 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
+  metricCompact: { fontSize: 10, lineHeight: 13 },
   vs: { position: 'absolute', top: '50%', alignSelf: 'center', marginTop: -26, zIndex: 3 },
+  // Side by side, the disc sits on the seam between the two tiles.
+  vsRow: { left: '50%', marginLeft: -24, marginTop: -24 },
   vsFace: { width: 48, height: 48 },
   flash: { ...StyleSheet.absoluteFill, borderRadius: 19, backgroundColor: 'rgba(239,62,79,0.42)' },
   burst: { position: 'absolute', top: '70%', left: '50%', zIndex: 4 },
+  burstRow: { top: '62%', left: '75%' },
   // The banner reads across the VS disc, so it has to sit above it.
   overVs: { zIndex: 4 },
   // Fixed, so the board does not jump between the question and the reveal.
   actions: { gap: space.sm, height: 124, justifyContent: 'flex-end' },
+  actionsShort: { gap: space.xs, height: 98 },
   choices: { flexDirection: 'row', gap: space.sm },
   choice: { flex: 1 },
   offerBox: { flexDirection: 'row', alignItems: 'center', gap: space.md },
@@ -705,4 +736,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.8,
   },
+  provenanceShort: { fontSize: 10, lineHeight: 13 },
 });

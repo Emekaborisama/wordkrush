@@ -73,6 +73,8 @@ let version;
 beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), 'wordkrush-serve-'));
   await writeFile(join(root, 'index.html'), INDEX_HTML);
+  // A stand-in clip: 1,000 known bytes, so a range can be checked exactly.
+  await writeFile(join(root, 'clip.mp3'), Buffer.from(Array.from({ length: 1000 }, (_, i) => i % 256)));
 
   // `serve.mjs` reads STATIC_ROOT once, at import time.
   process.env.STATIC_ROOT = root;
@@ -97,6 +99,28 @@ function maxAgeOf(response) {
   const directive = /max-age=(\d+)/.exec(response.headers.get('cache-control') ?? '');
   return directive ? Number(directive[1]) : null;
 }
+
+describe('audio files', () => {
+  it('are served as audio and advertise byte ranges', async () => {
+    const response = await fetch(`${origin}/clip.mp3`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('audio/mpeg');
+    expect(response.headers.get('accept-ranges')).toBe('bytes');
+  });
+
+  it('answer a range with exactly those bytes, as Safari asks for media', async () => {
+    const response = await fetch(`${origin}/clip.mp3`, { headers: { range: 'bytes=10-19' } });
+    expect(response.status).toBe(206);
+    expect(response.headers.get('content-range')).toBe('bytes 10-19/1000');
+    expect([...new Uint8Array(await response.arrayBuffer())]).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+  });
+
+  it('refuse a range past the end', async () => {
+    const response = await fetch(`${origin}/clip.mp3`, { headers: { range: 'bytes=5000-' } });
+    expect(response.status).toBe(416);
+    expect(response.headers.get('content-range')).toBe('bytes */1000');
+  });
+});
 
 describe('/share/:id Open Graph tags', () => {
   it('points og:image and twitter:image at a short, version-stamped card URL', async () => {
@@ -157,8 +181,8 @@ describe('/share/:id Open Graph tags', () => {
     expect(html).toContain('<meta property="og:image:type" content="image/png"/>');
     expect(html).toContain('<meta property="og:image:width" content="1200"/>');
     expect(html).toContain('<meta property="og:image:height" content="630"/>');
-    expect(html).toMatch(/<meta property="og:image:alt" content="A More or Less board[^"]*"\/>/);
-    expect(html).toMatch(/<meta name="twitter:image:alt" content="A More or Less board[^"]*"\/>/);
+    expect(html).toMatch(/<meta property="og:image:alt" content="A Higher or Lower board[^"]*"\/>/);
+    expect(html).toMatch(/<meta name="twitter:image:alt" content="A Higher or Lower board[^"]*"\/>/);
   });
 
   it('still serves the playable page, so a player who clicks lands in the game', async () => {
@@ -390,5 +414,29 @@ describe('/share/:id/og.png', () => {
     const response = await fetch(`${origin}/share/nope/og.png?v=${version}`);
 
     expect(response.status).toBe(404);
+  });
+});
+
+describe('parseByteRange', () => {
+  it('reads an open-ended, a bounded and a suffix range', async () => {
+    const { parseByteRange } = await import('./serve.mjs');
+    expect(parseByteRange('bytes=0-', 100)).toEqual({ start: 0, end: 99 });
+    expect(parseByteRange('bytes=10-19', 100)).toEqual({ start: 10, end: 19 });
+    expect(parseByteRange('bytes=90-500', 100)).toEqual({ start: 90, end: 99 });
+    expect(parseByteRange('bytes=-10', 100)).toEqual({ start: 90, end: 99 });
+  });
+
+  it('serves the whole body for no header or a form it does not handle', async () => {
+    const { parseByteRange } = await import('./serve.mjs');
+    expect(parseByteRange(undefined, 100)).toBeNull();
+    expect(parseByteRange('bytes=0-1,5-9', 100)).toBeNull();
+    expect(parseByteRange('items=0-1', 100)).toBeNull();
+  });
+
+  it('marks a range outside the body unsatisfiable', async () => {
+    const { parseByteRange } = await import('./serve.mjs');
+    expect(parseByteRange('bytes=100-', 100)).toBe('unsatisfiable');
+    expect(parseByteRange('bytes=20-10', 100)).toBe('unsatisfiable');
+    expect(parseByteRange('bytes=-0', 100)).toBe('unsatisfiable');
   });
 });

@@ -32,7 +32,7 @@ export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 
 const GAME_TITLES = {
-  'more-or-less': 'More or Less',
+  'more-or-less': 'Higher or Lower',
   clueless: 'Clueless',
   wordfall: 'Wordfall',
 };
@@ -43,7 +43,7 @@ const GAME_TITLES = {
  */
 const IMAGE_ALT = {
   'more-or-less':
-    'A More or Less board: two stacked photo cards above the More and Less buttons',
+    'A Higher or Lower board: two stacked photo cards above the Higher and Lower buttons',
   clueless: 'A Clueless result: the spread of guesses from cold to found',
   wordfall: 'A Wordfall result: the word lengths cleared, longest last',
 };

@@ -39,11 +39,12 @@ export type GameDefinition = {
 export const GAMES: GameDefinition[] = [
   {
     id: 'more-or-less',
-    name: 'More or Less',
-    tagline: 'Which one is bigger? Trust your instinct and build a streak.',
+    // Player-facing name since 0.12.0 ("More or Less" read as vague); the id stays.
+    name: 'Higher or Lower',
+    tagline: 'Is the next number higher or lower? Trust your gut and build a streak.',
     badge: 'QUICK THINKING',
     blurb:
-      'Decide which one is bigger. Every correct answer keeps your streak alive.',
+      'One number is shown. Guess if the next one is higher or lower. Every right call keeps your streak alive.',
     accent: '#32E487',
     emoji: '⚖️',
     status: 'available',

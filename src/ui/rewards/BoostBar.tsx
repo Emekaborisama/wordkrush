@@ -5,6 +5,7 @@ import { SquareButton } from '../components/SquareButton';
 import { GameIcon } from '../icons/GameIcon';
 import type { IconName } from '../icons/names';
 import { font, palette, tone } from '../theme';
+import { useHeightClass } from '../useHeightClass';
 
 export type BoostControl = {
   kind: BoostKind;
@@ -32,6 +33,8 @@ export function coinShortfall(coins: number, price: number): string | undefined 
  * Hidden by the caller during a live race.
  */
 export function BoostBar({ controls, onPause }: { controls: BoostControl[]; onPause?: () => void }) {
+  // On a short screen the tiles drop their captions; the label stays for screen readers.
+  const compact = useHeightClass() !== 'regular';
   if (controls.length === 0 && !onPause) return null;
   return (
     <BoosterDock onPause={onPause}>
@@ -48,9 +51,9 @@ export function BoostBar({ controls, onPause }: { controls: BoostControl[]; onPa
           accessibilityLabel={control.label}
           onPress={control.onPress}
           tone="green"
-          size={56}
+          size={compact ? 44 : 56}
           price={control.price}
-          caption={control.label}
+          caption={compact ? undefined : control.label}
           captionTone="dark"
           disabled={control.disabled}
           disabledReason={control.disabledReason}

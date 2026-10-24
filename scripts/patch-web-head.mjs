@@ -33,9 +33,9 @@ export const CANONICAL_URL = `${SITE_URL}/`;
 export const HEAD_MARKERS = ['<!--wk:head-->', '<!--/wk:head-->'];
 export const COPY_MARKERS = ['<!--wk:copy-->', '<!--/wk:copy-->'];
 export const PAGE_TITLE =
-  'WordKrush — free word games (More or Less, Clueless, Wordfall)';
+  'WordKrush — free word games (Higher or Lower, Clueless, Wordfall)';
 export const PAGE_DESCRIPTION =
-  'Three quick word games — More or Less, Clueless, and Wordfall — with a daily streak to keep. Play free in the browser.';
+  'Three quick word games — Higher or Lower, Clueless, and Wordfall — with a daily streak to keep. Play free in the browser.';
 export const HUB_SUBTITLE = 'Pick a challenge. Keep your mind moving.';
 export const SAME_AS = ['https://x.com/WordKrushGame'];
 
@@ -47,7 +47,7 @@ export const GOOGLE_VERIFICATION_BODY =
 /** Hub card lines — keep in lockstep with `src/games/registry.ts`. */
 export const GAMES = [
   {
-    name: 'More or Less',
+    name: 'Higher or Lower',
     tagline: 'Which one is bigger? Trust your instinct and build a streak.',
   },
   {

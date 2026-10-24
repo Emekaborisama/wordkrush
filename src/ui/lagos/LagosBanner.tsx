@@ -74,7 +74,7 @@ export function LagosAnnouncement({
       </View>
       <PanelText variant="heading">I Sabi Lagos don land!</PanelText>
       <PanelText>
-        More or Less, Lagos edition. Places, food, Afrobeats, Nollywood, Naija football and the wild Lagos stories — how much you sabi?
+        Higher or Lower, Lagos edition. Places, food, Afrobeats, Nollywood, Naija football and the wild Lagos stories — how much you sabi?
       </PanelText>
     </PopupModal>
   );
