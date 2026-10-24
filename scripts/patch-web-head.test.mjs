@@ -39,7 +39,7 @@ const FIXTURE = `<!DOCTYPE html>
 
 describe('branded search surface', () => {
   it('names the three games in the document title', () => {
-    expect(PAGE_TITLE).toContain('More or Less');
+    expect(PAGE_TITLE).toContain('Higher or Lower');
     expect(PAGE_TITLE).toContain('Clueless');
     expect(PAGE_TITLE).toContain('Wordfall');
     expect(documentMeta()).toContain(`<title>${PAGE_TITLE}</title>`);
@@ -98,7 +98,7 @@ describe('branded search surface', () => {
     expect(html).not.toContain('You need to enable JavaScript to run this app.');
     expect(html).toContain('<noscript>');
     expect(html).toContain(`<div id="root">${COPY_MARKERS[0]}<main id="wk-seo">`);
-    expect(html).toContain('More or Less');
+    expect(html).toContain('Higher or Lower');
     expect(html).toContain('Clueless');
     expect(html).toContain('Wordfall');
   });

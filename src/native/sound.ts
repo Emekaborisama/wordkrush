@@ -53,7 +53,7 @@ let audioModeReady = false;
  * stay silent. `mixWithOthers` means we duck nothing — someone playing on the
  * bus with their own music on keeps their music.
  */
-async function ensureAudioMode(): Promise<void> {
+export async function ensureAudioMode(): Promise<void> {
   if (audioModeReady) return;
   audioModeReady = true;
   preferAmbientWebAudio();

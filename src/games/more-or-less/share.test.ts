@@ -13,7 +13,7 @@ function sharedToken(text: string): string {
 describe('buildShareText', () => {
   it('closes a short run with the miss that ended it', () => {
     const text = buildShareText({ streak: 2, bestStreak: 15 });
-    expect(text).toContain('WordKrush · More or Less');
+    expect(text).toContain('WordKrush · Higher or Lower');
     expect(text).toContain('🟩🟩🟥');
     expect(text).toContain('Streak 2 · best 15');
     expect(text).toContain('A start. Then one miss.');

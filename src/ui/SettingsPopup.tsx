@@ -37,7 +37,7 @@ export function SettingsPopup({
   onSendFeedback,
   version,
 }: Props) {
-  const knob = (name: 'sound' | 'soundOff' | 'vibrate') => (
+  const knob = (name: 'sound' | 'soundOff' | 'vibrate' | 'music') => (
     <GameIcon name={name} size={22} color={name === 'soundOff' ? tone.red.outline : tone.green.outline} />
   );
   return (
@@ -53,6 +53,16 @@ export function SettingsPopup({
             accessibilityLabel="Sound"
             onIcon={knob('sound')}
             offIcon={knob('soundOff')}
+          />
+        </View>
+        <View style={styles.row}>
+          <CreamText variant="teal">Music</CreamText>
+          <Toggle
+            value={feedbackSettings.music}
+            onChange={() => onToggleFeedback('music')}
+            accessibilityLabel="Music"
+            onIcon={knob('music')}
+            offIcon={knob('music')}
           />
         </View>
         {/* Only where a buzz can actually happen: a switch that visibly does
@@ -71,7 +81,7 @@ export function SettingsPopup({
         ) : null}
         {/* True because the audio mode mixes (src/native/sound.ts): game
             sounds play over the player's own music instead of pausing it. */}
-        <CreamText style={styles.music}>Got music on? Keep it playing. Your Afrobeats play on under the game sounds.</CreamText>
+        <CreamText style={styles.music}>Playing your own music? Switch Music off and it keeps playing under the game sounds.</CreamText>
       </CreamBox>
       <Button
         title={signedInAs ? 'Account' : 'Sign in'}

@@ -6,6 +6,22 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.12.0] - 2026-10-24
+
+### Added
+- **Music.** Two original Afrobeats instrumentals ("Danfo Groove") loop in the background: one on Home and the menus, one inside a game. Settings has a **Music** switch, separate from Sound. Music pauses when the app or tab goes to the background, and on the web it starts on the player's first tap.
+- **The first visit is a game picker.** The block logo drops in above four glossy tiles: Higher or Lower, Clueless, Wordfall and I Sabi Lagos. A tile opens that game's start pop-up with its goal and Play. **Look around first** goes to Home. First-time players are no longer dropped straight into More or Less level 1.
+
+### Changed
+- **More or Less is now called Higher or Lower.** The buttons say **Higher** and **Lower**, and the question reads "Ramen: higher or lower than TikTok?". The game id stays `more-or-less`, so scores, boards and analytics carry on. Share cards, the page title and the search copy use the new name.
+- **Short phones get a layout that fits.** On an iPhone SE-sized screen, or any phone with the browser bars showing, Higher or Lower puts the two photos side by side as tall tiles. The question, buttons and credits get smaller, and the HUD panels and booster dock shrink in every game. Nothing overlaps at 375×667 or at 375×548 (an SE in Safari).
+
+### Fixed
+- **Sound now plays in Safari, including on iPhone.** The server sent the sound clips as `application/octet-stream` with `nosniff` and ignored byte ranges, and Safari will not play media served that way. Audio files now go out as `audio/mpeg` / `audio/mp4` and answer `Range` requests with `206 Partial Content`.
+
+### Analytics
+- `game_selected` gains `source: 'first_visit'` for a tile on the first-visit picker.
+
 ## [0.11.0] - 2026-10-19
 
 ### Added

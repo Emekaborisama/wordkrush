@@ -172,7 +172,7 @@ export function TeamsScreen({ profile, pendingInviteCode, onNeedAuth, onOpenLobb
     return (
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Panel title="Teams">
-          <PanelText>{`Private invite only. Race with ${LIVE_ROSTER_LABEL} people on More or Less, Clueless, or Wordfall.`}</PanelText>
+          <PanelText>{`Private invite only. Race with ${LIVE_ROSTER_LABEL} people on Higher or Lower, Clueless, or Wordfall.`}</PanelText>
           {error ? <FeedbackBanner title="Couldn’t continue" body={error} tone="danger" /> : null}
           <PanelText variant="heading">Create a room</PanelText>
           <TextField label="Room name" value={name} onChangeText={setName} autoCapitalize="words" />

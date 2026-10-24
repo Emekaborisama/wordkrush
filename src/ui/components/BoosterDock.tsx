@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { GameIcon } from '../icons/GameIcon';
 import { palette, space } from '../theme';
+import { useHeightClass } from '../useHeightClass';
 import { SquareButton } from './SquareButton';
 
 /**
@@ -20,8 +21,9 @@ export function BoosterDock({
   pauseLabel?: string;
   style?: StyleProp<ViewStyle>;
 }) {
+  const compact = useHeightClass() !== 'regular';
   return (
-    <View style={[styles.dock, style]}>
+    <View style={[styles.dock, compact && styles.dockCompact, style]}>
       <View style={styles.tiles}>{children}</View>
       {onPause ? (
         <SquareButton
@@ -30,7 +32,7 @@ export function BoosterDock({
           onPress={onPause}
           tone="gold"
           shape="circle"
-          size={54}
+          size={compact ? 44 : 54}
           style={styles.gear}
         />
       ) : null}
@@ -53,6 +55,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.85)',
     borderBottomColor: palette.frame,
   },
+  dockCompact: { minHeight: 56, paddingTop: space.xs, paddingBottom: space.xs },
   tiles: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: space.md },
   gear: { marginRight: -space.sm },
 });

@@ -100,7 +100,38 @@ const MIME = {
   '.ttf': 'font/ttf',
   '.txt': 'text/plain; charset=utf-8',
   '.xml': 'application/xml; charset=utf-8',
+  // Audio needs its real type: with `nosniff`, Safari will not play a clip
+  // served as application/octet-stream (the sound effects did, until 0.12.0).
+  '.mp3': 'audio/mpeg',
+  '.m4a': 'audio/mp4',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
 };
+
+/**
+ * One `Range: bytes=…` request against a body of `size` bytes. Safari fetches
+ * media in ranges and will not play a file whose server ignores them.
+ * Returns the inclusive span, `'unsatisfiable'` for a range outside the body,
+ * or `null` to serve the whole body (no header, or a form we do not serve,
+ * such as several ranges).
+ */
+export function parseByteRange(header, size) {
+  if (typeof header !== 'string') return null;
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
+  if (!match) return null;
+  const [, from, to] = match;
+  if (from === '' && to === '') return null;
+  if (from === '') {
+    // A suffix: the last N bytes.
+    const length = Number(to);
+    if (length === 0) return 'unsatisfiable';
+    return { start: Math.max(0, size - length), end: size - 1 };
+  }
+  const start = Number(from);
+  const end = to === '' ? size - 1 : Math.min(Number(to), size - 1);
+  if (start >= size || start > end) return 'unsatisfiable';
+  return { start, end };
+}
 
 const COMPRESSIBLE = /^(text\/|application\/(javascript|json|xml)|image\/svg)/;
 const MIN_COMPRESS_BYTES = 1024;
@@ -378,6 +409,29 @@ export async function handleRequest(req, res) {
     return;
   }
 
+  if (record.type.startsWith('audio/')) {
+    const range = parseByteRange(req.headers.range, record.body.length);
+    if (range === 'unsatisfiable') {
+      res.writeHead(416, { 'content-range': `bytes */${record.body.length}`, 'accept-ranges': 'bytes' }).end();
+      return;
+    }
+    if (range) {
+      const part = record.body.subarray(range.start, range.end + 1);
+      res.writeHead(206, {
+        'content-type': record.type,
+        'content-length': part.length,
+        'content-range': `bytes ${range.start}-${range.end}/${record.body.length}`,
+        'accept-ranges': 'bytes',
+        'cache-control': record.cacheControl,
+        etag: record.etag,
+        'x-content-type-options': 'nosniff',
+      });
+      if (req.method === 'HEAD') res.end();
+      else res.end(part);
+      return;
+    }
+  }
+
   const { body, encoding } = chooseEncoding(record, req.headers['accept-encoding']);
   const headers = {
     'content-type': record.type,
@@ -387,6 +441,7 @@ export async function handleRequest(req, res) {
     'x-content-type-options': 'nosniff',
   };
   if (record.vary !== null) headers.vary = 'Accept-Encoding';
+  if (record.type.startsWith('audio/')) headers['accept-ranges'] = 'bytes';
   if (encoding) headers['content-encoding'] = encoding;
 
   res.writeHead(200, headers);

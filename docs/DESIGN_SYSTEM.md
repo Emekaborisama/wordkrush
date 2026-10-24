@@ -157,6 +157,8 @@ backdrops are full-bleed.
 
 ### First visit (`OnboardingScreen`)
 
+Since 0.12.0 the first visit is a game picker. The block logo drops in, then "Pick a game" sits above a 2×2 grid of glossy tiles (`GlossFace`): Higher or Lower in green, Clueless in purple, Wordfall in blue and I Sabi Lagos in danfo yellow. Each tile has its key art (the danfo for Lagos), the name and a one-line pitch. A tile opens that game's start pop-up. "Look around first" goes to Home. Any older description of this screen below is superseded.
+
 The kit's hero: sky, rays, clouds; `BlockLogo` dropping in cube by cube; the
 owner's first-run line "Guess right. Keep the streak alive." in outlined white;
 a hand tapping a cube; big **gold Play** (starts More or Less) and a blue
@@ -193,6 +195,11 @@ The kit's "LEVEL 2 / Bomb cells / Blast bombs before they go off / ★★☆ / G
 - Provenance line under the card in small outlined white.
 
 ### Gameplay (all three games)
+
+**Short screens.** `heightClass` in `layout.ts` sorts the window into `regular`, `compact` (≤759 px tall) and `tight` (≤619). Below `regular`:
+- `HudPanel`, `BoosterDock` and `BoostBar` shrink on their own. The booster tiles drop their captions; the accessibility label stays.
+- Higher or Lower lays its two cards side by side as tall tiles, with the VS disc on the seam and smaller card type.
+- The question area and the More/Less (now Higher/Lower) buttons step down a size, and the credits become one small block.
 
 Top to bottom, the kit's game screen:
 

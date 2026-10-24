@@ -75,7 +75,7 @@ export function ControlsKit() {
       <HowToPlay
         visible={help}
         onClose={() => setHelp(false)}
-        title="How to play More or Less"
+        title="How to play Higher or Lower"
         intro="Two things, one revealed number. Guess whether the hidden one is bigger or smaller."
         steps={[1, 2, 3, 4, 5, 6].map((n) => ({
           n,
