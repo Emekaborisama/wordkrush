@@ -216,6 +216,15 @@ export type AnalyticsEvents = {
     kind: 'render' | 'uncaught' | 'unhandled_rejection';
     fatal: boolean;
   };
+  /** A friend's challenge link was accepted: the run, replayed. */
+  challenge_accepted: {
+    level_number: number;
+  };
+  /** A challenge run ended against the friend's streak. */
+  challenge_finished: {
+    level_number: number;
+    outcome: 'won' | 'tied' | 'lost';
+  };
   /** Web only, once per page view: Core Web Vitals as rounded numbers. */
   web_vitals: {
     lcp_ms?: number;
@@ -271,6 +280,8 @@ export const ANALYTICS_EVENT_NAMES: ReadonlySet<string> = new Set<AnalyticsEvent
   'milestone_reached',
   'app_error',
   'web_vitals',
+  'challenge_accepted',
+  'challenge_finished',
 ]);
 
 export type LevelBucket = '1_4' | '5_9' | '10_19' | '20_plus';

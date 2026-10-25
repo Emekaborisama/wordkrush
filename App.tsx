@@ -140,11 +140,21 @@ import { clearExistingMembership } from './src/teams/api';
 import { parseTeamInviteUrl } from './src/teams/codes';
 import { afterModalClose, CoinsPill, SkyBackground, StreakPill, TopBar } from './src/ui/components';
 import { parentOf, type Parent } from './src/ui/navigation';
-import { installWebHistory, noteWebNavigation, openedAtLagosPath, syncLagosPath } from './src/ui/webHistory';
+import {
+  clearSharePath,
+  installWebHistory,
+  noteWebNavigation,
+  openedAtLagosPath,
+  openedAtPathname,
+  syncLagosPath,
+} from './src/ui/webHistory';
+import { challengeFromShare, challengeVerdict, shareTokenFromPath, type Challenge } from './src/games/more-or-less/challenge';
+import { decodeShareData } from './src/games/share-data';
 import { LabelLevelCard } from './src/ui/LabelLevelCard';
 import { LabelLevelsPopup } from './src/ui/LabelLevelsPopup';
 import { GAME_ANIMAL } from './src/ui/fluent';
 import type { Stone } from './src/ui/levelTrail';
+import { ChallengePopup } from './src/ui/ChallengePopup';
 import { MeadowMap } from './src/ui/MeadowMap';
 import { MeadowRide, type MeadowHop } from './src/ui/MeadowRide';
 import { DanfoRide, type DanfoRideStop } from './src/ui/lagos/DanfoRide';
@@ -201,6 +211,8 @@ type Screen =
       cluelessLevelNumber?: number;
       live?: LiveRun;
       molLevel?: MolLevelRef;
+      /** A friend's challenge: their streak to beat on this seed. */
+      challenge?: { target: number };
     }
   | {
       name: 'over';
@@ -211,6 +223,9 @@ type Screen =
       boosted: boolean;
       events: RewardEvent[];
       molLevel?: MolLevelResult;
+      /** The run's starting seed, so sharing it becomes a challenge. */
+      runSeed?: number;
+      challenge?: { target: number };
     }
   | { name: 'scores'; gameId: string; highlightId?: string }
   | { name: 'auth'; returnTo?: 'teams' | 'scores'; returnGameId?: string }
@@ -456,6 +471,11 @@ export default function App() {
   const rideCount = useRef(0);
   // Opened at /isabilagos: skip the welcome and go straight to the route.
   const arrivedAtLagos = useRef(openedAtLagosPath());
+  // Opened from a friend's shared result: offer to replay their run.
+  const [challengeOffer, setChallengeOffer] = useState<Challenge | null>(() => {
+    const token = shareTokenFromPath(openedAtPathname());
+    return token ? challengeFromShare(decodeShareData(token)) : null;
+  });
   // Finished the welcome in an earlier session: the "NEW" news is for them.
   const returningPlayer = useRef(false);
   const [boardsResult, setBoardsResult] = useState<'loaded' | 'fallback'>('loaded');
@@ -678,11 +698,26 @@ export default function App() {
   };
 
   /** Boards a level of a label path: More or Less' levels or I Sabi Lagos. */
-  const startLevel = (path: LabelPathId, number = selectedLevel(path)) => {
+  const startLevel = (path: LabelPathId, number = selectedLevel(path), challenge?: { seed: number; target: number }) => {
     runClearedNow.current = false;
     setLabelJustPassed(false);
     setLabelChoice((current) => ({ ...current, [path]: number }));
-    setScreen({ name: 'game', gameId: MORE_OR_LESS, seed: randomSeed(), molLevel: { path, number } });
+    setScreen({
+      name: 'game',
+      gameId: MORE_OR_LESS,
+      seed: challenge?.seed ?? randomSeed(),
+      molLevel: { path, number },
+      ...(challenge ? { challenge: { target: challenge.target } } : {}),
+    });
+  };
+
+  /** Plays a friend's run: their seed, their level, their streak to beat. */
+  const acceptChallenge = (offer: Challenge) => {
+    setChallengeOffer(null);
+    clearSharePath();
+    if (showOnboarding) dismissOnboarding();
+    captureAnalytics('challenge_accepted', { level_number: offer.level });
+    startLevel(offer.path, offer.level, { seed: offer.seed, target: offer.target });
   };
 
   /**
@@ -1497,7 +1532,10 @@ export default function App() {
               molRef ? bestStreakFor(labelPaths[molRef.path], molRef.number) : boardFor(screen.gameId).bestStreak
             }
             persist={!screen.live}
-            session={molRef ? `level:${molRef.path}:${molRef.number}` : undefined}
+            session={
+              screen.challenge ? `challenge:${screen.seed}` : molRef ? `level:${molRef.path}:${molRef.number}` : undefined
+            }
+            rival={screen.challenge?.target}
             trail={
               molRef?.path === 'world'
                 ? {
@@ -1523,7 +1561,8 @@ export default function App() {
                 : undefined
             }
             labelRound={
-              screen.live || !molTracksSet
+              // A challenge replays the friend's pairs exactly, so no unseen-first steering.
+              screen.live || !molTracksSet || screen.challenge
                 ? undefined
                 : {
                     seenCount: labelResolved.seenCount,
@@ -1657,7 +1696,15 @@ export default function App() {
                 boosted: reward.boosted,
                 events: reward.events,
                 molLevel: levelResult,
+                runSeed: screen.seed,
+                ...(screen.challenge ? { challenge: screen.challenge } : {}),
               });
+              if (screen.challenge && molRef) {
+                captureAnalytics('challenge_finished', {
+                  level_number: molRef.number,
+                  outcome: challengeVerdict(screen.challenge.target, state.streak),
+                });
+              }
             }}
           />
           </LiveMaybe>
@@ -1710,6 +1757,12 @@ export default function App() {
                   }
             }
             level={overLevel(screen.molLevel)}
+            challengeRun={
+              screen.molLevel && screen.runSeed !== undefined
+                ? { seed: screen.runSeed, path: screen.molLevel.path, level: screen.molLevel.number }
+                : undefined
+            }
+            rival={screen.challenge?.target}
             isNewBest={screen.isNewBest}
             boosted={screen.boosted}
             events={screen.events}
@@ -1720,7 +1773,10 @@ export default function App() {
                 streak_bucket: streakBucket(screen.state.streak),
                 is_new_best: screen.isNewBest,
               });
-              if (screen.molLevel) startLevel(screen.molLevel.path, screen.molLevel.number);
+              if (screen.molLevel && screen.challenge && screen.runSeed !== undefined) {
+                // A rematch: the same friend's pairs, the same streak to beat.
+                startLevel(screen.molLevel.path, screen.molLevel.number, { seed: screen.runSeed, target: screen.challenge.target });
+              } else if (screen.molLevel) startLevel(screen.molLevel.path, screen.molLevel.number);
               else startGame(screen.gameId);
             }}
             onHome={() => {
@@ -1859,10 +1915,22 @@ export default function App() {
             }}
           />
         ) : null}
+        <ChallengePopup
+          challenge={boardsReady ? challengeOffer : null}
+          levelName={challengeOffer ? labelLevel(challengeOffer.path, challengeOffer.level)?.name ?? 'a level' : ''}
+          onAccept={() => {
+            if (challengeOffer) acceptChallenge(challengeOffer);
+          }}
+          onDecline={() => {
+            setChallengeOffer(null);
+            clearSharePath();
+          }}
+        />
         <LagosAnnouncement
           // One pop-up at a time: iOS will not present a second sibling modal.
           visible={
             lagosAnnouncement &&
+            challengeOffer === null &&
             screen.name === 'hub' &&
             !showOnboarding &&
             !settingsOpen &&

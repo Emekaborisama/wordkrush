@@ -91,3 +91,12 @@ describe('buildShareText', () => {
     expect(second).toBe(first);
   });
 });
+
+describe('challenge links', () => {
+  it('carries the run and dares the reader to beat it', () => {
+    const text = buildShareText({ streak: 7, bestStreak: 9, challenge: { seed: 42, path: 'world', level: 2 } });
+    expect(text).toContain('Can you beat it? Same pairs, same order.');
+    const token = /\/share\/([A-Za-z0-9_-]+)/.exec(text)?.[1] ?? '';
+    expect(decodeShareData(token)).toMatchObject({ streak: 7, challenge: { seed: 42, path: 'world', level: 2 } });
+  });
+});

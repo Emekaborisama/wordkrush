@@ -48,6 +48,19 @@ export function openedAtLagosPath(): boolean {
   return window.location.pathname.replace(/\/+$/, '').toLowerCase() === LAGOS_PATH;
 }
 
+/** The pathname the page opened at, for reading a `/share/<token>` challenge. */
+export function openedAtPathname(): string {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return '/';
+  return window.location.pathname;
+}
+
+/** Leaves `/share/<token>` for `/` once its challenge is read, keeping the query. */
+export function clearSharePath(): void {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  if (!window.location.pathname.startsWith('/share/')) return;
+  window.history.replaceState(window.history.state, '', `/${window.location.search}${window.location.hash}`);
+}
+
 /**
  * Keeps the address bar on `/isabilagos` while a player is in I Sabi Lagos,
  * so the URL they copy opens it, and back on `/` once they leave. Replaces

@@ -75,6 +75,8 @@ type Props = {
    * the streak still counts — but reaching it is celebrated on the board.
    */
   levelGoal?: { target: number; label: string; stop?: string };
+  /** A friend's streak this run is challenging; shown in place of the level goal. */
+  rival?: number;
   /** The level path for the play screen's trail (not on the Lagos route, which has its road). */
   trail?: { stones: Stone[]; current: number; animal: FluentName; onOpen: () => void };
   /** I Sabi Lagos: danfo colours, the road progress strip and pidgin. */
@@ -102,6 +104,7 @@ export function GameScreen({
   labelRound,
   levelGoal,
   trail,
+  rival,
   lagos = false,
   session,
 }: Props) {
@@ -329,7 +332,7 @@ export function GameScreen({
         {raceGoal ? (
           <HudPanel label="Goal" value={targetStreak} />
         ) : levelGoal ? (
-          <HudPanel label="Goal" value={levelGoal.target} />
+          <HudPanel label={rival !== undefined ? 'Rival' : 'Goal'} value={rival ?? levelGoal.target} />
         ) : labelRound ? (
           <HudPanel label="Seen" value={`${labelRound.seenCount}/${labelRound.total}`} />
         ) : null}
