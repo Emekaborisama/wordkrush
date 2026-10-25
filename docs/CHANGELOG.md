@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.16.0] - 2026-10-25
+
+### Added
+- **The animal hops you to the next level.** This is the I Sabi Lagos ride, in the meadow style: after a clear, **Next level** covers the screen in meadow. The cleared stone shows its stars, and the game's 3D animal makes three hops along the sandy path to the next stone under a wooden sign naming the level. Then the level opens. Higher or Lower's world levels have the lion, and Wordfall has the fox. I Sabi Lagos keeps its danfo. With reduce motion on, the animal is already on the new stone and the meadow only fades.
+
 ## [0.15.0] - 2026-10-25
 
 ### Added

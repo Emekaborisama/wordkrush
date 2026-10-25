@@ -274,6 +274,7 @@ Copy is pidgin from one table (`lagosCopy`): "Oya, enter!", "You sabi!",
   - Fluent 3D scenery beside the path;
   - name tags on open levels.
 - Both draw from one pure model, `src/ui/levelTrail.ts`.
+- `MeadowRide` is the between-levels ride for the meadow games, the counterpart of the danfo ride. It covers the screen in meadow (the level loads underneath), pops the cleared stone's stars, hops the animal three times along the path to the next stone under a wooden sign, then fades. It lasts about 2.2 s.
 
 ### Results
 
