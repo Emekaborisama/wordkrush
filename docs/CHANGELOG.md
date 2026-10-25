@@ -6,6 +6,13 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.15.0] - 2026-10-25
+
+### Added
+- **A rising chime.** Each letter you trace in Wordfall plays the next note up a soft pentatonic scale, and each right answer in Higher or Lower climbs the same scale with your streak, so a run sounds like it is building. The eight notes are synthesized for WordKrush (`scripts/synth-chimes.mjs`) and honour the Sound switch.
+- **Mystery rounds in Higher or Lower.** Every fifth pair in a row hides the challenger's photo behind a "MYSTERY ROUND" card until the reveal, so you judge by name alone. Scoring is unchanged.
+- **"So close!"** A miss within 15% now says "So close! Only 4% apart." instead of the plain reveal line.
+
 ## [0.14.0] - 2026-10-25
 
 ### Added

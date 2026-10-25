@@ -39,7 +39,7 @@ import {
 } from '../../games/wordfall/schedule';
 import type { Level, SpecialKind, WordfallState } from '../../games/wordfall/types';
 import { buildShareText } from '../../games/wordfall/share';
-import { feedback } from '../../native/feedback';
+import { chime, feedback } from '../../native/feedback';
 import { shareResult } from '../../native/share';
 import { boostPrice } from '../../rewards/wallet';
 import type { BoostKind } from '../../rewards/types';
@@ -484,7 +484,11 @@ function LevelPlay({
   // decides a letter was actually added, so it is the honest signal.
   const tracedCount = useRef(0);
   useEffect(() => {
-    if (state.selection.length > tracedCount.current) feedback('select');
+    if (state.selection.length > tracedCount.current) {
+      feedback('select');
+      // Each letter traced plays the next note up; a new trace starts at the bottom.
+      chime(state.selection.length);
+    }
     tracedCount.current = state.selection.length;
   }, [state.selection.length]);
 

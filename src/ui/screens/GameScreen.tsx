@@ -18,7 +18,8 @@ import { secondChance, skipChallenger } from '../../games/more-or-less/boosts';
 import { boostPrice } from '../../rewards/wallet';
 import type { BoostKind } from '../../rewards/types';
 import { BoostBar, coinShortfall } from '../rewards/BoostBar';
-import { feedback } from '../../native/feedback';
+import { chime, feedback } from '../../native/feedback';
+import { isMysteryRound, nearMissPercent } from '../../games/more-or-less/twists';
 import { HowToPlay } from '../HowToPlay';
 import { Sparkle } from '../Sparkle';
 import {
@@ -285,6 +286,8 @@ export function GameScreen({
       const word = cleared ? (lagos ? 'YOU SABI!' : 'LEVEL CLEARED!') : COMBO_WORDS[state.streak];
       if (cleared) feedback('win');
       if (word) setCombo(word);
+      // The scale climbs with the streak, so a run sounds like it is building.
+      chime(state.streak);
     }
     if (state.lastGuessCorrect === false) {
       flash.setValue(0);
@@ -351,6 +354,7 @@ export function GameScreen({
         <Card
           compact={short}
           item={state.right}
+          mystery={state.status === 'playing' && isMysteryRound(state.streak)}
           metricLabel={category.metricLabel}
           value={revealed ? counted.value : null}
           highlight={correct === null ? undefined : correct}
@@ -424,7 +428,7 @@ export function GameScreen({
                   : 'Streak saved. Next matchup incoming…'
                 : !persist
                   ? 'Race complete. Waiting for teammates…'
-                  : 'The final values are revealed above.'
+                  : nearMissText(state.left.value, state.right.value)
             }
           />
         </View>
@@ -575,6 +579,12 @@ export function imageCredits(items: Item[]): string {
   return credits.length ? `Images — ${credits.join(' · ')}` : '';
 }
 
+/** The loss line: "so close" when the values were within 15%, otherwise the plain reveal. */
+function nearMissText(a: number, b: number): string {
+  const percent = nearMissPercent(a, b);
+  return percent === null ? 'The final values are revealed above.' : `So close! Only ${percent}% apart.`;
+}
+
 /** How long a wrong answer's reveal stays clear before the second-chance offer. */
 const REVEAL_BEFORE_OFFER_MS = 1400;
 /** How long a loss with no offer stays on the board before the result. */
@@ -596,6 +606,7 @@ function Card({
   sparkling = false,
   footRoom = false,
   compact = false,
+  mystery = false,
   onImageError,
 }: {
   item: Item;
@@ -607,6 +618,8 @@ function Card({
   footRoom?: boolean;
   /** A half-width tile on a short screen: smaller type. */
   compact?: boolean;
+  /** A mystery round: no photo until the reveal, only the name. */
+  mystery?: boolean;
   onImageError?: () => void;
 }) {
   const rim = highlight === undefined ? palette.white : highlight ? tone.green.bottom : palette.red;
@@ -615,7 +628,7 @@ function Card({
   // and a rare item may still lack a freely-licensed file. Either way the
   // card keeps the same shape and the game plays exactly the same.
   const [imageFailed, setImageFailed] = useState(false);
-  const showImage = Boolean(item.imageUrl) && !imageFailed;
+  const showImage = Boolean(item.imageUrl) && !imageFailed && !mystery;
 
   const content = (
     <View style={[styles.cardBody, footRoom && styles.footRoom]}>
@@ -678,6 +691,16 @@ function Card({
           </View>
           {content}
         </ImageBackground>
+      ) : mystery ? (
+        <View style={[styles.cardFill, styles.cardMystery]}>
+          <Text style={styles.mysteryMark} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            ?
+          </Text>
+          <View style={styles.mysteryTag}>
+            <Text style={styles.mysteryTagText}>MYSTERY ROUND</Text>
+          </View>
+          {content}
+        </View>
       ) : (
         <View style={[styles.cardFill, styles.cardPlain]}>{content}</View>
       )}
@@ -724,6 +747,28 @@ const styles = StyleSheet.create({
   cardFill: { flex: 1, justifyContent: 'flex-end' },
   cardImage: { borderRadius: 12 },
   cardPlain: { justifyContent: 'center', backgroundColor: palette.well },
+  cardMystery: { justifyContent: 'flex-end', backgroundColor: '#3B2A7A' },
+  mysteryMark: {
+    position: 'absolute',
+    alignSelf: 'center',
+    top: '8%',
+    fontFamily: font.black,
+    fontSize: 120,
+    color: 'rgba(255,255,255,0.18)',
+  },
+  // Top-left: the VS disc covers the top centre of a stacked card.
+  mysteryTag: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: '#FFC21A',
+    borderWidth: 2,
+    borderColor: palette.white,
+  },
+  mysteryTagText: { fontFamily: font.black, fontSize: 12, color: '#3B2A7A', letterSpacing: 1 },
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '72%' },
   cardBody: { paddingHorizontal: space.md, paddingVertical: space.sm, alignItems: 'center', gap: 2 },
   footRoom: { paddingBottom: 28 },
