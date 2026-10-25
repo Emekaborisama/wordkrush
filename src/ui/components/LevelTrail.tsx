@@ -26,17 +26,35 @@ export function LevelTrail({
   current,
   animal,
   progress,
+  reaction,
   onPress,
 }: {
   stones: readonly Stone[];
   current: number;
   animal: FluentName;
   progress?: number;
+  /**
+   * The animal answering your last move: a jump for a right call, a shake for
+   * a miss. A new `key` replays it; `null` rests. The Duolingo beat: the
+   * character on the path is watching.
+   */
+  reaction?: { key: number; mood: 'cheer' | 'oops' } | null;
   onPress?: () => void;
 }) {
   const [width, setWidth] = useState(0);
   const reduceMotion = useReduceMotion();
   const hop = useRef(new Animated.Value(0)).current;
+  const react = useRef(new Animated.Value(0)).current;
+  const reactionKey = reaction?.key;
+  const mood = reaction?.mood;
+
+  useEffect(() => {
+    if (reactionKey === undefined || reduceMotion) return;
+    react.setValue(0);
+    const anim = Animated.timing(react, { toValue: 1, duration: mood === 'cheer' ? 520 : 460, easing: Easing.linear, useNativeDriver: true });
+    anim.start();
+    return () => anim.stop();
+  }, [reactionKey, mood, reduceMotion, react]);
   const shown = trailWindow(stones, current);
   const total = stones.length;
 
@@ -109,7 +127,31 @@ export function LevelTrail({
                     <Animated.View
                       style={[
                         styles.animal,
-                        { left: size / 2 - 17, transform: [{ translateY: hop.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }] },
+                        {
+                          left: size / 2 - 17,
+                          transform: [
+                            { translateY: hop.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) },
+                            // A cheer is a big jump with a spin of joy; an oops is a head shake.
+                            {
+                              translateY: react.interpolate({
+                                inputRange: [0, 0.35, 0.7, 1],
+                                outputRange: mood === 'cheer' ? [0, -22, 0, 0] : [0, 0, 0, 0],
+                              }),
+                            },
+                            {
+                              translateX: react.interpolate({
+                                inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1],
+                                outputRange: mood === 'oops' ? [0, -6, 6, -4, 4, 0] : [0, 0, 0, 0, 0, 0],
+                              }),
+                            },
+                            {
+                              scale: react.interpolate({
+                                inputRange: [0, 0.35, 1],
+                                outputRange: mood === 'cheer' ? [1, 1.25, 1] : [1, 0.92, 1],
+                              }),
+                            },
+                          ],
+                        },
                       ]}
                     >
                       <Image source={FLUENT[animal]} style={styles.animalImage} />
