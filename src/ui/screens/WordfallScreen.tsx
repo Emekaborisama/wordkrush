@@ -43,11 +43,13 @@ import { feedback } from '../../native/feedback';
 import { shareResult } from '../../native/share';
 import { boostPrice } from '../../rewards/wallet';
 import type { BoostKind } from '../../rewards/types';
+import { GAME_ANIMAL } from '../fluent';
 import { HowToPlay } from '../HowToPlay';
+import type { Stone } from '../levelTrail';
+import { MeadowMap } from '../MeadowMap';
+import { useHeightClass } from '../useHeightClass';
 import {
   afterModalClose,
-  Badge,
-  BlockDigits,
   BlockTile,
   Button,
   ComboBanner,
@@ -56,11 +58,10 @@ import {
   DisplayTitle,
   GameHeader,
   GameIcon,
+  LevelTrail,
   Panel,
   PanelText,
   PausePopup,
-  PopupModal,
-  PressableScale,
   Rays,
   ScoreWell,
   SquareButton,
@@ -218,6 +219,7 @@ export function WordfallScreen({
         seed={live?.seed}
         unlocked={unlocked}
         hidePicker={Boolean(live)}
+        trail={live ? undefined : wordfallStones(unlocked, levelNumber, new Date())}
         onStateChange={handleStateChange}
         onExit={onExit}
         onHelp={() => setHelp(true)}
@@ -265,10 +267,12 @@ export function WordfallScreen({
         }}
       />
 
-      <LevelPicker
+      <MeadowMap
         visible={picking && !live}
-        unlocked={unlocked}
+        title="LEVELS"
+        stones={wordfallStones(unlocked, levelNumber, new Date())}
         current={levelNumber}
+        animal={GAME_ANIMAL.wordfall}
         onClose={() => setPicking(false)}
         onSelect={(n) => {
           setPicking(false);
@@ -368,6 +372,7 @@ function LevelPlay({
   onExit,
   onHelp,
   onPickLevel,
+  trail,
   onPause,
   coins,
   onSpend,
@@ -400,6 +405,8 @@ function LevelPlay({
   onExit: () => void;
   onHelp: () => void;
   onPickLevel: () => void;
+  /** The level path for the trail under the header; absent in a live race. */
+  trail?: Stone[];
   /** The gold gear: freezes the clock and opens the pause pop-up. */
   onPause: () => void;
   coins: number;
@@ -423,6 +430,8 @@ function LevelPlay({
   const pendingTrace = useRef<WordfallState | null>(null);
   const reported = useRef(!shouldReportOutcome(resume?.status ?? 'playing'));
   const [boardBounds, setBoardBounds] = useState({ width: 0, height: 0 });
+  // The trail only where there is height to spare; short phones keep the board.
+  const short = useHeightClass() !== 'regular';
   const [reward, setReward] = useState<RunReward | null>(null);
   const [paidHint, setPaidHint] = useState<readonly number[] | null>(null);
   const [introDismissed, setIntroDismissed] = useState(false);
@@ -770,6 +779,10 @@ function LevelPlay({
         }
       />
 
+      {trail && !short ? (
+        <LevelTrail stones={trail} current={level.number} animal={GAME_ANIMAL.wordfall} onPress={onPickLevel} />
+      ) : null}
+
       <Hud
         levelDescription={`${level.name} — ${level.description}`}
         movesLeft={state.movesLeft}
@@ -1012,88 +1025,29 @@ function LevelOutcome({
   );
 }
 
-function moveLabel(level: Level): { value: string; unit: string } {
-  if (level.timeLimitMs !== undefined) {
-    return { value: formatDuration(level.timeLimitMs), unit: 'TIME' };
-  }
-  return { value: String(level.moves), unit: 'MOVES' };
-}
 
-/**
- * The kit's Levels pop-up: one cream row per level, its number drawn in
- * little cubes, its name and budget, a check once cleared; the level you are
- * on glows gold and locked levels are stone with a lock.
- */
-function LevelPicker({
-  visible,
-  unlocked,
-  current,
-  onClose,
-  onSelect,
-}: {
-  visible: boolean;
-  unlocked: number;
-  current: number;
-  onClose: () => void;
-  onSelect: (levelNumber: number) => void;
-}) {
-  const now = new Date();
-  return (
-    <PopupModal visible={visible} onClose={onClose} title="Levels" closeLabel="Close level map">
-      {LEVELS.map((level) => {
-        const released = isLevelReleased(level, now);
-        const playable = isLevelPlayable(level, unlocked, now);
-        const upcoming = !released && level.availableFrom ? parseAvailableFrom(level.availableFrom) : null;
-        const locked = !playable;
-        const cleared = playable && level.number < unlocked;
-        const active = level.number === current;
-        const fresh = isNewestRelease(level, now);
-        const budget = moveLabel(level);
-        const label = upcoming
-          ? `Level ${level.number}, ${level.name}, ${budget.value} ${budget.unit.toLowerCase()}, drops ${formatDropDay(upcoming)}`
-          : locked
-            ? `Level ${level.number}, ${level.name}, locked, ${budget.value} ${budget.unit.toLowerCase()}`
-            : `Play level ${level.number}, ${level.name}, ${budget.value} ${budget.unit.toLowerCase()}`;
-        return (
-          <PressableScale
-            key={level.number}
-            disabled={locked}
-            onPress={() => onSelect(level.number)}
-            accessibilityRole="button"
-            accessibilityLabel={label}
-            accessibilityState={{ disabled: locked, selected: active }}
-          >
-            <CreamBox
-              tint={active ? '#FFF3B8' : undefined}
-              style={[styles.levelRow, active && styles.levelRowActive, locked && styles.levelRowLocked]}
-            >
-              <View style={styles.levelInner}>
-                <View style={styles.levelNumber}>
-                  <BlockDigits value={level.number} cell={level.number >= 10 ? 8 : 11} color={active ? 'orange' : 'red'} />
-                </View>
-                <View style={styles.flex}>
-                  <Text style={[styles.levelName, locked && styles.levelLocked]} numberOfLines={1}>
-                    {level.name}
-                  </Text>
-                  <Text style={styles.levelMeta} numberOfLines={1}>
-                    {upcoming ? `Drops ${formatDropDay(upcoming)}` : `${budget.value} ${budget.unit.toLowerCase()}`}
-                  </Text>
-                </View>
-                {fresh && !locked ? <Badge label="NEW" tone="danger" /> : null}
-                {locked ? (
-                  <GameIcon name="lock" size={28} color={palette.inkSoft} />
-                ) : cleared ? (
-                  <GameIcon name="star" size={30} />
-                ) : active ? (
-                  <GameIcon name="play" size={26} color={tone.green.outline} />
-                ) : null}
-              </View>
-            </CreamBox>
-          </PressableScale>
-        );
-      })}
-    </PopupModal>
-  );
+/** Wordfall's levels as stones for the trail and the meadow map. */
+function wordfallStones(unlocked: number, current: number, now: Date): Stone[] {
+  return LEVELS.map((level) => {
+    const released = isLevelReleased(level, now);
+    const playable = isLevelPlayable(level, unlocked, now);
+    const upcoming = !released && level.availableFrom ? parseAvailableFrom(level.availableFrom) : null;
+    return {
+      number: level.number,
+      // The map's tag keeps what the old list said: when a level drops, and which is new.
+      name: upcoming ? `Drops ${formatDropDay(upcoming)}` : isNewestRelease(level, now) ? `NEW · ${level.name}` : level.name,
+      state:
+        level.number === current
+          ? 'current'
+          : !released
+            ? 'soon'
+            : !playable
+              ? 'locked'
+              : level.number < unlocked
+                ? 'cleared'
+                : 'open',
+    };
+  });
 }
 
 const styles = StyleSheet.create({
@@ -1136,15 +1090,6 @@ const styles = StyleSheet.create({
     paddingBottom: space.md,
   },
   outcomePanel: { flexShrink: 1 },
-
-  levelRow: { paddingVertical: space.xs + 2, paddingHorizontal: space.sm },
-  levelRowActive: { borderColor: palette.goldDeep },
-  levelRowLocked: { opacity: 0.55 },
-  levelInner: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  levelNumber: { width: 72, alignItems: 'center' },
-  levelName: { fontFamily: font.black, fontSize: 16, lineHeight: 20, color: palette.ink },
-  levelLocked: { color: palette.inkSoft },
-  levelMeta: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: palette.inkSoft },
 
   legend: { gap: space.sm },
   legendCaption: { fontSize: 13, lineHeight: 18, color: palette.inkSoft },

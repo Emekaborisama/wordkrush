@@ -265,6 +265,16 @@ glossy button). Its pieces:
 Copy is pidgin from one table (`lagosCopy`): "Oya, enter!", "You sabi!",
 "Wahala!".
 
+**Level trail and meadow map** (0.14.0, D-071, after the Animal Heroes level path):
+- `LevelTrail` sits under the HUD on regular-height screens: a grass strip with a sandy path and five `LevelStone`s around the current level. The game's 3D animal (`GAME_ANIMAL`) stands on your stone, and an optional gold ring fills with run progress. Tapping it opens the map.
+- `MeadowMap` is the full-screen map:
+  - a wooden sign on chains;
+  - a winding sandy path climbing from level 1;
+  - stones that are wood (with stars) when cleared, gold for current and grey ahead;
+  - Fluent 3D scenery beside the path;
+  - name tags on open levels.
+- Both draw from one pure model, `src/ui/levelTrail.ts`.
+
 ### Results
 
 The kit's "LEVEL COMPLETED" pop-up over the dimmed board:
