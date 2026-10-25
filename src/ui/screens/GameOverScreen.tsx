@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import { streakBucket } from '../../analytics/events';
 import type { GameState } from '../../games/more-or-less/engine';
+import { challengeVerdict, type ChallengeRun } from '../../games/more-or-less/challenge';
 import { buildShareText } from '../../games/more-or-less/share';
 import type { Category } from '../../games/more-or-less/types';
 import { feedback } from '../../native/feedback';
@@ -53,6 +54,10 @@ type Props = {
     /** Play the next level; omitted on the last one. */
     onNext?: () => void;
   };
+  /** The run's seed and level, so sharing turns the result into a challenge. */
+  challengeRun?: ChallengeRun;
+  /** The friend's streak this run was challenging, when it was one. */
+  rival?: number;
 };
 
 export function GameOverScreen({
@@ -67,6 +72,8 @@ export function GameOverScreen({
   events,
   labelRound,
   level,
+  challengeRun,
+  rival,
 }: Props) {
   const rank = rankOf(board, state.streak);
   const [shareNote, setShareNote] = useState<string | null>(null);
@@ -92,7 +99,7 @@ export function GameOverScreen({
       is_new_best: isNewBest,
     });
     const outcome = await shareResult(
-      buildShareText({ streak: state.streak, bestStreak: board.bestStreak, rank }),
+      buildShareText({ streak: state.streak, bestStreak: board.bestStreak, rank, challenge: challengeRun }),
     );
     if (outcome === 'copied') {
       setShareNote('Copied to clipboard');
@@ -198,6 +205,17 @@ export function GameOverScreen({
         }
       >
         <RewardPanel events={events} boosted={boosted} />
+        {rival !== undefined ? (
+          // The challenge's answer: who won, in one line, then the way to a rematch.
+          <CreamBox style={styles.challenge}>
+            <CreamText variant="teal" style={styles.challengeTitle}>
+              CHALLENGE
+            </CreamText>
+            <CreamText variant="title" style={styles.challengeText}>
+              {challengeLine(rival, state.streak)}
+            </CreamText>
+          </CreamBox>
+        ) : null}
         {level ? (
           <CreamBox>
             <CreamText variant="label" style={styles.center}>
@@ -262,7 +280,18 @@ function Pair({ item }: { item: GameState['left'] }) {
   );
 }
 
+/** One line for the end of a challenge run. */
+function challengeLine(target: number, streak: number): string {
+  const verdict = challengeVerdict(target, streak);
+  if (verdict === 'won') return `You beat their ${target}!`;
+  if (verdict === 'tied') return `Tied at ${target}. Rematch?`;
+  return `They win by ${target - streak}. Go again?`;
+}
+
 const styles = StyleSheet.create({
+  challenge: { alignItems: 'center', gap: 2 },
+  challengeTitle: { textAlign: 'center' },
+  challengeText: { textAlign: 'center' },
   root: {
     flex: 1,
     justifyContent: 'center',

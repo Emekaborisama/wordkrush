@@ -6,6 +6,18 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.17.0] - 2026-10-25
+
+### Added
+- **Challenge a friend.** Sharing a Higher or Lower level result now sends a challenge.
+  - The link carries the run's seed and level. The paste ends "Can you beat it? Same pairs, same order."
+  - Whoever opens it sees "CHALLENGE! Beat a streak of 7", then plays the same pairs in the same order (Popularity's unseen-first steering is off for challenges) with their friend's streak as **Rival** in the HUD.
+  - The result says "You beat their 7!", "Tied at 7. Rematch?" or "They win by 2. Go again?". **Play again** is a rematch on the same pairs.
+  - Links shared before this release still work as before.
+
+### Analytics
+- `challenge_accepted` (`level_number`) and `challenge_finished` (`level_number`, `outcome: won | tied | lost`).
+
 ## [0.16.0] - 2026-10-25
 
 ### Added

@@ -65,6 +65,7 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 - [x] **Launch readiness: Cloudflare, uptime, crash counters** (ST-115) — **Done** in 0.13.0. DNS and caching on Cloudflare; a `/healthz` endpoint and a 10-minute uptime Action; a root error boundary; `app_error` and `web_vitals` events (D-070).
 - [x] **Levels visible in every game** (ST-117) — **Done** in 0.14.0. A level trail in each play screen and a meadow level map, with Fluent 3D animals (D-071).
 - [x] **In-run twists** (ST-118) — **Done** in 0.15.0. Rising chime, Mystery rounds every fifth pair, and "So close!" on a narrow miss.
+- [x] **Challenge a friend** (ST-120) — **Done** in 0.17.0. Shared Higher or Lower level results replay the same pairs against the sharer's streak.
 - [ ] **Better sound effects** — owner asked (2026-10-24). Kenney's CC0 interface, jingle and casino packs are the candidates. They need converting from Ogg for iOS and auditioning by the owner. Not started.
 - [ ] **A better popularity number than Wikipedia pageviews** — owner asked (2026-10-24). Needs an owner decision on the source and its licence (D-012). Not started.
 - [ ] **Millionaire-style lifelines for More or Less** — owner idea (2026-10-19): "phone a friend" and similar help during a run. Not started.

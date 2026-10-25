@@ -8,6 +8,7 @@
 import { SHARE_MAX_SQUARES, composeShare, wrapSquares } from '../share';
 import { buildShareUrl, type MoreOrLessShareData } from '../share-data';
 import { pickCardPhotos } from './card-photos';
+import type { ChallengeRun } from './challenge';
 
 const CORRECT = '🟩';
 const WRONG = '🟥';
@@ -16,6 +17,8 @@ export type MoreOrLessShareInput = {
   streak: number;
   bestStreak: number;
   rank?: number;
+  /** The run's seed and level: the link becomes a challenge to replay it. */
+  challenge?: ChallengeRun;
 };
 
 export function buildShareText(input: MoreOrLessShareInput): string {
@@ -31,12 +34,13 @@ export function buildShareText(input: MoreOrLessShareInput): string {
   // spoiler, and this link is public.
   const photos = pickCardPhotos(`${input.streak}:${input.bestStreak}`);
   if (photos) shareData.photos = photos;
+  if (input.challenge) shareData.challenge = input.challenge;
 
   return composeShare({
     title: 'WordKrush · Higher or Lower',
     grid: moreOrLessGrid(input.streak),
     standing: moreOrLessStanding(input),
-    verdict: moreOrLessVerdict(input.streak),
+    verdict: input.challenge ? 'Can you beat it? Same pairs, same order.' : moreOrLessVerdict(input.streak),
     url: buildShareUrl(shareData),
   });
 }
