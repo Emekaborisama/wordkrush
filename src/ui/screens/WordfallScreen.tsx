@@ -803,7 +803,14 @@ function LevelPlay({
       />
 
       {trail && !short ? (
-        <LevelTrail stones={trail} current={level.number} animal={GAME_ANIMAL.wordfall} onPress={onPickLevel} />
+        <LevelTrail
+          stones={trail}
+          current={level.number}
+          animal={GAME_ANIMAL.wordfall}
+          // The fox cheers every word played; the score rises with each one.
+          reaction={state.lastPlay ? { key: state.score, mood: 'cheer' } : null}
+          onPress={onPickLevel}
+        />
       ) : null}
 
       <Hud

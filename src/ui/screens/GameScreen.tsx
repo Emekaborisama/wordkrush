@@ -351,6 +351,11 @@ export function GameScreen({
           current={trail.current}
           animal={trail.animal}
           progress={state.streak / starThresholds(levelGoal.target)[2]}
+          reaction={
+            state.lastGuessCorrect === null
+              ? null
+              : { key: state.streak * 2 + (state.lastGuessCorrect ? 1 : 0) + (state.status === 'over' ? 1000 : 0), mood: state.lastGuessCorrect ? 'cheer' : 'oops' }
+          }
           onPress={trail.onOpen}
         />
       ) : levelGoal ? (
