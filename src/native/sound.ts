@@ -16,7 +16,13 @@
  */
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 
-export type SoundName = 'bonus' | 'wrong' | 'nextLevel' | 'win';
+/** One step of the pentatonic chime (`assets/sounds/chime/`), lowest first. */
+export type ChimeNote = 'note1' | 'note2' | 'note3' | 'note4' | 'note5' | 'note6' | 'note7' | 'note8';
+
+export type SoundName = 'bonus' | 'wrong' | 'nextLevel' | 'win' | ChimeNote;
+
+/** The chime, in order: a step past the top stays on the top note. */
+export const CHIME: readonly ChimeNote[] = ['note1', 'note2', 'note3', 'note4', 'note5', 'note6', 'note7', 'note8'];
 
 /**
  * `require` rather than `import` so Metro bundles each clip as an asset. Kept
@@ -27,6 +33,14 @@ const SOURCES: Record<SoundName, number> = {
   wrong: require('../../assets/sounds/wrong.mp3'),
   nextLevel: require('../../assets/sounds/next_level.mp3'),
   win: require('../../assets/sounds/achievement_win.mp3'),
+  note1: require('../../assets/sounds/chime/note1.wav'),
+  note2: require('../../assets/sounds/chime/note2.wav'),
+  note3: require('../../assets/sounds/chime/note3.wav'),
+  note4: require('../../assets/sounds/chime/note4.wav'),
+  note5: require('../../assets/sounds/chime/note5.wav'),
+  note6: require('../../assets/sounds/chime/note6.wav'),
+  note7: require('../../assets/sounds/chime/note7.wav'),
+  note8: require('../../assets/sounds/chime/note8.wav'),
 };
 
 /**
@@ -39,6 +53,15 @@ const VOLUME: Record<SoundName, number> = {
   wrong: 0.55,
   nextLevel: 0.75,
   win: 0.85,
+  // Soft: Wordfall can play several a second.
+  note1: 0.45,
+  note2: 0.45,
+  note3: 0.45,
+  note4: 0.45,
+  note5: 0.45,
+  note6: 0.45,
+  note7: 0.45,
+  note8: 0.45,
 };
 
 const players = new Map<SoundName, AudioPlayer>();
