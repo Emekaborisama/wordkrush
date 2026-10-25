@@ -95,6 +95,15 @@ export function stripHtml(html: string): string {
     .trim();
 }
 
+/**
+ * Commons sometimes nests the author twice (a link and a span holding the
+ * same name), which strips to "Unknown authorUnknown author". Keep one copy.
+ */
+export function collapseDoubled(text: string): string {
+  const half = text.length / 2;
+  return Number.isInteger(half) && half > 0 && text.slice(0, half) === text.slice(half) ? text.slice(0, half) : text;
+}
+
 export function asFileTitle(name: string): string {
   return /^file:/i.test(name) ? name : `File:${name}`;
 }
@@ -221,7 +230,7 @@ async function fetchFileInfo(fileTitle: string, thumbWidth: number): Promise<Ima
 
   return {
     url,
-    attribution: stripHtml(meta.Artist?.value ?? '') || 'Wikimedia Commons',
+    attribution: collapseDoubled(stripHtml(meta.Artist?.value ?? '')) || 'Wikimedia Commons',
     license: license || 'unknown',
     filePage: info.descriptionurl ?? '',
     restrictions,

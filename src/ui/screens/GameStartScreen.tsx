@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { getGame } from '../../games/registry';
 import type { ScoreBoard } from '../../scores/types';
 import {
@@ -66,8 +66,42 @@ export function GameStartScreen({
   const bestLabel = `${game?.scoreDirection === 'lower' ? 'FEWEST' : 'BEST'} ${(game?.scoreNoun ?? 'score').toUpperCase()}`;
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <Panel title={game?.name ?? 'Play'} onClose={onClose} closeLabel="Back to all games">
+    // A bounded column, not a scroll view: the panel shrinks to fit and
+    // scrolls inside itself, so its footer (Play) always stays on screen.
+    <View style={[styles.root, styles.content]}>
+      {/* Play sits in the fixed footer: on a short phone the goal scrolls and
+          the main button never falls below the fold. */}
+      <Panel
+        title={game?.name ?? 'Play'}
+        onClose={onClose}
+        closeLabel="Back to all games"
+        scroll
+        footer={
+          <View style={styles.actions}>
+            <Button
+              title={playLabel}
+              size="lg"
+              tone="green"
+              onPress={onPlay}
+              disabled={playDisabled}
+              leading={playDisabled ? undefined : <GameIcon name="play" size={26} color={tone.green.outline} />}
+            />
+            <View style={styles.pair}>
+              {onRace ? (
+                <Button
+                  title={raceLabel}
+                  tone="blue"
+                  size="sm"
+                  onPress={onRace}
+                  disabled={raceDisabled}
+                  style={styles.flex}
+                />
+              ) : null}
+              <Button title="Scores" tone="purple" size="sm" onPress={onScores} style={styles.flex} />
+            </View>
+          </View>
+        }
+      >
         <View style={styles.hero}>
           <GameArtwork gameId={gameId} accent={accent} size={92} raised />
           <View style={styles.flex}>
@@ -103,27 +137,6 @@ export function GameStartScreen({
           </View>
         ) : null}
 
-        <Button
-          title={playLabel}
-          size="lg"
-          tone="green"
-          onPress={onPlay}
-          disabled={playDisabled}
-          leading={playDisabled ? undefined : <GameIcon name="play" size={26} color={tone.green.outline} />}
-        />
-        <View style={styles.pair}>
-          {onRace ? (
-            <Button
-              title={raceLabel}
-              tone="blue"
-              size="sm"
-              onPress={onRace}
-              disabled={raceDisabled}
-              style={styles.flex}
-            />
-          ) : null}
-          <Button title="Scores" tone="purple" size="sm" onPress={onScores} style={styles.flex} />
-        </View>
         {onRace && raceHint ? <PanelText>{raceHint}</PanelText> : null}
       </Panel>
 
@@ -132,7 +145,7 @@ export function GameStartScreen({
           {footer}
         </StrokeText>
       ) : null}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -204,6 +217,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   content: {
     flexGrow: 1,
+    minHeight: 0,
     justifyContent: 'center',
     paddingHorizontal: space.md,
     paddingTop: space.lg,
@@ -215,6 +229,7 @@ const styles = StyleSheet.create({
   blurbText: { fontSize: 13, lineHeight: 18 },
   flex: { flex: 1, minWidth: 0 },
   goal: { gap: space.sm },
+  actions: { gap: space.sm },
   center: { textAlign: 'center' },
   stats: { flexDirection: 'row', gap: space.sm },
   pair: { flexDirection: 'row', gap: space.sm },
