@@ -6,6 +6,19 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.14.0] - 2026-10-25
+
+### Added
+- **Every game shows its levels while you play.** A level trail sits under the HUD, styled after the Animal Heroes kit's level path you shared. It's a strip of meadow with the sandy path, the stones around your level, and the game's 3D animal standing on yours: a lion for Higher or Lower, a fox for Wordfall, a monkey for Clueless.
+  - In Higher or Lower, a gold ring fills around your stone as the streak heads for three stars.
+  - Tap the trail to open the map.
+  - Short phones keep the board's room and skip the trail.
+- **The level map is a meadow.**
+  - A winding sandy path climbs from level 1, and each level is a numbered stone: wooden with its stars once cleared, gold where you are, grey ahead.
+  - 3D trees, flowers, a house and animals line the way, under a wooden sign hanging on chains.
+  - It replaces Higher or Lower's "All levels" list and Wordfall's level list, which keeps its "Drops Mon …" and "NEW" tags. Clueless gets a view of its case path.
+- **3D icons.** The animals and scenery are Microsoft Fluent Emoji 3D (MIT, `assets/fluent/LICENSE`), resized to 128 px; 17 files, 290 KB.
+
 ## [0.13.1] - 2026-10-25
 
 ### Fixed

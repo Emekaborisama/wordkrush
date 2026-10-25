@@ -38,6 +38,7 @@ import { isBackendConfigured } from './src/auth/client';
 import appConfig from './app.json';
 import categoryData from './src/data/categories/wikipedia-popularity.json';
 import {
+  CLUELESS_SOLO_LEVELS,
   cluelessSoloLevelByNumber,
   puzzleForCluelessSoloLevel,
   type CluelessSoloLevel,
@@ -52,6 +53,8 @@ import { moreOrLessLevelByNumber } from './src/data/more-or-less/levels';
 import {
   bestStreakFor,
   EMPTY_LABEL_PATH,
+  isLevelUnlocked,
+  levelStars,
   nextLevelNumber,
   recordLevelRun,
   type LabelLevel,
@@ -140,6 +143,9 @@ import { parentOf, type Parent } from './src/ui/navigation';
 import { installWebHistory, noteWebNavigation, openedAtLagosPath, syncLagosPath } from './src/ui/webHistory';
 import { LabelLevelCard } from './src/ui/LabelLevelCard';
 import { LabelLevelsPopup } from './src/ui/LabelLevelsPopup';
+import { GAME_ANIMAL } from './src/ui/fluent';
+import type { Stone } from './src/ui/levelTrail';
+import { MeadowMap } from './src/ui/MeadowMap';
 import { DanfoRide, type DanfoRideStop } from './src/ui/lagos/DanfoRide';
 import { LagosAnnouncement } from './src/ui/lagos/LagosBanner';
 import { LagosScreen } from './src/ui/screens/LagosScreen';
@@ -437,6 +443,9 @@ export default function App() {
   // The level a player picked on each path; null follows the first uncleared one.
   const [labelChoice, setLabelChoice] = useState<Record<LabelPathId, number | null>>({ world: null, lagos: null });
   const [levelsOpen, setLevelsOpen] = useState<LabelPathId | null>(null);
+  // The meadow map opened from a run's trail: a view of the journey, not a picker.
+  const [runMapOpen, setRunMapOpen] = useState(false);
+  const [cluelessMapOpen, setCluelessMapOpen] = useState(false);
   const [lagosSeen, setLagosSeen] = useState(true);
   const [lagosAnnouncement, setLagosAnnouncement] = useState(false);
   // The danfo carrying the player to a level; `board` starts it under the cover.
@@ -693,6 +702,40 @@ export default function App() {
     void saveLabelPathProgress(ref.path, recorded.progress);
   };
 
+  /** The Clueless solo path as stones: cleared through `completedThrough`, then yours. */
+  const cluelessStones = (): Stone[] =>
+    CLUELESS_SOLO_LEVELS.map((level) => ({
+      number: level.number,
+      name: level.name,
+      state:
+        level.number <= cluelessPath.completedThrough
+          ? 'cleared'
+          : level.number === currentCluelessLevelNumber
+            ? 'current'
+            : 'locked',
+    }));
+
+  /** A label path as stones for the trail and the meadow map. */
+  const pathStones = (path: LabelPathId, playing?: number): Stone[] => {
+    const progress = labelPaths[path];
+    return labelPath(path).map((level) => {
+      const cleared = progress.clearedThrough >= level.number;
+      return {
+        number: level.number,
+        name: level.name,
+        state:
+          level.number === playing
+            ? 'current'
+            : cleared
+              ? 'cleared'
+              : isLevelUnlocked(progress, level.number)
+                ? 'open'
+                : 'locked',
+        stars: cleared ? levelStars(level.targetStreak, bestStreakFor(progress, level.number)) : undefined,
+      };
+    });
+  };
+
   /** Boards a level by danfo: the bus pulls in with the stop's name, then the level shows. */
   const rideToLevel = (path: LabelPathId, number = selectedLevel(path)) => {
     const level = labelLevel(path, number);
@@ -795,6 +838,12 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [lagosSeen, boardsReady, screen.name]);
 
+
+  // The journey maps belong to the run they were opened from.
+  useEffect(() => {
+    setRunMapOpen(false);
+    setCluelessMapOpen(false);
+  }, [screen]);
 
   // The menu groove everywhere but a game; the play groove inside one.
   useEffect(() => {
@@ -1170,6 +1219,7 @@ export default function App() {
             key={screen.live ? `team-${screen.live.levelNumber}` : `solo-${activeSoloCluelessLevel?.number}`}
             puzzleNumber={activeCluelessPuzzle.number}
             levelNumber={screen.live?.levelNumber ?? activeSoloCluelessLevel?.number}
+            trail={screen.live ? undefined : { stones: cluelessStones(), onOpen: () => setCluelessMapOpen(true) }}
             levelName={screen.live ? activeTeamCluelessLevel?.name : activeSoloCluelessLevel?.name}
             pathPhase={screen.live ? 'team' : activeSoloCluelessLevel?.phase}
             hintPolicy={screen.live ? 'none' : activeSoloCluelessLevel?.hintPolicy ?? 'none'}
@@ -1434,6 +1484,16 @@ export default function App() {
             }
             persist={!screen.live}
             session={molRef ? `level:${molRef.path}:${molRef.number}` : undefined}
+            trail={
+              molRef?.path === 'world'
+                ? {
+                    stones: pathStones('world', molRef.number),
+                    current: molRef.number,
+                    animal: GAME_ANIMAL[MORE_OR_LESS],
+                    onOpen: () => setRunMapOpen(true),
+                  }
+                : undefined
+            }
             lagos={molRef?.path === 'lagos'}
             levelGoal={
               molLevel && molRef
@@ -1735,7 +1795,41 @@ export default function App() {
           />
         )}
 
-        {levelsOpen ? (
+        {levelsOpen === 'world' ? (
+          <MeadowMap
+            visible
+            title="LEVELS"
+            stones={pathStones('world', selectedLevel('world'))}
+            current={selectedLevel('world')}
+            animal={GAME_ANIMAL[MORE_OR_LESS]}
+            onClose={() => setLevelsOpen(null)}
+            onSelect={(number) => {
+              setLabelChoice((current) => ({ ...current, world: number }));
+              setLevelsOpen(null);
+            }}
+          />
+        ) : null}
+        {runMapOpen && molRef ? (
+          <MeadowMap
+            visible
+            title="YOUR JOURNEY"
+            stones={pathStones(molRef.path, molRef.number)}
+            current={molRef.number}
+            animal={GAME_ANIMAL[MORE_OR_LESS]}
+            onClose={() => setRunMapOpen(false)}
+          />
+        ) : null}
+        {cluelessMapOpen ? (
+          <MeadowMap
+            visible
+            title="YOUR CASES"
+            stones={cluelessStones()}
+            current={currentCluelessLevelNumber}
+            animal={GAME_ANIMAL.clueless}
+            onClose={() => setCluelessMapOpen(false)}
+          />
+        ) : null}
+        {levelsOpen === 'lagos' ? (
           <LabelLevelsPopup
             visible
             onClose={() => setLevelsOpen(null)}

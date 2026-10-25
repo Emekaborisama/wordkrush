@@ -54,7 +54,11 @@ import {
   ScoreWell,
   SquareButton,
   TextField,
+  LevelTrail,
 } from '../components';
+import { GAME_ANIMAL } from '../fluent';
+import type { Stone } from '../levelTrail';
+import { useHeightClass } from '../useHeightClass';
 import { BoostBar, coinShortfall } from '../rewards/BoostBar';
 import type { RunReward } from '../rewards/RunReward';
 import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
@@ -66,6 +70,8 @@ type Props = {
   puzzleNumber: number;
   /** Solo path number or a team path number; omitted for a legacy session. */
   levelNumber?: number;
+  /** The solo path for the trail under the HUD; absent in a team race. */
+  trail?: { stones: Stone[]; onOpen: () => void };
   levelName?: string;
   pathPhase?: 'tutorial' | 'daily' | 'team';
   /** Assigned by reviewed level content, never selected during play. */
@@ -88,6 +94,7 @@ type Props = {
 export function CluelessScreen({
   puzzleNumber,
   levelNumber,
+  trail,
   levelName,
   pathPhase,
   hintPolicy,
@@ -333,6 +340,9 @@ export function CluelessScreen({
         ]
       : [];
 
+  // The trail only where there is height to spare.
+  const short = useHeightClass() !== 'regular';
+
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <GameHeader title="Clueless" subtitle={levelLabel} onExit={onExit} onHelp={() => setHelp(true)} />
@@ -342,6 +352,10 @@ export function CluelessScreen({
         <HudPanel label="Closest" value={best == null ? '—' : `#${best.toLocaleString()}`} />
         <HudPanel label="Level" value={levelNumber ?? puzzle.number} />
       </View>
+
+      {trail && levelNumber !== undefined && !short ? (
+        <LevelTrail stones={trail.stones} current={levelNumber} animal={GAME_ANIMAL.clueless} onPress={trail.onOpen} />
+      ) : null}
 
       {won ? (
         <View style={styles.result}>

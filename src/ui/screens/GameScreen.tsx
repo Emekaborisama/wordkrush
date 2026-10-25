@@ -39,11 +39,14 @@ import {
   ScoreBurst,
   StarBar,
   StrokeText,
+  LevelTrail,
 } from '../components';
 import { danfo } from '../lagos/danfoTheme';
 import { RoadProgress } from '../lagos/RoadProgress';
 import { font, formatValue, motion, palette, space, tone } from '../theme';
 import { useCountUp } from '../useCountUp';
+import type { FluentName } from '../fluent';
+import type { Stone } from '../levelTrail';
 import { useHeightClass } from '../useHeightClass';
 import { useReduceMotion } from '../useReduceMotion';
 
@@ -71,6 +74,8 @@ type Props = {
    * the streak still counts — but reaching it is celebrated on the board.
    */
   levelGoal?: { target: number; label: string; stop?: string };
+  /** The level path for the play screen's trail (not on the Lagos route, which has its road). */
+  trail?: { stones: Stone[]; current: number; animal: FluentName; onOpen: () => void };
   /** I Sabi Lagos: danfo colours, the road progress strip and pidgin. */
   lagos?: boolean;
   /**
@@ -95,6 +100,7 @@ export function GameScreen({
   onDone,
   labelRound,
   levelGoal,
+  trail,
   lagos = false,
   session,
 }: Props) {
@@ -327,6 +333,15 @@ export function GameScreen({
       </View>
       {levelGoal && lagos ? (
         <RoadProgress streak={state.streak} target={levelGoal.target} stop={levelGoal.stop ?? 'Lagos'} />
+      ) : levelGoal && trail && !short ? (
+        // The trail carries the run's march to three stars as a ring on your stone.
+        <LevelTrail
+          stones={trail.stones}
+          current={trail.current}
+          animal={trail.animal}
+          progress={state.streak / starThresholds(levelGoal.target)[2]}
+          onPress={trail.onOpen}
+        />
       ) : levelGoal ? (
         <LevelStarBar streak={state.streak} target={levelGoal.target} />
       ) : null}
