@@ -777,14 +777,23 @@ export default function App() {
     });
   }, []);
 
-  // A returning player hears about I Sabi Lagos once, on the hub. A first
-  // visit already has the welcome; it finds the banner afterwards.
+  // Whether this player had scores before this session began, read once when
+  // the boards load, so a first run today does not make them "returning".
+  const scoresAtLaunch = useRef<boolean | null>(null);
+  if (boardsReady && scoresAtLaunch.current === null) scoresAtLaunch.current = hasScoreHistory;
+  // Set by the first game of the session: the announcement is for arriving at
+  // the hub, not for coming back to it from a run.
+  const playedThisSession = useRef(false);
+  if (screen.name === 'game') playedThisSession.current = true;
+
+  // A returning player hears about I Sabi Lagos once, on the hub, when they
+  // arrive. A first visit already has the welcome; it finds the banner later.
   useEffect(() => {
-    const returning = returningPlayer.current || hasScoreHistory;
-    if (lagosSeen || !returning || screen.name !== 'hub') return;
+    const returning = returningPlayer.current || scoresAtLaunch.current === true;
+    if (lagosSeen || !returning || playedThisSession.current || screen.name !== 'hub') return;
     const timer = setTimeout(() => setLagosAnnouncement(true), 900);
     return () => clearTimeout(timer);
-  }, [lagosSeen, hasScoreHistory, screen.name]);
+  }, [lagosSeen, boardsReady, screen.name]);
 
 
   // The menu groove everywhere but a game; the play groove inside one.

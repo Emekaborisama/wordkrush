@@ -211,15 +211,24 @@ export function GameScreen({
     }
     if (state.status === 'over') {
       if (!persist) return; // Live runs stay here and wait for teammates
-      if (!chanceUsed.current && chance !== 'done') {
-        if (chance !== 'offer') setChance('offer');
+      // The loss lands first: the count-up and the red rim. The offer follows,
+      // and only when there is a streak to keep and the coins to keep it.
+      const canOffer = !chanceUsed.current && state.streak > 0 && coins >= boostPrice('second-chance');
+      if (canOffer && chance === 'idle') {
+        const show = setTimeout(() => setChance('offer'), REVEAL_BEFORE_OFFER_MS);
+        return () => clearTimeout(show);
+      }
+      if (canOffer && chance === 'offer') {
         const offer = setTimeout(() => setChance('done'), 5000);
         return () => clearTimeout(offer);
       }
-      const t = setTimeout(() => onGameOver(state, { boosted: boostedRef.current }), 1600);
+      const t = setTimeout(
+        () => onGameOver(state, { boosted: boostedRef.current }),
+        chance === 'done' ? 1600 : LOSS_REVEAL_MS,
+      );
       return () => clearTimeout(t);
     }
-  }, [state.status, state.right.id, state.streak, targetStreak, onGameOver, persist, chance, state]);
+  }, [state.status, state.right.id, state.streak, targetStreak, onGameOver, persist, chance, state, coins]);
 
   const correct = state.lastGuessCorrect;
 
@@ -550,6 +559,11 @@ export function imageCredits(items: Item[]): string {
     .map((i) => `${i.label}: ${i.imageAttribution} (${i.imageLicense})`);
   return credits.length ? `Images — ${credits.join(' · ')}` : '';
 }
+
+/** How long a wrong answer's reveal stays clear before the second-chance offer. */
+const REVEAL_BEFORE_OFFER_MS = 1400;
+/** How long a loss with no offer stays on the board before the result. */
+const LOSS_REVEAL_MS = 2400;
 
 /** Streak milestones that earn the kit's big celebration word. */
 const COMBO_WORDS: Readonly<Record<number, string>> = { 5: 'GREAT!', 10: 'AMAZING!', 20: 'UNSTOPPABLE!' };

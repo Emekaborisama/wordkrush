@@ -52,10 +52,10 @@ export function LabelLevelCard({
         leading={<GameIcon name="flag" size={20} color={tone.sky.outline} />}
         onPress={onLevels}
       />
-      <PressableScale onPress={onCity} accessibilityRole="button" accessibilityLabel="Your city: Lagos. Play I Sabi Lagos" style={styles.city}>
+      <PressableScale onPress={onCity} accessibilityRole="button" accessibilityLabel="New: I Sabi Lagos, the Lagos edition. Play it" style={styles.city}>
         <DanfoBus width={70} destination="LAGOS" />
         <View style={styles.flex}>
-          <Text style={styles.cityEyebrow}>YOUR CITY</Text>
+          <Text style={styles.cityEyebrow}>NEW · LAGOS EDITION</Text>
           <Text style={styles.cityName}>I Sabi Lagos</Text>
           <Text style={styles.cityMeta}>How much you sabi Lagos?</Text>
         </View>

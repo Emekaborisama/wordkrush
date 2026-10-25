@@ -6,6 +6,15 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.13.1] - 2026-10-25
+
+### Fixed
+- **A Higher or Lower loss shows why you lost.** The numbers count up and the red rim shows first; "Keep your streak?" follows 1.4 seconds later. It is skipped at a streak of 0 or when you can't afford it. A loss with no offer stays on the board for 2.4 seconds before the result.
+- **Play is always on screen in a game's start pop-up.** Play, Race and Scores sit in the pop-up's fixed footer, and the goal above them scrolls. On an iPhone SE the button used to start below the fold.
+- **The Lagos card no longer tells everyone it's "YOUR CITY".** It now reads "NEW · LAGOS EDITION".
+- **The "I Sabi Lagos don land!" pop-up greets a returning player when they arrive,** not a first-time player coming back from their first run.
+- **No more doubled photo credits.** Wikimedia Commons sometimes nests an author's name twice ("Unknown authorUnknown author"). The pipeline keeps one copy (`collapseDoubled`), and the four bundled credits are corrected.
+
 ## [0.13.0] - 2026-10-25
 
 ### Added
