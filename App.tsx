@@ -149,6 +149,10 @@ import {
   syncLagosPath,
 } from './src/ui/webHistory';
 import { challengeFromShare, challengeVerdict, shareTokenFromPath, type Challenge } from './src/games/more-or-less/challenge';
+import { DAILY_PAIRS, dailyNumber, dailySeed, todaysResult, type DailyResult } from './src/games/more-or-less/daily';
+import { loadDailyResult, saveDailyResult } from './src/games/more-or-less/daily-storage';
+import { buildDailyShareText } from './src/games/more-or-less/share';
+import { shareResult } from './src/native/share';
 import { decodeShareData } from './src/games/share-data';
 import { LabelLevelCard } from './src/ui/LabelLevelCard';
 import { LabelLevelsPopup } from './src/ui/LabelLevelsPopup';
@@ -213,6 +217,8 @@ type Screen =
       molLevel?: MolLevelRef;
       /** A friend's challenge: their streak to beat on this seed. */
       challenge?: { target: number };
+      /** Today's Daily 10. */
+      daily?: { day: string; number: number };
     }
   | {
       name: 'over';
@@ -226,6 +232,8 @@ type Screen =
       /** The run's starting seed, so sharing it becomes a challenge. */
       runSeed?: number;
       challenge?: { target: number };
+      /** The Daily 10 number, when this was the daily. */
+      daily?: number;
     }
   | { name: 'scores'; gameId: string; highlightId?: string }
   | { name: 'auth'; returnTo?: 'teams' | 'scores'; returnGameId?: string }
@@ -472,6 +480,8 @@ export default function App() {
   // Opened at /isabilagos: skip the welcome and go straight to the route.
   const arrivedAtLagos = useRef(openedAtLagosPath());
   // Opened from a friend's shared result: offer to replay their run.
+  // The last Daily 10 played; today's when its day is today.
+  const [dailyResult, setDailyResult] = useState<DailyResult | null>(null);
   const [challengeOffer, setChallengeOffer] = useState<Challenge | null>(() => {
     const token = shareTokenFromPath(openedAtPathname());
     return token ? challengeFromShare(decodeShareData(token)) : null;
@@ -580,6 +590,7 @@ export default function App() {
       setOnboarding(loaded);
     });
     void loadRoundProgress(FIRST_ROUND_ID).then(setLabelProgress);
+    void loadDailyResult().then(setDailyResult);
     void Promise.all([loadLabelPathProgress('world'), loadLabelPathProgress('lagos')]).then(([world, lagos]) =>
       setLabelPaths({ world, lagos }),
     );
@@ -709,6 +720,26 @@ export default function App() {
       molLevel: { path, number },
       ...(challenge ? { challenge: { target: challenge.target } } : {}),
     });
+  };
+
+  /** Today's Daily 10, once a day: the same ten pairs for everyone today. */
+  const startDaily = () => {
+    if (todaysResult(dailyResult, todayKey)) return;
+    setLabelJustPassed(false);
+    setScreen({
+      name: 'game',
+      gameId: MORE_OR_LESS,
+      seed: dailySeed(todayKey),
+      daily: { day: todayKey, number: dailyNumber(todayKey) },
+    });
+  };
+
+  const shareDaily = () => {
+    const today = todaysResult(dailyResult, todayKey);
+    if (!today) return;
+    void shareResult(
+      buildDailyShareText({ number: dailyNumber(todayKey), streak: today.streak, bestStreak: boardFor(MORE_OR_LESS).bestStreak }),
+    );
   };
 
   /** Plays a friend's run: their seed, their level, their streak to beat. */
@@ -1245,6 +1276,12 @@ export default function App() {
               openLagos();
             }}
             lagosFresh={!lagosSeen}
+            daily={{
+              number: dailyNumber(todayKey),
+              result: todaysResult(dailyResult, todayKey),
+              onPlay: startDaily,
+              onShare: shareDaily,
+            }}
           />
         )}
 
@@ -1526,16 +1563,24 @@ export default function App() {
             // Remounting per seed guarantees a clean run rather than relying on
             // the reducer's initializer, which React only calls on first mount.
             key={screen.seed}
-            category={screen.live ? category : molCategory}
+            // The daily draws from the whole Popularity set, the same for everyone.
+            category={screen.live ? category : screen.daily ? snapshot : molCategory}
             seed={screen.seed}
             bestStreak={
               molRef ? bestStreakFor(labelPaths[molRef.path], molRef.number) : boardFor(screen.gameId).bestStreak
             }
             persist={!screen.live}
             session={
-              screen.challenge ? `challenge:${screen.seed}` : molRef ? `level:${molRef.path}:${molRef.number}` : undefined
+              screen.daily
+                ? `daily:${screen.daily.day}`
+                : screen.challenge
+                  ? `challenge:${screen.seed}`
+                  : molRef
+                    ? `level:${molRef.path}:${molRef.number}`
+                    : undefined
             }
             rival={screen.challenge?.target}
+            daily={screen.daily?.number}
             trail={
               molRef?.path === 'world'
                 ? {
@@ -1561,8 +1606,8 @@ export default function App() {
                 : undefined
             }
             labelRound={
-              // A challenge replays the friend's pairs exactly, so no unseen-first steering.
-              screen.live || !molTracksSet || screen.challenge
+              // A challenge or the daily replays exact pairs, so no unseen-first steering.
+              screen.live || !molTracksSet || screen.challenge || screen.daily
                 ? undefined
                 : {
                     seenCount: labelResolved.seenCount,
@@ -1585,7 +1630,9 @@ export default function App() {
             targetStreak={
               screen.live
                 ? moreOrLessLevelByNumber(screen.live.levelNumber)?.targetStreak
-                : undefined
+                : screen.daily
+                  ? DAILY_PAIRS
+                  : undefined
             }
             onScore={
               screen.live
@@ -1613,7 +1660,8 @@ export default function App() {
                   : setScreen({ name: 'home', gameId: screen.gameId })
             }
             coins={rewards.coins}
-            onSpend={screen.live ? undefined : (kind) => spendBoost(kind, 'more-or-less')}
+            // No boosts in the daily: everyone plays the same ten on equal terms.
+            onSpend={screen.live || screen.daily ? undefined : (kind) => spendBoost(kind, 'more-or-less')}
             onGameOver={async (state, detail) => {
               if (screen.live) return;
               const entryId = makeEntryId();
@@ -1698,7 +1746,13 @@ export default function App() {
                 molLevel: levelResult,
                 runSeed: screen.seed,
                 ...(screen.challenge ? { challenge: screen.challenge } : {}),
+                ...(screen.daily ? { daily: screen.daily.number } : {}),
               });
+              if (screen.daily) {
+                const result = { day: screen.daily.day, streak: Math.min(state.streak, DAILY_PAIRS) };
+                setDailyResult(result);
+                void saveDailyResult(result);
+              }
               if (screen.challenge && molRef) {
                 captureAnalytics('challenge_finished', {
                   level_number: molRef.number,
@@ -1747,7 +1801,7 @@ export default function App() {
             category={screen.molLevel ? levelCategory(screen.molLevel) : soloPool}
             board={boardFor(screen.gameId)}
             labelRound={
-              screen.molLevel && levelCategory(screen.molLevel).id !== snapshot.id
+              screen.daily || (screen.molLevel && levelCategory(screen.molLevel).id !== snapshot.id)
                 ? undefined
                 : {
                     roundsPassed: labelProgress.roundsPassed,
@@ -1763,6 +1817,7 @@ export default function App() {
                 : undefined
             }
             rival={screen.challenge?.target}
+            daily={screen.daily}
             isNewBest={screen.isNewBest}
             boosted={screen.boosted}
             events={screen.events}

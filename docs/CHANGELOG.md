@@ -6,6 +6,15 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.18.0] - 2026-10-25
+
+### Added
+- **Daily 10.** Ten Higher or Lower pairs, the same for everyone today, with one try a day: the Wordle loop.
+  - A card on Home shows today's number (#1 is 25 October 2026) with a 3D calendar.
+  - The run is headed "DAILY 10 · #N", ends on a miss or at ten, and has no boosts or paid second chance, so every score is earned on equal terms.
+  - The result shows your score out of ten. The card then becomes "Today: 7/10 · Share", with a spoiler-free paste: "WordKrush Daily #3 · 🟩🟩🟩🟩🟩🟩🟩🟥 · 7/10".
+  - Pairs come from the whole Popularity set, seeded by the local day, so it doesn't move anyone's weekly set.
+
 ## [0.17.0] - 2026-10-25
 
 ### Added

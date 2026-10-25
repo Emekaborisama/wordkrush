@@ -9,6 +9,7 @@ import { SHARE_MAX_SQUARES, composeShare, wrapSquares } from '../share';
 import { buildShareUrl, type MoreOrLessShareData } from '../share-data';
 import { pickCardPhotos } from './card-photos';
 import type { ChallengeRun } from './challenge';
+import { DAILY_PAIRS } from './daily';
 
 const CORRECT = '🟩';
 const WRONG = '🟥';
@@ -65,4 +66,23 @@ function moreOrLessVerdict(streak: number): string {
   if (streak < 5) return 'A start. Then one miss.';
   if (streak < 20) return 'Held the line, then blinked.';
   return 'A long wall. Then one brick.';
+}
+
+/**
+ * The Daily 10 paste: the day's number, a green square per right call (red
+ * where it ended, none if all ten held), and the score out of ten. Spoiler
+ * free like the rest; the link lands on the game, where today's daily waits.
+ */
+export function buildDailyShareText({ number, streak, bestStreak }: { number: number; streak: number; bestStreak: number }): string {
+  const perfect = streak >= DAILY_PAIRS;
+  const shareData: MoreOrLessShareData = { game: 'more-or-less', streak, bestStreak };
+  const photos = pickCardPhotos(`daily:${number}`);
+  if (photos) shareData.photos = photos;
+  return composeShare({
+    title: `WordKrush Daily #${number}`,
+    grid: wrapSquares(CORRECT.repeat(Math.min(streak, DAILY_PAIRS)) + (perfect ? '' : WRONG)),
+    standing: `${Math.min(streak, DAILY_PAIRS)}/${DAILY_PAIRS}`,
+    verdict: perfect ? 'A perfect ten. Your turn.' : 'Same ten pairs for everyone today. Your turn.',
+    url: buildShareUrl(shareData),
+  });
 }

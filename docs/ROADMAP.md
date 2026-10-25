@@ -66,6 +66,8 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 - [x] **Levels visible in every game** (ST-117) — **Done** in 0.14.0. A level trail in each play screen and a meadow level map, with Fluent 3D animals (D-071).
 - [x] **In-run twists** (ST-118) — **Done** in 0.15.0. Rising chime, Mystery rounds every fifth pair, and "So close!" on a narrow miss.
 - [x] **Challenge a friend** (ST-120) — **Done** in 0.17.0. Shared Higher or Lower level results replay the same pairs against the sharer's streak.
+- [x] **Daily 10** (ST-121) — **Done** in 0.18.0. The same ten Higher or Lower pairs for everyone each day, one try, with a share grid.
+- [ ] **Weekly league** — Duolingo-style weekly board. Needs a Supabase view over `global_scores` by week, which is an owner-applied migration. Not started.
 - [ ] **Better sound effects** — owner asked (2026-10-24). Kenney's CC0 interface, jingle and casino packs are the candidates. They need converting from Ogg for iOS and auditioning by the owner. Not started.
 - [ ] **A better popularity number than Wikipedia pageviews** — owner asked (2026-10-24). Needs an owner decision on the source and its licence (D-012). Not started.
 - [ ] **Millionaire-style lifelines for More or Less** — owner idea (2026-10-19): "phone a friend" and similar help during a run. Not started.
