@@ -47,6 +47,7 @@ import { GAME_ANIMAL } from '../fluent';
 import { HowToPlay } from '../HowToPlay';
 import type { Stone } from '../levelTrail';
 import { MeadowMap } from '../MeadowMap';
+import { MeadowRide, type MeadowHop } from '../MeadowRide';
 import { useHeightClass } from '../useHeightClass';
 import {
   afterModalClose,
@@ -137,6 +138,9 @@ export function WordfallScreen({
   const [coachSeen, setCoachSeen] = useState(false);
   const [help, setHelp] = useState(showHelpInitially);
   const [picking, setPicking] = useState(false);
+  // The fox's hop to the next level, after a win.
+  const [hop, setHop] = useState<(MeadowHop & { board: () => void }) | null>(null);
+  const hopCount = useRef(0);
   /** Bumped to force a fresh board for the same level number. */
   const [attempt, setAttempt] = useState(0);
 
@@ -252,13 +256,26 @@ export function WordfallScreen({
           return onLevelLost?.(score, levelNumber, elapsedMs, detail);
         }}
         onNext={() => {
-          setResume(null);
-          setRunBoosted(false);
-          const upcoming = levelByNumber(levelNumber + 1);
-          if (upcoming && isLevelPlayable(upcoming, unlockAfterWin(unlocked, levelNumber), new Date())) {
-            setLevelNumber(upcoming.number);
+          const goNext = () => {
+            setResume(null);
+            setRunBoosted(false);
+            const upcoming = levelByNumber(levelNumber + 1);
+            if (upcoming && isLevelPlayable(upcoming, unlockAfterWin(unlocked, levelNumber), new Date())) {
+              setLevelNumber(upcoming.number);
+            }
+            setAttempt((a) => a + 1);
+          };
+          // The fox hops to the next stone when there is one to hop to.
+          const unlockedAfter = unlockAfterWin(unlocked, levelNumber);
+          const stones = wordfallStones(unlockedAfter, levelNumber + 1, new Date());
+          const from = stones.find((stone) => stone.number === levelNumber);
+          const to = stones.find((stone) => stone.number === levelNumber + 1);
+          if (live || !from || !to || to.state === 'soon' || hop) {
+            goNext();
+            return;
           }
-          setAttempt((a) => a + 1);
+          hopCount.current += 1;
+          setHop({ key: hopCount.current, from, to, animal: GAME_ANIMAL.wordfall, board: goNext });
         }}
         onRetry={() => {
           setResume(null);
@@ -266,6 +283,8 @@ export function WordfallScreen({
           setAttempt((a) => a + 1);
         }}
       />
+
+      <MeadowRide ride={hop} onCovered={() => hop?.board()} onDone={() => setHop(null)} />
 
       <MeadowMap
         visible={picking && !live}

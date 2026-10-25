@@ -146,6 +146,7 @@ import { LabelLevelsPopup } from './src/ui/LabelLevelsPopup';
 import { GAME_ANIMAL } from './src/ui/fluent';
 import type { Stone } from './src/ui/levelTrail';
 import { MeadowMap } from './src/ui/MeadowMap';
+import { MeadowRide, type MeadowHop } from './src/ui/MeadowRide';
 import { DanfoRide, type DanfoRideStop } from './src/ui/lagos/DanfoRide';
 import { LagosAnnouncement } from './src/ui/lagos/LagosBanner';
 import { LagosScreen } from './src/ui/screens/LagosScreen';
@@ -450,6 +451,8 @@ export default function App() {
   const [lagosAnnouncement, setLagosAnnouncement] = useState(false);
   // The danfo carrying the player to a level; `board` starts it under the cover.
   const [ride, setRide] = useState<(DanfoRideStop & { board: () => void }) | null>(null);
+  // The world path's ride: the animal hopping to the next stone.
+  const [hop, setHop] = useState<(MeadowHop & { board: () => void }) | null>(null);
   const rideCount = useRef(0);
   // Opened at /isabilagos: skip the welcome and go straight to the route.
   const arrivedAtLagos = useRef(openedAtLagosPath());
@@ -736,13 +739,24 @@ export default function App() {
     });
   };
 
-  /** Boards a level by danfo: the bus pulls in with the stop's name, then the level shows. */
+  /**
+   * Boards a level with its game's ride: on the Lagos route the danfo pulls
+   * in with the stop's name; on the world path the lion hops along the meadow
+   * from the stone just cleared. Then the level shows.
+   */
   const rideToLevel = (path: LabelPathId, number = selectedLevel(path)) => {
     const level = labelLevel(path, number);
     if (!level) return;
-    if (ride) return;
+    if (ride || hop) return;
     rideCount.current += 1;
     const lagos = path === 'lagos';
+    const stones = pathStones(path, number);
+    const from = stones.find((stone) => stone.number === number - 1);
+    const to = stones.find((stone) => stone.number === number);
+    if (!lagos && from && to) {
+      setHop({ key: rideCount.current, from, to, animal: GAME_ANIMAL[MORE_OR_LESS], board: () => startLevel(path, number) });
+      return;
+    }
     setRide({
       key: rideCount.current,
       eyebrow: lagos ? `STOP ${level.number}` : `LEVEL ${level.number}`,
@@ -1894,6 +1908,7 @@ export default function App() {
           onClose={() => setShowFeedback(false)}
         />
         <DanfoRide ride={ride} onCovered={() => ride?.board()} onDone={() => setRide(null)} />
+        <MeadowRide ride={hop} onCovered={() => hop?.board()} onDone={() => setHop(null)} />
       </View>
     </SafeAreaView>
   );
