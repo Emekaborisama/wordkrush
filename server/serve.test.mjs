@@ -10,7 +10,7 @@
  * `applySearchSurface` that `build:web` runs, so "share HTML strips the
  * homepage tags" is checked against the head the site actually ships.
  */
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -75,6 +75,9 @@ beforeAll(async () => {
   await writeFile(join(root, 'index.html'), INDEX_HTML);
   // A stand-in clip: 1,000 known bytes, so a range can be checked exactly.
   await writeFile(join(root, 'clip.mp3'), Buffer.from(Array.from({ length: 1000 }, (_, i) => i % 256)));
+  // A content-hashed export asset, named the way Expo names them.
+  await mkdir(join(root, 'assets', 'music'), { recursive: true });
+  await writeFile(join(root, 'assets', 'music', 'loop.0123456789abcdef0123456789abcdef.mp4'), Buffer.alloc(64));
 
   // `serve.mjs` reads STATIC_ROOT once, at import time.
   process.env.STATIC_ROOT = root;
@@ -99,6 +102,25 @@ function maxAgeOf(response) {
   const directive = /max-age=(\d+)/.exec(response.headers.get('cache-control') ?? '');
   return directive ? Number(directive[1]) : null;
 }
+
+describe('/healthz', () => {
+  it('reports the release and that the app loaded, and is never cached', async () => {
+    const response = await fetch(`${origin}/healthz`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    const body = await response.json();
+    expect(body).toMatchObject({ ok: true, version });
+    expect(body.files).toBeGreaterThan(0);
+  });
+});
+
+describe('hashed export assets', () => {
+  it('are immutable, and the music loops go out as audio', async () => {
+    const response = await fetch(`${origin}/assets/music/loop.0123456789abcdef0123456789abcdef.mp4`);
+    expect(response.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+    expect(response.headers.get('content-type')).toBe('audio/mp4');
+  });
+});
 
 describe('audio files', () => {
   it('are served as audio and advertise byte ranges', async () => {
@@ -431,12 +453,13 @@ describe('parseByteRange', () => {
     expect(parseByteRange(undefined, 100)).toBeNull();
     expect(parseByteRange('bytes=0-1,5-9', 100)).toBeNull();
     expect(parseByteRange('items=0-1', 100)).toBeNull();
+    // Inverted is invalid rather than unsatisfiable (RFC 9110).
+    expect(parseByteRange('bytes=20-10', 100)).toBeNull();
   });
 
   it('marks a range outside the body unsatisfiable', async () => {
     const { parseByteRange } = await import('./serve.mjs');
     expect(parseByteRange('bytes=100-', 100)).toBe('unsatisfiable');
-    expect(parseByteRange('bytes=20-10', 100)).toBe('unsatisfiable');
     expect(parseByteRange('bytes=-0', 100)).toBe('unsatisfiable');
   });
 });

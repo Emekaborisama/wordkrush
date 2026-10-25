@@ -50,10 +50,10 @@ export function parseFeedbackSettings(raw: string | null): FeedbackSettings {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (isValidFeedbackSettings(parsed)) return parsed;
-    // Saved before music existed: keep the player's sound and vibration
-    // choices and give them the default music.
+    // Saved before music existed: keep the player's choices, and let music
+    // follow their sound switch, so a game they silenced stays silent.
     if (typeof parsed === 'object' && parsed !== null && !('music' in parsed)) {
-      const upgraded: unknown = { ...parsed, music: DEFAULT_FEEDBACK_SETTINGS.music };
+      const upgraded: unknown = { ...parsed, music: Reflect.get(parsed, 'sound') };
       if (isValidFeedbackSettings(upgraded)) return upgraded;
     }
     return DEFAULT_FEEDBACK_SETTINGS;

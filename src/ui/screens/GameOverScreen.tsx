@@ -189,7 +189,13 @@ export function GameOverScreen({
         scroll
         footer={footer}
         style={styles.panel}
-        accessibilityLabel={personalBest ? 'Game over. New personal best.' : 'Game over'}
+        accessibilityLabel={
+          level?.cleared
+            ? `${level.lagos ? 'You sabi' : 'Level cleared'}. ${level.label}.`
+            : personalBest
+              ? 'Game over. New personal best.'
+              : 'Game over'
+        }
       >
         <RewardPanel events={events} boosted={boosted} />
         {level ? (

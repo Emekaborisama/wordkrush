@@ -57,5 +57,7 @@ export function syncLagosPath(inLagos: boolean): void {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return;
   const atLagos = window.location.pathname.replace(/\/+$/, '').toLowerCase() === LAGOS_PATH;
   if (inLagos === atLagos) return;
-  window.history.replaceState(window.history.state, '', inLagos ? LAGOS_PATH : '/');
+  // Keep the query and hash: an ad's UTM tags belong in the address a player shares.
+  const rest = `${window.location.search}${window.location.hash}`;
+  window.history.replaceState(window.history.state, '', `${inLagos ? LAGOS_PATH : '/'}${rest}`);
 }

@@ -18,18 +18,24 @@ import { ensureAudioMode } from './sound';
 export type MusicTrack = 'menu' | 'play';
 
 const SOURCES: Record<MusicTrack, number> = {
-  menu: require('../../assets/music/danfo-groove-menu.m4a'),
-  play: require('../../assets/music/danfo-groove-play.m4a'),
+  menu: require('../../assets/music/danfo-groove-menu.mp4'),
+  play: require('../../assets/music/danfo-groove-play.mp4'),
 };
 
-/** Under the sound effects, so a right answer still pops out of the groove. */
-const VOLUME = 0.32;
+// The files carry their own level (about -10 dB, under the sound effects):
+// iOS Safari ignores programmatic volume, so a player-side 0.32 did nothing
+// there. Nothing here sets `volume`.
 
 const players = new Map<MusicTrack, AudioPlayer>();
-let enabled = true;
+// Off until the saved Settings arrive (`setMusicEnabled`), so a player who
+// switched music off never hears a bar of it on launch.
+let enabled = false;
 let wanted: MusicTrack | null = null;
 let background = false;
 let unlocked = Platform.OS !== 'web';
+// Native waits for the mixing audio mode before the first play; otherwise iOS
+// starts the session in its default mode and stops the player's own music.
+let modeReady = Platform.OS === 'web';
 let watching = false;
 
 function playerFor(track: MusicTrack): AudioPlayer | null {
@@ -38,7 +44,6 @@ function playerFor(track: MusicTrack): AudioPlayer | null {
   try {
     const player = createAudioPlayer(SOURCES[track]);
     player.loop = true;
-    player.volume = VOLUME;
     players.set(track, player);
     return player;
   } catch {
@@ -46,13 +51,24 @@ function playerFor(track: MusicTrack): AudioPlayer | null {
   }
 }
 
-/** Brings the players in line with what is wanted. Synchronous, so it can run inside a gesture. */
+/**
+ * Brings the players in line with what is wanted. Synchronous, so it can run
+ * inside a gesture. Reads `paused` rather than `playing`: on web, expo-audio
+ * marks a player playing even when the browser refused, which stopped retries.
+ */
 function sync(): void {
+  if (!modeReady) {
+    void ensureAudioMode().then(() => {
+      modeReady = true;
+      sync();
+    });
+    return;
+  }
   const target = enabled && unlocked && !background ? wanted : null;
   for (const [track, player] of players) {
     if (track === target) continue;
     try {
-      if (player.playing) player.pause();
+      if (!player.paused) player.pause();
     } catch {
       /* already gone */
     }
@@ -61,13 +77,19 @@ function sync(): void {
   const player = playerFor(target);
   if (!player) return;
   try {
-    if (!player.playing) player.play();
+    if (player.paused) player.play();
   } catch {
     /* not yet allowed by the browser, or interrupted */
   }
 }
 
-function unlockOnGesture(): void {
+/**
+ * A browser lets a page start audio only inside a real activation: a key, a
+ * click, a touch ending or a pointer lifting (a touch `pointerdown` does not
+ * count). Every one re-syncs, which is a no-op once music is playing, so a
+ * refused first attempt is retried on the next tap.
+ */
+function onGesture(): void {
   unlocked = true;
   sync();
 }
@@ -81,8 +103,9 @@ function watch(): void {
     sync();
   });
   if (Platform.OS === 'web' && typeof document !== 'undefined') {
-    document.addEventListener('pointerdown', unlockOnGesture, { capture: true, once: true });
-    document.addEventListener('keydown', unlockOnGesture, { capture: true, once: true });
+    for (const type of ['click', 'pointerup', 'touchend', 'keydown']) {
+      document.addEventListener(type, onGesture, { capture: true });
+    }
   }
 }
 
@@ -90,7 +113,6 @@ function watch(): void {
 export function setMusicTrack(track: MusicTrack | null): void {
   watch();
   wanted = track;
-  void ensureAudioMode();
   sync();
 }
 

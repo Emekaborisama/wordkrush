@@ -104,6 +104,10 @@ const MIME = {
   // served as application/octet-stream (the sound effects did, until 0.12.0).
   '.mp3': 'audio/mpeg',
   '.m4a': 'audio/mp4',
+  // The bundle's only .mp4 files are the music loops (AAC, no video). They use
+  // .mp4 rather than .m4a because Cloudflare caches .mp4 at the edge by
+  // default and passes .m4a straight through to this one server.
+  '.mp4': 'audio/mp4',
   '.wav': 'audio/wav',
   '.ogg': 'audio/ogg',
 };
@@ -128,9 +132,10 @@ export function parseByteRange(header, size) {
     return { start: Math.max(0, size - length), end: size - 1 };
   }
   const start = Number(from);
-  const end = to === '' ? size - 1 : Math.min(Number(to), size - 1);
-  if (start >= size || start > end) return 'unsatisfiable';
-  return { start, end };
+  // An inverted range is invalid, and RFC 9110 says to ignore it: whole body.
+  if (to !== '' && Number(to) < start) return null;
+  if (start >= size) return 'unsatisfiable';
+  return { start, end: to === '' ? size - 1 : Math.min(Number(to), size - 1) };
 }
 
 const COMPRESSIBLE = /^(text\/|application\/(javascript|json|xml)|image\/svg)/;
@@ -149,10 +154,28 @@ async function walk(dir) {
   return out;
 }
 
+/** Expo's exported assets carry a 32-hex content hash in the name, so a change is a new URL. */
+const HASHED_ASSET = /^\/assets\/.+\.[0-9a-f]{32}\.[a-z0-9]+$/i;
+
 function cacheControl(urlPath, type) {
   if (type.startsWith('text/html')) return 'no-cache';
-  if (urlPath.startsWith('/_expo/')) return 'public, max-age=31536000, immutable';
+  if (urlPath.startsWith('/_expo/') || HASHED_ASSET.test(urlPath)) return 'public, max-age=31536000, immutable';
   return 'public, max-age=3600';
+}
+
+const STARTED_AT = new Date().toISOString();
+
+/**
+ * `/healthz`: what an uptime monitor and Railway's health check ask. It says
+ * the process is up, which release it is, and whether the built app loaded,
+ * without touching the disk or rendering anything.
+ */
+function healthRecord() {
+  const ok = indexHtml !== null;
+  return {
+    status: ok ? 200 : 503,
+    body: JSON.stringify({ ok, version: OG_IMAGE_VERSION, startedAt: STARTED_AT, files: files.size }),
+  };
 }
 
 export async function warm() {
@@ -385,6 +408,18 @@ export async function handleRequest(req, res) {
 
   const url = new URL(req.url ?? '/', 'http://localhost');
   const pathname = url.pathname;
+
+  if (pathname === '/healthz') {
+    const health = healthRecord();
+    res.writeHead(health.status, {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      'x-content-type-options': 'nosniff',
+    });
+    if (req.method === 'HEAD') res.end();
+    else res.end(health.body);
+    return;
+  }
 
   // Try dynamic routes first
   let record = await handleCardImageRoute(pathname);

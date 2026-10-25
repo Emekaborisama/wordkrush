@@ -56,6 +56,9 @@ export function DanfoRide({
   const covered = useLatest(onCovered);
   const done = useLatest(onDone);
   const key = ride?.key;
+  // The ride key whose level has been boarded, so a replayed effect (the
+  // reduce-motion setting changing mid-ride) cannot board it twice.
+  const boarded = useRef<number | null>(null);
 
   useEffect(() => {
     if (key === undefined) return;
@@ -89,8 +92,11 @@ export function DanfoRide({
         ]);
     Animated.timing(cover, { toValue: 1, duration: RIDE.coverMs, easing: Easing.out(Easing.quad), useNativeDriver: true }).start(() => {
       if (stopped) return;
-      covered.current();
-      feedback('levelUp');
+      if (boarded.current !== key) {
+        boarded.current = key;
+        covered.current();
+        feedback('levelUp');
+      }
       if (reduceMotion) sign.setValue(1);
       reveal.start(({ finished }) => {
         if (finished && !stopped) done.current();
@@ -115,6 +121,7 @@ export function DanfoRide({
     <Animated.View
       style={[styles.root, ride.lagos ? styles.lagos : styles.world, { opacity: cover }]}
       accessibilityLiveRegion="polite"
+      accessibilityViewIsModal
       accessibilityLabel={`${ride.lagos ? 'Next stop' : 'Next level'}: ${ride.title}`}
     >
       {ride.lagos ? <Stripes /> : null}

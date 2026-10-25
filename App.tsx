@@ -54,6 +54,7 @@ import {
   EMPTY_LABEL_PATH,
   nextLevelNumber,
   recordLevelRun,
+  type LabelLevel,
   type LabelPathId,
   type LabelPathProgress,
 } from './src/games/more-or-less/labelPath';
@@ -427,6 +428,12 @@ export default function App() {
     world: EMPTY_LABEL_PATH,
     lagos: EMPTY_LABEL_PATH,
   });
+  // Mirrors `labelPaths` for callbacks that fire between renders (the
+  // per-answer streak bank), so two quick answers cannot read a stale copy.
+  const labelPathsRef = useRef(labelPaths);
+  labelPathsRef.current = labelPaths;
+  // Whether this level run made its first clear, banked before game over.
+  const runClearedNow = useRef(false);
   // The level a player picked on each path; null follows the first uncleared one.
   const [labelChoice, setLabelChoice] = useState<Record<LabelPathId, number | null>>({ world: null, lagos: null });
   const [levelsOpen, setLevelsOpen] = useState<LabelPathId | null>(null);
@@ -660,9 +667,30 @@ export default function App() {
 
   /** Boards a level of a label path: More or Less' levels or I Sabi Lagos. */
   const startLevel = (path: LabelPathId, number = selectedLevel(path)) => {
+    runClearedNow.current = false;
     setLabelJustPassed(false);
     setLabelChoice((current) => ({ ...current, [path]: number }));
     setScreen({ name: 'game', gameId: MORE_OR_LESS, seed: randomSeed(), molLevel: { path, number } });
+  };
+
+  /**
+   * Banks a level's clear and best the moment the streak earns them. Waiting
+   * for game over lost a clear to anyone who left during the second-chance
+   * offer, or mid-run, after "LEVEL CLEARED!".
+   */
+  const bankLevelStreak = (ref: MolLevelRef, level: LabelLevel, streak: number) => {
+    if (streak < level.targetStreak) return;
+    const current = labelPathsRef.current[ref.path];
+    const recorded = recordLevelRun(current, level, streak);
+    if (recorded.progress === current) return;
+    if (recorded.clearedNow) {
+      runClearedNow.current = true;
+      // A first clear moves the start screen on to the next level.
+      setLabelChoice((choice) => ({ ...choice, [ref.path]: null }));
+    }
+    labelPathsRef.current = { ...labelPathsRef.current, [ref.path]: recorded.progress };
+    setLabelPaths(labelPathsRef.current);
+    void saveLabelPathProgress(ref.path, recorded.progress);
   };
 
   /** Boards a level by danfo: the bus pulls in with the stop's name, then the level shows. */
@@ -758,14 +786,6 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [lagosSeen, hasScoreHistory, screen.name]);
 
-  // `/isabilagos` names the Lagos route and its runs, so the address a player
-  // copies opens it.
-  useEffect(() => {
-    const inLagos =
-      screen.name === 'lagos' ||
-      ((screen.name === 'game' || screen.name === 'over') && screen.molLevel?.path === 'lagos');
-    syncLagosPath(inLagos);
-  }, [screen]);
 
   // The menu groove everywhere but a game; the play groove inside one.
   useEffect(() => {
@@ -773,11 +793,15 @@ export default function App() {
   }, [screen.name]);
 
   useEffect(() => {
-    if (!historyReady.current) {
-      historyReady.current = true;
-      return;
-    }
-    noteWebNavigation(parentOf(screen) === null);
+    if (!historyReady.current) historyReady.current = true;
+    else noteWebNavigation(parentOf(screen) === null);
+    // `/isabilagos` names the Lagos route and its runs, so the address a
+    // player copies opens it. Set after the push, so the entry before keeps
+    // its own address and browser Back returns to `/`, not to Lagos.
+    const inLagos =
+      screen.name === 'lagos' ||
+      ((screen.name === 'game' || screen.name === 'over') && screen.molLevel?.path === 'lagos');
+    syncLagosPath(inLagos);
   }, [screen]);
 
   useEffect(() => {
@@ -1447,7 +1471,9 @@ export default function App() {
                     const target = moreOrLessLevelByNumber(screen.live!.levelNumber)?.targetStreak ?? 0;
                     void postMatchScore(screen.live!.matchId, score, target > 0 && score >= target, false);
                   }
-                : undefined
+                : molRef && molLevel
+                  ? (score) => bankLevelStreak(molRef, molLevel, score)
+                  : undefined
             }
             onDone={
               screen.live
@@ -1490,17 +1516,21 @@ export default function App() {
               }
               let levelResult: MolLevelResult | undefined;
               if (molRef && molLevel) {
-                const recorded = recordLevelRun(labelPaths[molRef.path], molLevel, state.streak);
-                if (recorded.progress !== labelPaths[molRef.path]) {
-                  setLabelPaths((current) => ({ ...current, [molRef.path]: recorded.progress }));
+                // Usually already banked mid-run (`bankLevelStreak`); this catches the rest.
+                const before = labelPathsRef.current[molRef.path];
+                const recorded = recordLevelRun(before, molLevel, state.streak);
+                if (recorded.progress !== before) {
+                  labelPathsRef.current = { ...labelPathsRef.current, [molRef.path]: recorded.progress };
+                  setLabelPaths(labelPathsRef.current);
                   await saveLabelPathProgress(molRef.path, recorded.progress);
                 }
+                const clearedNow = recorded.clearedNow || runClearedNow.current;
                 // A first clear moves the start screen on to the next level.
-                if (recorded.clearedNow) setLabelChoice((current) => ({ ...current, [molRef.path]: null }));
+                if (clearedNow) setLabelChoice((current) => ({ ...current, [molRef.path]: null }));
                 levelResult = {
                   ...molRef,
                   cleared: state.streak >= molLevel.targetStreak,
-                  clearedNow: recorded.clearedNow,
+                  clearedNow,
                 };
               }
               const reward = await finishRun({
@@ -1713,7 +1743,16 @@ export default function App() {
           />
         ) : null}
         <LagosAnnouncement
-          visible={lagosAnnouncement && screen.name === 'hub' && !showOnboarding}
+          // One pop-up at a time: iOS will not present a second sibling modal.
+          visible={
+            lagosAnnouncement &&
+            screen.name === 'hub' &&
+            !showOnboarding &&
+            !settingsOpen &&
+            !showFeedback &&
+            chestOpen === null &&
+            levelsOpen === null
+          }
           onEnter={openLagos}
           onLater={() => {
             setLagosAnnouncement(false);
