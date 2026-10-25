@@ -75,6 +75,8 @@ type Props = {
    * the streak still counts — but reaching it is celebrated on the board.
    */
   levelGoal?: { target: number; label: string; stop?: string };
+  /** Today's Daily 10: its number for the header and its own end-of-run copy. */
+  daily?: number;
   /** A friend's streak this run is challenging; shown in place of the level goal. */
   rival?: number;
   /** The level path for the play screen's trail (not on the Lagos route, which has its road). */
@@ -105,6 +107,7 @@ export function GameScreen({
   levelGoal,
   trail,
   rival,
+  daily,
   lagos = false,
   session,
 }: Props) {
@@ -223,7 +226,9 @@ export function GameScreen({
       if (!persist) return; // Live runs stay here and wait for teammates
       // The loss lands first: the count-up and the red rim. The offer follows,
       // and only when there is a streak to keep and the coins to keep it.
-      const canOffer = !chanceUsed.current && state.streak > 0 && coins >= boostPrice('second-chance');
+      // No spending (a Daily 10, a race): no paid second chance either.
+      const canOffer =
+        onSpend !== undefined && !chanceUsed.current && state.streak > 0 && coins >= boostPrice('second-chance');
       if (canOffer && chance === 'idle') {
         const show = setTimeout(() => setChance('offer'), REVEAL_BEFORE_OFFER_MS);
         return () => clearTimeout(show);
@@ -238,7 +243,7 @@ export function GameScreen({
       );
       return () => clearTimeout(t);
     }
-  }, [state.status, state.right.id, state.streak, targetStreak, onGameOver, persist, chance, state, coins]);
+  }, [state.status, state.right.id, state.streak, targetStreak, onGameOver, persist, chance, state, coins, onSpend]);
 
   const correct = state.lastGuessCorrect;
 
@@ -320,7 +325,7 @@ export function GameScreen({
     <View style={styles.root}>
       <GameHeader
         title={lagos ? 'I Sabi Lagos' : 'Higher or Lower'}
-        subtitle={levelGoal ? levelGoal.label : category.name}
+        subtitle={daily !== undefined ? `DAILY 10 · #${daily}` : levelGoal ? levelGoal.label : category.name}
         ribbon={lagos ? danfo.sign : undefined}
         onExit={onExit}
         onHelp={() => setHelp(true)}
@@ -416,7 +421,9 @@ export function GameScreen({
             title={
               correct
                 ? targetStreak != null && state.streak >= targetStreak
-                  ? 'Target reached!'
+                  ? daily !== undefined
+                    ? 'A perfect ten!'
+                    : 'Target reached!'
                   : lagos
                     ? 'You sabi!'
                     : 'Nice call!'
@@ -427,7 +434,9 @@ export function GameScreen({
             body={
               correct
                 ? targetStreak != null && state.streak >= targetStreak
-                  ? 'Race complete. Waiting for teammates…'
+                  ? daily !== undefined
+                    ? 'All ten right. Share it.'
+                    : 'Race complete. Waiting for teammates…'
                   : 'Streak saved. Next matchup incoming…'
                 : !persist
                   ? 'Race complete. Waiting for teammates…'

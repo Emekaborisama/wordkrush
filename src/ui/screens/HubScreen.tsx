@@ -19,6 +19,8 @@ import {
   StrokeText,
   XpBadge,
 } from '../components';
+import { DailyCard } from '../DailyCard';
+import type { DailyResult } from '../../games/more-or-less/daily';
 import { LagosBanner } from '../lagos/LagosBanner';
 import { font, palette, space, tone } from '../theme';
 
@@ -46,6 +48,8 @@ type Props = {
   onLagos: () => void;
   /** True until the player has opened I Sabi Lagos once: it wears a NEW tag. */
   lagosFresh: boolean;
+  /** Today's Daily 10: its number, today's result if played, and its two actions. */
+  daily?: { number: number; result: DailyResult | null; onPlay: () => void; onShare: () => void };
   labelRoundsPassed?: number;
 };
 
@@ -74,6 +78,7 @@ export function HubScreen({
   onAccount,
   onLagos,
   lagosFresh,
+  daily,
   labelRoundsPassed,
 }: Props) {
   // Four squares and the gold Play must fit a 360px phone.
@@ -93,6 +98,7 @@ export function HubScreen({
             </View>
           </View>
         </CreamBox>
+        {daily ? <DailyCard number={daily.number} result={daily.result} onPlay={daily.onPlay} onShare={daily.onShare} /> : null}
         <LagosBanner onPress={onLagos} fresh={lagosFresh} />
         <ChestCard status={chest} day={chestDay} onOpen={onOpenChest} />
         {/* The kit's list pop-up: every game a cream row with its own Play,

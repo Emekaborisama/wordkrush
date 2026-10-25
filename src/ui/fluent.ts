@@ -23,6 +23,7 @@ export const FLUENT = {
   sunflower: require('../../assets/fluent/sunflower.png'),
   mushroom: require('../../assets/fluent/mushroom.png'),
   star: require('../../assets/fluent/star.png'),
+  calendar: require('../../assets/fluent/calendar.png'),
 } satisfies Record<string, ImageSourcePropType>;
 
 export type FluentName = keyof typeof FLUENT;

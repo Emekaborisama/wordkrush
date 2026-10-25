@@ -4,7 +4,8 @@ import { captureAnalytics } from '../../analytics/client';
 import { streakBucket } from '../../analytics/events';
 import type { GameState } from '../../games/more-or-less/engine';
 import { challengeVerdict, type ChallengeRun } from '../../games/more-or-less/challenge';
-import { buildShareText } from '../../games/more-or-less/share';
+import { DAILY_PAIRS } from '../../games/more-or-less/daily';
+import { buildDailyShareText, buildShareText } from '../../games/more-or-less/share';
 import type { Category } from '../../games/more-or-less/types';
 import { feedback } from '../../native/feedback';
 import { shareResult } from '../../native/share';
@@ -58,6 +59,8 @@ type Props = {
   challengeRun?: ChallengeRun;
   /** The friend's streak this run was challenging, when it was one. */
   rival?: number;
+  /** Today's Daily 10 number, when this run was the daily. */
+  daily?: number;
 };
 
 export function GameOverScreen({
@@ -74,6 +77,7 @@ export function GameOverScreen({
   level,
   challengeRun,
   rival,
+  daily,
 }: Props) {
   const rank = rankOf(board, state.streak);
   const [shareNote, setShareNote] = useState<string | null>(null);
@@ -99,7 +103,9 @@ export function GameOverScreen({
       is_new_best: isNewBest,
     });
     const outcome = await shareResult(
-      buildShareText({ streak: state.streak, bestStreak: board.bestStreak, rank, challenge: challengeRun }),
+      daily !== undefined
+        ? buildDailyShareText({ number: daily, streak: state.streak, bestStreak: board.bestStreak })
+        : buildShareText({ streak: state.streak, bestStreak: board.bestStreak, rank, challenge: challengeRun }),
     );
     if (outcome === 'copied') {
       setShareNote('Copied to clipboard');
@@ -130,7 +136,7 @@ export function GameOverScreen({
         />
       ) : null}
       <Button
-        title={level && !level.cleared ? 'Try again' : 'Play again'}
+        title={daily !== undefined ? 'Play a level' : level && !level.cleared ? 'Try again' : 'Play again'}
         size={nextOpen ? 'md' : 'lg'}
         tone={nextOpen ? 'sky' : 'green'}
         onPress={onPlayAgain}
@@ -205,6 +211,18 @@ export function GameOverScreen({
         }
       >
         <RewardPanel events={events} boosted={boosted} />
+        {daily !== undefined ? (
+          // One try a day: the score, and the nudge to share it.
+          <CreamBox style={styles.challenge}>
+            <CreamText variant="teal" style={styles.challengeTitle}>
+              {`DAILY 10 · #${daily}`}
+            </CreamText>
+            <CreamText variant="title" style={styles.challengeText}>
+              {`${Math.min(state.streak, DAILY_PAIRS)}/${DAILY_PAIRS}${state.streak >= DAILY_PAIRS ? ' · perfect!' : ''}`}
+            </CreamText>
+            <CreamText style={styles.challengeText}>Share it. Everyone gets the same ten today.</CreamText>
+          </CreamBox>
+        ) : null}
         {rival !== undefined ? (
           // The challenge's answer: who won, in one line, then the way to a rematch.
           <CreamBox style={styles.challenge}>
