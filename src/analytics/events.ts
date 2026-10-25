@@ -207,6 +207,23 @@ export type AnalyticsEvents = {
   milestone_reached: {
     milestone_id: MilestoneId;
   };
+  /**
+   * Something threw. Only where it surfaced and whether it was fatal: never
+   * the message, stack or URL (OBSERVABILITY: exceptions are categorized
+   * locally). Capped per session by `src/analytics/observe.ts`.
+   */
+  app_error: {
+    kind: 'render' | 'uncaught' | 'unhandled_rejection';
+    fatal: boolean;
+  };
+  /** Web only, once per page view: Core Web Vitals as rounded numbers. */
+  web_vitals: {
+    lcp_ms?: number;
+    inp_ms?: number;
+    /** Cumulative layout shift ×1000, so it stays an integer. */
+    cls_milli?: number;
+    ttfb_ms?: number;
+  };
 };
 
 export type AnalyticsEventName = keyof AnalyticsEvents;
@@ -252,6 +269,8 @@ export const ANALYTICS_EVENT_NAMES: ReadonlySet<string> = new Set<AnalyticsEvent
   'daily_chest_claimed',
   'player_level_up',
   'milestone_reached',
+  'app_error',
+  'web_vitals',
 ]);
 
 export type LevelBucket = '1_4' | '5_9' | '10_19' | '20_plus';

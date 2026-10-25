@@ -78,9 +78,14 @@ describe('parseFeedbackSettings', () => {
     });
   });
 
-  it('upgrades a pre-music save without losing its sound and vibration choices', () => {
+  it('upgrades a pre-music save, with music following the sound switch', () => {
     expect(parseFeedbackSettings('{"sound":false,"vibration":false}')).toEqual({
       sound: false,
+      music: false,
+      vibration: false,
+    });
+    expect(parseFeedbackSettings('{"sound":true,"vibration":false}')).toEqual({
+      sound: true,
       music: true,
       vibration: false,
     });

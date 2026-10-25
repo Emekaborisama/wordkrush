@@ -44,7 +44,8 @@ const VOLUME: Record<SoundName, number> = {
 const players = new Map<SoundName, AudioPlayer>();
 /** Clips that have been played at least once, so we know a rewind is meaningful. */
 const started = new Set<SoundName>();
-let audioModeReady = false;
+/** One shared promise, so every caller waits for the same, finished, mode change. */
+let audioMode: Promise<void> | null = null;
 
 /**
  * Applied once, lazily, on the first play.
@@ -53,19 +54,21 @@ let audioModeReady = false;
  * stay silent. `mixWithOthers` means we duck nothing — someone playing on the
  * bus with their own music on keeps their music.
  */
-export async function ensureAudioMode(): Promise<void> {
-  if (audioModeReady) return;
-  audioModeReady = true;
+export function ensureAudioMode(): Promise<void> {
+  if (audioMode) return audioMode;
   preferAmbientWebAudio();
   try {
-    await setAudioModeAsync({
+    audioMode = setAudioModeAsync({
       playsInSilentMode: false,
       interruptionMode: 'mixWithOthers',
       shouldPlayInBackground: false,
+    }).catch(() => {
+      /* older device or unsupported browser — defaults are close enough */
     });
   } catch {
-    /* older device or unsupported browser — defaults are close enough */
+    audioMode = Promise.resolve();
   }
+  return audioMode;
 }
 
 /**

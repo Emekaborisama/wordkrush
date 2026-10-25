@@ -350,6 +350,18 @@ Implemented:
    `FeedbackPrompt`). `survey sent` posts to the capture endpoint even when
    analytics is declined; guests use a one-shot distinct id (D-063).
 
+10. A root `ErrorBoundary` (`src/ui/ErrorBoundary.tsx`) and global handlers
+    (`src/analytics/observe.ts`, installed in `index.ts`) send `app_error`
+    with only `kind` and `fatal`, capped at 10 per page view. Web counts only
+    errors from our own origin.
+11. `web_vitals` (web only) sends LCP, the slowest interaction (an INP
+    stand-in), CLS ×1000 and TTFB once per page view, when the tab hides
+    (`src/analytics/vitals.ts` is pure and tested).
+12. The external synthetic check runs as `.github/workflows/uptime.yml`
+    every 10 minutes against `/`, the main bundle, `/healthz` and
+    `/isabilagos`. A failure fails the run and GitHub emails the owner
+    (D-070). `/healthz` reports `ok`, the live version and the start time.
+
 Still separate:
 
 - PostHog dashboards are created from the event dictionary after production

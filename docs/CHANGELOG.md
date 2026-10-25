@@ -6,6 +6,36 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.13.0] - 2026-10-25
+
+### Added
+- **A crash no longer leaves a blank screen.** A root error boundary shows "Something went wrong" with a **Reload** button. Scores and progress are already saved.
+- **Production monitoring.**
+  - `/healthz` reports the live release and that the app loaded. Railway's health check now uses it.
+  - A GitHub Action checks every 10 minutes that https://wordkrush.com, its main bundle, `/healthz` and `/isabilagos` respond correctly. A failure fails the run, and GitHub emails the owner.
+  - After analytics consent, the app counts crashes (`app_error`) and Core Web Vitals (`web_vitals`) in PostHog.
+
+### Changed
+- **wordkrush.com runs behind Cloudflare.** DNS moved from Namecheap to Cloudflare, and Cloudflare now caches the game's code, images, share cards and music at the edge, so a launch spike no longer lands on the one Railway server. The music files are now `.mp4` (the same AAC audio) because Cloudflare caches `.mp4` by default and skipped `.m4a`. Expo's content-hashed `/assets/` files are now served as immutable.
+
+### Fixed
+- **A level clear can no longer be lost.** It is saved the moment the streak reaches the target. It used to wait until game over, after the 5-second second-chance offer, so leaving during the offer lost it.
+- **Music behaves.**
+  - It stays quiet until saved settings load, so a player who turned Music off never hears a bar of it.
+  - On iPhone it waits for the mixing audio mode, so launching the game no longer stops the player's own music.
+  - On phones' browsers it starts on a real tap (a touch `pointerdown` does not count as one), and a refused start is retried on the next tap.
+  - Its quieter level is baked into the files, because iOS Safari ignores volume set by code.
+- **Music follows your old sound setting.** A player who turned Sound off before 0.12.0 keeps a silent game: their saved setting now carries over as Music off.
+- **Browser Back after I Sabi Lagos returns to `/`**, not to `/isabilagos`, and `/isabilagos` keeps its `?utm…` tags.
+- **Smaller fixes.**
+  - The Lagos "NEW!" pop-up waits until no other pop-up is open.
+  - The danfo ride cannot start a level twice.
+  - Screen readers hear "Level cleared" on a cleared level, and focus stays inside the danfo ride while it covers the screen.
+  - An inverted byte range is answered with the whole file (RFC 9110).
+
+### Analytics
+- New events: `app_error` (`kind: render | uncaught | unhandled_rejection`, `fatal`) and `web_vitals` (`lcp_ms`, `inp_ms`, `cls_milli`, `ttfb_ms`). Neither carries messages, stacks or URLs.
+
 ## [0.12.0] - 2026-10-24
 
 ### Added
