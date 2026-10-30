@@ -2,8 +2,9 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getGame } from '../../games/registry';
 import { rankMatchScores } from '../../live/ranking';
 import type { LiveMatchSnapshot } from '../../live/types';
-import { Button, CreamBox, GlossFace, Panel, PanelText, Rays, ScoreWell, StrokeText } from '../components';
+import { Button, CountryFlag, CreamBox, GlossFace, Panel, PanelText, Rays, ScoreWell, StrokeText } from '../components';
 import { font, palette, space, tone, toneFrom, type GlossTone } from '../theme';
+import { usePlayerCountries } from '../usePlayerCountries';
 
 type Props = {
   snapshot: LiveMatchSnapshot;
@@ -22,6 +23,7 @@ const MEDAL: readonly GlossTone[] = [tone.gold, tone.grey, toneFrom('#D9822B')];
  */
 export function LiveResultsScreen({ snapshot, playerId, personalAdvanced, teamAdvanced, onDone }: Props) {
   const { match, players } = snapshot;
+  const countries = usePlayerCountries(players.map((player) => player.playerId));
   const game = getGame(match.gameId);
   const ranked = rankMatchScores(
     match.gameId,
@@ -64,9 +66,12 @@ export function LiveResultsScreen({ snapshot, playerId, personalAdvanced, teamAd
                       </StrokeText>
                     </GlossFace>
                     <View style={styles.flex}>
-                      <Text style={styles.name} numberOfLines={1}>
-                        {self ? 'You' : player?.username ?? 'Player'}
-                      </Text>
+                      <View style={styles.nameRow}>
+                        <CountryFlag code={countries.get(row.playerId)} size={15} />
+                        <Text style={styles.name} numberOfLines={1}>
+                          {self ? 'You' : player?.username ?? 'Player'}
+                        </Text>
+                      </View>
                       <Text style={styles.meta}>
                         {row.complete ? 'Complete' : 'Not complete'} · {row.score}
                       </Text>
@@ -103,6 +108,7 @@ const styles = StyleSheet.create({
   rowInner: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   medal: { width: 40, height: 40 },
   flex: { flex: 1 },
-  name: { fontFamily: font.black, fontSize: 16, lineHeight: 20, color: palette.ink },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  name: { flexShrink: 1, fontFamily: font.black, fontSize: 16, lineHeight: 20, color: palette.ink },
   meta: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: palette.inkSoft },
 });

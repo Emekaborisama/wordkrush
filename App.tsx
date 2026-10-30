@@ -110,6 +110,7 @@ import { EMPTY_BOARD, isNewBest, needsGlobalSync, type ScoreBoard, type ScoreDir
 import { duelPlayerFrom, type DuelIdentity } from './src/duel/identity';
 import { loadIdentity, saveIdentity } from './src/duel/identity-storage';
 import { roomFromPath } from './src/duel/rules';
+import { publishCountry } from './src/scores/countries';
 import { loadStreak, markPlayedToday } from './src/streak/storage';
 import { dayKey, EMPTY_STREAK, type DailyStreak } from './src/streak/types';
 import { applyFeedbackSettings, feedback } from './src/native/feedback';
@@ -681,6 +682,12 @@ export default function App() {
 
   const boardFor = (gameId: string) => boards[gameId] ?? EMPTY_BOARD;
   const duelPlayer = duelIdentity ? duelPlayerFrom(duelIdentity, profile?.username ?? null) : null;
+  const signedInId = profile?.id ?? null;
+  const shownCountry = duelPlayer ? duelPlayer.country : undefined;
+  // Boards read a signed-in player's flag from `players` (0009); hiding it clears it there.
+  useEffect(() => {
+    if (signedInId && shownCountry !== undefined) void publishCountry(signedInId, shownCountry);
+  }, [signedInId, shownCountry]);
   const labelResolved = resolveRound(snapshot, labelProgress);
   const soloPool = soloCategory(snapshot, labelProgress);
   /** The category a level plays. Popularity keeps its weekly set. */

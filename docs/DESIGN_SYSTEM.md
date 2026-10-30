@@ -280,7 +280,7 @@ Copy is pidgin from one table (`lagosCopy`): "Oya, enter!", "You sabi!",
 
 - `DuelCard` is Home's red card, above Daily 10, with the 3D crossed swords and the player's own flag and name.
 - `DuelHud` is the strip over the board: your side in gold, the clock in the middle (red for the last 10 seconds), your opponent on the right. A player who missed reads OUT, in words as well as fading, so colour never carries it alone.
-- `CountryFlag` is the only way to draw a flag. It renders nothing when there is no flag, so a hidden flag leaves no gap.
+- `CountryFlag` is the only way to draw a flag. It renders nothing when there is no flag, so a hidden flag leaves no gap. The same holds on the global board and in live races, which use it through `usePlayerCountries`.
 - A ghost always shows the ghost icon, and on cards the GHOST tag.
 - During a match `GameScreen` drops its HUD and pause tray (`hideHud`). A live clock cannot pause.
 - The 1v1 result shows coins and XP without the star ribbon (`RewardPanel stars={false}`), because a match has no star rating.

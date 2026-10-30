@@ -632,6 +632,8 @@ Scores and exits carry the sender's id, and the host answers only the first play
 
 **Where the flag comes from.** `loadIdentity` (`src/duel/identity-storage.ts`) keeps a random id, a guest name and a country in AsyncStorage. The country comes from `/country` in `server/serve.mjs`, which reads Cloudflare's `cf-ipcountry` header, and falls back to the device locale. A player's own pick is never overwritten. The flag is sent only to the current opponent.
 
+**Flags outside a match.** The global board and live races read `players.country_code` with `loadPlayerCountries` (`src/scores/countries.ts`, through `usePlayerCountries`), and `App.tsx` keeps a signed-in player's value current with `publishCountry`. That column comes from migration `0009`. It is not applied unless the owner has decided to; until then both calls fail quietly and these screens show no flags (D-073).
+
 **Failure modes.** No connection: a ghost. Search failing part-way: handshake timeouts return to searching or show a retry. A dead invite: "That invite does not work" with a button to find an opponent. Windows shows country letters instead of flag pictures, because it has no flag emoji.
 
 ## System reference

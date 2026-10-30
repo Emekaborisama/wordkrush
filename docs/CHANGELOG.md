@@ -6,6 +6,11 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.19.1] - 2026-10-30
+
+### Added
+- **Flags on leaderboards and live races, ready to switch on.** The global board, race lobby, race HUD and race results now draw a player's flag beside their name. Nothing shows yet: flags appear once migration `0009_player_country.sql` is applied, which is the owner's decision because it stores a country for each signed-in player. Until then these screens look and work as they did.
+
 ## [0.19.0] - 2026-10-30
 
 ### Added

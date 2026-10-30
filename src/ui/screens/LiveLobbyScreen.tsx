@@ -7,8 +7,9 @@ import { cancelMatch, joinMatch, leaveMatch, setReady, startMatch } from '../../
 import { pathRowByNumber } from '../../live/catalog';
 import type { LiveMatchSnapshot } from '../../live/types';
 import { useMatch } from '../../live/useMatch';
-import { Badge, Button, CreamBox, FeedbackBanner, Panel, PanelText } from '../components';
+import { Badge, Button, CountryFlag, CreamBox, FeedbackBanner, Panel, PanelText } from '../components';
 import { font, palette, space } from '../theme';
+import { usePlayerCountries } from '../usePlayerCountries';
 
 type Props = {
   matchId: string;
@@ -24,6 +25,7 @@ type Props = {
  */
 export function LiveLobbyScreen({ matchId, playerId, onRacing, onExit }: Props) {
   const { snapshot, error, refresh } = useMatch(matchId);
+  const countries = usePlayerCountries((snapshot?.players ?? []).map((player) => player.playerId));
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -125,6 +127,7 @@ export function LiveLobbyScreen({ matchId, playerId, onRacing, onExit }: Props) 
           {players.map((player) => (
             <CreamBox key={player.playerId} style={styles.row}>
               <View style={styles.rowInner}>
+                <CountryFlag code={countries.get(player.playerId)} size={16} />
                 <Text style={styles.name} numberOfLines={1}>
                   {player.username}
                   {player.playerId === playerId ? ' (you)' : ''}

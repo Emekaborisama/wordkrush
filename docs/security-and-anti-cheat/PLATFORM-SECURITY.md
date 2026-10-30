@@ -188,6 +188,11 @@ account id. Matches are client-authoritative, so a modified client can lie to it
 opponent. That is accepted because nothing received from another player reaches
 a shared board.
 
+**Flags on shared boards (D-073).** Migration `0009` is not applied by default.
+Once it is, a signed-in player's country is stored in `players.country_code` and
+is public next to their username. It is removed when they hide their flag and
+deleted with their account. The privacy policy must say so before it is applied.
+
 A published privacy policy is required before App Store submission regardless.
 
 ---

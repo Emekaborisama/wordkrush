@@ -11,6 +11,7 @@ import { boardForContexts, topScores, type ScoreBoard } from '../../scores/types
 import {
   Badge,
   Button,
+  CountryFlag,
   CreamBox,
   CreamText,
   EmptyState,
@@ -22,6 +23,7 @@ import {
   StrokeText,
   TabSwitch,
 } from '../components';
+import { usePlayerCountries } from '../usePlayerCountries';
 import { font, formatDuration, palette, space, tone, toneFrom, type GlossTone } from '../theme';
 
 type Props = {
@@ -208,6 +210,7 @@ function GlobalRows({
   gameName: string;
   onRefresh: () => void;
 }) {
+  const countries = usePlayerCountries(state.entries.map((entry) => entry.playerId));
   if (state.status === 'loading' && state.entries.length === 0) {
     return (
       <CreamBox style={styles.loading}>
@@ -246,6 +249,7 @@ function GlobalRows({
             key={entry.id}
             rank={entry.rank}
             title={entry.displayName}
+            flag={countries.get(entry.playerId)}
             detail={`${entry.score.toLocaleString('en-US')} ${scoreNoun} · ${formatDate(entry.playedAt)}${
               entry.durationMs !== null ? ` · ${formatDuration(entry.durationMs)}` : ''
             }`}
@@ -262,12 +266,14 @@ function GlobalRows({
 function ScoreRow({
   rank,
   title,
+  flag,
   detail,
   highlight,
   badges,
 }: {
   rank: number;
   title: string;
+  flag?: string;
   detail: string;
   highlight: boolean;
   badges: { label: string; tone: 'warning' | 'danger' }[];
@@ -282,9 +288,12 @@ function ScoreRow({
           </StrokeText>
         </GlossFace>
         <View style={styles.flex}>
-          <Text style={styles.rowTitle} numberOfLines={1}>
-            {title}
-          </Text>
+          <View style={styles.rowName}>
+            <CountryFlag code={flag} size={14} />
+            <Text style={[styles.rowTitle, styles.rowTitleText]} numberOfLines={1}>
+              {title}
+            </Text>
+          </View>
           <Text style={styles.rowDetail} numberOfLines={1}>
             {detail}
           </Text>
@@ -329,7 +338,9 @@ const styles = StyleSheet.create({
   rowMine: { borderColor: palette.goldDeep },
   rowInner: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   medal: { width: 40, height: 40 },
+  rowName: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   rowTitle: { fontFamily: font.black, fontSize: 16, lineHeight: 20, color: palette.ink },
+  rowTitleText: { flexShrink: 1 },
   rowDetail: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: palette.inkSoft },
   loading: { alignItems: 'center', gap: space.sm, paddingVertical: space.lg },
 });
