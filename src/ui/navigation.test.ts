@@ -36,6 +36,10 @@ describe('parentOf', () => {
     expect(parentOf({ name: 'auth' })).toEqual({ name: 'hub' });
   });
 
+  it('leaves a 1v1 for the hub', () => {
+    expect(parentOf({ name: 'duel' })).toEqual({ name: 'hub' });
+  });
+
   it('roots I Sabi Lagos at the hub and sends its runs back to the route', () => {
     expect(parentOf({ name: 'lagos' })).toEqual({ name: 'hub' });
     expect(parentOf({ name: 'game', gameId: 'more-or-less', molLevel: { path: 'lagos' } })).toEqual({ name: 'lagos' });

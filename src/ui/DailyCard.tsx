@@ -41,7 +41,7 @@ export function DailyCard({
             {`DAILY 10 · #${number}`}
           </StrokeText>
           <StrokeText size={20} stroke={palette.navyDeep} strokeWidth={2} depth={1.5} align="left" numberOfLines={1}>
-            {played ? `Today: ${score}/${DAILY_PAIRS}${score >= DAILY_PAIRS ? ' 🔥' : ''}` : "Today's 10 pairs"}
+            {played ? `Today: ${score}/${DAILY_PAIRS}${score >= DAILY_PAIRS ? ' 🔥' : ''}` : "Today's 10"}
           </StrokeText>
           <Text style={styles.meta}>{played ? 'New ten at midnight' : 'Same for everyone. One try.'}</Text>
         </View>

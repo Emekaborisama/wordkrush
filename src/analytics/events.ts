@@ -37,7 +37,7 @@ export type AnalyticsEvents = {
     session_result: 'signed_in' | 'guest';
   };
   screen_viewed: {
-    screen_name: 'hub' | 'home' | 'lagos' | 'game' | 'over' | 'scores' | 'auth' | 'teams' | 'live-lobby' | 'live-results';
+    screen_name: 'hub' | 'home' | 'lagos' | 'duel' | 'game' | 'over' | 'scores' | 'auth' | 'teams' | 'live-lobby' | 'live-results';
     game_id?: string;
   };
   game_selected: CommonGameProperties & {
@@ -225,6 +225,21 @@ export type AnalyticsEvents = {
     level_number: number;
     outcome: 'won' | 'tied' | 'lost';
   };
+  /** A 1v1 search began: a stranger, or joining a friend's link. */
+  duel_search_started: {
+    mode: 'random' | 'invite' | 'joined';
+  };
+  /** A 1v1 found its opponent. The ghost share is how thin the queue is. */
+  duel_matched: {
+    opponent: 'person' | 'ghost';
+    wait_bucket: 'under_5s' | '5_11s' | 'over_11s';
+  };
+  duel_finished: {
+    opponent: 'person' | 'ghost';
+    outcome: 'won' | 'lost' | 'tied';
+    opponent_left: boolean;
+    streak_bucket: '0_4' | '5_9' | '10_19' | '20_plus';
+  };
   /** Web only, once per page view: Core Web Vitals as rounded numbers. */
   web_vitals: {
     lcp_ms?: number;
@@ -282,6 +297,9 @@ export const ANALYTICS_EVENT_NAMES: ReadonlySet<string> = new Set<AnalyticsEvent
   'web_vitals',
   'challenge_accepted',
   'challenge_finished',
+  'duel_search_started',
+  'duel_matched',
+  'duel_finished',
 ]);
 
 export type LevelBucket = '1_4' | '5_9' | '10_19' | '20_plus';

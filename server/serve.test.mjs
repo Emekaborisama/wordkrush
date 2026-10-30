@@ -114,6 +114,20 @@ describe('/healthz', () => {
   });
 });
 
+describe('/country', () => {
+  it('answers with the country Cloudflare saw, and is never cached', async () => {
+    const response = await fetch(`${origin}/country`, { headers: { 'cf-ipcountry': 'NG' } });
+    expect(await response.json()).toEqual({ country: 'NG' });
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+  });
+
+  it('answers null without the header, or with Cloudflare unknown code', async () => {
+    expect(await (await fetch(`${origin}/country`)).json()).toEqual({ country: null });
+    const unknown = await fetch(`${origin}/country`, { headers: { 'cf-ipcountry': 'XX' } });
+    expect(await unknown.json()).toEqual({ country: null });
+  });
+});
+
 describe('hashed export assets', () => {
   it('are immutable, and the music loops go out as audio', async () => {
     const response = await fetch(`${origin}/assets/music/loop.0123456789abcdef0123456789abcdef.mp4`);

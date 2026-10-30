@@ -57,7 +57,16 @@ function XpGem() {
  * What a finished run earned, the kit way: the stars standing on the blue
  * scroll, then coin and XP chips that count up. Lives inside a result panel.
  */
-export function RewardPanel({ events, boosted }: { events: readonly RewardEvent[]; boosted: boolean }) {
+export function RewardPanel({
+  events,
+  boosted,
+  stars = true,
+}: {
+  events: readonly RewardEvent[];
+  boosted: boolean;
+  /** Off where a run has no star rating: an empty ribbon reads as a failure. */
+  stars?: boolean;
+}) {
   const xp = sumKind(events, 'xp');
   const coins = sumKind(events, 'coins');
   const earned = starsEarned(events);
@@ -68,7 +77,7 @@ export function RewardPanel({ events, boosted }: { events: readonly RewardEvent[
 
   return (
     <View style={styles.panel}>
-      <StarRibbon earned={earned} onStar={() => feedback('star')} />
+      {stars ? <StarRibbon earned={earned} onStar={() => feedback('star')} /> : null}
       <View style={styles.chips}>
         <RewardChip icon={<CoinIcon size={30} />} value={coins} label="coins" />
         <RewardChip icon={<XpGem />} value={xp} label="XP" />

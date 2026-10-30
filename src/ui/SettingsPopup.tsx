@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { canVibrate } from '../native/haptics';
 import type { FeedbackChannel, FeedbackSettings } from '../settings/types';
-import { Button, CreamBox, CreamText, GameIcon, PanelText, PopupModal, Toggle } from './components';
+import { Button, CountryFlag, CreamBox, CreamText, GameIcon, PanelText, PopupModal, Toggle } from './components';
 import { space, tone } from './theme';
 
 type Props = {
@@ -10,6 +10,9 @@ type Props = {
   feedbackSettings: FeedbackSettings;
   onToggleFeedback: (channel: FeedbackChannel) => void;
   signedInAs: string | null;
+  /** The flag beside the player's name; null when hidden or unknown. */
+  flag: string | null;
+  onFlag: () => void;
   onAccount: () => void;
   onScores: () => void;
   onTeams: () => void;
@@ -30,6 +33,8 @@ export function SettingsPopup({
   feedbackSettings,
   onToggleFeedback,
   signedInAs,
+  flag,
+  onFlag,
   onAccount,
   onScores,
   onTeams,
@@ -89,6 +94,13 @@ export function SettingsPopup({
         size="md"
         leading={<GameIcon name="user" size={24} color={tone.blue.outline} />}
         onPress={onAccount}
+      />
+      <Button
+        title="Your flag"
+        tone="blue"
+        size="md"
+        leading={flag ? <CountryFlag code={flag} size={22} /> : <GameIcon name="user" size={24} color={tone.blue.outline} />}
+        onPress={onFlag}
       />
       <View style={styles.pair}>
         <Button title="Scores" tone="green" size="md" style={styles.half} onPress={onScores} />
