@@ -19,7 +19,9 @@ import {
   StrokeText,
   XpBadge,
 } from '../components';
+import type { DuelPlayer } from '../../duel/rules';
 import { DailyCard } from '../DailyCard';
+import { DuelCard } from '../DuelCard';
 import type { DailyResult } from '../../games/more-or-less/daily';
 import { LagosBanner } from '../lagos/LagosBanner';
 import { font, palette, space, tone } from '../theme';
@@ -46,6 +48,8 @@ type Props = {
   onAccount: () => void;
   /** Opens I Sabi Lagos. */
   onLagos: () => void;
+  /** The 1v1 card, once the player's name and flag are known. */
+  duel?: { player: DuelPlayer; onPress: () => void };
   /** True until the player has opened I Sabi Lagos once: it wears a NEW tag. */
   lagosFresh: boolean;
   /** Today's Daily 10: its number, today's result if played, and its two actions. */
@@ -77,6 +81,7 @@ export function HubScreen({
   onTeams,
   onAccount,
   onLagos,
+  duel,
   lagosFresh,
   daily,
   labelRoundsPassed,
@@ -98,6 +103,7 @@ export function HubScreen({
             </View>
           </View>
         </CreamBox>
+        {duel ? <DuelCard player={duel.player} onPress={duel.onPress} /> : null}
         {daily ? <DailyCard number={daily.number} result={daily.result} onPlay={daily.onPlay} onShare={daily.onShare} /> : null}
         <LagosBanner onPress={onLagos} fresh={lagosFresh} />
         <ChestCard status={chest} day={chestDay} onOpen={onOpenChest} />

@@ -276,6 +276,15 @@ Copy is pidgin from one table (`lagosCopy`): "Oya, enter!", "You sabi!",
 - Both draw from one pure model, `src/ui/levelTrail.ts`.
 - `MeadowRide` is the between-levels ride for the meadow games, the counterpart of the danfo ride. It covers the screen in meadow (the level loads underneath), pops the cleared stone's stars, hops the animal three times along the path to the next stone under a wooden sign, then fades. It lasts about 2.2 s.
 
+**1v1** (0.19.0, D-072):
+
+- `DuelCard` is Home's red card, above Daily 10, with the 3D crossed swords and the player's own flag and name.
+- `DuelHud` is the strip over the board: your side in gold, the clock in the middle (red for the last 10 seconds), your opponent on the right. A player who missed reads OUT, in words as well as fading, so colour never carries it alone.
+- `CountryFlag` is the only way to draw a flag. It renders nothing when there is no flag, so a hidden flag leaves no gap.
+- A ghost always shows the ghost icon, and on cards the GHOST tag.
+- During a match `GameScreen` drops its HUD and pause tray (`hideHud`). A live clock cannot pause.
+- The 1v1 result shows coins and XP without the star ribbon (`RewardPanel stars={false}`), because a match has no star rating.
+
 ### Results
 
 The kit's "LEVEL COMPLETED" pop-up over the dimmed board:

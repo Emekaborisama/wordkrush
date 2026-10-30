@@ -178,6 +178,16 @@ Two obligations this strategy adds:
   matching PostHog person. There is no in-app deletion path yet; the privacy
   policy must state both destinations.
 
+**1v1 (D-072).** A match sends the opponent a display name, a flag and live
+streaks over a public Realtime channel. The name is the player's username, or a
+generated guest name, so guests have nothing to type or moderate. The country is
+derived from Cloudflare's `cf-ipcountry`, kept on the device and sent only to the
+current opponent; it is not stored on a server or sent to analytics, and the
+player can change or hide it. The id sent is random and device-local, never an
+account id. Matches are client-authoritative, so a modified client can lie to its
+opponent. That is accepted because nothing received from another player reaches
+a shared board.
+
 A published privacy policy is required before App Store submission regardless.
 
 ---

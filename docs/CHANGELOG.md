@@ -6,6 +6,23 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.19.0] - 2026-10-30
+
+### Added
+- **1v1 live.** A new card on Home finds you a real player online. No sign-in needed.
+  - Both of you get the same Higher or Lower pairs for one minute, and the longest streak wins.
+  - Both streaks update live, so you can see the race while you answer. A miss ends your run while your opponent plays on; a tie on streak goes to whoever reached it first.
+  - If someone leaves or drops off, the player still there wins.
+  - A match pays coins and XP and counts toward your best, like any run.
+- **Ghost players.** If nobody is free within 10 seconds, a ghost steps in, so a search never ends in nothing. Ghosts are computer players tuned to your best streak. They are always labelled as ghosts, and the result says so.
+- **Invite a friend.** "Invite a friend instead" gives you a link (`wordkrush.com/duel/<code>`) to send. The match starts as soon as they open it, and a first-time visitor goes straight in. A link is for one friend: if it's posted in a group, the first person in plays and anyone else is told the match has started.
+- **A flag beside your name.** Your flag shows on the Home card and to your opponent, worked out from your connection and falling back to your device's region. You can change it or hide it under Settings → Your flag. Guests get a friendly generated name such as "Swift Panda". Leaderboards do not show flags yet.
+- `/country` on our server, which returns the two-letter country Cloudflare reports for the visitor. It stores nothing.
+- Analytics: `duel_search_started` (`mode`), `duel_matched` (`opponent`, `wait_bucket`) and `duel_finished` (`opponent`, `outcome`, `opponent_left`, `streak_bucket`).
+
+### Changed
+- Home's Daily 10 title is now "Today's 10", so it fits on a 360-wide phone instead of being cut off.
+
 ## [0.18.1] - 2026-10-25
 
 ### Added

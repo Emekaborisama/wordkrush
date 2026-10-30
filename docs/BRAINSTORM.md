@@ -367,6 +367,15 @@ The warmer-word boost suggests a ranked vocabulary word for the player to submit
 
 ---
 
+## 14. 1v1 (added 2026-10-30)
+
+- **[GIVEN]** Owner: 1v1 against random players online, a country flag beside each player's name, and ghost players.
+- **[ASSUMED]** "Country map" means a flag. If a map was meant, the country code is already there to draw one.
+- **[ASSUMED]** One minute on the same pairs; a miss ends your run; longest streak wins; a tie goes to whoever reached it first. Why not first-to-miss: it would end most matches in seconds and reward guessing fast. The tunables are constants in `src/duel/rules.ts`.
+- **[ASSUMED]** A ghost joins after 10 seconds, tuned near the player's best so it is beatable. Ghosts are always labelled.
+- **[OPEN]** Whether wins should count for anything beyond the run itself: a rank, a win streak, a weekly table. Real wins need a server to be trusted (D-072).
+- **[OPEN]** Whether 1v1 should offer other categories or games. Today it is the full Popularity set.
+
 ## Correction log
 
 Append here whenever an assumption is confirmed or overturned. Never delete an entry — the trail is the point.

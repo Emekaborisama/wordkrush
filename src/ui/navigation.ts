@@ -9,6 +9,7 @@ export type Navigable =
   | { name: 'hub' }
   | { name: 'home'; gameId: string }
   | { name: 'lagos' }
+  | { name: 'duel' }
   | { name: 'game'; gameId: string; live?: unknown; molLevel?: { path: 'world' | 'lagos' } }
   | { name: 'over'; gameId: string; molLevel?: { path: 'world' | 'lagos' } }
   | { name: 'scores' }
@@ -30,6 +31,7 @@ export function parentOf(screen: Navigable): Parent | null {
       return null;
     case 'home':
     case 'lagos':
+    case 'duel':
     case 'scores':
     case 'teams':
       return { name: 'hub' };

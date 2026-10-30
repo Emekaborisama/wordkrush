@@ -73,3 +73,4 @@ export { GameIcon } from '../icons/GameIcon';
 export type { GameIconProps, IconName } from '../icons/GameIcon';
 export { LevelStone } from './LevelStone';
 export { LevelTrail } from './LevelTrail';
+export { CountryFlag } from './CountryFlag';

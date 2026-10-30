@@ -75,6 +75,12 @@ type Props = {
    * the streak still counts — but reaching it is celebrated on the board.
    */
   levelGoal?: { target: number; label: string; stop?: string };
+  /** A 1v1: the ribbon's label in place of the category. */
+  headerLabel?: string;
+  /** What a finished player reads while the other side plays on. */
+  waitingCopy?: string;
+  /** Drop the Streak / Best panels and the pause tray: a parent draws its own HUD and a live clock cannot pause. */
+  hideHud?: boolean;
   /** Today's Daily 10: its number for the header and its own end-of-run copy. */
   daily?: number;
   /** A friend's streak this run is challenging; shown in place of the level goal. */
@@ -108,6 +114,9 @@ export function GameScreen({
   trail,
   rival,
   daily,
+  headerLabel,
+  waitingCopy,
+  hideHud = false,
   lagos = false,
   session,
 }: Props) {
@@ -325,23 +334,25 @@ export function GameScreen({
     <View style={styles.root}>
       <GameHeader
         title={lagos ? 'I Sabi Lagos' : 'Higher or Lower'}
-        subtitle={daily !== undefined ? `DAILY 10 · #${daily}` : levelGoal ? levelGoal.label : category.name}
+        subtitle={headerLabel ?? (daily !== undefined ? `DAILY 10 · #${daily}` : levelGoal ? levelGoal.label : category.name)}
         ribbon={lagos ? danfo.sign : undefined}
         onExit={onExit}
         onHelp={() => setHelp(true)}
       />
 
-      <View style={styles.hud}>
-        <HudPanel label="Streak" value={state.streak} />
-        <HudPanel label="Best" value={state.bestStreak} />
-        {raceGoal ? (
-          <HudPanel label="Goal" value={targetStreak} />
-        ) : levelGoal ? (
-          <HudPanel label={rival !== undefined ? 'Rival' : 'Goal'} value={rival ?? levelGoal.target} />
-        ) : labelRound ? (
-          <HudPanel label="Seen" value={`${labelRound.seenCount}/${labelRound.total}`} />
-        ) : null}
-      </View>
+      {hideHud ? null : (
+        <View style={styles.hud}>
+          <HudPanel label="Streak" value={state.streak} />
+          <HudPanel label="Best" value={state.bestStreak} />
+          {raceGoal ? (
+            <HudPanel label="Goal" value={targetStreak} />
+          ) : levelGoal ? (
+            <HudPanel label={rival !== undefined ? 'Rival' : 'Goal'} value={rival ?? levelGoal.target} />
+          ) : labelRound ? (
+            <HudPanel label="Seen" value={`${labelRound.seenCount}/${labelRound.total}`} />
+          ) : null}
+        </View>
+      )}
       {levelGoal && lagos ? (
         <RoadProgress streak={state.streak} target={levelGoal.target} stop={levelGoal.stop ?? 'Lagos'} />
       ) : levelGoal && trail && !short ? (
@@ -444,37 +455,39 @@ export function GameScreen({
                     : 'Race complete. Waiting for teammates…'
                   : 'Streak saved. Next matchup incoming…'
                 : !persist
-                  ? 'Race complete. Waiting for teammates…'
+                  ? waitingCopy ?? 'Race complete. Waiting for teammates…'
                   : nearMissText(state.left.value, state.right.value)
             }
           />
         </View>
       )}
 
-      <BoostBar
-        onPause={() => setPaused(true)}
-        controls={
-          showBoosts
-            ? [
-                {
-                  kind: 'skip-pair',
-                  label: 'Skip pair',
-                  icon: 'skip',
-                  price: skipPrice,
-                  disabled: coins < skipPrice,
-                  disabledReason: coinShortfall(coins, skipPrice),
-                  onPress: () => {
-                    if (!spendBoost('skip-pair')) return;
-                    dispatch({
-                      type: 'restore',
-                      state: skipChallenger(state, pool, preferRef.current),
-                    });
+      {hideHud ? null : (
+        <BoostBar
+          onPause={() => setPaused(true)}
+          controls={
+            showBoosts
+              ? [
+                  {
+                    kind: 'skip-pair',
+                    label: 'Skip pair',
+                    icon: 'skip',
+                    price: skipPrice,
+                    disabled: coins < skipPrice,
+                    disabledReason: coinShortfall(coins, skipPrice),
+                    onPress: () => {
+                      if (!spendBoost('skip-pair')) return;
+                      dispatch({
+                        type: 'restore',
+                        state: skipChallenger(state, pool, preferRef.current),
+                      });
+                    },
                   },
-                },
-              ]
-            : []
-        }
-      />
+                ]
+              : []
+          }
+        />
+      )}
 
       {/* Provenance: the claim on screen must match what the data supports.
           Image credits are not decoration — CC BY / CC BY-SA require them. */}

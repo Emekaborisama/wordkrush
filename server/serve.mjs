@@ -409,6 +409,22 @@ export async function handleRequest(req, res) {
   const url = new URL(req.url ?? '/', 'http://localhost');
   const pathname = url.pathname;
 
+  // The visitor's country for the flag on their name in a 1v1, as Cloudflare
+  // saw it. Answered from the request alone: nothing is stored or logged, and
+  // `private, no-store` keeps one player's country out of any shared cache.
+  if (pathname === '/country') {
+    const header = req.headers['cf-ipcountry'];
+    const country = typeof header === 'string' && /^[A-Z]{2}$/.test(header) && header !== 'XX' ? header : null;
+    res.writeHead(200, {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'private, no-store',
+      'x-content-type-options': 'nosniff',
+    });
+    if (req.method === 'HEAD') res.end();
+    else res.end(JSON.stringify({ country }));
+    return;
+  }
+
   if (pathname === '/healthz') {
     const health = healthRecord();
     res.writeHead(health.status, {

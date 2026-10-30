@@ -614,6 +614,26 @@ Every level run is stored and uploaded as `game_id = more-or-less`, with the cat
 **5. `/isabilagos` is a web path, not a router.** [BUILT]
 `server/serve.mjs` already serves `index.html` for extensionless paths. `webHistory.ts` `openedAtLagosPath()` sends a visit to `/isabilagos` straight to the Lagos route and skips the welcome. While the Lagos route or a Lagos run is open, `syncLagosPath` keeps that address in the bar with `replaceState`, so it can be shared. The hub's yellow `LagosBanner` and the one-time `LagosAnnouncement` (shown only to returning players, `wordkrush.seen.isabilagos.v1`) are how players find it.
 
+## Journey 11 — Two strangers play a 1v1
+
+**In one line:** two players who have never met find each other on a shared Realtime channel, play the same seeded run on their own devices, and tell each other their streaks as they go. No tables, no migration, no sign-in.
+
+**Finding someone.** Tapping the Home card opens `DuelScreen`, which runs one `DuelController` (`src/duel/controller.ts`). The controller joins the public presence channel `wk-duel-queue-v1`. Everyone looking shows up there. `partnerFor` (`src/duel/rules.ts`) pairs the longest-waiting players, so both sides reach the same answer without talking to each other, and the host is the one who joined first. The host broadcasts `pick`, the guest answers `accept`, and both leave the queue for a private room, `wk-duel-room-<code>`. A `pick` that gets lost is sent again.
+
+**Nobody there.** After `GHOST_AFTER_MS` (10s) the search ends with a ghost (`src/duel/ghost.ts`): a seeded, simulated opponent whose streak is planned from the player's best (`ghostTarget`). The same happens at once if there is no backend at all. A ghost is always marked `ghost: true`, drawn with the ghost icon and tag, and named on the result. It is never counted as a person, and `duel_matched` reports it separately.
+
+**Inviting a friend.** `inviteFriend` opens a room straight away and shows `https://wordkrush.com/duel/<code>`. The server's normal page fallback serves the app at that address. `App.tsx` reads the code once with `roomFromPath`, skips the welcome and clears the address bar, so a refresh does not rejoin a dead room.
+
+**The match.** The room exchanges `ready`, then `go` with the seed and both players' names and flags. After a 3-second face-off both devices play `GameScreen` with `persist={false}` on the whole Popularity snapshot. It must be the whole snapshot: `soloPool` depends on the player's own weekly set, which would give the two sides different pairs. Each change sends `score {streak, done, atMs}`, and a heartbeat goes out every `HEARTBEAT_MS` (2.5s).
+
+Scores and exits carry the sender's id, and the host answers only the first player in, so a link posted in a group chat cannot disturb a match. The clock is final: `report` refuses answers after `DUEL_MS`, so both sides settle on the same answers during the grace period.
+
+**How it ends.** `settle` is the only rule. Longest streak wins, and equal streaks go to the lower `atMs`. It ends early once the player still going passes the one who missed, and otherwise at `DUEL_MS` (60s). If the opponent says `bye` or goes quiet for `SILENCE_FORFEIT_MS` (9s), the player still there wins. `DuelScreen` then calls `finishRun`, so a match pays like any run and goes on the player's own board with their own streak.
+
+**Where the flag comes from.** `loadIdentity` (`src/duel/identity-storage.ts`) keeps a random id, a guest name and a country in AsyncStorage. The country comes from `/country` in `server/serve.mjs`, which reads Cloudflare's `cf-ipcountry` header, and falls back to the device locale. A player's own pick is never overwritten. The flag is sent only to the current opponent.
+
+**Failure modes.** No connection: a ghost. Search failing part-way: handshake timeouts return to searching or show a retry. A dead invite: "That invite does not work" with a button to find an opponent. Windows shows country letters instead of flag pictures, because it has no flag emoji.
+
 ## System reference
 
 Quick map of where each journey step lives:
@@ -626,6 +646,7 @@ Quick map of where each journey step lives:
 | Display type | `@expo-google-fonts/exo-2`, `src/ui/fonts.ts`, `src/ui/theme.ts` | [BUILT] — Exo 2 on every app text tier (stand-in for the kit's Neuron, D-067); Fredoka stays for the server's share cards |
 | Fairness guard + difficulty bands | `src/games/more-or-less/pairing.ts` (+ 9 tests) | [BUILT] |
 | Daily 10 | `src/games/more-or-less/daily.ts` (+ `daily-storage.ts`), `buildDailyShareText`, `src/ui/DailyCard.tsx` | [BUILT] — `dailySeed(dayKey)` (FNV-1a over the local day) on the whole Popularity snapshot. Ten pairs (`targetStreak` 10), no `onSpend` so no boosts or second chance, a `daily:<day>` resume slot. One result per day in `wordkrush.more-or-less.daily.v1`; numbered from 2026-10-25 |
+| 1v1, ghosts and flags | `src/duel/` (rules, ghost, controller, transport, identity, country), `src/ui/screens/DuelScreen.tsx`, `src/ui/duel/DuelHud.tsx`, `src/ui/DuelCard.tsx`, `src/ui/FlagPicker.tsx`, `/country` in `server/serve.mjs` | [BUILT] — Realtime presence and broadcast on public channels (D-072), no tables. Pure rules and a controller tested with a fake network; see Journey 11 |
 | Challenge a friend | `src/games/more-or-less/challenge.ts`, `MoreOrLessShareData.challenge` in `src/games/share-data.ts`, `src/ui/ChallengePopup.tsx` | [BUILT] — a level result's share link carries `{seed, path, level}`. Opening `/share/<token>` offers the run: the same seed, no unseen-first steering, a `challenge:<seed>` resume slot, and a Rival HUD. The result gives the verdict, and Play again is a rematch. The server's card check ignores the extra field |
 | More or Less level paths + I Sabi Lagos | `src/games/more-or-less/{labelPath,labelPath-storage}.ts`, `src/data/more-or-less/{labelPaths,labelCategories}.ts`, `src/ui/lagos/`, `src/ui/screens/LagosScreen.tsx`, `src/ui/{LabelLevelCard,LabelLevelsPopup}.tsx` | [BUILT] — device-local unlocks and stars; `/isabilagos`; danfo ride between levels; scores stay under `more-or-less` with the category as context (Journey 8a, D-068) |
 | Engine reducer, pair selector, scoring | `src/games/more-or-less/engine.ts` | [BUILT] |

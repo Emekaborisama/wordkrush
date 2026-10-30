@@ -92,6 +92,8 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 
 - [ ] **Teams and live races** (ST-83) — **Doing**; private invite-only crew, 2–10 player simultaneous races on a numbered path, dual team/personal unlock. Needs `0006_teams_and_live_matches.sql`, `0007_team_crud.sql`, and `0008_live_roster_ten.sql` applied on the project.
 - [ ] **Live races hold 2–10** (ST-88) — **Doing**; player-facing copy plus the cap raise (D-055).
+- [x] **1v1 live, ghosts and flags** (ST-123) — **Done** in 0.19.0. Random matchmaking and friend links on Realtime with no sign-in (D-072), labelled ghosts when the queue is empty, and a flag beside each name.
+- [ ] **Flags on leaderboards and races** — blocked on the owner; storing a country per player needs a migration and a privacy decision.
 
 ## Track: native / App Store readiness
 

@@ -107,6 +107,9 @@ import {
   saveBoard,
 } from './src/scores/storage';
 import { EMPTY_BOARD, isNewBest, needsGlobalSync, type ScoreBoard, type ScoreDirection, type ScoreEntry } from './src/scores/types';
+import { duelPlayerFrom, type DuelIdentity } from './src/duel/identity';
+import { loadIdentity, saveIdentity } from './src/duel/identity-storage';
+import { roomFromPath } from './src/duel/rules';
 import { loadStreak, markPlayedToday } from './src/streak/storage';
 import { dayKey, EMPTY_STREAK, type DailyStreak } from './src/streak/types';
 import { applyFeedbackSettings, feedback } from './src/native/feedback';
@@ -138,7 +141,7 @@ import { joinMatch, postMatchScore } from './src/live/api';
 import type { LiveMatchSnapshot } from './src/live/types';
 import { clearExistingMembership } from './src/teams/api';
 import { parseTeamInviteUrl } from './src/teams/codes';
-import { afterModalClose, CoinsPill, SkyBackground, StreakPill, TopBar } from './src/ui/components';
+import { afterModalClose, CoinsPill, EmptyState, SkyBackground, StreakPill, TopBar } from './src/ui/components';
 import { parentOf, type Parent } from './src/ui/navigation';
 import {
   clearSharePath,
@@ -167,12 +170,14 @@ import { LagosScreen } from './src/ui/screens/LagosScreen';
 import { OnboardingScreen } from './src/ui/screens/OnboardingScreen';
 import type { RunReward } from './src/ui/rewards/RunReward';
 import { FeedbackPrompt } from './src/ui/FeedbackPrompt';
+import { FlagPicker } from './src/ui/FlagPicker';
 import { SettingsPopup } from './src/ui/SettingsPopup';
 import { AccountScreen } from './src/ui/screens/AccountScreen';
 import { CluelessScreen } from './src/ui/screens/CluelessScreen';
 import { GameOverScreen } from './src/ui/screens/GameOverScreen';
 import { GameScreen } from './src/ui/screens/GameScreen';
 import { GameStartScreen, PathRail, StartDetail } from './src/ui/screens/GameStartScreen';
+import { DuelScreen, type DuelFinish } from './src/ui/screens/DuelScreen';
 import { HubScreen } from './src/ui/screens/HubScreen';
 import { LiveLobbyScreen } from './src/ui/screens/LiveLobbyScreen';
 import { LivePlayShell } from './src/ui/screens/LivePlayShell';
@@ -208,6 +213,8 @@ type Screen =
   | { name: 'hub' }
   | { name: 'home'; gameId: string }
   | { name: 'lagos' }
+  /** A 1v1; `invite` is a friend's room when they arrived through a link. */
+  | { name: 'duel'; invite: string | null }
   | {
       name: 'game';
       gameId: string;
@@ -479,6 +486,10 @@ export default function App() {
   const rideCount = useRef(0);
   // Opened at /isabilagos: skip the welcome and go straight to the route.
   const arrivedAtLagos = useRef(openedAtLagosPath());
+  // Opened from a friend's 1v1 link: they are waiting, so go straight in.
+  const arrivedAtDuel = useRef(roomFromPath(openedAtPathname()));
+  const [duelIdentity, setDuelIdentity] = useState<DuelIdentity | null>(null);
+  const [flagPickerOpen, setFlagPickerOpen] = useState(false);
   // Opened from a friend's shared result: offer to replay their run.
   // The last Daily 10 played; today's when its day is today.
   const [dailyResult, setDailyResult] = useState<DailyResult | null>(null);
@@ -513,7 +524,12 @@ export default function App() {
   const todayChestDay = nextChestDay(rewards, todayKey) ?? (rewards.chest.day >= 1 ? rewards.chest.day : 1);
   const hasScoreHistory = Object.values(boards).some((board) => board.totalRuns > 0);
   const showOnboarding =
-    onboarding !== null && !onboarding.completed && boardsReady && !hasScoreHistory && !arrivedAtLagos.current;
+    onboarding !== null &&
+    !onboarding.completed &&
+    boardsReady &&
+    !hasScoreHistory &&
+    !arrivedAtLagos.current &&
+    arrivedAtDuel.current === null;
   const selectedLevel = (path: LabelPathId): number =>
     labelChoice[path] ?? nextLevelNumber(labelPaths[path], labelPath(path).length);
 
@@ -591,6 +607,11 @@ export default function App() {
     });
     void loadRoundProgress(FIRST_ROUND_ID).then(setLabelProgress);
     void loadDailyResult().then(setDailyResult);
+    void loadIdentity().then(setDuelIdentity);
+    if (arrivedAtDuel.current !== null) {
+      setScreen({ name: 'duel', invite: arrivedAtDuel.current });
+      clearSharePath();
+    }
     void Promise.all([loadLabelPathProgress('world'), loadLabelPathProgress('lagos')]).then(([world, lagos]) =>
       setLabelPaths({ world, lagos }),
     );
@@ -659,6 +680,7 @@ export default function App() {
   }, []);
 
   const boardFor = (gameId: string) => boards[gameId] ?? EMPTY_BOARD;
+  const duelPlayer = duelIdentity ? duelPlayerFrom(duelIdentity, profile?.username ?? null) : null;
   const labelResolved = resolveRound(snapshot, labelProgress);
   const soloPool = soloCategory(snapshot, labelProgress);
   /** The category a level plays. Popularity keeps its weekly set. */
@@ -907,7 +929,7 @@ export default function App() {
   // Set by the first game of the session: the announcement is for arriving at
   // the hub, not for coming back to it from a run.
   const playedThisSession = useRef(false);
-  if (screen.name === 'game') playedThisSession.current = true;
+  if (screen.name === 'game' || screen.name === 'duel') playedThisSession.current = true;
 
   // A returning player hears about I Sabi Lagos once, on the hub, when they
   // arrive. A first visit already has the welcome; it finds the banner later.
@@ -1104,6 +1126,31 @@ export default function App() {
     };
   };
 
+  /** Pays a finished 1v1 like any run: it is the same game on the full set. */
+  const finishDuel = async ({ seed, streak, verdict }: DuelFinish): Promise<RewardEvent[]> => {
+    const runId = makeEntryId();
+    const reward = await finishRun({
+      gameId: MORE_OR_LESS,
+      direction: 'higher',
+      entry: { id: runId, streak, categoryId: snapshot.id, playedAt: new Date().toISOString(), seed, boosted: false },
+      summary: (fresh) => ({ gameId: 'more-or-less', runId, streak, isNewBest: fresh, setCleared: false, boosted: false }),
+      analytics: {
+        game_id: 'more-or-less',
+        outcome: verdict === 'won' ? 'win' : 'loss',
+        score: streak,
+        score_kind: 'streak',
+        category_id: snapshot.id,
+      },
+    });
+    return reward.events;
+  };
+
+  const changeIdentity = (next: DuelIdentity) => {
+    setDuelIdentity(next);
+    void saveIdentity(next);
+    setFlagPickerOpen(false);
+  };
+
   const spendBoost = (kind: BoostKind, gameId: 'more-or-less' | 'clueless' | 'wordfall'): boolean => {
     const result = spend(rewardsRef.current, kind);
     if (!result.ok) return false;
@@ -1134,7 +1181,8 @@ export default function App() {
   // Game and result screens own the whole viewport, as in the kit: a top bar
   // over a live round is a mis-tap waiting to happen, and a result pop-up sits
   // straight on the dimmed board.
-  const playing = screen.name === 'game' || screen.name === 'over' || screen.name === 'live-results';
+  const playing =
+    screen.name === 'game' || screen.name === 'over' || screen.name === 'live-results' || screen.name === 'duel';
   const showChrome = !playing;
   const activeSoloCluelessLevel =
     screen.name === 'game' && screen.gameId === 'clueless' && !screen.live
@@ -1276,12 +1324,36 @@ export default function App() {
               openLagos();
             }}
             lagosFresh={!lagosSeen}
+            duel={
+              duelPlayer
+                ? {
+                    player: duelPlayer,
+                    onPress: () => {
+                      captureAnalytics('game_selected', { game_id: MORE_OR_LESS, source: 'hub' });
+                      setScreen({ name: 'duel', invite: null });
+                    },
+                  }
+                : undefined
+            }
             daily={{
               number: dailyNumber(todayKey),
               result: todaysResult(dailyResult, todayKey),
               onPlay: startDaily,
               onShare: shareDaily,
             }}
+          />
+        )}
+
+        {/* Up to a moment on a first visit, while the flag is worked out. */}
+        {screen.name === 'duel' && !duelPlayer && <EmptyState title="1v1" body="Getting you ready…" />}
+        {screen.name === 'duel' && duelPlayer && (
+          <DuelScreen
+            me={duelPlayer}
+            bestStreak={boardFor(MORE_OR_LESS).bestStreak}
+            category={snapshot}
+            invite={screen.invite}
+            onExit={() => setScreen({ name: 'hub' })}
+            onFinished={finishDuel}
           />
         )}
 
@@ -2006,6 +2078,11 @@ export default function App() {
           feedbackSettings={feedbackSettings}
           onToggleFeedback={toggleFeedback}
           signedInAs={profile?.username ?? null}
+          flag={duelPlayer?.country ?? null}
+          onFlag={() => {
+            setSettingsOpen(false);
+            afterModalClose(() => setFlagPickerOpen(true));
+          }}
           onAccount={() => {
             setSettingsOpen(false);
             setScreen({ name: 'auth', returnGameId: activeGameId });
@@ -2024,6 +2101,18 @@ export default function App() {
             afterModalClose(() => setShowFeedback(true));
           }}
           version={appConfig.expo.version}
+        />
+        <FlagPicker
+          visible={flagPickerOpen}
+          current={duelIdentity?.country ?? null}
+          hidden={duelIdentity?.flagHidden === true}
+          onPick={(code) => {
+            if (duelIdentity) changeIdentity({ ...duelIdentity, country: code, countryChosen: true, flagHidden: false });
+          }}
+          onHide={() => {
+            if (duelIdentity) changeIdentity({ ...duelIdentity, flagHidden: true });
+          }}
+          onClose={() => setFlagPickerOpen(false)}
         />
         <FeedbackPrompt
           visible={showFeedback}
