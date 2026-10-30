@@ -3,6 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { PathGameId } from '../../games/campaign';
 import type { LivePlayer } from '../../live/types';
 import { remainingMs } from '../../live/types';
+import { CountryFlag } from '../components';
+import { usePlayerCountries } from '../usePlayerCountries';
 import { font, formatDuration, palette, space } from '../theme';
 
 type Props = {
@@ -30,6 +32,7 @@ function scoreLabel(gameId: PathGameId, player: LivePlayer): string {
  * end, and a chip per racer (gold rim on you).
  */
 export function LiveRaceHud({ gameId, endsAt, players, selfId }: Props) {
+  const countries = usePlayerCountries(players.map((player) => player.playerId));
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 250);
@@ -49,9 +52,12 @@ export function LiveRaceHud({ gameId, endsAt, players, selfId }: Props) {
           const self = player.playerId === selfId;
           return (
             <View key={player.playerId} style={[styles.rival, self && styles.self]}>
-              <Text style={styles.rivalName} numberOfLines={1}>
-                {self ? 'You' : player.username}
-              </Text>
+              <View style={styles.rivalId}>
+                <CountryFlag code={countries.get(player.playerId)} size={11} />
+                <Text style={styles.rivalName} numberOfLines={1}>
+                  {self ? 'You' : player.username}
+                </Text>
+              </View>
               <Text style={styles.rivalScore}>{scoreLabel(gameId, player)}</Text>
             </View>
           );
@@ -90,6 +96,7 @@ const styles = StyleSheet.create({
     maxWidth: 140,
   },
   self: { borderColor: palette.goldDeep, backgroundColor: '#FFF3B8' },
-  rivalName: { fontFamily: font.heavy, fontSize: 11, color: palette.inkSoft },
+  rivalId: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  rivalName: { flexShrink: 1, fontFamily: font.heavy, fontSize: 11, color: palette.inkSoft },
   rivalScore: { fontFamily: font.black, fontSize: 13, color: palette.ink },
 });
