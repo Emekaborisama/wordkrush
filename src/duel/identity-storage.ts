@@ -6,7 +6,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { countryFromLocale, normalizeCountry } from './country';
-import { newIdentity, parseIdentity, type DuelIdentity } from './identity';
+import { newIdentity, parseIdentity, withDetectedCountry, type DuelIdentity } from './identity';
 
 const STORAGE_KEY = 'wordkrush.duel.identity.v1';
 const COUNTRY_TIMEOUT_MS = 2_500;
@@ -44,14 +44,17 @@ function localeCountry(): string | null {
   }
 }
 
-/** Loads the identity, creating it the first time and filling in the country once. */
-export async function loadIdentity(): Promise<DuelIdentity> {
-  let stored: DuelIdentity | null = null;
+async function storedIdentity(): Promise<DuelIdentity | null> {
   try {
-    stored = parseIdentity(await AsyncStorage.getItem(STORAGE_KEY));
+    return parseIdentity(await AsyncStorage.getItem(STORAGE_KEY));
   } catch {
-    /* start fresh */
+    return null;
   }
+}
+
+/** Loads the identity, creating it the first time. A first visit waits for its flag. */
+export async function loadIdentity(): Promise<DuelIdentity> {
+  const stored = await storedIdentity();
   const identity = stored ?? newIdentity(Math.random);
   if (identity.country !== null || identity.countryChosen) {
     if (!stored) await saveIdentity(identity);
@@ -60,5 +63,19 @@ export async function loadIdentity(): Promise<DuelIdentity> {
   const country = (await serverCountry()) ?? localeCountry();
   const next = { ...identity, country };
   await saveIdentity(next);
+  return next;
+}
+
+/**
+ * Looks at the connection again without holding up the launch, so a flag that
+ * came from a VPN corrects itself. Reads storage after the wait, so a flag
+ * picked in the meantime wins.
+ */
+export async function refreshCountry(): Promise<DuelIdentity | null> {
+  const seen = await serverCountry();
+  const identity = await storedIdentity();
+  if (!identity) return null;
+  const next = withDetectedCountry(identity, seen ?? (identity.country === null ? localeCountry() : null));
+  if (next !== identity) await saveIdentity(next);
   return next;
 }
