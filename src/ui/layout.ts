@@ -5,6 +5,12 @@ export const WIDE_MIN = 720;
  * centred on the full-bleed sky, rather than stretching cards across a desk.
  */
 export const COLUMN_MAX_WIDTH = 500;
+/**
+ * Home is the exception. A board is phone-shaped; a list of games is not, and
+ * on a laptop the games sit side by side at full size instead of queueing in
+ * a column with the desk empty either side.
+ */
+export const HOME_MAX_WIDTH = 1040;
 
 export function isWideLayout(width: number): boolean {
   return width >= WIDE_MIN;

@@ -5,38 +5,6 @@ import { DanfoBus } from './DanfoBus';
 import { danfo, lagosCopy } from './danfoTheme';
 
 /**
- * The hub's way into I Sabi Lagos: a danfo-yellow card with the black stripes,
- * the bus, a NEW tag and the conductor's call. The whole card is the button.
- */
-export function LagosBanner({ onPress, fresh = true }: { onPress: () => void; fresh?: boolean }) {
-  return (
-    <PressableScale
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`${fresh ? 'New. ' : ''}I Sabi Lagos. ${lagosCopy.question}`}
-      style={styles.card}
-    >
-      <View style={styles.stripes} pointerEvents="none">
-        <View style={styles.stripe} />
-        <View style={[styles.stripe, styles.stripeThin]} />
-      </View>
-      <View style={styles.row}>
-        <DanfoBus width={112} destination="ISABI LAGOS" driving />
-        <View style={styles.copy}>
-          {fresh ? <Badge label="NEW" tone="danger" /> : null}
-          <Text style={styles.title}>{lagosCopy.title}</Text>
-          <Text style={styles.subtitle}>{lagosCopy.question}</Text>
-        </View>
-      </View>
-      <View style={styles.cta}>
-        <Text style={styles.ctaText}>{lagosCopy.enter}</Text>
-        <GameIcon name="play" size={18} color={palette.white} />
-      </View>
-    </PressableScale>
-  );
-}
-
-/**
  * Shown once to a returning player so they know I Sabi Lagos exists: the
  * danfo, what it is, and two ways out.
  */
