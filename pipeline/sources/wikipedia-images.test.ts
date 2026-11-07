@@ -6,6 +6,7 @@ import {
   preferPhotoFirst,
   selectFallbackCandidates,
   stripHtml,
+  collapseDoubled,
 } from './wikipedia-images';
 
 describe('isFreeLicense', () => {
@@ -149,5 +150,17 @@ describe('stripHtml', () => {
 
   it('decodes entities and collapses whitespace', () => {
     expect(stripHtml('<span>Bob  &amp;\n  Alice</span>')).toBe('Bob & Alice');
+  });
+});
+
+describe('collapseDoubled', () => {
+  it('keeps one copy of a name Commons nested twice', () => {
+    expect(collapseDoubled('Unknown authorUnknown author')).toBe('Unknown author');
+  });
+
+  it('leaves ordinary names alone', () => {
+    expect(collapseDoubled('Jane Doe')).toBe('Jane Doe');
+    expect(collapseDoubled('AnnaAnnabel')).toBe('AnnaAnnabel');
+    expect(collapseDoubled('')).toBe('');
   });
 });

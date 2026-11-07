@@ -94,9 +94,10 @@ The player asked "does *sushi* have more searches than *pizza*?" — this is how
 
 **1. We author terms.** [BUILT]
 [pipeline/keywords/wikipedia-popularity.json](../pipeline/keywords/wikipedia-popularity.json) is the original 50 — display `label` plus the exact `term` sent to the pageviews source. A much larger filtered list lives in [pipeline/keywords/wikipedia-popularity-reservoir.json](../pipeline/keywords/wikipedia-popularity-reservoir.json) (`npm run pipeline:reservoir`). Play never reads the reservoir. The bundled snapshot queues **label rounds** (`rounds[].itemIds`); solo More or Less plays only the player's current round until every name in it has been shown.
+Since 0.11.0 there is one keyword file per **level label**: `wikipedia-music-stars`, `-hit-songs`, `-movies`, `-football-stars`, `-world-cities` and `-food`, plus seven `lagos-*` files for I Sabi Lagos. Each is built with `CATEGORY=<id> npx tsx pipeline/preview-category.ts` into `src/data/categories/<id>.json`. A `term` must be the canonical article, because pageviews are counted per exact title: a redirect or disambiguation page reads near zero or names something else. An optional `imageTerm` takes the photo from another article when the item itself has no freely licensed image, for example a song showing its artist. The label names that artist, so the photo stays honest. Only the Popularity snapshot (`DEFAULT_CATEGORY_ID`) is written with label rounds. The other categories are single-set levels.
 
 **2. Ingest fetches real numbers — in batches, long before any player sees them.** [BUILT]
-`npm run pipeline:ingest` ([ingest.ts](../pipeline/ingest.ts)) pulls volumes through a **source adapter** in batches of 20. The shipped adapter is Wikimedia pageviews (`pipeline/sources/wikipedia.ts`); the mock remains available for deterministic checks, but the real path is no longer a one-file swap. The uncomfortable fact driving that design is now different: the v1 metric is monthly Wikipedia pageviews, not Google search volume.
+`npm run pipeline:ingest` ([ingest.ts](../pipeline/ingest.ts)) pulls volumes through a **source adapter** in batches of 20. The shipped adapter is Wikimedia pageviews (`pipeline/sources/wikipedia.ts`). Its pageview and image requests go through `politeFetch` (`pipeline/sources/politeFetch.ts`), which retries an HTTP 429 with backoff and honours `Retry-After`, so one rate-limited batch no longer aborts a build; the mock remains available for deterministic checks, but the real path is no longer a one-file swap. The uncomfortable fact driving that design is now different: the v1 metric is monthly Wikipedia pageviews, not Google search volume.
 
 **2b. The LLM referee cross-checks the numbers.** [BUILT — see [validator/README.md](../validator/README.md)]
 Before values ship, each pair can be put to an LLM under a schema tight enough that it cannot answer with anything but the answer: `verdict` (3-way enum), `confidence` (3-way enum), and a 200-char `reasoning` used for audit only, never for any decision. Every pair is asked **twice — A-vs-B and B-vs-A** — because models favour whichever option comes first; if the two answers don't mirror each other, the judgement is discarded as position bias. We flag only when the LLM is *confident and contradicts our data*, because flagging low-confidence noise would bury a human in false positives.
@@ -115,7 +116,7 @@ The JSON diff goes up in a PR — **the diff is the content review**. CI must pa
 **6. The player sees the number** — with its provenance ("Source: monthly Wikipedia pageviews, <month year>") [PLANNED], so the claim on screen is exactly the claim the data supports.
 
 **7. Weekly rotation enqueues a new labelled set.** [BUILT]
-Monday 09:00 UTC (and `workflow_dispatch`) GitHub Action [wikipedia-popularity-weekly.yml](../.github/workflows/wikipedia-popularity-weekly.yml) runs `npm run pipeline:rotate`. That job re-measures every item already in the snapshot (Wikimedia pageviews plus freely-licensed images — same builder as `pipeline:preview`) because the factory ingest→export path is still blocked on the 0001 migration. It then samples an unused round of about 25 playable articles from the reservoir and **appends** it. It does not swap the set a player is currently on; they stay until they exhaust it. Images prefer the article's free lead (`pageimages`); when that is a fair-use logo or screenshot and `pageimages` returns nothing, [wikipedia-images.ts](../pipeline/sources/wikipedia-images.ts) walks other files on the page and ships the first freely-licensed photograph. Fair-use files are still skipped. A thrown fetch (Wikimedia 429, network) keeps the picture already in the bundled JSON rather than treating a blank as a content change. The job compares the new file to the bundled JSON and **skips the PR** when only `updatedAt` would change and no round was appended. A material change writes the JSON, bumps the patch version, adds a new changelog section, runs `npm run check`, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. The D-041 version bump of `package.json` / `app.json` is changelog, not a stack/system change (D-049), so that check can pass on a content-only rotate. Swings >10x vs the currently shipped values are listed on the PR; a human merges. The job never pushes to `master` and never fetches at play time (D-004, D-036, D-052). Output stays `provisional: true` until ST-35 lands.
+Monday 09:00 UTC (and `workflow_dispatch`) GitHub Action [wikipedia-popularity-weekly.yml](../.github/workflows/wikipedia-popularity-weekly.yml) runs `npm run pipeline:rotate`. That job re-measures every item already in the snapshot (Wikimedia pageviews plus freely-licensed images — same builder as `pipeline:preview`) because the factory ingest→export path is still blocked on the 0001 migration. It then samples an unused round of about 25 playable articles from the reservoir and **appends** it. It does not swap the set a player is currently on; they stay until they exhaust it. Images prefer the article's free lead (`pageimages`); when that is a fair-use logo or screenshot and `pageimages` returns nothing, [wikipedia-images.ts](../pipeline/sources/wikipedia-images.ts) walks other files on the page and ships the first freely-licensed photograph. Fair-use files are still skipped. An author name that Commons nests twice is collapsed to one copy (`collapseDoubled`). A thrown fetch (Wikimedia 429, network) keeps the picture already in the bundled JSON rather than treating a blank as a content change. The job compares the new file to the bundled JSON and **skips the PR** when only `updatedAt` would change and no round was appended. A material change writes the JSON, bumps the patch version, adds a new changelog section, runs `npm run check`, and opens a PR on the standing branch `content/wikipedia-popularity-weekly`. The D-041 version bump of `package.json` / `app.json` is changelog, not a stack/system change (D-049), so that check can pass on a content-only rotate. Swings >10x vs the currently shipped values are listed on the PR; a human merges. The job never pushes to `master` and never fetches at play time (D-004, D-036, D-052). Output stays `provisional: true` until ST-35 lands.
 
 **8. And back: the correction loop.** [BUILT: pipeline side · ongoing]
 Data ages (bundled = frozen until next release, accepted trade-off D-004). Refresh = weekly rotate, or a manual `pipeline:preview` / ingest→export. A wrong-feeling answer in playtesting starts at the JSON diff (or `item_values.raw` once the factory path is live) and ends in either a corrected snapshot or a removed item. App Store review latency (days) is why validation happens *before* shipping, not after.
@@ -232,6 +233,8 @@ anyone when the backend is configured; posting requires a session. Opening
 Scores while signed in is the retry boundary: `syncPendingScores` upserts
 unsynced rows to `global_scores` keyed by `(player_id, client_entry_id)` so a
 flaky retry cannot double-post, then marks only confirmed rows `synced`.
+A row with `boosted: true` fails `needsGlobalSync`, so a boosted run is never
+uploaded (D-065). It stays on the local board with a Boosted tag.
 Optional accounts use **Supabase Auth** (D-033, D-037): an email magic link, no
 password. The player enters an address, Supabase sends the link, and the
 session lands when they open it (web URL parse, or native PKCE exchange from
@@ -301,18 +304,40 @@ traces at the board boundary; its web-only CSS scope disables browser text
 selection, touch callouts, and touch actions there, so mouse, trackpad, and
 iPad-finger drags trace tiles rather than highlight their letters. Game data remains bundled
 JSON; missing Supabase keys still leave every title playable. Splash uses the
-black lockup in `assets/logo/`; auth uses the clear lockup; drawer and top bar
-use the W mark via `BrandArtwork`. The hub list scrolls under that top bar —
-the deer is a clipped mascot at the end of the game list, not a second lockup
-(`src/ui/lottie/Mascot.tsx`, pose `idle`). Outcome screens reuse the same
-component with `celebrate` or `wince` (More or Less game over, Wordfall
-level result, Clueless solved). Clip URLs live in `LOTTIE_CLIPS`; deer poses
-play the bundled `assets/lottie/deer.lottie` and do not fall back to
-lottie.host while that file still has a white backdrop (D-032, D-050).
-Reduce-motion skips playback. The web export fills `100dvh` so mobile URL-bar
-`100vh` does not clip the hub.
+black lockup in `assets/logo/`. Every screen follows the Block Blast UI kit
+(`docs/DESIGN_SYSTEM.md`, D-067): `App.tsx` paints a full-bleed
+`SkyBackground` (the menu sky, or the play sky behind a board and its result)
+and keeps the app in a phone-width column (`COLUMN_MAX_WIDTH`, 500px) on wide
+screens. Home alone widens to `HOME_MAX_WIDTH` (1040px). Menu screens get the kit's coral `TopBar` (daily flame, block logo,
+coins; or back, block logo, coins); game and result screens hide it. There is no
+drawer: Home's bottom row opens Settings, Scores, Teams and Account, and the
+gold Play there reopens the game with the most recent `playedAt` across the
+score boards (More or Less before anything has been played). Settings is a
+pop-up (`src/ui/SettingsPopup.tsx`) holding the sound / vibration switches,
+Account, Scores, Teams and Send feedback. The deer mascot is no longer on
+screen; `src/ui/lottie/` stays in the repo unused. The dev-only `?kit` page
+(`src/ui/dev/`) renders every design-system primitive for review. The web
+export fills `100dvh` so mobile URL-bar `100vh` does not clip the hub, and the
+pre-JS shell paints the kit's navy (`scripts/patch-web-head.mjs`) so nothing
+flashes another colour before the sky draws.
 
 ---
+
+## Journey 5a — A finished run becomes XP, stars, coins, and a daily chest
+
+`App.tsx` owns the end of a solo run. Before `recordScore`, it computes
+`isNewBest` from the board already on the device. A tie is not a new best.
+The saved row includes `boosted` when the run spent coins. `applyRun` then
+grants XP, stars, and coins, and the first finished run of the local day
+makes today's chest ready. `saveRewards` writes `wordkrush.rewards.v1`.
+A Wordfall loss takes the same path, including the daily flame. Live races
+skip rewards and never show boosts.
+
+The result sheet shows the stars, XP, and coins from the events `applyRun`
+returned. A level-up or milestone celebration opens after that sheet, not
+instead of the value reveal. More or Less still counts the hidden value up
+before the result. The hub chest reads locked ("Finish any run to open
+today's chest"), ready ("Open — Day N/7"), or claimed ("Back tomorrow").
 
 ## Journey 6 — A Wordfall level goes live on Monday
 
@@ -517,6 +542,7 @@ leftover column with Host / Join as a footer; on a laptop the roster sits in a
 left column and the picker on the right.
 
 **3. A lobby is 2–10 ready players, then a server seed.** [BUILT]
+Boosts stay hidden for the whole race, so a live score cannot be boosted.
 `create_match` / `join_match` / `set_ready` / `start_match`. Late joins after
 `started_at` are refused. The seed is assigned on start, not by the host
 client. Realtime on `matches` and `match_players` plus a 1.5s poll. Teams,
@@ -562,6 +588,54 @@ The wordkrush-conductor bot reads the board, CI, content buffers, X ledger, and 
 
 ---
 
+## Journey 8a — A More or Less player rides a label path (and I Sabi Lagos)
+
+**1. Levels are labels.** [BUILT]
+`src/data/more-or-less/labelPaths.ts` lists two paths. `world` runs Popularity, Music stars, Movies, Football stars, World cities, Food and Hit songs. `lagos` has seven stops: Ojuelegba, Yaba, Obalende, CMS, Lekki, Ikeja and Oshodi. Each level names a bundled category, a streak target and an optional difficulty band. The categories are imported once in `labelCategories.ts`. The rules live in `src/games/more-or-less/labelPath.ts`, which is pure and tested:
+- A level unlocks when the one before it is cleared.
+- Stars are earned at the target, at half again (`ceil(1.5t)`) and at double.
+- `recordLevelRun` returns the same object when nothing changed, so a replay never writes storage.
+
+Progress is device-local: `wordkrush.more-or-less.path.<path>.v1`, through `labelPath-storage.ts`, using the usual pure-types-plus-non-fatal-storage pattern.
+
+**2. A level run is a More or Less run.** [BUILT]
+`App.tsx` `startLevel(path, n)` opens the existing game screen with `molLevel`, the level's category and a resume slot of `level:<path>:<n>`. The game screen adds a Goal HUD panel and, depending on the path:
+- `world`: a star bar with marks at the three star streaks.
+- `lagos`: `RoadProgress`, a danfo driving towards the next stop's sign.
+
+Reaching the target throws "LEVEL CLEARED!" or "YOU SABI!", and the run carries on until the first miss. On game over, `recordLevelRun` saves the best streak and the clear. The reward summary's `level.key` gives each level its own star record (`more-or-less:<path>:<n>`).
+
+**3. Scores stay comparable without a migration.** [BUILT]
+Every level run is stored and uploaded as `game_id = more-or-less`, with the category id as its score context, exactly as Popularity always was. `global_scores` still accepts only the three game ids. I Sabi Lagos therefore has no separate global board; a Lagos-only board would need a Supabase view migration.
+
+**4. Next level by danfo.** [BUILT]
+**Next level** or **Next stop** on the result, and **Oya, enter!** on the Lagos route, call `rideToLevel`. `DanfoRide` (`src/ui/lagos/DanfoRide.tsx`) covers the screen in danfo yellow (sky blue on the world path). It calls `onCovered`, which starts the level underneath. The bus then pulls in under the stop's sign, holds while the conductor calls the stop, and drives off as the cover fades.
+
+**5. `/isabilagos` is a web path, not a router.** [BUILT]
+`server/serve.mjs` already serves `index.html` for extensionless paths. `webHistory.ts` `openedAtLagosPath()` sends a visit to `/isabilagos` straight to the Lagos route and skips the welcome. While the Lagos route or a Lagos run is open, `syncLagosPath` keeps that address in the bar with `replaceState`, so it can be shared. The yellow tile on Home and the one-time `LagosAnnouncement` (shown only to returning players, `wordkrush.seen.isabilagos.v1`) are how players find it.
+
+## Journey 11 — Two strangers play a 1v1
+
+**In one line:** two players who have never met find each other on a shared Realtime channel, play the same seeded run on their own devices, and tell each other their streaks as they go. No tables, no migration, no sign-in.
+
+**Finding someone.** Tapping the Home card opens `DuelScreen`, which runs one `DuelController` (`src/duel/controller.ts`). The controller joins the public presence channel `wk-duel-queue-v1`. Everyone looking shows up there. `partnerFor` (`src/duel/rules.ts`) pairs the longest-waiting players, so both sides reach the same answer without talking to each other, and the host is the one who joined first. The host broadcasts `pick`, the guest answers `accept`, and both leave the queue for a private room, `wk-duel-room-<code>`. A `pick` that gets lost is sent again.
+
+**Nobody there.** After `GHOST_AFTER_MS` (10s) the search ends with a ghost (`src/duel/ghost.ts`): a seeded, simulated opponent whose streak is planned from the player's best (`ghostTarget`). The same happens at once if there is no backend at all. A ghost is always marked `ghost: true`, drawn with the ghost icon, given a `Ghost` name and no country, and named in the result's title. It is never counted as a person, and `duel_matched` reports it separately.
+
+**Inviting a friend.** `inviteFriend` opens a room straight away and shows `https://wordkrush.com/duel/<code>`. The server's normal page fallback serves the app at that address. `App.tsx` reads the code once with `roomFromPath`, skips the welcome and clears the address bar, so a refresh does not rejoin a dead room.
+
+**The match.** The room exchanges `ready`, then `go` with the seed and both players' names and flags. After a 3-second face-off both devices play `GameScreen` with `persist={false}` on the whole Popularity snapshot. It must be the whole snapshot: `soloPool` depends on the player's own weekly set, which would give the two sides different pairs. Each change sends `score {streak, done, atMs}`, and a heartbeat goes out every `HEARTBEAT_MS` (2.5s).
+
+Scores and exits carry the sender's id, and the host answers only the first player in, so a link posted in a group chat cannot disturb a match. The clock is final: `report` refuses answers after `DUEL_MS`, so both sides settle on the same answers during the grace period.
+
+**How it ends.** `settle` is the only rule. Longest streak wins, and equal streaks go to the lower `atMs`. It ends early once the player still going passes the one who missed, and otherwise at `DUEL_MS` (60s). If the opponent says `bye` or goes quiet for `SILENCE_FORFEIT_MS` (9s), the player still there wins. `DuelScreen` then calls `finishRun`, so a match pays like any run and goes on the player's own board with their own streak.
+
+**Where the flag comes from.** `loadIdentity` (`src/duel/identity-storage.ts`) keeps a random id, a guest name and a country in AsyncStorage. The country comes from `/country` in `server/serve.mjs`, which reads Cloudflare's `cf-ipcountry` header, and falls back to the device locale. `refreshCountry` reads it again after each launch, without holding the launch up, so a country first seen on a VPN corrects itself. A player's own pick is never overwritten. The flag is sent only to the current opponent.
+
+**Flags outside a match.** The global board and live races read `players.country_code` with `loadPlayerCountries` (`src/scores/countries.ts`, through `usePlayerCountries`), and `App.tsx` keeps a signed-in player's value current with `publishCountry`. That column comes from migration `0009`. It is not applied unless the owner has decided to; until then both calls fail quietly and these screens show no flags (D-073).
+
+**Failure modes.** No connection: a ghost. Search failing part-way: handshake timeouts return to searching or show a retry. A dead invite: "That invite does not work" with a button to find an opponent. Windows shows country letters instead of flag pictures, because it has no flag emoji.
+
 ## System reference
 
 Quick map of where each journey step lives:
@@ -569,10 +643,14 @@ Quick map of where each journey step lives:
 | Piece | Where | Status |
 |---|---|---|
 | App shell (iOS + web) | `App.tsx`, `index.ts`, `app.json` | [BUILT] — WordKrush hub, lockup splash `#0A0817`, `expo-font`; web at wordKrush.com uses `100dvh`; phone is full-bleed, laptop is a 1080px column (D-051) |
-| Brand kit | `assets/logo/`, `docs/branding/`, `BrandArtwork` | [BUILT] — black lockup on splash; clear lockup on auth/Android; W mark on icon, drawer, top bar |
-| Mascot (deer) | `src/ui/lottie/`, `LOTTIE_CLIPS`, `assets/lottie/deer.lottie` | [BUILT] — hub + outcome poses; bundled file only until lottie.host drops the white plate (D-050); flame/burst CDN rows empty (D-032) |
-| Display type | `@expo-google-fonts/fredoka`, `src/ui/theme.ts` | [BUILT] — every text tier, all three games; symbol glyphs stay on the system face (D-030) |
+| Brand kit | `assets/logo/`, `docs/branding/`, `BrandArtwork`, `BlockLogo` | [BUILT] — black lockup on splash, favicons and share cards; in the app the WORD-KRUSH! block logo (kit style) on the top bar and the first visit |
+| Mascot (deer) | `src/ui/lottie/`, `LOTTIE_CLIPS`, `assets/lottie/deer.lottie` | [PARKED] — off screen since 0.10.0: the Block Blast kit has no mascot. Code and asset kept (D-032, D-050) |
+| Display type | `@expo-google-fonts/exo-2`, `src/ui/fonts.ts`, `src/ui/theme.ts` | [BUILT] — Exo 2 on every app text tier (stand-in for the kit's Neuron, D-067); Fredoka stays for the server's share cards |
 | Fairness guard + difficulty bands | `src/games/more-or-less/pairing.ts` (+ 9 tests) | [BUILT] |
+| Daily 10 | `src/games/more-or-less/daily.ts` (+ `daily-storage.ts`), `buildDailyShareText`, `src/ui/ModeTile.tsx` on Home | [BUILT] — `dailySeed(dayKey)` (FNV-1a over the local day) on the whole Popularity snapshot. Ten pairs (`targetStreak` 10), no `onSpend` so no boosts or second chance, a `daily:<day>` resume slot. One result per day in `wordkrush.more-or-less.daily.v1`; numbered from 2026-10-25 |
+| 1v1, ghosts and flags | `src/duel/` (rules, ghost, controller, transport, identity, country), `src/ui/screens/DuelScreen.tsx`, `src/ui/duel/DuelHud.tsx`, `src/ui/ModeTile.tsx`, `src/ui/FlagPicker.tsx`, `/country` in `server/serve.mjs` | [BUILT] — Realtime presence and broadcast on public channels (D-072), no tables. Pure rules and a controller tested with a fake network; see Journey 11 |
+| Challenge a friend | `src/games/more-or-less/challenge.ts`, `MoreOrLessShareData.challenge` in `src/games/share-data.ts`, `src/ui/ChallengePopup.tsx` | [BUILT] — a level result's share link carries `{seed, path, level}`. Opening `/share/<token>` offers the run: the same seed, no unseen-first steering, a `challenge:<seed>` resume slot, and a Rival HUD. The result gives the verdict, and Play again is a rematch. The server's card check ignores the extra field |
+| More or Less level paths + I Sabi Lagos | `src/games/more-or-less/{labelPath,labelPath-storage}.ts`, `src/data/more-or-less/{labelPaths,labelCategories}.ts`, `src/ui/lagos/`, `src/ui/screens/LagosScreen.tsx`, `src/ui/{LabelLevelCard,LabelLevelsPopup}.tsx` | [BUILT] — device-local unlocks and stars; `/isabilagos`; danfo ride between levels; scores stay under `more-or-less` with the category as context (Journey 8a, D-068) |
 | Engine reducer, pair selector, scoring | `src/games/more-or-less/engine.ts` | [BUILT] |
 | Bundled game data | `src/data/categories/*.json` | [BUILT: dir, populated on first export] |
 | Reddit app (Devvit) | `reddit/` — `devvit.json`, `src/{shared,server,client}` | [BUILT: builds + typechecks] — blocked on owner: `devvit login`, a launch subreddit, and app review (D-042) |
@@ -599,7 +677,13 @@ Quick map of where each journey step lives:
 | Wikipedia popularity weekly | `.github/workflows/wikipedia-popularity-weekly.yml`, `pipeline/rotate-wikipedia-popularity.ts`, `pipeline/keywords/wikipedia-popularity-reservoir.json` | [BUILT] — Monday 09:00 UTC + `workflow_dispatch`; re-measures shipped items and enqueues a new label round; PR on `content/wikipedia-popularity-weekly`, never `master` (D-036, D-052) |
 | CI | `.github/workflows/ci.yml` | [BUILT] — `check` (docs + typecheck + tests) and `web` (`build:web`) in parallel; deploy waits for both, then `railway up --service wordcrush` |
 | GitHub Release | `.github/workflows/release.yml`, `scripts/changelog-notes.mjs` | [BUILT] — every PR is a version; publish `vX.Y.Z` from that changelog section on master merge or tag (D-039, D-041) |
-| Web host | `railway.json`, `server/serve.mjs` | [BUILT] — Nixpacks runs `CI=true npm run build:web` on service `wordcrush`; `serve.mjs` listens on `$PORT` |
+| Edge | Cloudflare (DNS + proxy for `wordkrush.com`) | [BUILT] — nameservers moved from Namecheap on 2026-10-25. The apex and `www` are proxied with SSL mode Full. HTML is not cached (`no-cache`), so a deploy shows at once; `/_expo/` bundles, hashed `/assets/` (including the `.mp4` music) and share-card PNGs are cached at the edge. The Resend records (`resend._domainkey`, the `send` CNAME) and `_dmarc` are DNS-only. The `www` → apex redirect rule is set up in the dashboard (D-070) |
+| Uptime | `.github/workflows/uptime.yml`, `scripts/synthetic-check.mjs`, `/healthz` in `server/serve.mjs` | [BUILT] — every 10 minutes: the shell (200 HTML with the app root), the main bundle (JavaScript, immutable), `/healthz` (`ok` plus the live version) and `/isabilagos`. `www` not redirecting is a warning. A failure fails the run, and GitHub emails the owner |
+| Crash and vitals counters | `src/ui/ErrorBoundary.tsx`, `src/analytics/observe.ts`, `src/analytics/vitals.ts`, wired in `index.ts` | [BUILT] — a render error shows a Reload screen. `app_error` counts render, uncaught and unhandled-rejection errors (our origin only on web, at most 10 per page view). `web_vitals` sends LCP, worst interaction, CLS and TTFB once per page view, when the tab hides. Both are consent-gated and carry no messages, stacks or URLs |
+| Web host | `railway.json`, `server/serve.mjs` | [BUILT] — Nixpacks runs `CI=true npm run build:web` on service `wordcrush`; `serve.mjs` listens on `$PORT`; Railway's health check is `/healthz`; extensionless paths such as `/isabilagos` get the app; audio is typed (`audio/mpeg`, `audio/mp4`) and answers single byte ranges with 206, which Safari needs for media (`parseByteRange`) |
+| Short-screen layout | `src/ui/layout.ts` `heightClass`, `src/ui/useHeightClass.ts` | [BUILT] — `regular` / `compact` (≤759 px tall) / `tight` (≤619). `HudPanel`, `BoosterDock` and `BoostBar` shrink on their own; Higher or Lower puts its cards side by side and compacts the question and credits |
+| First visit | `src/ui/screens/OnboardingScreen.tsx` | [BUILT] — a game picker shown once before any score: a tile opens that game's start pop-up (or the Lagos route); "Look around first" goes to Home |
+| Web viewport CSS | `src/ui/webViewport.ts` `WEB_VIEWPORT_CSS`, mirrored in `scripts/patch-web-head.mjs` | [BUILT] — `100dvh` page, navy fill, board-only selection/touch suppression. Only `#root` is full height: React Native Web's empty modal hosts are `body > div` too, and at full height they gave the hidden page scroll room that focus could jump into |
 | Web favicon + share preview | `assets/favicon.png`, `assets/apple-touch-icon.png`, `assets/logo/wordkrush-lockup.png`, `scripts/patch-web-head.mjs` | [BUILT] — cache-busted tab icons in `dist/`; Open Graph / Twitter tags with the lockup at `/og-image.png`; Tuesday mail heroes at `/email/` from `assets/games/` + `assets/email/hub.png` |
 | Web search surface | `scripts/patch-web-head.mjs`, `server/serve.mjs`, `assets/googled8072618779c67b2.html`, `dist/robots.txt`, `dist/sitemap.xml` | [BUILT] — homepage title, canonical, JSON-LD, and hub copy in `#root` / `<noscript>`; sitemap lists `https://wordkrush.com/` only; `.xml` is `application/xml`. Search Console HTML verification is copied to `/googled8072618779c67b2.html` (not in the sitemap). After Railway deploy: confirm that URL in [Search Console](https://search.google.com/search-console), submit `/sitemap.xml`, then URL Inspection → Request indexing (D-061) |
 | Documentation drift guard | `scripts/check-docs.mjs`, `.cursor/hooks/check-docs-on-stop.mjs` | [BUILT] — audits git-visible changes; version-only `package.json` / `app.json` bumps are changelog (D-049); Finder `* 2.*` copies and `supabase/.temp/` are gitignored so they do not count as source |
@@ -607,7 +691,9 @@ Quick map of where each journey step lives:
 | Consent and product analytics | `src/analytics/` | [BUILT] |
 | Player feedback (bugs + suggestions) | `src/feedback/`, `src/ui/FeedbackPrompt.tsx`, drawer "Send feedback" | [BUILT] — PostHog Surveys API prompt on web and native; signed-in players attach id/username/email on the event, guests stay anonymous. Independent of analytics consent. |
 | EAS build/submit profiles | `eas.json` | [BUILT: needs Expo login + Apple Developer] |
-| Sound + haptics | `src/native/feedback.ts`, `src/native/sound.ts`, `src/native/haptics.ts`, `assets/sounds/`, `src/settings/` | [BUILT] — one `feedback(event)` table maps five game moments to a clip + haptic; both channels mutable from the drawer. See D-043 |
+| Chime | `scripts/synth-chimes.mjs`, `assets/sounds/chime/`, `chime()` in `src/native/feedback.ts` | [BUILT] — eight synthesized pentatonic notes: Wordfall plays one per traced letter, Higher or Lower climbs with the streak; gated by Sound |
+| Music | `src/native/music.ts`, `assets/music/` | [BUILT] — two looping Afrobeats instrumentals: `menu` everywhere except a game, `play` in one, chosen by `App.tsx` from `screen.name`. Its own Settings switch (`FeedbackSettings.music`; a save from before 0.12.0 upgrades with music on). Pauses on `AppState` background, which on web is tab visibility. Web unlocks on the first pointer or key press, inside the gesture. Shares the mixing audio mode with `sound.ts` (D-069) |
+| Sound + haptics | `src/native/feedback.ts`, `src/native/sound.ts`, `src/native/haptics.ts`, `assets/sounds/`, `src/settings/` | [BUILT] — one `feedback(event)` table maps five game moments to a clip + haptic; sound, music and vibration each switch separately in Settings. Native mixes with other audio (`mixWithOthers`); web sets Safari's `navigator.audioSession.type = 'ambient'` where it exists, so a player's own music keeps playing. See D-043 |
 | Result share | `src/games/share.ts`, `src/games/share-data.ts`, `src/games/<id>/share.ts`, `src/games/more-or-less/card-photos.ts`, `src/native/share.ts`, `src/native/share.native.ts`, `server/serve.mjs` `/share/:id` + `/og/share/:card.png`, `server/share-document.mjs`, `server/og-card.mjs`, `server/og-image.mjs`, `server/og-photos.mjs` | [BUILT] — spoiler-free emoji grid per game; RN `Share` on native, `navigator.share` then clipboard on web; dynamic share URLs (`/share/:id`) carry encoded result data and serve 1200×630 PNG OG images via sharp. **More or Less draws the board**: two stacked, full-bleed photo cards above MORE / LESS, tracing the signed crop, on the game's own theme tokens, with no title, grid, streak, best, seen, item name, value or `? ? ?` — the only words on the card are `More` and `Less`, and the standing reads in the paste line above the link instead. A `theme.bgElevated` bottom band (`MORE_OR_LESS_BOTTOM_SAFE_PAD`, 110px — the signed bar) sits under the button row so X's green `WordKrush · More or Less` title strip on `summary_large_image` lands on ink, not on MORE or LESS. Clueless (heat spread + guess count) and Wordfall (length-coded grid + score) still draw their result grid. Never answers, guessed words, or item labels. **`/share/:id` HTML is a dedicated OG document**: `scripts/patch-web-head.mjs` delimits every part of the built shell that describes the hub (`HEAD_MARKERS`, `COPY_MARKERS`) and `share-document.mjs` replaces those blocks whole, so the hub's `description`, JSON-LD and "Choose your game" copy cannot survive onto a share page — pattern-matching the `og:*` tags out used to leave all three behind. The result's head carries `description`, self `canonical`, `og:image:type`, `og:image:alt` / `twitter:image:alt`, `twitter:site`; the crawler copy in `#root` **and** `<noscript>` describes the result; the bundle and layout CSS are untouched, so a player who clicks still lands in the game. `warm()` throws if the shell is unmarked. **Share tokens are unpadded base64url** (`-` / `_`, no padding). They used to write base64's `=` padding as `~`, and `twitter-text` — the library X's composer uses to find links in a draft — allows `~` inside a URL but not at the end of one, so ~half of all payloads reached the composer truncated at the padding, query string and all, and unfurled nothing. The decoder still accepts the `~`-padded tokens shared before 0.8.35 and either spelling with `=`, and ids are percent-decoded to one canonical form first (`%7E` used to 404, because `url.pathname` keeps escapes). A payload is decoded once and validated once (`isDrawableShare` in `og-card.mjs`): the renderers read counts straight out of it (`Array(data.heatBuckets.cold)` is a square per guess), so every route that can reach one answers HTTP 404 — not the SPA homepage, and not a stack trace or a nine-figure allocation — to anything that is not a result. `og-image.mjs` installs Fredoka SemiBold TTF via fontconfig at startup (`$TMPDIR/wordkrush-fonts/`) so librsvg/pango renders "Fredoka SemiBold" in SVG text elements; button arrows are polygons, not U+2191/U+2193, which Fredoka does not contain. The grid emoji have no covering face and still render as `.notdef` boxes on Clueless and Wordfall (open, needs an owner call — see the note under this table). **The card is served from a short static path, `/og/share/{card}.png`** — `og-card.mjs` owns that id and the route. A card id names only what the card draws, so a More or Less board is `m_michael-jackson_albert-einstein` (≤47 characters of path), and Clueless / Wordfall, which draw their own numbers, carry the result. `og:image` used to point at `/share/{token}/og.png`, the whole payload nested under a second dynamic route, while the homepage lockup X does unfurl is a flat `/og-image.png?v=…`. The nested path still serves the identical bytes for anything that cached it: its token resolves to the same card id. **Which two photos a More or Less card draws is named by the share**, in the token's `photos` field (`src/games/more-or-less/card-photos.ts` picks them, seeded by the standing; `card-photos.test.ts` fails if the client and server id lists disagree). It used to be a hash of the encoded token, so the padded link a player copied and the unpadded one a composer kept drew different boards; a pre-0.8.35 share has no ids and its pair is derived from the decoded payload instead, which every spelling of that link shares. An id the pool never loaded falls back to a seeded stand-in rather than an empty slot. `og:image`/`twitter:image` carry `?v=<package version>` and the PNG is served `public, max-age=300`, so a render fix reaches scrapers that already unfurled a link; the image routes match on path alone, so any stamp resolves to the current render. `og:url` stays unstamped. Photo slots are ~5.9:1 (two stacked rows plus the 110px bottom safe pad), so `og-photos.mjs` crops with `sharp.strategy.attention` (a fixed band leaves hair and background, and collapses the entropy separation the licence filter needs). Rendered cards are cached in memory per **card** id (bounded, 256) and served without a `Vary` header — keying on the card rather than the share id is what makes every spelling of one link read one entry instead of rendering three boards. **The PNG is truecolour** — IHDR colour type 2, 8-bit RGB: the indexed encode the card shipped in 0.8.33 answered every scraper correctly and still could not be built into a card by X's composer (~42 s spinner, nothing), and it was the one property separating that card from the homepage lockup X does unfurl. `palette: false` is explicit because sharp re-enables the quantiser for anyone who adds `quality`, `effort`, `colours` or `dither`, and `flatten` onto `theme.bg` makes the rasteriser's RGBA into RGB rather than colour type 6. `adaptiveFiltering` carries the weight the quantiser used to (~910 KB → ~400–770 KB per card); `compressionLevel` stays at 6 because 9 buys under 5% for three times the CPU. Colour type is asserted on the encoded bytes in both server suites — `sharp().metadata()` reports three channels for an indexed card as readily as a truecolour one, so it cannot be asked through a decoder. `server/serve.test.mjs` warms the real server over loopback and holds the response contract; `server/share-document.test.mjs` and `server/og-image.test.mjs` cover the rewrite, the boot guard and what the card actually draws. |
 | Wordfall match juice | `src/ui/wordfall/clearJuice.ts`, `src/ui/wordfall/BoardView.tsx` | [BUILT] — puff then fall on `lastPlay.cleared`; special-birth pop by tile id; Crush/Nova stamp on chain ≥ 2. RN `Animated`, not Lottie (ST-80, D-032) |
 | Wordfall weekly drops | `src/games/wordfall/schedule.ts` (`taskFingerprint`), `src/data/wordfall/levels.ts`, [WORDFALL-WEEKLY.md](WORDFALL-WEEKLY.md), `.cursor/skills/wordfall-weekly-gauntlet/` | [BUILT] gate + unique-task + local `serve:web` before GitHub (D-038); standing `content/wordfall-weekly` PR maintains four future Mondays without a card per drop and merges through the content PR gate (D-058, D-059) |

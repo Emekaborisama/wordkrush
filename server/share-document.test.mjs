@@ -69,7 +69,7 @@ describe('the share document', () => {
     // describing the homepage.
     const html = shareFrom();
 
-    expect(html.match(/<h1>WordKrush · More or Less<\/h1>/g)).toHaveLength(2);
+    expect(html.match(/<h1>WordKrush · Higher or Lower<\/h1>/g)).toHaveLength(2);
     expect(html).not.toContain(PAGE_DESCRIPTION);
     expect(html).not.toContain('Choose your game');
   });

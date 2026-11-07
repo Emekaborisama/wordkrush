@@ -1,4 +1,5 @@
 import type { VolumeSource } from './types';
+import { politeFetch } from './politeFetch';
 
 /**
  * Wikimedia pageviews source — MEASURED monthly pageviews per article.
@@ -89,7 +90,7 @@ export function createWikipediaSource(options: WikipediaSourceOptions = {}): Vol
           const term = queue.shift();
           if (term === undefined) return;
           const url = `${API}/en.wikipedia/all-access/${agent}/${encodeArticle(term)}/monthly/${start}/${end}`;
-          const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
+          const res = await politeFetch(url, { headers: { 'User-Agent': USER_AGENT } });
 
           if (res.status === 404) {
             // Article has no data in this window. Omit it — ingest.ts flags

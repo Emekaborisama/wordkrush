@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DICTIONARY, levelByNumber } from '../../data/wordfall';
 import { createContext, newGame } from './engine';
-import { isWordfallState, rehydrate } from './persistence';
+import { isWordfallSave, isWordfallState, persistableWordfallState, rehydrate, shouldReportOutcome } from './persistence';
 import type { WordfallState } from './types';
 
 const ctx = createContext(levelByNumber(1)!, DICTIONARY);
@@ -95,5 +95,43 @@ describe('rehydrate', () => {
     expect(restored.played).toEqual(['stone']);
     expect(restored.progress).toEqual([4]);
     expect(restored.board).toEqual(state.board);
+  });
+});
+
+describe('terminal saves', () => {
+  it('does not persist a won or lost board', () => {
+    const playing = valid();
+    expect(persistableWordfallState(playing)).toBe(playing);
+    expect(persistableWordfallState({ ...playing, status: 'won' })).toBeNull();
+    expect(persistableWordfallState({ ...playing, status: 'lost' })).toBeNull();
+  });
+
+  it('does not report a result that was already on screen when the save loaded', () => {
+    expect(shouldReportOutcome('playing')).toBe(true);
+    expect(shouldReportOutcome('won')).toBe(false);
+    expect(shouldReportOutcome('lost')).toBe(false);
+  });
+});
+
+describe('boost fields on old saves', () => {
+  it('accepts a state and a save written before boosts', () => {
+    const state = valid();
+    expect(state.bonusMs).toBeUndefined();
+    expect(state.extraMovesGranted).toBeUndefined();
+    expect(isWordfallState(state)).toBe(true);
+    expect(isWordfallSave({ unlocked: 1, state })).toBe(true);
+    expect(isWordfallSave({ unlocked: 1, state: null })).toBe(true);
+  });
+
+  it('accepts a finite bonus and a boosted flag, and rejects nonsense', () => {
+    const state = valid();
+    expect(isWordfallState({ ...state, bonusMs: 0, extraMovesGranted: false })).toBe(true);
+    expect(isWordfallState({ ...state, bonusMs: 10_000, extraMovesGranted: true })).toBe(true);
+    expect(isWordfallState({ ...state, bonusMs: -1 })).toBe(false);
+    expect(isWordfallState({ ...state, bonusMs: Number.POSITIVE_INFINITY })).toBe(false);
+    expect(isWordfallState({ ...state, extraMovesGranted: 'yes' })).toBe(false);
+    expect(isWordfallSave({ unlocked: 1, state, boosted: true })).toBe(true);
+    expect(isWordfallSave({ unlocked: 1, state, boosted: false })).toBe(true);
+    expect(isWordfallSave({ unlocked: 1, state: null, boosted: 'yes' })).toBe(false);
   });
 });

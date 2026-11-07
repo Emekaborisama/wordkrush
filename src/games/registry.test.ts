@@ -24,8 +24,15 @@ describe('registry', () => {
   });
 
   it('finds a game by id and returns undefined otherwise', () => {
-    expect(getGame('more-or-less')?.name).toBe('More or Less');
+    expect(getGame('more-or-less')?.name).toBe('Higher or Lower');
     expect(getGame('nope')).toBeUndefined();
+  });
+
+  it('does not call Clueless a once-a-day puzzle while tutorial levels open back to back', () => {
+    const clueless = getGame('clueless');
+    const copy = `${clueless?.badge ?? ''} ${clueless?.tagline ?? ''} ${clueless?.blurb ?? ''}`.toLowerCase();
+    expect(copy).not.toContain('daily puzzle');
+    expect(copy).not.toContain('a day');
   });
 
   it('lists only available games as playable', () => {

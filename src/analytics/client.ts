@@ -109,6 +109,19 @@ export function captureAnalytics<K extends AnalyticsEventName>(
   void posthog.capture(event, { ...properties, platform: Platform.OS });
 }
 
+let pageviewSent = false;
+
+/**
+ * One web `$pageview` per load, after consent. The allowlist already accepts
+ * the name; nothing else was calling it. Native lifecycle capture stays off.
+ */
+export function captureWebPageview(): void {
+  if (pageviewSent || Platform.OS !== 'web') return;
+  if (!posthog || !shouldCapture(consent, isAnalyticsConfigured)) return;
+  pageviewSent = true;
+  void posthog.capture('$pageview', { platform: Platform.OS });
+}
+
 export function registerAnalyticsContext(authStatus: AuthStatus): void {
   if (!posthog || !shouldCapture(consent, isAnalyticsConfigured)) return;
   void posthog.register({ auth_status: authStatus, platform: Platform.OS });

@@ -16,7 +16,13 @@
  */
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 
-export type SoundName = 'bonus' | 'wrong' | 'nextLevel' | 'win';
+/** One step of the pentatonic chime (`assets/sounds/chime/`), lowest first. */
+export type ChimeNote = 'note1' | 'note2' | 'note3' | 'note4' | 'note5' | 'note6' | 'note7' | 'note8';
+
+export type SoundName = 'bonus' | 'wrong' | 'nextLevel' | 'win' | ChimeNote;
+
+/** The chime, in order: a step past the top stays on the top note. */
+export const CHIME: readonly ChimeNote[] = ['note1', 'note2', 'note3', 'note4', 'note5', 'note6', 'note7', 'note8'];
 
 /**
  * `require` rather than `import` so Metro bundles each clip as an asset. Kept
@@ -27,6 +33,14 @@ const SOURCES: Record<SoundName, number> = {
   wrong: require('../../assets/sounds/wrong.mp3'),
   nextLevel: require('../../assets/sounds/next_level.mp3'),
   win: require('../../assets/sounds/achievement_win.mp3'),
+  note1: require('../../assets/sounds/chime/note1.wav'),
+  note2: require('../../assets/sounds/chime/note2.wav'),
+  note3: require('../../assets/sounds/chime/note3.wav'),
+  note4: require('../../assets/sounds/chime/note4.wav'),
+  note5: require('../../assets/sounds/chime/note5.wav'),
+  note6: require('../../assets/sounds/chime/note6.wav'),
+  note7: require('../../assets/sounds/chime/note7.wav'),
+  note8: require('../../assets/sounds/chime/note8.wav'),
 };
 
 /**
@@ -39,12 +53,22 @@ const VOLUME: Record<SoundName, number> = {
   wrong: 0.55,
   nextLevel: 0.75,
   win: 0.85,
+  // Soft: Wordfall can play several a second.
+  note1: 0.45,
+  note2: 0.45,
+  note3: 0.45,
+  note4: 0.45,
+  note5: 0.45,
+  note6: 0.45,
+  note7: 0.45,
+  note8: 0.45,
 };
 
 const players = new Map<SoundName, AudioPlayer>();
 /** Clips that have been played at least once, so we know a rewind is meaningful. */
 const started = new Set<SoundName>();
-let audioModeReady = false;
+/** One shared promise, so every caller waits for the same, finished, mode change. */
+let audioMode: Promise<void> | null = null;
 
 /**
  * Applied once, lazily, on the first play.
@@ -53,17 +77,38 @@ let audioModeReady = false;
  * stay silent. `mixWithOthers` means we duck nothing — someone playing on the
  * bus with their own music on keeps their music.
  */
-async function ensureAudioMode(): Promise<void> {
-  if (audioModeReady) return;
-  audioModeReady = true;
+export function ensureAudioMode(): Promise<void> {
+  if (audioMode) return audioMode;
+  preferAmbientWebAudio();
   try {
-    await setAudioModeAsync({
+    audioMode = setAudioModeAsync({
       playsInSilentMode: false,
       interruptionMode: 'mixWithOthers',
       shouldPlayInBackground: false,
+    }).catch(() => {
+      /* older device or unsupported browser — defaults are close enough */
     });
   } catch {
-    /* older device or unsupported browser — defaults are close enough */
+    audioMode = Promise.resolve();
+  }
+  return audioMode;
+}
+
+/**
+ * The web half of `mixWithOthers`. On an iPhone a page's sounds otherwise
+ * pause whatever the player was listening to; Safari's Audio Session API
+ * (`navigator.audioSession`, 16.4+) set to "ambient" mixes instead. Elsewhere
+ * the property is absent and browsers already mix, so this does nothing.
+ */
+function preferAmbientWebAudio(): void {
+  if (typeof navigator === 'undefined') return;
+  try {
+    const session: unknown = Reflect.get(navigator, 'audioSession');
+    if (typeof session === 'object' && session !== null && 'type' in session) {
+      Reflect.set(session, 'type', 'ambient');
+    }
+  } catch {
+    /* a browser that refuses the change keeps its default */
   }
 }
 

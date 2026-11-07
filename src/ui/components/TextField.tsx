@@ -10,7 +10,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { font, radius, space, theme, type, withAlpha } from '../theme';
+import { font, palette, space, theme } from '../theme';
 
 /**
  * RN-web's TextInput reset is `font: 14px System`. The `font` shorthand
@@ -49,7 +49,7 @@ function ensureWebInputReset() {
 const webInputStyle: StyleProp<TextStyle> =
   Platform.OS === 'web'
     ? ({
-        font: `600 16px ${font.semibold}`,
+        font: `17px ${font.heavy}`,
         outlineWidth: 0,
         outlineColor: 'transparent',
         borderWidth: 0,
@@ -58,6 +58,8 @@ const webInputStyle: StyleProp<TextStyle> =
 
 type Props = Omit<TextInputProps, 'style'> & {
   label?: string;
+  /** Label ink: white (outlined) on a coral panel or the sky, navy on cream. */
+  labelTone?: 'light' | 'dark';
   error?: string;
   accent?: string;
   trailing?: React.ReactNode;
@@ -67,6 +69,7 @@ type Props = Omit<TextInputProps, 'style'> & {
 
 export function TextField({
   label,
+  labelTone = 'light',
   error,
   accent = theme.accent,
   trailing,
@@ -79,25 +82,22 @@ export function TextField({
 }: Props) {
   ensureWebInputReset();
   const [focused, setFocused] = useState(false);
-  const borderColor = error ? theme.danger : focused ? accent : theme.border;
+  const borderColor = error ? palette.red : focused ? palette.teal : palette.creamEdge;
 
   return (
     <View style={[styles.root, containerStyle]}>
-      {label ? <Text style={[type.overline, styles.label]}>{label}</Text> : null}
+      {label ? <Text style={[styles.label, labelTone === 'dark' && styles.labelDark]}>{label}</Text> : null}
       <View
         style={[
           styles.shell,
-          {
-            borderColor,
-            backgroundColor: focused ? withAlpha(accent, 0.08) : theme.bgElevated,
-          },
+          { borderColor, backgroundColor: focused ? palette.white : palette.creamFill },
         ]}
       >
         <TextInput
           {...props}
           accessibilityLabel={accessibilityLabel ?? label ?? props.placeholder}
-          placeholderTextColor={theme.textDim}
-          selectionColor={accent}
+          placeholderTextColor={palette.inkSoft}
+          selectionColor={accent === theme.accent ? palette.teal : accent}
           onFocus={(event) => {
             setFocused(true);
             onFocus?.(event);
@@ -121,25 +121,43 @@ export function TextField({
 
 const styles = StyleSheet.create({
   root: { gap: space.xs },
-  label: { color: theme.textMuted, paddingLeft: 2 },
+  label: {
+    fontFamily: font.heavy,
+    fontSize: 13,
+    lineHeight: 17,
+    color: palette.white,
+    paddingLeft: 4,
+    textShadowColor: palette.coralEdge,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  labelDark: { color: palette.inkSoft, textShadowRadius: 0 },
   shell: {
-    minHeight: 54,
-    borderWidth: 1,
-    borderRadius: radius.md,
+    minHeight: 52,
+    borderWidth: 2.5,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: space.md,
   },
   input: {
     flex: 1,
-    minHeight: 52,
-    color: theme.text,
+    minHeight: 48,
+    color: palette.ink,
     // TextInput does not inherit type from surrounding Text. Without an
     // explicit face the UA stylesheet (system sans) wins — D-030.
-    fontFamily: font.semibold,
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: font.heavy,
+    fontSize: 17,
     paddingVertical: 0,
   },
-  error: { ...type.caption, color: theme.danger, paddingLeft: 2 },
+  error: {
+    fontFamily: font.heavy,
+    fontSize: 13,
+    lineHeight: 18,
+    color: palette.white,
+    paddingLeft: 4,
+    textShadowColor: palette.redDeep,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
 });

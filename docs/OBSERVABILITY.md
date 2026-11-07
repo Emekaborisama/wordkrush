@@ -96,10 +96,15 @@ expose a typed event map so names and property shapes cannot drift.
 | `app_opened` | P1 | `App.tsx` mount after telemetry is eligible | `platform`, `app_version`, `backend_configured`, `auth_status`, `entry_source`, optional `utm_source` / `utm_medium`, `has_utm_campaign` | Active installs, sessions, and how the session arrived |
 | `landing_viewed` | P1 | First web paint, or a native deep link that is not an auth callback | Same arrival buckets plus `surface: web \| native` | Paid / search / social / share arrivals vs direct. Never the URL |
 | `app_ready` | P1 | `App.tsx` after boards and session restore settle | Above plus `duration_ms`, `boards_result`, `session_result` as bounded enums | Startup success and latency |
-| `screen_viewed` | P1 | Observe the `Screen` union in `App.tsx` | `screen_name`, optional `game_id`, `source` | Navigation and funnel entry |
-| `game_selected` | P1 | Hub card or drawer navigation | `game_id`, `source: hub \| drawer` | Demand by title and discovery source |
+| `screen_viewed` | P1 | Observe the `Screen` union in `App.tsx` | `screen_name` (includes `lagos`, the I Sabi Lagos route, since 0.11.0), optional `game_id`, `source` | Navigation and funnel entry |
+| `game_selected` | P1 | A game's Play on Home, Home's gold quick Play, or a tile on the first-visit picker | `game_id`, `source: hub \| quick_play \| first_visit` (`drawer` before 0.10.0) | Demand by title and discovery source; `first_visit` shows which game a new player picks first |
 | `run_started` | P1 | WordKrush comparison-mode `startGame`; Clueless/Wordfall after restore resolves | `game_id`, `is_resume`, optional `category_id`, `puzzle_number`, `level_number`; Clueless adds bounded `assistance_context`, `hint_source`, and `path_phase` | Start rate and resume behavior |
-| `run_completed` | P1 | Existing completion callbacks in `App.tsx` | `game_id`, `outcome`, `score`, `score_kind`, `duration_ms?`, `is_new_best`, game context; Clueless adds bounded assistance context, hint policy, and path phase | Completion, retention, and balance |
+| `run_completed` | P1 | Existing completion callbacks in `App.tsx` | `game_id`, `outcome`, `score`, `score_kind`, `duration_ms?`, `is_new_best`, `boosted` (boolean; true when the run spent a boost), game context (More or Less level runs add `level_number`; the path is readable from `category_id`, where `lagos-*` means I Sabi Lagos); Clueless adds bounded assistance context, hint policy, and path phase | Completion, retention, and balance. A boosted run is still a completion; it is not a global-board submission. |
+| `challenge_accepted` | P1 | A friend's challenge link accepted (`App.tsx` `acceptChallenge`) | `level_number` | How often a shared result turns into a played challenge |
+| `challenge_finished` | P1 | A challenge run's game over | `level_number`, `outcome: won \| tied \| lost` | Whether challenges are winnable, and rematch pull |
+| `duel_search_started` | P1 | A 1v1 search, invite or link join began (`DuelScreen`) | `mode: random \| invite \| joined` | Demand for 1v1, and how much of it is friends |
+| `duel_matched` | P1 | A 1v1 found its opponent | `opponent: person \| ghost`, `wait_bucket: under_5s \| 5_11s \| over_11s` | The ghost share is how thin the queue is |
+| `duel_finished` | P1 | A 1v1 ended | `opponent`, `outcome: won \| lost \| tied`, `opponent_left`, `streak_bucket` | Whether matches feel fair, and how often people drop |
 | `label_round_passed` | P1 | More or Less game-over after a set is exhausted | `round_id`, `rounds_passed`, `item_count` | Come-back loop: how many Wikipedia name-sets players clear |
 | `guess_submitted` | P1 | WordKrush comparison mode and Clueless submit handlers | `game_id`, `guess_index`, optional `puzzle_number`, `level_number`, `choice`, `result_kind`, `rank_bucket`, bounded Clueless assistance/path context | Core-loop depth and input friction |
 | `round_resolved` | P1 | WordKrush comparison UI observes reducer result | `correct`, `round_index`, `streak_bucket`, `pair_relaxed` | Difficulty curve and fairness |
@@ -125,6 +130,12 @@ expose a typed event map so names and property shapes cannot drift.
 | `match_created` | P1 | Host opens a lobby | `game_id`, `level_number` | Which path rows get raced |
 | `match_started` | P1 | Host starts a ready lobby | `game_id`, `level_number`, `player_count_bucket: 2 \| 3 \| 4` | Live-race start rate |
 | `match_finished` | P1 | Match reaches `finished` | `game_id`, `level_number`, `player_count_bucket`, `complete`, `outcome: win \| loss` | Completion vs spectating the clock |
+| `boost_used` | P1 | Player spends coins on a hint or power-up | `game_id`, `boost_kind` (fixed id) | Which helps are bought. No word, no board, no price. |
+| `daily_chest_claimed` | P1 | Player opens that local day's chest | `chest_day` 1–7 | How far the chest cycle gets |
+| `player_level_up` | P1 | Lifetime XP crosses one or more levels | `level_bucket: 1_4 \| 5_9 \| 10_19 \| 20_plus` | Whether players progress. The raw level is not sent. |
+| `milestone_reached` | P1 | A one-time milestone is granted | `milestone_id` (fixed id) | Which celebrations fire |
+
+`boost_used`, `daily_chest_claimed`, `player_level_up`, and `milestone_reached` carry no name, no email, and no guessed or traced word. `boost_kind` and `milestone_id` are closed sets. `run_completed.boosted` is the only new property on an existing event.
 
 `score` has different semantics across games, so every completed run includes
 `score_kind`: `streak` for WordKrush comparison mode, `guesses_used` for Clueless, and
@@ -343,6 +354,18 @@ Implemented:
 9. Player feedback is a PostHog Surveys API prompt (`src/feedback/`,
    `FeedbackPrompt`). `survey sent` posts to the capture endpoint even when
    analytics is declined; guests use a one-shot distinct id (D-063).
+
+10. A root `ErrorBoundary` (`src/ui/ErrorBoundary.tsx`) and global handlers
+    (`src/analytics/observe.ts`, installed in `index.ts`) send `app_error`
+    with only `kind` and `fatal`, capped at 10 per page view. Web counts only
+    errors from our own origin.
+11. `web_vitals` (web only) sends LCP, the slowest interaction (an INP
+    stand-in), CLS ×1000 and TTFB once per page view, when the tab hides
+    (`src/analytics/vitals.ts` is pure and tested).
+12. The external synthetic check runs as `.github/workflows/uptime.yml`
+    every 10 minutes against `/`, the main bundle, `/healthz` and
+    `/isabilagos`. A failure fails the run and GitHub emails the owner
+    (D-070). `/healthz` reports `ok`, the live version and the start time.
 
 Still separate:
 

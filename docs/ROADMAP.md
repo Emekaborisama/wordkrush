@@ -1,6 +1,6 @@
 # Roadmap & Task List
 
-**Last updated:** 2026-08-30
+**Last updated:** 2026-10-18
 **Board of record:** Superthread → *My Private Space* → **BestGame** board (team `tbJ3qEwK`, board `2`, lists: To do `8` / Doing `9` / Done `10`).
 
 Live status lives on the board, not here. This file exists so an LLM reading the repo cold knows what the work *is*, what blocks it, and what order it goes in — without needing board access.
@@ -58,7 +58,20 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 
 ## Track: UI
 
-- [ ] Home screen — game logo, Play, best streak, category picker
+- [x] **Reward flow and game feel** (ST-106) — **Done** in 0.9.0. Device rewards and the finished-run journey shipped; its sand / wood chrome was replaced by ST-112 the same day.
+- [x] **Every screen follows the Block Blast kit** (ST-112) — **Done** in 0.10.0. Owner asked for the whole flow to follow the Block Blast UI kit (Room 8 Studio) exactly, with Block King for juice: sky backdrops, coral pop-ups with ribbon titles, cream boxes, glossy buttons, HUD panels, cube boards, booster dock, Exo 2. See `docs/DESIGN_SYSTEM.md` and D-067.
+- [x] **More or Less levels, I Sabi Lagos, Wordfall glow** (ST-113) — **Done** in 0.11.0. Seven label levels with stars; the `/isabilagos` danfo route with seven Lagos stops; a danfo ride between levels; Wordfall's traced word lights gold. Spotify-stream and X-trend labels wait on a licensed source (D-068).
+- [x] **Music, first-visit picker, Higher or Lower name, short-phone layout** (ST-114) — **Done** in 0.12.0. Original Afrobeats loops with a Music switch (D-069); a game picker on the first visit; More or Less renamed Higher or Lower for players; side-by-side cards and a compact HUD on SE-sized screens.
+- [x] **Launch readiness: Cloudflare, uptime, crash counters** (ST-115) — **Done** in 0.13.0. DNS and caching on Cloudflare; a `/healthz` endpoint and a 10-minute uptime Action; a root error boundary; `app_error` and `web_vitals` events (D-070).
+- [x] **Levels visible in every game** (ST-117) — **Done** in 0.14.0. A level trail in each play screen and a meadow level map, with Fluent 3D animals (D-071).
+- [x] **In-run twists** (ST-118) — **Done** in 0.15.0. Rising chime, Mystery rounds every fifth pair, and "So close!" on a narrow miss.
+- [x] **Challenge a friend** (ST-120) — **Done** in 0.17.0. Shared Higher or Lower level results replay the same pairs against the sharer's streak.
+- [x] **Daily 10** (ST-121) — **Done** in 0.18.0. The same ten Higher or Lower pairs for everyone each day, one try, with a share grid.
+- [ ] **Weekly league** — Duolingo-style weekly board. Needs a Supabase view over `global_scores` by week, which is an owner-applied migration. Not started.
+- [ ] **Better sound effects** — owner asked (2026-10-24). Kenney's CC0 interface, jingle and casino packs are the candidates. They need converting from Ogg for iOS and auditioning by the owner. Not started.
+- [ ] **A better popularity number than Wikipedia pageviews** — owner asked (2026-10-24). Needs an owner decision on the source and its licence (D-012). Not started.
+- [ ] **Millionaire-style lifelines for More or Less** — owner idea (2026-10-19): "phone a friend" and similar help during a run. Not started.
+- [ ] **Play random people live** — owner idea (2026-10-19): quick-match against a stranger, alongside private team races (ST-83). Not started.
 - [ ] Game screen — comparison panels, MORE/LESS controls, current streak
 - [ ] Count-up reveal — animate the hidden value after the answer
 - [x] Game over screen — final streak, best streak, replay/share — **Done** in 0.8.19; per-game emoji grid, clipboard/share sheet, no live-race or scores-row share yet
@@ -79,6 +92,9 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 
 - [ ] **Teams and live races** (ST-83) — **Doing**; private invite-only crew, 2–10 player simultaneous races on a numbered path, dual team/personal unlock. Needs `0006_teams_and_live_matches.sql`, `0007_team_crud.sql`, and `0008_live_roster_ten.sql` applied on the project.
 - [ ] **Live races hold 2–10** (ST-88) — **Doing**; player-facing copy plus the cap raise (D-055).
+- [x] **Home rebuilt** (ST-123) — **Done** in 0.20.0. Games first, one Play, modes grouped, and Home widens on a laptop. Ghost result copy and cards fixed.
+- [x] **1v1 live, ghosts and flags** (ST-123) — **Done** in 0.19.0. Random matchmaking and friend links on Realtime with no sign-in (D-072), labelled ghosts when the queue is empty, and a flag beside each name.
+- [ ] **Flags on leaderboards and races** — built in 0.19.1 and blocked on the owner. Applying `0009_player_country.sql` turns it on; it stores a public country per signed-in player (D-073).
 
 ## Track: native / App Store readiness
 

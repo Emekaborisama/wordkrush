@@ -1,4 +1,5 @@
 import type { PlayerCountBucket } from '../games/campaign';
+import type { BoostKind, MilestoneId } from '../rewards/types';
 import type { ArrivalAttribution, EntrySource, UtmMedium, UtmSource } from './attribution';
 
 export type AnalyticsConsent = 'granted' | 'denied';
@@ -36,11 +37,15 @@ export type AnalyticsEvents = {
     session_result: 'signed_in' | 'guest';
   };
   screen_viewed: {
-    screen_name: 'hub' | 'home' | 'game' | 'over' | 'scores' | 'auth' | 'teams' | 'live-lobby' | 'live-results';
+    screen_name: 'hub' | 'home' | 'lagos' | 'duel' | 'game' | 'over' | 'scores' | 'auth' | 'teams' | 'live-lobby' | 'live-results';
     game_id?: string;
   };
   game_selected: CommonGameProperties & {
-    source: 'hub' | 'drawer';
+    /**
+     * `quick_play` is the hub's gold Play; `first_visit` is a tile on the
+     * first-visit picker (0.12.0); `drawer` predates 0.10.0.
+     */
+    source: 'hub' | 'quick_play' | 'first_visit' | 'drawer';
   };
   run_started: CommonGameProperties & CluelessLevelProperties & {
     is_resume: boolean;
@@ -54,6 +59,11 @@ export type AnalyticsEvents = {
     score_kind: 'streak' | 'guesses_used' | 'points';
     duration_ms?: number;
     is_new_best: boolean;
+    /**
+     * Whether this run spent a boost. Optional only so call sites that predate
+     * the economy still typecheck; a screen that finishes a run should set it.
+     */
+    boosted?: boolean;
     category_id?: string;
     puzzle_number?: number;
     level_number?: number;
@@ -184,6 +194,60 @@ export type AnalyticsEvents = {
   card_image_load_failed: CommonGameProperties & {
     has_image_url: true;
   };
+  boost_used: {
+    game_id: GameId;
+    boost_kind: BoostKind;
+  };
+  daily_chest_claimed: {
+    chest_day: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  };
+  player_level_up: {
+    level_bucket: LevelBucket;
+  };
+  milestone_reached: {
+    milestone_id: MilestoneId;
+  };
+  /**
+   * Something threw. Only where it surfaced and whether it was fatal: never
+   * the message, stack or URL (OBSERVABILITY: exceptions are categorized
+   * locally). Capped per session by `src/analytics/observe.ts`.
+   */
+  app_error: {
+    kind: 'render' | 'uncaught' | 'unhandled_rejection';
+    fatal: boolean;
+  };
+  /** A friend's challenge link was accepted: the run, replayed. */
+  challenge_accepted: {
+    level_number: number;
+  };
+  /** A challenge run ended against the friend's streak. */
+  challenge_finished: {
+    level_number: number;
+    outcome: 'won' | 'tied' | 'lost';
+  };
+  /** A 1v1 search began: a stranger, or joining a friend's link. */
+  duel_search_started: {
+    mode: 'random' | 'invite' | 'joined';
+  };
+  /** A 1v1 found its opponent. The ghost share is how thin the queue is. */
+  duel_matched: {
+    opponent: 'person' | 'ghost';
+    wait_bucket: 'under_5s' | '5_11s' | 'over_11s';
+  };
+  duel_finished: {
+    opponent: 'person' | 'ghost';
+    outcome: 'won' | 'lost' | 'tied';
+    opponent_left: boolean;
+    streak_bucket: '0_4' | '5_9' | '10_19' | '20_plus';
+  };
+  /** Web only, once per page view: Core Web Vitals as rounded numbers. */
+  web_vitals: {
+    lcp_ms?: number;
+    inp_ms?: number;
+    /** Cumulative layout shift ×1000, so it stays an integer. */
+    cls_milli?: number;
+    ttfb_ms?: number;
+  };
 };
 
 export type AnalyticsEventName = keyof AnalyticsEvents;
@@ -225,7 +289,28 @@ export const ANALYTICS_EVENT_NAMES: ReadonlySet<string> = new Set<AnalyticsEvent
   'score_persist_failed',
   'progress_persist_failed',
   'card_image_load_failed',
+  'boost_used',
+  'daily_chest_claimed',
+  'player_level_up',
+  'milestone_reached',
+  'app_error',
+  'web_vitals',
+  'challenge_accepted',
+  'challenge_finished',
+  'duel_search_started',
+  'duel_matched',
+  'duel_finished',
 ]);
+
+export type LevelBucket = '1_4' | '5_9' | '10_19' | '20_plus';
+
+/** Player level is unbounded, so the event stores a bucket rather than the number. */
+export function levelBucket(level: number): LevelBucket {
+  if (level >= 20) return '20_plus';
+  if (level >= 10) return '10_19';
+  if (level >= 5) return '5_9';
+  return '1_4';
+}
 
 export function streakBucket(streak: number): '0_4' | '5_9' | '10_19' | '20_plus' {
   if (streak >= 20) return '20_plus';

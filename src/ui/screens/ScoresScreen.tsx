@@ -1,13 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import type { Profile } from '../../auth/auth';
 import { getGame } from '../../games/registry';
 import {
@@ -15,22 +7,24 @@ import {
   type GlobalLeaderboardResult,
   type GlobalScore,
 } from '../../scores/global';
-import {
-  boardForContexts,
-  topScores,
-  type ScoreBoard,
-  type ScoreEntry,
-} from '../../scores/types';
+import { boardForContexts, topScores, type ScoreBoard } from '../../scores/types';
 import {
   Badge,
   Button,
+  CountryFlag,
+  CreamBox,
+  CreamText,
   EmptyState,
   GameArtwork,
-  PressableScale,
+  GlossFace,
+  Panel,
+  PanelText,
   Stat,
-  Surface,
+  StrokeText,
+  TabSwitch,
 } from '../components';
-import { font, formatDuration, radius, space, theme, type, withAlpha } from '../theme';
+import { usePlayerCountries } from '../usePlayerCountries';
+import { font, formatDuration, palette, space, tone, toneFrom, type GlossTone } from '../theme';
 
 type Props = {
   gameId: string;
@@ -57,6 +51,19 @@ type GlobalState =
   | { status: 'ready'; entries: GlobalScore[] }
   | { status: 'error'; entries: GlobalScore[]; reason: 'unconfigured' | 'unavailable' };
 
+const BOARD_TABS = [
+  { id: 'global', label: 'Global' },
+  { id: 'local', label: 'On this device' },
+] as const;
+
+/** Gold, silver, bronze medal discs; everyone else on sky. */
+const MEDAL: readonly GlossTone[] = [tone.gold, tone.grey, toneFrom('#D9822B')];
+
+/**
+ * The kit's leaderboard pop-up: tabs as small glossy buttons, the player's
+ * standing in two cream boxes, and every run as a cream row led by a medal
+ * disc. The X goes back to the hub.
+ */
 export function ScoresScreen({
   gameId,
   board,
@@ -70,20 +77,15 @@ export function ScoresScreen({
   roundsPassed,
 }: Props) {
   const game = getGame(gameId);
-  const [scoreContext, setScoreContext] = useState(
-    initialScoreContext ?? scoreContexts?.[0]?.id,
-  );
+  const [scoreContext, setScoreContext] = useState(initialScoreContext ?? scoreContexts?.[0]?.id);
   const activeContext = scoreContexts?.find((context) => context.id === scoreContext);
   const visibleBoard = activeContext
-    ? boardForContexts(
-        board,
-        [activeContext.id, ...(activeContext.localAliases ?? [])],
-        game?.scoreDirection,
-      )
+    ? boardForContexts(board, [activeContext.id, ...(activeContext.localAliases ?? [])], game?.scoreDirection)
     : board;
   const top = topScores(visibleBoard, 10, game?.scoreDirection);
   const scoreNoun = game?.scoreNoun ?? 'rounds';
-  const accent = game?.accent ?? theme.accent;
+  const accent = game?.accent ?? palette.green;
+  const gameName = game?.name ?? 'this game';
   const [tab, setTab] = useState<BoardTab>(backendConfigured ? 'global' : 'local');
   const [global, setGlobal] = useState<GlobalState>({ status: 'loading', entries: [] });
   const syncedCount = visibleBoard.history.filter((entry) => entry.synced).length;
@@ -104,309 +106,203 @@ export function ScoresScreen({
 
   const refreshGlobal = () => {
     setGlobal((current) => ({ status: 'loading', entries: current.entries }));
-    void loadGlobalLeaderboard(gameId, 50, scoreContext).then((result) =>
-      setGlobal(globalStateFrom(result)),
-    );
+    void loadGlobalLeaderboard(gameId, 50, scoreContext).then((result) => setGlobal(globalStateFrom(result)));
   };
 
-  const myGlobal = profile
-    ? global.entries.find((entry) => entry.playerId === profile.id)
-    : undefined;
+  const myGlobal = profile ? global.entries.find((entry) => entry.playerId === profile.id) : undefined;
+
+  const footer = (
+    <>
+      {profile ? null : backendConfigured ? (
+        <Button title="Sign in to join the global board" tone="blue" size="md" onPress={onSignIn} />
+      ) : null}
+      <PanelText>
+        {tab === 'global'
+          ? 'Global ranks show each player’s best run for this game.'
+          : 'Local history stays on this device and works offline.'}
+      </PanelText>
+    </>
+  );
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <GameArtwork gameId={gameId} accent={accent} size={64} raised />
-        <View style={styles.headerCopy}>
-          <Text style={[type.overline, { color: accent }]}>LEADERBOARDS</Text>
-          <Text style={styles.title}>{game?.name ?? 'Your'} scores</Text>
+      <Panel title="Leaderboard" onClose={onBack} closeLabel="Back to all games" scroll footer={footer} style={styles.panel}>
+        <View style={styles.gameRow}>
+          <GameArtwork gameId={gameId} accent={accent} size={52} />
+          <PanelText variant="heading" align="left" style={styles.flex}>
+            {gameName}
+          </PanelText>
         </View>
-      </View>
 
-      <Surface level={1} radius={radius.md} padded={false} style={styles.tabs}>
-        <BoardTabButton label="Global" active={tab === 'global'} onPress={() => setTab('global')} />
-        <BoardTabButton
-          label="On this device"
-          active={tab === 'local'}
-          onPress={() => setTab('local')}
-        />
-      </Surface>
+        <TabSwitch options={BOARD_TABS} value={tab} onChange={setTab} />
+        {scoreContexts ? (
+          <TabSwitch
+            options={scoreContexts.map((context) => ({ id: context.id, label: context.label }))}
+            value={scoreContext}
+            onChange={setScoreContext}
+          />
+        ) : null}
 
-      {scoreContexts ? (
-        <Surface level={1} radius={radius.md} padded={false} style={styles.tabs}>
-          {scoreContexts.map((context) => (
-            <BoardTabButton
-              key={context.id}
-              label={context.label}
-              active={scoreContext === context.id}
-              onPress={() => setScoreContext(context.id)}
+        <View style={styles.stats}>
+          <CreamBox style={styles.flex}>
+            <Stat
+              value={tab === 'global' ? (myGlobal ? `#${myGlobal.rank}` : '—') : visibleBoard.bestStreak}
+              label={tab === 'global' ? 'YOUR GLOBAL RANK' : `BEST ${scoreNoun.toUpperCase()}`}
             />
-          ))}
-        </Surface>
-      ) : null}
+          </CreamBox>
+          <CreamBox style={styles.flex}>
+            <Stat
+              value={tab === 'global' ? visibleBoard.bestStreak : visibleBoard.totalRuns}
+              label={tab === 'global' ? 'YOUR LOCAL BEST' : 'RUNS PLAYED'}
+            />
+          </CreamBox>
+          {tab === 'local' && roundsPassed !== undefined ? (
+            <CreamBox style={styles.flex}>
+              <Stat value={roundsPassed} label="SETS PASSED" />
+            </CreamBox>
+          ) : null}
+        </View>
 
-      <Surface
-        level={2}
-        borderColor={withAlpha(accent, 0.4)}
-        radius={radius.lg}
-        style={styles.statsRow}
-      >
-        <Stat
-          value={
-            tab === 'global' ? (myGlobal ? `#${myGlobal.rank}` : '—') : visibleBoard.bestStreak
-          }
-          label={tab === 'global' ? 'YOUR GLOBAL RANK' : `BEST ${scoreNoun.toUpperCase()}`}
-          size="lg"
-          color={accent}
-        />
-        <View style={styles.divider} />
-        <Stat
-          value={tab === 'global' ? visibleBoard.bestStreak : visibleBoard.totalRuns}
-          label={tab === 'global' ? 'YOUR LOCAL BEST' : 'RUNS PLAYED'}
-          size="lg"
-        />
-        {tab === 'local' && roundsPassed !== undefined ? (
-          <>
-            <View style={styles.divider} />
-            <Stat value={roundsPassed} label="ROUNDS PASSED" size="lg" color={accent} />
-          </>
-        ) : null}
-      </Surface>
-
-      {tab === 'global' ? (
-        <GlobalBoard
-          state={global}
-          scoreNoun={scoreNoun}
-          accent={accent}
-          profile={profile}
-          gameName={game?.name ?? 'this game'}
-          onRefresh={refreshGlobal}
-        />
-      ) : (
-        <LocalBoard
-          entries={top}
-          scoreNoun={scoreNoun}
-          accent={accent}
-          highlightId={highlightId}
-          gameId={gameId}
-          gameName={game?.name ?? 'this game'}
-        />
-      )}
-
-      <View style={styles.footer}>
-        {profile ? null : backendConfigured ? (
-          <Button title="Sign in to join the global board" variant="tonal" color={accent} onPress={onSignIn} />
-        ) : null}
-
-        <Text style={styles.footerNote}>
-          {tab === 'global'
-            ? 'Global ranks show each player’s best run for this game.'
-            : 'Local history stays on this device and works offline.'}
-        </Text>
-
-        <Button title="Back to all games" variant="outline" onPress={onBack} />
-      </View>
+        {tab === 'global' ? (
+          <GlobalRows state={global} scoreNoun={scoreNoun} profile={profile} gameName={gameName} onRefresh={refreshGlobal} />
+        ) : top.length === 0 ? (
+          <EmptyState
+            title="Your first score is waiting"
+            body={`Finish a ${gameName} run and it’ll appear here, even when you’re offline.`}
+            art={<GameArtwork gameId={gameId} accent={accent} size={54} />}
+          />
+        ) : (
+          <View style={styles.rows}>
+            {top.map((entry, index) => (
+              <ScoreRow
+                key={entry.id}
+                rank={index + 1}
+                title={`${entry.streak.toLocaleString('en-US')} ${scoreNoun}`}
+                detail={`${formatDate(entry.playedAt)}${entry.durationMs !== undefined ? ` · ${formatDuration(entry.durationMs)}` : ''}`}
+                highlight={entry.id === highlightId}
+                badges={[
+                  ...(entry.boosted ? [{ label: 'BOOSTED', tone: 'warning' as const }] : []),
+                  ...(entry.id === highlightId ? [{ label: 'THIS RUN', tone: 'danger' as const }] : []),
+                ]}
+              />
+            ))}
+          </View>
+        )}
+      </Panel>
     </View>
   );
 }
 
 function globalStateFrom(result: GlobalLeaderboardResult): GlobalState {
-  return result.ok
-    ? { status: 'ready', entries: result.entries }
-    : { status: 'error', entries: [], reason: result.reason };
+  return result.ok ? { status: 'ready', entries: result.entries } : { status: 'error', entries: [], reason: result.reason };
 }
 
-function BoardTabButton({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <PressableScale
-      onPress={onPress}
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
-      style={[styles.tab, active && styles.tabActive]}
-    >
-      <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
-    </PressableScale>
-  );
-}
-
-function LocalBoard({
-  entries,
-  scoreNoun,
-  accent,
-  highlightId,
-  gameId,
-  gameName,
-}: {
-  entries: ScoreEntry[];
-  scoreNoun: string;
-  accent: string;
-  highlightId?: string;
-  gameId: string;
-  gameName: string;
-}) {
-  if (entries.length === 0) {
-    return (
-      <View style={styles.empty}>
-        <EmptyState
-          title="Your first score is waiting"
-          body={`Finish a ${gameName} run and it’ll appear here, even when you’re offline.`}
-          accent={accent}
-          art={<GameArtwork gameId={gameId} accent={accent} size={54} />}
-        />
-      </View>
-    );
-  }
-
-  return (
-    <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
-      <Text style={[type.overline, styles.listLabel]}>TOP RUNS ON THIS DEVICE</Text>
-      {entries.map((entry, index) => {
-        const highlighted = entry.id === highlightId;
-        return (
-          <Surface
-            key={entry.id}
-            level={highlighted ? 3 : 2}
-            borderColor={highlighted ? accent : undefined}
-            radius={radius.md}
-            style={styles.row}
-          >
-            <Rank rank={index + 1} accent={accent} />
-            <View style={styles.rowMain}>
-              <ScoreValue score={entry.streak} scoreNoun={scoreNoun} />
-              <Text style={styles.rowDate}>
-                {formatDate(entry.playedAt)}
-                {entry.durationMs !== undefined && ` · ${formatDuration(entry.durationMs)}`}
-              </Text>
-            </View>
-            {highlighted ? <Badge label="THIS RUN" color={accent} /> : null}
-          </Surface>
-        );
-      })}
-    </ScrollView>
-  );
-}
-
-function GlobalBoard({
+function GlobalRows({
   state,
   scoreNoun,
-  accent,
   profile,
   gameName,
   onRefresh,
 }: {
   state: GlobalState;
   scoreNoun: string;
-  accent: string;
   profile: Profile | null;
   gameName: string;
   onRefresh: () => void;
 }) {
+  const countries = usePlayerCountries(state.entries.map((entry) => entry.playerId));
   if (state.status === 'loading' && state.entries.length === 0) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={accent} size="large" />
-        <Text style={styles.loadingText}>Loading global ranks…</Text>
-      </View>
+      <CreamBox style={styles.loading}>
+        <ActivityIndicator color={palette.teal} size="large" />
+        <CreamText>Loading global ranks…</CreamText>
+      </CreamBox>
     );
   }
 
   if (state.status === 'error') {
     const unconfigured = state.reason === 'unconfigured';
     return (
-      <View style={styles.empty}>
-        <EmptyState
-          title={unconfigured ? 'Global board needs setup' : 'Couldn’t load global ranks'}
-          body={
-            unconfigured
-              ? 'Online services aren’t configured in this build. Your device scores are still safe.'
-              : 'Check your connection and try again. Your local scores are unaffected.'
-          }
-          accent={accent}
-          actionLabel={unconfigured ? undefined : 'Try again'}
-          onAction={unconfigured ? undefined : onRefresh}
-        />
-      </View>
+      <EmptyState
+        title={unconfigured ? 'Global board needs setup' : 'Couldn’t load global ranks'}
+        body={
+          unconfigured
+            ? 'Online services aren’t configured in this build. Your device scores are still safe.'
+            : 'Check your connection and try again. Your local scores are unaffected.'
+        }
+        actionLabel={unconfigured ? undefined : 'Try again'}
+        onAction={unconfigured ? undefined : onRefresh}
+      />
     );
   }
 
   if (state.entries.length === 0) {
-    return (
-      <View style={styles.empty}>
-        <EmptyState
-          title="The board is wide open"
-          body={`Be the first player to post a ${gameName} score.`}
-          accent={accent}
-        />
-      </View>
-    );
+    return <EmptyState title="The board is wide open" body={`Be the first player to post a ${gameName} score.`} />;
   }
 
   return (
-    <ScrollView
-      style={styles.list}
-      contentContainerStyle={styles.listContent}
-      refreshControl={
-        <RefreshControl
-          refreshing={state.status === 'loading'}
-          onRefresh={onRefresh}
-          tintColor={accent}
-        />
-      }
-    >
-      <Text style={[type.overline, styles.listLabel]}>GLOBAL BESTS</Text>
+    <View style={styles.rows}>
       {state.entries.map((entry) => {
         const mine = entry.playerId === profile?.id;
         return (
-          <Surface
+          <ScoreRow
             key={entry.id}
-            level={mine ? 3 : 2}
-            borderColor={mine ? accent : undefined}
-            radius={radius.md}
-            style={styles.row}
-          >
-            <Rank rank={entry.rank} accent={accent} />
-            <View style={styles.rowMain}>
-              <Text style={styles.playerName} numberOfLines={1}>
-                {entry.displayName}
-              </Text>
-              <Text style={styles.rowDate}>
-                {formatDate(entry.playedAt)}
-                {entry.durationMs !== null && ` · ${formatDuration(entry.durationMs)}`}
-              </Text>
-            </View>
-            <View style={styles.globalScore}>
-              <ScoreValue score={entry.score} scoreNoun={scoreNoun} />
-              {mine ? <Badge label="YOU" color={accent} /> : null}
-            </View>
-          </Surface>
+            rank={entry.rank}
+            title={entry.displayName}
+            flag={countries.get(entry.playerId)}
+            detail={`${entry.score.toLocaleString('en-US')} ${scoreNoun} · ${formatDate(entry.playedAt)}${
+              entry.durationMs !== null ? ` · ${formatDuration(entry.durationMs)}` : ''
+            }`}
+            highlight={mine}
+            badges={mine ? [{ label: 'YOU', tone: 'danger' }] : []}
+          />
         );
       })}
-    </ScrollView>
-  );
-}
-
-function Rank({ rank, accent }: { rank: number; accent: string }) {
-  return (
-    <View style={[styles.rank, rank <= 3 && { backgroundColor: withAlpha(accent, 0.15) }]}>
-      <Text style={[styles.rankText, rank <= 3 && { color: accent }]}>{rank}</Text>
+      <Button title={state.status === 'loading' ? 'Refreshing…' : 'Refresh'} tone="sky" size="sm" onPress={onRefresh} disabled={state.status === 'loading'} />
     </View>
   );
 }
 
-function ScoreValue({ score, scoreNoun }: { score: number; scoreNoun: string }) {
+function ScoreRow({
+  rank,
+  title,
+  flag,
+  detail,
+  highlight,
+  badges,
+}: {
+  rank: number;
+  title: string;
+  flag?: string;
+  detail: string;
+  highlight: boolean;
+  badges: { label: string; tone: 'warning' | 'danger' }[];
+}) {
+  const face = MEDAL[rank - 1] ?? tone.sky;
   return (
-    <Text style={styles.rowStreak}>
-      {score.toLocaleString('en-US')}
-      <Text style={styles.rowUnit}> {scoreNoun.toUpperCase()}</Text>
-    </Text>
+    <CreamBox tint={highlight ? '#FFF3B8' : undefined} style={[styles.row, highlight && styles.rowMine]}>
+      <View style={styles.rowInner} accessible accessibilityLabel={`Rank ${rank}, ${title}, ${detail}`}>
+        <GlossFace tone={face} lip={3} radius={20} raised={false} faceStyle={styles.medal}>
+          <StrokeText size={rank > 99 ? 12 : 16} stroke={face.outline} strokeWidth={1.5} depth={1}>
+            {rank}
+          </StrokeText>
+        </GlossFace>
+        <View style={styles.flex}>
+          <View style={styles.rowName}>
+            <CountryFlag code={flag} size={14} />
+            <Text style={[styles.rowTitle, styles.rowTitleText]} numberOfLines={1}>
+              {title}
+            </Text>
+          </View>
+          <Text style={styles.rowDetail} numberOfLines={1}>
+            {detail}
+          </Text>
+        </View>
+        {badges.map((badge) => (
+          <Badge key={badge.label} label={badge.label} tone={badge.tone} />
+        ))}
+      </View>
+    </CreamBox>
   );
 }
 
@@ -424,53 +320,27 @@ function formatDate(iso: string): string {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg, padding: space.lg, gap: space.md },
-  header: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingTop: space.xs },
-  headerCopy: { flex: 1 },
-  title: { ...type.title, color: theme.text, fontSize: 26, lineHeight: 31, marginTop: 1 },
-  tabs: { flexDirection: 'row', padding: 4 },
-  tab: {
+  root: {
     flex: 1,
-    minHeight: 40,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
+    paddingHorizontal: space.md,
+    paddingTop: space.lg,
+    paddingBottom: space.md,
   },
-  tabActive: { backgroundColor: theme.cardHigh },
-  tabText: { color: theme.textDim, fontFamily: font.medium, fontSize: 13, fontWeight: '500' },
-  tabTextActive: { color: theme.text, fontFamily: font.semibold, fontWeight: '600' },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
-  divider: { height: 44, width: 1, backgroundColor: theme.border },
-
-  list: { flex: 1 },
-  listContent: { gap: space.sm, paddingVertical: space.xs },
-  listLabel: { color: theme.textDim, marginBottom: 2 },
-  rowUnit: { ...type.caption, color: theme.textDim, fontWeight: '700', fontSize: 10 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  rank: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.pill,
-    backgroundColor: theme.bgElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rankText: { color: theme.textDim, fontFamily: font.bold, fontSize: 14, fontWeight: '700' },
-  rowMain: { flex: 1 },
-  playerName: {
-    color: theme.text,
-    fontFamily: font.semibold,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  globalScore: { alignItems: 'flex-end', gap: 2 },
-  rowStreak: { color: theme.text, fontFamily: font.semibold, fontSize: 16, fontWeight: '600' },
-  rowDate: { color: theme.textDim, fontFamily: font.medium, fontSize: 11, marginTop: 2 },
-
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md },
-  loadingText: { ...type.caption, color: theme.textMuted },
-
-  footer: { gap: space.sm },
-  footerNote: { color: theme.textDim, fontFamily: font.medium, fontSize: 11, textAlign: 'center', lineHeight: 16, opacity: 0.8 },
+  panel: { flex: 1 },
+  gameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  flex: { flex: 1, minWidth: 0 },
+  stats: { flexDirection: 'row', gap: space.sm },
+  rows: { gap: space.sm },
+  row: { paddingVertical: space.xs + 2, paddingHorizontal: space.sm },
+  rowMine: { borderColor: palette.goldDeep },
+  rowInner: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  medal: { width: 40, height: 40 },
+  rowName: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  rowTitle: { fontFamily: font.black, fontSize: 16, lineHeight: 20, color: palette.ink },
+  rowTitleText: { flexShrink: 1 },
+  rowDetail: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: palette.inkSoft },
+  loading: { alignItems: 'center', gap: space.sm, paddingVertical: space.lg },
 });

@@ -1,0 +1,137 @@
+{
+  "category": {
+    "id": "lagos-moments",
+    "name": "Lagos stories",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to exist on 2026-10-19. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "1966 coup",
+      "term": "1966 Nigerian coup d'état",
+      "imageTerm": "Johnson Aguiyi-Ironsi"
+    },
+    {
+      "label": "AFRIMA",
+      "term": "All Africa Music Awards"
+    },
+    {
+      "label": "Aliko Dangote",
+      "term": "Aliko Dangote"
+    },
+    {
+      "label": "Area boys",
+      "term": "Area boys"
+    },
+    {
+      "label": "Babajide Sanwo-Olu",
+      "term": "Babajide Sanwo-Olu"
+    },
+    {
+      "label": "Bola Tinubu",
+      "term": "Bola Tinubu"
+    },
+    {
+      "label": "Bombardment of Lagos (1851)",
+      "term": "Reduction of Lagos"
+    },
+    {
+      "label": "Dana Air crash (2012)",
+      "term": "Dana Air Flight 0992",
+      "imageTerm": "Dana Air"
+    },
+    {
+      "label": "Danfo",
+      "term": "Danfo"
+    },
+    {
+      "label": "Ebola in Lagos (2014)",
+      "term": "Ebola in Nigeria"
+    },
+    {
+      "label": "EndSARS protests",
+      "term": "End SARS"
+    },
+    {
+      "label": "Eyo festival",
+      "term": "Eyo festival"
+    },
+    {
+      "label": "Felabration",
+      "term": "Felabration",
+      "imageTerm": "Fela Kuti"
+    },
+    {
+      "label": "FESTAC '77",
+      "term": "FESTAC 77"
+    },
+    {
+      "label": "Gidi Culture Festival",
+      "term": "Gidi Culture Festival"
+    },
+    {
+      "label": "Ikeja armoury explosion (2002)",
+      "term": "2002 Lagos armoury explosion"
+    },
+    {
+      "label": "Ikoyi building collapse (2021)",
+      "term": "2021 Lagos high-rise collapse",
+      "imageTerm": "Ikoyi"
+    },
+    {
+      "label": "Jollof wars",
+      "term": "Jollof rice"
+    },
+    {
+      "label": "Kalakuta Republic",
+      "term": "Kalakuta Republic",
+      "imageTerm": "Fela Kuti"
+    },
+    {
+      "label": "Lagos City Marathon",
+      "term": "Lagos City Marathon"
+    },
+    {
+      "label": "Lagos Fashion Week",
+      "term": "Lagos Fashion Week"
+    },
+    {
+      "label": "Lagos Treaty of Cession",
+      "term": "Lagos Treaty of Cession",
+      "imageTerm": "Dosunmu"
+    },
+    {
+      "label": "Lekki toll gate shooting",
+      "term": "2020 Lekki shooting"
+    },
+    {
+      "label": "NEPA",
+      "term": "Power Holding Company of Nigeria"
+    },
+    {
+      "label": "Oba of Lagos",
+      "term": "Oba of Lagos"
+    },
+    {
+      "label": "Occupy Nigeria (2012)",
+      "term": "Occupy Nigeria"
+    },
+    {
+      "label": "Okada",
+      "term": "Okada (motorcycle taxi)"
+    },
+    {
+      "label": "Synagogue Church collapse (2014)",
+      "term": "Synagogue Church of All Nations"
+    },
+    {
+      "label": "Third Mainland Bridge",
+      "term": "Third Mainland Bridge"
+    },
+    {
+      "label": "Yahoo boys (419)",
+      "term": "Advance-fee scam"
+    }
+  ]
+}

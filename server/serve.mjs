@@ -100,7 +100,43 @@ const MIME = {
   '.ttf': 'font/ttf',
   '.txt': 'text/plain; charset=utf-8',
   '.xml': 'application/xml; charset=utf-8',
+  // Audio needs its real type: with `nosniff`, Safari will not play a clip
+  // served as application/octet-stream (the sound effects did, until 0.12.0).
+  '.mp3': 'audio/mpeg',
+  '.m4a': 'audio/mp4',
+  // The bundle's only .mp4 files are the music loops (AAC, no video). They use
+  // .mp4 rather than .m4a because Cloudflare caches .mp4 at the edge by
+  // default and passes .m4a straight through to this one server.
+  '.mp4': 'audio/mp4',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
 };
+
+/**
+ * One `Range: bytes=…` request against a body of `size` bytes. Safari fetches
+ * media in ranges and will not play a file whose server ignores them.
+ * Returns the inclusive span, `'unsatisfiable'` for a range outside the body,
+ * or `null` to serve the whole body (no header, or a form we do not serve,
+ * such as several ranges).
+ */
+export function parseByteRange(header, size) {
+  if (typeof header !== 'string') return null;
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
+  if (!match) return null;
+  const [, from, to] = match;
+  if (from === '' && to === '') return null;
+  if (from === '') {
+    // A suffix: the last N bytes.
+    const length = Number(to);
+    if (length === 0) return 'unsatisfiable';
+    return { start: Math.max(0, size - length), end: size - 1 };
+  }
+  const start = Number(from);
+  // An inverted range is invalid, and RFC 9110 says to ignore it: whole body.
+  if (to !== '' && Number(to) < start) return null;
+  if (start >= size) return 'unsatisfiable';
+  return { start, end: to === '' ? size - 1 : Math.min(Number(to), size - 1) };
+}
 
 const COMPRESSIBLE = /^(text\/|application\/(javascript|json|xml)|image\/svg)/;
 const MIN_COMPRESS_BYTES = 1024;
@@ -118,10 +154,28 @@ async function walk(dir) {
   return out;
 }
 
+/** Expo's exported assets carry a 32-hex content hash in the name, so a change is a new URL. */
+const HASHED_ASSET = /^\/assets\/.+\.[0-9a-f]{32}\.[a-z0-9]+$/i;
+
 function cacheControl(urlPath, type) {
   if (type.startsWith('text/html')) return 'no-cache';
-  if (urlPath.startsWith('/_expo/')) return 'public, max-age=31536000, immutable';
+  if (urlPath.startsWith('/_expo/') || HASHED_ASSET.test(urlPath)) return 'public, max-age=31536000, immutable';
   return 'public, max-age=3600';
+}
+
+const STARTED_AT = new Date().toISOString();
+
+/**
+ * `/healthz`: what an uptime monitor and Railway's health check ask. It says
+ * the process is up, which release it is, and whether the built app loaded,
+ * without touching the disk or rendering anything.
+ */
+function healthRecord() {
+  const ok = indexHtml !== null;
+  return {
+    status: ok ? 200 : 503,
+    body: JSON.stringify({ ok, version: OG_IMAGE_VERSION, startedAt: STARTED_AT, files: files.size }),
+  };
 }
 
 export async function warm() {
@@ -355,6 +409,34 @@ export async function handleRequest(req, res) {
   const url = new URL(req.url ?? '/', 'http://localhost');
   const pathname = url.pathname;
 
+  // The visitor's country for the flag on their name in a 1v1, as Cloudflare
+  // saw it. Answered from the request alone: nothing is stored or logged, and
+  // `private, no-store` keeps one player's country out of any shared cache.
+  if (pathname === '/country') {
+    const header = req.headers['cf-ipcountry'];
+    const country = typeof header === 'string' && /^[A-Z]{2}$/.test(header) && header !== 'XX' ? header : null;
+    res.writeHead(200, {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'private, no-store',
+      'x-content-type-options': 'nosniff',
+    });
+    if (req.method === 'HEAD') res.end();
+    else res.end(JSON.stringify({ country }));
+    return;
+  }
+
+  if (pathname === '/healthz') {
+    const health = healthRecord();
+    res.writeHead(health.status, {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      'x-content-type-options': 'nosniff',
+    });
+    if (req.method === 'HEAD') res.end();
+    else res.end(health.body);
+    return;
+  }
+
   // Try dynamic routes first
   let record = await handleCardImageRoute(pathname);
   if (!record) record = await handleOgImageRoute(pathname);
@@ -378,6 +460,29 @@ export async function handleRequest(req, res) {
     return;
   }
 
+  if (record.type.startsWith('audio/')) {
+    const range = parseByteRange(req.headers.range, record.body.length);
+    if (range === 'unsatisfiable') {
+      res.writeHead(416, { 'content-range': `bytes */${record.body.length}`, 'accept-ranges': 'bytes' }).end();
+      return;
+    }
+    if (range) {
+      const part = record.body.subarray(range.start, range.end + 1);
+      res.writeHead(206, {
+        'content-type': record.type,
+        'content-length': part.length,
+        'content-range': `bytes ${range.start}-${range.end}/${record.body.length}`,
+        'accept-ranges': 'bytes',
+        'cache-control': record.cacheControl,
+        etag: record.etag,
+        'x-content-type-options': 'nosniff',
+      });
+      if (req.method === 'HEAD') res.end();
+      else res.end(part);
+      return;
+    }
+  }
+
   const { body, encoding } = chooseEncoding(record, req.headers['accept-encoding']);
   const headers = {
     'content-type': record.type,
@@ -387,6 +492,7 @@ export async function handleRequest(req, res) {
     'x-content-type-options': 'nosniff',
   };
   if (record.vary !== null) headers.vary = 'Accept-Encoding';
+  if (record.type.startsWith('audio/')) headers['accept-ranges'] = 'bytes';
   if (encoding) headers['content-encoding'] = encoding;
 
   res.writeHead(200, headers);

@@ -1,18 +1,25 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import { font, radius, shadow, theme, withAlpha } from '../theme';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { tone as tones, toneFrom, type GlossTone, type Tone } from '../theme';
+import { GlossFace } from './GlossFace';
 import { PressableScale } from './PressableScale';
+import { StrokeText } from './StrokeText';
 
 type Variant = 'primary' | 'outline' | 'tonal' | 'ghost';
-type Size = 'lg' | 'md' | 'sm';
+type Size = 'xl' | 'lg' | 'md' | 'sm';
 
-type Props = {
+export type ButtonProps = {
   title: string;
   onPress: () => void;
   variant?: Variant;
   size?: Size;
-  /** Tint for `primary`/`tonal`. Defaults to the app accent; pass a game's
-      accent or `theme.danger` for a destructive tonal action. */
+  /**
+   * Kit tone. `green` is the primary CTA (Play, Continue), `gold` the hero
+   * Play, `blue` secondary (Connect), `red` destructive / Less, `purple`,
+   * `teal`, `coral`, `sky`.
+   */
+  tone?: Tone;
+  /** Any hex, for a face whose colour is data (a game accent). `tone` wins. */
   color?: string;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -22,94 +29,106 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
+const SIZE = {
+  xl: { height: 64, radius: 20, lip: 7, font: 30, stroke: 3, depth: 2, padX: 30 },
+  lg: { height: 56, radius: 18, lip: 6, font: 25, stroke: 2.5, depth: 2, padX: 26 },
+  md: { height: 48, radius: 16, lip: 5, font: 20, stroke: 2, depth: 1.5, padX: 20 },
+  sm: { height: 40, radius: 13, lip: 4, font: 16, stroke: 1.5, depth: 1, padX: 14 },
+} as const;
+
+function resolveTone(name: Tone | undefined, color: string | undefined, variant: Variant): GlossTone {
+  if (variant === 'outline' || variant === 'tonal') return tones.sky;
+  if (name) return tones[name];
+  if (color) return toneFrom(color);
+  return tones.green;
+}
+
 /**
- * The three button shapes every screen needed and kept redrawing: a filled
- * CTA (Home's PLAY), a bordered secondary action (Scores' back / Hub's
- * SCORES), and a tinted-outline choice (Game's MORE/LESS, Scores' sign-in).
+ * The kit's glossy rounded-rectangle button: gradient face, shine, dark
+ * outline, lip that the face sinks onto when pressed, and a white label
+ * outlined in the tone's darkest shade (which is what keeps it legible on
+ * the pale top of a gold or blue face).
  */
 export function Button({
   title,
   onPress,
   variant = 'primary',
   size = 'md',
-  color = theme.accent,
+  tone,
+  color,
   disabled,
   fullWidth,
   leading,
   accessibilityLabel,
   accessibilityHint,
   style,
-}: Props) {
-  const sizing = size === 'lg' ? styles.lg : size === 'sm' ? styles.sm : styles.md;
-  const variantStyle: StyleProp<ViewStyle> =
-    variant === 'primary'
-      ? {
-          backgroundColor: color,
-          borderColor: withAlpha('#FFFFFF', 0.2),
-          borderBottomColor: withAlpha(color, 0.52),
-          borderBottomWidth: 5,
-        }
-      : variant === 'tonal'
-        ? {
-            backgroundColor: withAlpha(color, 0.16),
-            borderColor: withAlpha(color, 0.7),
-            borderBottomColor: withAlpha(color, 0.36),
-            borderBottomWidth: 4,
-          }
-        : variant === 'outline'
-          ? { borderColor: theme.borderStrong, backgroundColor: theme.bgElevated }
-          : { borderColor: 'transparent', backgroundColor: 'transparent' };
+}: ButtonProps) {
+  const sizing = SIZE[size];
+  const face = disabled ? tones.grey : resolveTone(tone, color, variant);
 
-  const textColor =
-    variant === 'primary' ? theme.bg : variant === 'tonal' ? theme.text : theme.textMuted;
+  if (variant === 'ghost') {
+    return (
+      <PressableScale
+        onPress={onPress}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? title}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={{ disabled: Boolean(disabled) }}
+        style={[styles.ghost, { minHeight: sizing.height }, disabled && styles.dim, style]}
+      >
+        <View style={styles.row}>
+          {leading ? <View style={styles.leading}>{leading}</View> : null}
+          <StrokeText size={Math.round(sizing.font * 0.8)} stroke={face.outline} strokeWidth={sizing.stroke} depth={0}>
+            {title}
+          </StrokeText>
+        </View>
+      </PressableScale>
+    );
+  }
 
   return (
     <PressableScale
       onPress={onPress}
       disabled={disabled}
+      translateOnPress={false}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled }}
-      style={[
-        fullWidth === false ? undefined : styles.fullWidth,
-        disabled && styles.disabled,
-        style,
-      ]}
+      accessibilityState={{ disabled: Boolean(disabled) }}
+      style={[fullWidth === false ? undefined : styles.fullWidth, style]}
     >
-      <View style={[styles.face, sizing, variantStyle, variant === 'primary' && shadow.card]}>
-        {leading ? <View style={styles.leading}>{leading}</View> : null}
-        <Text
-          style={[
-            styles.text,
-            size === 'lg' ? styles.textLg : size === 'sm' ? styles.textSm : styles.textMd,
-            { color: textColor },
-          ]}
+      {({ pressed }) => (
+        <GlossFace
+          tone={face}
+          pressed={pressed && !disabled}
+          lip={sizing.lip}
+          radius={sizing.radius}
+          outline={size === 'sm' ? 1.5 : 2}
+          faceStyle={{ minHeight: sizing.height, paddingHorizontal: sizing.padX }}
         >
-          {title}
-        </Text>
-      </View>
+          <View style={styles.row}>
+            {leading ? <View style={styles.leading}>{leading}</View> : null}
+            <StrokeText
+              size={sizing.font}
+              stroke={face.outline}
+              strokeWidth={sizing.stroke}
+              depth={sizing.depth}
+              numberOfLines={1}
+            >
+              {title}
+            </StrokeText>
+          </View>
+        </GlossFace>
+      )}
     </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   fullWidth: { width: '100%' },
-  face: {
-    minHeight: 44,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  lg: { minHeight: 62, paddingVertical: 16, paddingHorizontal: 30, borderRadius: radius.lg },
-  md: { minHeight: 50, paddingVertical: 12, paddingHorizontal: 22 },
-  sm: { minHeight: 44, paddingVertical: 10, paddingHorizontal: 16, borderRadius: radius.sm },
-  disabled: { opacity: 0.5 },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   leading: { marginRight: 8 },
-  text: { fontFamily: font.semibold, fontWeight: '600' },
-  textLg: { fontSize: 19, letterSpacing: 0.6 },
-  textMd: { fontSize: 15, letterSpacing: 0.3 },
-  textSm: { fontSize: 13.5, letterSpacing: 0.25 },
+  ghost: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
+  dim: { opacity: 0.5 },
 });

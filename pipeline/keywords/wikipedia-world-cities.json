@@ -1,0 +1,183 @@
+{
+  "category": {
+    "id": "wikipedia-world-cities",
+    "name": "World cities",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to exist on 2026-10-19. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "Abuja",
+      "term": "Abuja"
+    },
+    {
+      "label": "Accra",
+      "term": "Accra"
+    },
+    {
+      "label": "Amsterdam",
+      "term": "Amsterdam"
+    },
+    {
+      "label": "Bangkok",
+      "term": "Bangkok"
+    },
+    {
+      "label": "Barcelona",
+      "term": "Barcelona"
+    },
+    {
+      "label": "Beijing",
+      "term": "Beijing"
+    },
+    {
+      "label": "Berlin",
+      "term": "Berlin"
+    },
+    {
+      "label": "Buenos Aires",
+      "term": "Buenos Aires"
+    },
+    {
+      "label": "Cairo",
+      "term": "Cairo"
+    },
+    {
+      "label": "Cape Town",
+      "term": "Cape Town"
+    },
+    {
+      "label": "Chicago",
+      "term": "Chicago"
+    },
+    {
+      "label": "Delhi",
+      "term": "Delhi"
+    },
+    {
+      "label": "Dubai",
+      "term": "Dubai"
+    },
+    {
+      "label": "Hong Kong",
+      "term": "Hong Kong"
+    },
+    {
+      "label": "Houston",
+      "term": "Houston"
+    },
+    {
+      "label": "Istanbul",
+      "term": "Istanbul"
+    },
+    {
+      "label": "Jerusalem",
+      "term": "Jerusalem"
+    },
+    {
+      "label": "Johannesburg",
+      "term": "Johannesburg"
+    },
+    {
+      "label": "Kinshasa",
+      "term": "Kinshasa"
+    },
+    {
+      "label": "Lagos",
+      "term": "Lagos"
+    },
+    {
+      "label": "Las Vegas",
+      "term": "Las Vegas"
+    },
+    {
+      "label": "London",
+      "term": "London"
+    },
+    {
+      "label": "Los Angeles",
+      "term": "Los Angeles"
+    },
+    {
+      "label": "Madrid",
+      "term": "Madrid"
+    },
+    {
+      "label": "Manchester",
+      "term": "Manchester"
+    },
+    {
+      "label": "Mecca",
+      "term": "Mecca"
+    },
+    {
+      "label": "Mexico City",
+      "term": "Mexico City"
+    },
+    {
+      "label": "Miami",
+      "term": "Miami"
+    },
+    {
+      "label": "Moscow",
+      "term": "Moscow"
+    },
+    {
+      "label": "Mumbai",
+      "term": "Mumbai"
+    },
+    {
+      "label": "Nairobi",
+      "term": "Nairobi"
+    },
+    {
+      "label": "New York City",
+      "term": "New York City"
+    },
+    {
+      "label": "Paris",
+      "term": "Paris"
+    },
+    {
+      "label": "Rio de Janeiro",
+      "term": "Rio de Janeiro"
+    },
+    {
+      "label": "Rome",
+      "term": "Rome"
+    },
+    {
+      "label": "Seoul",
+      "term": "Seoul"
+    },
+    {
+      "label": "Shanghai",
+      "term": "Shanghai"
+    },
+    {
+      "label": "Singapore",
+      "term": "Singapore"
+    },
+    {
+      "label": "Sydney",
+      "term": "Sydney"
+    },
+    {
+      "label": "São Paulo",
+      "term": "São Paulo"
+    },
+    {
+      "label": "Tokyo",
+      "term": "Tokyo"
+    },
+    {
+      "label": "Toronto",
+      "term": "Toronto"
+    },
+    {
+      "label": "Venice",
+      "term": "Venice"
+    }
+  ]
+}

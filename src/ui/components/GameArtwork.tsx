@@ -1,5 +1,5 @@
 import { Image, StyleSheet, View, type ImageSourcePropType } from 'react-native';
-import { gameAccentTokens, radius, shadow, theme } from '../theme';
+import { palette, shadow } from '../theme';
 
 const GAME_ART: Record<string, ImageSourcePropType> = {
   'more-or-less': require('../../../assets/games/more-or-less.png'),
@@ -17,37 +17,36 @@ const BRAND_ART = {
 
 type GameArtworkProps = {
   gameId: string;
+  /** Fallback fill when a game has no bundled art. */
   accent: string;
   size?: number;
   raised?: boolean;
 };
 
-/** Bundled, offline key art. The emoji in the registry remains only as an
- * accessibility/fallback label; player-facing chrome uses these marks. */
+/**
+ * Bundled, offline key art in the kit's white-rimmed tile (the same white rim
+ * the pop-ups wear), so the art reads as a piece of the UI, not a sticker.
+ */
 export function GameArtwork({ gameId, accent, size = 72, raised = false }: GameArtworkProps) {
   const source = GAME_ART[gameId];
-  const tokens = gameAccentTokens(accent);
+  const rim = Math.max(3, Math.round(size * 0.05));
   return (
     <View
       style={[
         styles.shell,
-        {
-          width: size,
-          height: size,
-          borderRadius: Math.max(radius.md, size * 0.24),
-          borderColor: tokens.glow,
-          backgroundColor: tokens.soft,
-        },
+        { width: size, height: size, borderRadius: Math.round(size * 0.24), borderWidth: rim },
         raised && shadow.card,
       ]}
       accessibilityElementsHidden
-      importantForAccessibility="no"
+      importantForAccessibility="no-hide-descendants"
     >
-      {source ? (
-        <Image source={source} style={styles.image} resizeMode="cover" />
-      ) : (
-        <View style={[styles.fallback, { backgroundColor: accent }]} />
-      )}
+      <View style={[styles.clip, { borderRadius: Math.round(size * 0.24) - rim }]}>
+        {source ? (
+          <Image source={source} style={styles.image} resizeMode="cover" />
+        ) : (
+          <View style={[styles.fallback, { backgroundColor: accent }]} />
+        )}
+      </View>
     </View>
   );
 }
@@ -64,9 +63,8 @@ export function BrandArtwork({
     <Image
       source={BRAND_ART[variant]}
       style={{
-        // The mark is square; the lockup is not. Forcing the lockup into a
-        // square box is what made it collapse to nothing in a header slot —
-        // `size` is its HEIGHT and the width follows the artwork.
+        // The mark is square; the lockup is not. `size` is its HEIGHT and the
+        // width follows the artwork.
         width: isLockup ? Math.round(size * LOCKUP_ASPECT) : size,
         height: size,
         borderRadius: isLockup ? 0 : size * 0.26,
@@ -80,19 +78,8 @@ export function BrandArtwork({
 }
 
 const styles = StyleSheet.create({
-  shell: {
-    overflow: 'hidden',
-    borderWidth: 1,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  fallback: {
-    flex: 1,
-    margin: 14,
-    borderRadius: radius.sm,
-    borderWidth: 2,
-    borderColor: theme.edge,
-  },
+  shell: { borderColor: palette.white, backgroundColor: palette.white },
+  clip: { flex: 1, overflow: 'hidden' },
+  image: { width: '100%', height: '100%' },
+  fallback: { flex: 1 },
 });

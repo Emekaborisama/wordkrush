@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CARD_PHOTO_IDS } from './card-photos';
-import { buildShareText } from './share';
+import { buildDailyShareText, buildShareText } from './share';
 import { decodeShareData } from '../share-data';
 
 /** The token out of a paste, without the utm query behind it. */
@@ -13,7 +13,7 @@ function sharedToken(text: string): string {
 describe('buildShareText', () => {
   it('closes a short run with the miss that ended it', () => {
     const text = buildShareText({ streak: 2, bestStreak: 15 });
-    expect(text).toContain('WordKrush · More or Less');
+    expect(text).toContain('WordKrush · Higher or Lower');
     expect(text).toContain('🟩🟩🟥');
     expect(text).toContain('Streak 2 · best 15');
     expect(text).toContain('A start. Then one miss.');
@@ -89,5 +89,30 @@ describe('buildShareText', () => {
     const second = sharedToken(buildShareText({ streak: 7, bestStreak: 12 }));
 
     expect(second).toBe(first);
+  });
+});
+
+describe('challenge links', () => {
+  it('carries the run and dares the reader to beat it', () => {
+    const text = buildShareText({ streak: 7, bestStreak: 9, challenge: { seed: 42, path: 'world', level: 2 } });
+    expect(text).toContain('Can you beat it? Same pairs, same order.');
+    const token = /\/share\/([A-Za-z0-9_-]+)/.exec(text)?.[1] ?? '';
+    expect(decodeShareData(token)).toMatchObject({ streak: 7, challenge: { seed: 42, path: 'world', level: 2 } });
+  });
+});
+
+describe('daily share', () => {
+  it('shows the day, the squares and the score out of ten', () => {
+    const text = buildDailyShareText({ number: 3, streak: 7, bestStreak: 7 });
+    expect(text).toContain('WordKrush Daily #3');
+    expect(text).toContain('🟩🟩🟩🟩🟩🟩🟩🟥');
+    expect(text).toContain('7/10');
+  });
+
+  it('closes a perfect ten without a red square', () => {
+    const text = buildDailyShareText({ number: 3, streak: 10, bestStreak: 10 });
+    expect(text).toContain('🟩'.repeat(10));
+    expect(text).not.toContain('🟥');
+    expect(text).toContain('A perfect ten.');
   });
 });

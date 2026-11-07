@@ -33,9 +33,9 @@ export const CANONICAL_URL = `${SITE_URL}/`;
 export const HEAD_MARKERS = ['<!--wk:head-->', '<!--/wk:head-->'];
 export const COPY_MARKERS = ['<!--wk:copy-->', '<!--/wk:copy-->'];
 export const PAGE_TITLE =
-  'WordKrush — free word games (More or Less, Clueless, Wordfall)';
+  'WordKrush — free word games (Higher or Lower, Clueless, Wordfall)';
 export const PAGE_DESCRIPTION =
-  'Three quick word games — More or Less, Clueless, and Wordfall — with a daily streak to keep. Play free in the browser.';
+  'Three quick word games — Higher or Lower, Clueless, and Wordfall — with a daily streak to keep. Play free in the browser.';
 export const HUB_SUBTITLE = 'Pick a challenge. Keep your mind moving.';
 export const SAME_AS = ['https://x.com/WordKrushGame'];
 
@@ -47,7 +47,7 @@ export const GOOGLE_VERIFICATION_BODY =
 /** Hub card lines — keep in lockstep with `src/games/registry.ts`. */
 export const GAMES = [
   {
-    name: 'More or Less',
+    name: 'Higher or Lower',
     tagline: 'Which one is bigger? Trust your instinct and build a streak.',
   },
   {
@@ -197,7 +197,7 @@ export function applySearchSurface(html, { ogImageUrl, googleSiteVerification } 
 
 /** Keep in sync with `WEB_VIEWPORT_CSS` in `src/ui/webViewport.ts`. */
 const viewportCss =
-  '<style id="wk-web-viewport">html,body{height:100%;height:100dvh;margin:0;background-color:#0A0817;overflow:hidden}body>div{height:100%}#wk-seo{color:#F4F0FF;padding:24px;font-family:system-ui,sans-serif}#wk-mascot canvas,#wk-mascot svg{max-width:100%!important;max-height:100%!important}#wk-wordfall-board,#wk-wordfall-board *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}#wk-wordfall-board{touch-action:none!important}</style>';
+  '<style id="wk-web-viewport">html,body{height:100%;height:100dvh;margin:0;background-color:#285FAD;overflow:hidden}#root{height:100%}#wk-seo{color:#FFFFFF;padding:24px;font-family:system-ui,sans-serif}#wk-mascot canvas,#wk-mascot svg{max-width:100%!important;max-height:100%!important}#wk-wordfall-board,#wk-wordfall-board *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}#wk-wordfall-board{touch-action:none!important}</style>';
 
 /**
  * Attach the layout CSS the web build needs.

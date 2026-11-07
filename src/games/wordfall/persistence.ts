@@ -67,8 +67,32 @@ export function isWordfallState(value: unknown): value is WordfallState {
     s.selection.every(isIndex) &&
     Array.isArray(s.played) &&
     s.played.every((w) => typeof w === 'string') &&
-    Number.isInteger(s.nextTileId)
+    Number.isInteger(s.nextTileId) &&
+    // Optional so a save written before boosts still loads. A present value
+    // that is not a usable duration would make the clock infinite or NaN.
+    (s.bonusMs === undefined ||
+      (typeof s.bonusMs === 'number' && Number.isFinite(s.bonusMs) && s.bonusMs >= 0)) &&
+    (s.extraMovesGranted === undefined || typeof s.extraMovesGranted === 'boolean')
   );
+}
+
+/**
+ * What to write for the in-progress board.
+ *
+ * A won or lost level must not be saved. Reopening that save was replaying the
+ * result and counting the run again.
+ */
+export function persistableWordfallState(state: WordfallState): WordfallState | null {
+  return state.status === 'playing' ? state : null;
+}
+
+/**
+ * Whether mounting this session should still announce its result.
+ *
+ * A restore that is already won or lost was reported when it first ended.
+ */
+export function shouldReportOutcome(initialStatus: WordfallState['status']): boolean {
+  return initialStatus === 'playing';
 }
 
 /**
@@ -96,11 +120,20 @@ export type WordfallSave = {
   unlocked: number;
   /** The level in progress, or null if there is nothing to resume. */
   state: WordfallState | null;
+  /**
+   * Whether the attempt in `state` spent a boost. Reset by the screen when a
+   * new attempt starts. Omitted on saves from before boosts existed.
+   */
+  boosted?: boolean;
+  /** The drag coach has been shown once. Omitted until the first visit ends. */
+  traceCoachSeen?: boolean;
 };
 
 export function isWordfallSave(value: unknown): value is WordfallSave {
   if (typeof value !== 'object' || value === null) return false;
   const s = value as Record<string, unknown>;
   if (!Number.isInteger(s.unlocked) || (s.unlocked as number) < 1) return false;
+  if (s.boosted !== undefined && typeof s.boosted !== 'boolean') return false;
+  if (s.traceCoachSeen !== undefined && typeof s.traceCoachSeen !== 'boolean') return false;
   return s.state === null || isWordfallState(s.state);
 }

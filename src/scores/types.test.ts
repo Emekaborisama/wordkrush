@@ -3,8 +3,10 @@ import {
   addScore,
   boardForContexts,
   EMPTY_BOARD,
+  isNewBest,
   isValidEntry,
   MAX_HISTORY,
+  needsGlobalSync,
   parseBoard,
   rankOf,
   topScores,
@@ -124,6 +126,41 @@ describe('isValidEntry', () => {
     expect(isValidEntry({ ...entry(4), streak: '99' })).toBe(false);
     expect(isValidEntry({ ...entry(4), playedAt: 'not-a-date' })).toBe(false);
     expect(isValidEntry({ ...entry(4), id: '' })).toBe(false);
+  });
+
+  it('accepts an optional boosted flag and rejects a non-boolean', () => {
+    expect(isValidEntry({ ...entry(4), boosted: true })).toBe(true);
+    expect(isValidEntry({ ...entry(4), boosted: false })).toBe(true);
+    expect(isValidEntry(entry(4))).toBe(true);
+    expect(isValidEntry({ ...entry(4), boosted: 'yes' })).toBe(false);
+  });
+});
+
+describe('isNewBest', () => {
+  it('treats the first run as a best and a tie as not', () => {
+    expect(isNewBest(EMPTY_BOARD, 0, 'higher')).toBe(true);
+    expect(isNewBest(EMPTY_BOARD, 4, 'lower')).toBe(true);
+    const higher = addScore(EMPTY_BOARD, entry(5));
+    expect(isNewBest(higher, 5, 'higher')).toBe(false);
+    expect(isNewBest(higher, 6, 'higher')).toBe(true);
+    expect(isNewBest(higher, 4, 'higher')).toBe(false);
+  });
+
+  it('supports a lower-is-better board', () => {
+    const lower = addScore(EMPTY_BOARD, entry(8), 'lower');
+    expect(isNewBest(lower, 8, 'lower')).toBe(false);
+    expect(isNewBest(lower, 7, 'lower')).toBe(true);
+    expect(isNewBest(lower, 9, 'lower')).toBe(false);
+  });
+});
+
+describe('needsGlobalSync', () => {
+  it('skips rows that already uploaded or used a boost', () => {
+    expect(needsGlobalSync(entry(4))).toBe(true);
+    expect(needsGlobalSync({ ...entry(4), boosted: false })).toBe(true);
+    expect(needsGlobalSync({ ...entry(4), synced: true })).toBe(false);
+    expect(needsGlobalSync({ ...entry(4), boosted: true })).toBe(false);
+    expect(needsGlobalSync({ ...entry(4), boosted: true, synced: false })).toBe(false);
   });
 });
 

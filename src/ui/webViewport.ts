@@ -1,4 +1,4 @@
-import { brand } from './theme';
+import { palette } from './theme';
 
 /** React Native Web maps a View's `nativeID` to this DOM id. */
 export const WORDFALL_BOARD_WEB_ID = 'wk-wordfall-board';
@@ -6,12 +6,15 @@ export const WORDFALL_BOARD_WEB_ID = 'wk-wordfall-board';
 /**
  * Visible-viewport fill for the web export. `100vh` includes the collapsed
  * mobile URL bar, so the hub clips under browser chrome; `100dvh` tracks the
- * visible area. Ink matches `theme.bg` so a letterboxed desktop frame does
- * not flash white.
+ * visible area. Navy matches `theme.bg`, the night end of the kit's sky, so a
+ * letterboxed desktop frame never flashes another colour before the sky draws.
  */
 export const WEB_VIEWPORT_CSS = [
-  `html,body{height:100%;height:100dvh;margin:0;background-color:${brand.ink};overflow:hidden}`,
-  'body>div{height:100%}',
+  `html,body{height:100%;height:100dvh;margin:0;background-color:${palette.navy};overflow:hidden}`,
+  // Only the app root fills the screen. React Native Web's empty modal hosts
+  // are body>div siblings too; at full height they gave the hidden body a
+  // screen of scroll room each, so focus could shift the whole app up.
+  '#root{height:100%}',
   '#wk-mascot canvas,#wk-mascot svg{max-width:100%!important;max-height:100%!important}',
   // A desktop mouse and iPad trackpad otherwise start the browser's text
   // selection over a tile before the RN responder can trace it. Limit this to

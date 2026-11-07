@@ -339,7 +339,7 @@ function generateMoreOrLessImage(data, cardId) {
       fillOpacity: 1,
       stroke: '#FFFFFF',
       strokeOpacity: 0.2,
-      label: 'More',
+      label: 'Higher',
       labelColor: ink,
       up: true,
     })}
@@ -350,7 +350,7 @@ function generateMoreOrLessImage(data, cardId) {
       fillOpacity: 0.16,
       stroke: less,
       strokeOpacity: 0.7,
-      label: 'Less',
+      label: 'Lower',
       labelColor: label,
       up: false,
     })}

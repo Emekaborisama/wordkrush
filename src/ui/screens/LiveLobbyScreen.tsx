@@ -1,20 +1,15 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import { LIVE_MAX_PLAYERS, LIVE_MIN_PLAYERS, playerCountBucket } from '../../games/campaign';
 import { getGame } from '../../games/registry';
-import {
-  cancelMatch,
-  joinMatch,
-  leaveMatch,
-  setReady,
-  startMatch,
-} from '../../live/api';
+import { cancelMatch, joinMatch, leaveMatch, setReady, startMatch } from '../../live/api';
 import { pathRowByNumber } from '../../live/catalog';
 import type { LiveMatchSnapshot } from '../../live/types';
 import { useMatch } from '../../live/useMatch';
-import { Button, FeedbackBanner, ScreenHeader, Surface } from '../components';
-import { space, theme, type } from '../theme';
+import { Badge, Button, CountryFlag, CreamBox, FeedbackBanner, Panel, PanelText } from '../components';
+import { font, palette, space } from '../theme';
+import { usePlayerCountries } from '../usePlayerCountries';
 
 type Props = {
   matchId: string;
@@ -23,8 +18,14 @@ type Props = {
   onExit: () => void;
 };
 
+/**
+ * Race lobby as a kit pop-up: the game on the tab, the level and head count
+ * under it, each racer as a cream row with a READY / WAIT tag, then Ready up,
+ * the host's green Start race, and a red way out. The X leaves too.
+ */
 export function LiveLobbyScreen({ matchId, playerId, onRacing, onExit }: Props) {
   const { snapshot, error, refresh } = useMatch(matchId);
+  const countries = usePlayerCountries((snapshot?.players ?? []).map((player) => player.playerId));
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -47,25 +48,27 @@ export function LiveLobbyScreen({ matchId, playerId, onRacing, onExit }: Props) 
 
   if (!snapshot) {
     return (
-      <View style={styles.root}>
-        {error ? <FeedbackBanner title="Lobby unavailable" body={error} tone="danger" /> : null}
-        <Button title="Back" variant="ghost" onPress={onExit} />
-      </View>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Panel title="Race lobby" onClose={onExit} closeLabel="Back">
+          {error ? (
+            <FeedbackBanner title="Lobby unavailable" body={error} tone="danger" />
+          ) : (
+            <PanelText>Finding the lobby…</PanelText>
+          )}
+          <Button title="Back" tone="blue" size="md" onPress={onExit} />
+        </Panel>
+      </ScrollView>
     );
   }
 
   const { match, players } = snapshot;
   const game = getGame(match.gameId);
-  const accent = game?.accent ?? theme.accent;
   const row = pathRowByNumber(match.gameId, match.levelNumber);
   const self = players.find((player) => player.playerId === playerId);
   const isHost = match.hostId === playerId;
   const readyCount = players.filter((player) => player.ready).length;
   const canStart =
-    isHost &&
-    players.length >= LIVE_MIN_PLAYERS &&
-    players.length <= LIVE_MAX_PLAYERS &&
-    readyCount === players.length;
+    isHost && players.length >= LIVE_MIN_PLAYERS && players.length <= LIVE_MAX_PLAYERS && readyCount === players.length;
 
   async function toggleReady() {
     setBusy(true);
@@ -114,63 +117,68 @@ export function LiveLobbyScreen({ matchId, playerId, onRacing, onExit }: Props) 
   }
 
   return (
-    <View style={styles.root}>
-      <ScreenHeader
-        eyebrow="LOBBY"
-        title={game?.name ?? match.gameId}
-        subtitle={`${row?.name ?? `Level ${match.levelNumber}`} · ${players.length} of ${LIVE_MAX_PLAYERS}`}
-      />
-      {actionError ? <FeedbackBanner title="Couldn’t update lobby" body={actionError} tone="danger" /> : null}
+    <ScrollView contentContainerStyle={styles.content}>
+      <Panel title={game?.name ?? 'Race lobby'} onClose={() => void handleLeave()} closeLabel="Leave lobby">
+        <PanelText variant="heading">{row?.name ?? `Level ${match.levelNumber}`}</PanelText>
+        <PanelText>{`${players.length} of ${LIVE_MAX_PLAYERS} racers`}</PanelText>
+        {actionError ? <FeedbackBanner title="Couldn’t update lobby" body={actionError} tone="danger" /> : null}
 
-      <Surface style={styles.card}>
-        {players.map((player) => (
-          <View key={player.playerId} style={styles.row}>
-            <Text style={styles.name}>
-              {player.username}
-              {player.playerId === playerId ? ' (you)' : ''}
-            </Text>
-            <Text style={[styles.ready, player.ready && { color: accent }]}>
-              {player.ready ? 'READY' : 'WAIT'}
-            </Text>
-          </View>
-        ))}
-      </Surface>
+        <View style={styles.rows}>
+          {players.map((player) => (
+            <CreamBox key={player.playerId} style={styles.row}>
+              <View style={styles.rowInner}>
+                <CountryFlag code={countries.get(player.playerId)} size={16} />
+                <Text style={styles.name} numberOfLines={1}>
+                  {player.username}
+                  {player.playerId === playerId ? ' (you)' : ''}
+                </Text>
+                <Badge label={player.ready ? 'READY' : 'WAIT'} tone={player.ready ? 'success' : 'neutral'} />
+              </View>
+            </CreamBox>
+          ))}
+        </View>
 
-      <Text style={styles.hint}>
-        {players.length < LIVE_MIN_PLAYERS
-          ? `Need at least ${LIVE_MIN_PLAYERS} players to start. Up to ${LIVE_MAX_PLAYERS} can race.`
-          : players.length >= LIVE_MAX_PLAYERS
-            ? `Lobby is full. ${readyCount}/${players.length} ready. The host starts when everyone is ready.`
-            : `${readyCount}/${players.length} ready. Up to ${LIVE_MAX_PLAYERS} can race. The host starts when everyone is ready.`}
-      </Text>
+        <PanelText>
+          {players.length < LIVE_MIN_PLAYERS
+            ? `Need at least ${LIVE_MIN_PLAYERS} players to start. Up to ${LIVE_MAX_PLAYERS} can race.`
+            : players.length >= LIVE_MAX_PLAYERS
+              ? `Lobby is full. ${readyCount}/${players.length} ready. The host starts when everyone is ready.`
+              : `${readyCount}/${players.length} ready. Up to ${LIVE_MAX_PLAYERS} can race. The host starts when everyone is ready.`}
+        </PanelText>
 
-      <View style={styles.actions}>
         <Button
           title={self?.ready ? 'Unready' : 'Ready up'}
+          tone="blue"
+          size="md"
           onPress={() => void toggleReady()}
-          color={accent}
           disabled={busy}
         />
         {isHost ? (
-          <Button title="Start race" onPress={() => void handleStart()} color={accent} disabled={busy || !canStart} />
+          <Button title="Start race" size="lg" tone="green" onPress={() => void handleStart()} disabled={busy || !canStart} />
         ) : null}
         <Button
           title={isHost ? 'Cancel lobby' : 'Leave'}
-          variant="ghost"
+          tone="red"
+          size="md"
           onPress={() => void handleLeave()}
           disabled={busy}
         />
-      </View>
-    </View>
+      </Panel>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg, paddingHorizontal: space.lg, gap: space.md },
-  card: { gap: space.sm },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name: { ...type.bodyStrong, color: theme.text },
-  ready: { ...type.overline, color: theme.textDim },
-  hint: { ...type.caption, color: theme.textMuted },
-  actions: { gap: space.xs, marginTop: 'auto', paddingBottom: space.md },
+  content: {
+    paddingHorizontal: space.md,
+    paddingTop: space.lg,
+    paddingBottom: space.xxl,
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
+  },
+  rows: { gap: space.xs },
+  row: { paddingVertical: space.xs + 2 },
+  rowInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
+  name: { flex: 1, fontFamily: font.black, fontSize: 16, color: palette.ink },
 });

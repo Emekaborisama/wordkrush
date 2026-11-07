@@ -10,6 +10,207 @@ Rules:
 
 ### Added
 - **Wordfall weekly buffer through 9 November.** Deep Focus asks players to score 5,000 points while playing nine words; Tactical Sweep asks for 12 T tiles and four five-letter words; Long Haul asks for three six-letter words against a 90-second clock. These are hard bundled drops. Web players receive them after the next merge and deploy; native players need a build containing this catalog.
+## [0.20.0] - 2026-10-31
+
+### Changed
+- **Home is rebuilt around what a player came for.** The three games now come first, at full size, instead of below five other blocks. 1v1, Daily 10 and I Sabi Lagos sit together as "Higher or Lower modes", so it is clear they are one game. The word "Play" appears once, on the gold button, which now says which game it opens; every card and tile is its own button. All of it fits above the dock on an iPhone SE, and nothing slides under the dock any more.
+- **On a laptop or tablet, Home uses the screen.** The games sit side by side with large art and the modes below them, in place of a phone column with the sides empty. Game screens stay phone-shaped.
+- **Your name, flag and level share one strip**, so "Bold Lion" no longer reads like the rival you are about to meet. Today's chest appears there when it can be opened, and stays out of the way when it cannot.
+- **The streak pill always says DAY or DAYS.** "1 PLAY!" meant nothing; the flame now burns low until you have played today.
+- **Shorter game lines**, so each fits one line on Home, and the unexplained "Sets" and "New!" chips are gone.
+- **The ghost result stops taking your win back.** The title now says "GHOST BEATEN!" or "THE GHOST WINS", and the line "That was a ghost, not a person. Try again for a real opponent." is gone, which also promised a person who may not be there. The two player cards now match, with their scores on one line, and the rays that floated above the panel are gone.
+
+### Fixed
+- **Ghosts no longer have a country.** A flag on a ghost made no sense and made it look more like a person.
+- **A wrong flag now corrects itself.** The country was read once and kept for good, so a first visit on a VPN stuck for ever. It is now read again on each launch without slowing the launch down. A flag you picked yourself is never changed.
+- **The dock fits a 320-wide phone.** "Settings" and "Account" were cut off at the edges.
+
+## [0.19.1] - 2026-10-30
+
+### Added
+- **Flags on leaderboards and live races, ready to switch on.** The global board, race lobby, race HUD and race results now draw a player's flag beside their name. Nothing shows yet: flags appear once migration `0009_player_country.sql` is applied, which is the owner's decision because it stores a country for each signed-in player. Until then these screens look and work as they did.
+
+## [0.19.0] - 2026-10-30
+
+### Added
+- **1v1 live.** A new card on Home finds you a real player online. No sign-in needed.
+  - Both of you get the same Higher or Lower pairs for one minute, and the longest streak wins.
+  - Both streaks update live, so you can see the race while you answer. A miss ends your run while your opponent plays on; a tie on streak goes to whoever reached it first.
+  - If someone leaves or drops off, the player still there wins.
+  - A match pays coins and XP and counts toward your best, like any run.
+- **Ghost players.** If nobody is free within 10 seconds, a ghost steps in, so a search never ends in nothing. Ghosts are computer players tuned to your best streak. They are always labelled as ghosts, and the result says so.
+- **Invite a friend.** "Invite a friend instead" gives you a link (`wordkrush.com/duel/<code>`) to send. The match starts as soon as they open it, and a first-time visitor goes straight in. A link is for one friend: if it's posted in a group, the first person in plays and anyone else is told the match has started.
+- **A flag beside your name.** Your flag shows on the Home card and to your opponent, worked out from your connection and falling back to your device's region. You can change it or hide it under Settings → Your flag. Guests get a friendly generated name such as "Swift Panda". Leaderboards do not show flags yet.
+- `/country` on our server, which returns the two-letter country Cloudflare reports for the visitor. It stores nothing.
+- Analytics: `duel_search_started` (`mode`), `duel_matched` (`opponent`, `wait_bucket`) and `duel_finished` (`opponent`, `outcome`, `opponent_left`, `streak_bucket`).
+
+### Changed
+- Home's Daily 10 title is now "Today's 10", so it fits on a 360-wide phone instead of being cut off.
+
+## [0.18.1] - 2026-10-25
+
+### Added
+- **The animal on the trail reacts to you.** In Higher or Lower the lion jumps for joy at a right call and shakes its head at a miss; in Wordfall the fox cheers every word you play. With reduce motion on, it stays still.
+
+## [0.18.0] - 2026-10-25
+
+### Added
+- **Daily 10.** Ten Higher or Lower pairs, the same for everyone today, with one try a day: the Wordle loop.
+  - A card on Home shows today's number (#1 is 25 October 2026) with a 3D calendar.
+  - The run is headed "DAILY 10 · #N", ends on a miss or at ten, and has no boosts or paid second chance, so every score is earned on equal terms.
+  - The result shows your score out of ten. The card then becomes "Today: 7/10 · Share", with a spoiler-free paste: "WordKrush Daily #3 · 🟩🟩🟩🟩🟩🟩🟩🟥 · 7/10".
+  - Pairs come from the whole Popularity set, seeded by the local day, so it doesn't move anyone's weekly set.
+
+## [0.17.0] - 2026-10-25
+
+### Added
+- **Challenge a friend.** Sharing a Higher or Lower level result now sends a challenge.
+  - The link carries the run's seed and level. The paste ends "Can you beat it? Same pairs, same order."
+  - Whoever opens it sees "CHALLENGE! Beat a streak of 7", then plays the same pairs in the same order (Popularity's unseen-first steering is off for challenges) with their friend's streak as **Rival** in the HUD.
+  - The result says "You beat their 7!", "Tied at 7. Rematch?" or "They win by 2. Go again?". **Play again** is a rematch on the same pairs.
+  - Links shared before this release still work as before.
+
+### Analytics
+- `challenge_accepted` (`level_number`) and `challenge_finished` (`level_number`, `outcome: won | tied | lost`).
+
+## [0.16.0] - 2026-10-25
+
+### Added
+- **The animal hops you to the next level.** This is the I Sabi Lagos ride, in the meadow style: after a clear, **Next level** covers the screen in meadow. The cleared stone shows its stars, and the game's 3D animal makes three hops along the sandy path to the next stone under a wooden sign naming the level. Then the level opens. Higher or Lower's world levels have the lion, and Wordfall has the fox. I Sabi Lagos keeps its danfo. With reduce motion on, the animal is already on the new stone and the meadow only fades.
+
+## [0.15.0] - 2026-10-25
+
+### Added
+- **A rising chime.** Each letter you trace in Wordfall plays the next note up a soft pentatonic scale, and each right answer in Higher or Lower climbs the same scale with your streak, so a run sounds like it is building. The eight notes are synthesized for WordKrush (`scripts/synth-chimes.mjs`) and honour the Sound switch.
+- **Mystery rounds in Higher or Lower.** Every fifth pair in a row hides the challenger's photo behind a "MYSTERY ROUND" card until the reveal, so you judge by name alone. Scoring is unchanged.
+- **"So close!"** A miss within 15% now says "So close! Only 4% apart." instead of the plain reveal line.
+
+## [0.14.0] - 2026-10-25
+
+### Added
+- **Every game shows its levels while you play.** A level trail sits under the HUD, styled after the Animal Heroes kit's level path you shared. It's a strip of meadow with the sandy path, the stones around your level, and the game's 3D animal standing on yours: a lion for Higher or Lower, a fox for Wordfall, a monkey for Clueless.
+  - In Higher or Lower, a gold ring fills around your stone as the streak heads for three stars.
+  - Tap the trail to open the map.
+  - Short phones keep the board's room and skip the trail.
+- **The level map is a meadow.**
+  - A winding sandy path climbs from level 1, and each level is a numbered stone: wooden with its stars once cleared, gold where you are, grey ahead.
+  - 3D trees, flowers, a house and animals line the way, under a wooden sign hanging on chains.
+  - It replaces Higher or Lower's "All levels" list and Wordfall's level list, which keeps its "Drops Mon …" and "NEW" tags. Clueless gets a view of its case path.
+- **3D icons.** The animals and scenery are Microsoft Fluent Emoji 3D (MIT, `assets/fluent/LICENSE`), resized to 128 px; 17 files, 290 KB.
+
+## [0.13.1] - 2026-10-25
+
+### Fixed
+- **A Higher or Lower loss shows why you lost.** The numbers count up and the red rim shows first; "Keep your streak?" follows 1.4 seconds later. It is skipped at a streak of 0 or when you can't afford it. A loss with no offer stays on the board for 2.4 seconds before the result.
+- **Play is always on screen in a game's start pop-up.** Play, Race and Scores sit in the pop-up's fixed footer, and the goal above them scrolls. On an iPhone SE the button used to start below the fold.
+- **The Lagos card no longer tells everyone it's "YOUR CITY".** It now reads "NEW · LAGOS EDITION".
+- **The "I Sabi Lagos don land!" pop-up greets a returning player when they arrive,** not a first-time player coming back from their first run.
+- **No more doubled photo credits.** Wikimedia Commons sometimes nests an author's name twice ("Unknown authorUnknown author"). The pipeline keeps one copy (`collapseDoubled`), and the four bundled credits are corrected.
+
+## [0.13.0] - 2026-10-25
+
+### Added
+- **A crash no longer leaves a blank screen.** A root error boundary shows "Something went wrong" with a **Reload** button. Scores and progress are already saved.
+- **Production monitoring.**
+  - `/healthz` reports the live release and that the app loaded. Railway's health check now uses it.
+  - A GitHub Action checks every 10 minutes that https://wordkrush.com, its main bundle, `/healthz` and `/isabilagos` respond correctly. A failure fails the run, and GitHub emails the owner.
+  - After analytics consent, the app counts crashes (`app_error`) and Core Web Vitals (`web_vitals`) in PostHog.
+
+### Changed
+- **wordkrush.com runs behind Cloudflare.** DNS moved from Namecheap to Cloudflare, and Cloudflare now caches the game's code, images, share cards and music at the edge, so a launch spike no longer lands on the one Railway server. The music files are now `.mp4` (the same AAC audio) because Cloudflare caches `.mp4` by default and skipped `.m4a`. Expo's content-hashed `/assets/` files are now served as immutable.
+
+### Fixed
+- **A level clear can no longer be lost.** It is saved the moment the streak reaches the target. It used to wait until game over, after the 5-second second-chance offer, so leaving during the offer lost it.
+- **Music behaves.**
+  - It stays quiet until saved settings load, so a player who turned Music off never hears a bar of it.
+  - On iPhone it waits for the mixing audio mode, so launching the game no longer stops the player's own music.
+  - On phones' browsers it starts on a real tap (a touch `pointerdown` does not count as one), and a refused start is retried on the next tap.
+  - Its quieter level is baked into the files, because iOS Safari ignores volume set by code.
+- **Music follows your old sound setting.** A player who turned Sound off before 0.12.0 keeps a silent game: their saved setting now carries over as Music off.
+- **Browser Back after I Sabi Lagos returns to `/`**, not to `/isabilagos`, and `/isabilagos` keeps its `?utm…` tags.
+- **Smaller fixes.**
+  - The Lagos "NEW!" pop-up waits until no other pop-up is open.
+  - The danfo ride cannot start a level twice.
+  - Screen readers hear "Level cleared" on a cleared level, and focus stays inside the danfo ride while it covers the screen.
+  - An inverted byte range is answered with the whole file (RFC 9110).
+
+### Analytics
+- New events: `app_error` (`kind: render | uncaught | unhandled_rejection`, `fatal`) and `web_vitals` (`lcp_ms`, `inp_ms`, `cls_milli`, `ttfb_ms`). Neither carries messages, stacks or URLs.
+
+## [0.12.0] - 2026-10-24
+
+### Added
+- **Music.** Two original Afrobeats instrumentals ("Danfo Groove") loop in the background: one on Home and the menus, one inside a game. Settings has a **Music** switch, separate from Sound. Music pauses when the app or tab goes to the background, and on the web it starts on the player's first tap.
+- **The first visit is a game picker.** The block logo drops in above four glossy tiles: Higher or Lower, Clueless, Wordfall and I Sabi Lagos. A tile opens that game's start pop-up with its goal and Play. **Look around first** goes to Home. First-time players are no longer dropped straight into More or Less level 1.
+
+### Changed
+- **More or Less is now called Higher or Lower.** The buttons say **Higher** and **Lower**, and the question reads "Ramen: higher or lower than TikTok?". The game id stays `more-or-less`, so scores, boards and analytics carry on. Share cards, the page title and the search copy use the new name.
+- **Short phones get a layout that fits.** On an iPhone SE-sized screen, or any phone with the browser bars showing, Higher or Lower puts the two photos side by side as tall tiles. The question, buttons and credits get smaller, and the HUD panels and booster dock shrink in every game. Nothing overlaps at 375×667 or at 375×548 (an SE in Safari).
+
+### Fixed
+- **Sound now plays in Safari, including on iPhone.** The server sent the sound clips as `application/octet-stream` with `nosniff` and ignored byte ranges, and Safari will not play media served that way. Audio files now go out as `audio/mpeg` / `audio/mp4` and answer `Range` requests with `206 Partial Content`.
+
+### Analytics
+- `game_selected` gains `source: 'first_visit'` for a tile on the first-visit picker.
+
+## [0.11.0] - 2026-10-19
+
+### Added
+- **More or Less plays level by level.** Seven levels, each with its own label: Popularity, Music stars, Movies, Football stars, World cities, Food and Hit songs. A level clears at a streak target (5 to 8). Stars come at the target, at half again, and at double. Clearing a level opens the next; **All levels** picks any open one. The star bar on the game screen marks all three. Popularity keeps its weekly name sets.
+- **I Sabi Lagos, at wordkrush.com/isabilagos.** More or Less for people who know Lagos, laid out as a danfo route with seven stops: Ojuelegba, Yaba, Obalende, CMS, Lekki, Ikeja and Oshodi. Each stop is a Lagos label: places, Naija food, Afrobeats stars, Nollywood, Afrobeats hits, Naija football and wild Lagos stories. A danfo drives along the road as your streak builds. Wins are called "You sabi!" and misses "Wahala!". Home has a yellow I Sabi Lagos card with a NEW tag. A returning player sees a one-time "I Sabi Lagos don land!" pop-up. The link opens straight onto the route and skips the welcome.
+- **A danfo carries you to your next level.** **Next level**, **Next stop** and **Oya, enter!** play a short ride: the bus pulls in under the stop's sign while the conductor calls it, then drives off as the level opens. With reduce motion on, the bus stays parked and the screen only fades.
+- **Wordfall words light up.** A traced tile turns into a yellow cube and pops. Once the trace spells a playable word, its tiles turn gold and glow and the thread joining them turns gold. When the word is played, its points burst out of it.
+- **Settings tells players their music keeps playing.** Game sounds play over the player's own music. On iPhone Safari, the web build now asks for an ambient audio session, so a sound no longer pauses Spotify.
+
+### Fixed
+- **The web app no longer slides up out of view.** A full-height CSS rule matched React Native Web's empty modal hosts as well as the app root. Each host gave the hidden page a screen of scroll room, so focus could shift the whole app upward with no way back.
+- **More or Less banners draw above the VS disc.** "LEVEL CLEARED!" and the +1 burst used to sit behind it.
+
+### Data
+- **13 new bundled categories**, all measured in monthly Wikipedia pageviews (D-012) with freely licensed images. World: music stars, hit songs, movies, football stars, world cities and food. Lagos: places, food, Afrobeats stars, Afrobeats hits, Nollywood, Lagos stories and football. When a song or film has no free image, it shows its artist's or lead actor's photo (`imageTerm`). Every term is the canonical article; no redirects or disambiguation pages. Values are provisional, like Popularity's.
+- **The pipeline survives Wikimedia rate limits.** A 429 is retried with backoff and honours `Retry-After` (`politeFetch`). Only the Popularity snapshot carries label rounds.
+
+### Analytics
+- `screen_viewed` gains `screen_name: 'lagos'`. More or Less `run_completed` carries `level_number` on level runs. Lagos runs report their `category_id` (`lagos-*`).
+
+## [0.10.0] - 2026-10-18
+
+### Changed
+- **Every screen follows the Block Blast UI kit.** The sand / wood chrome from 0.9.0 is gone. Menus sit on a blue sky with sun rays and clouds; every card is the kit's coral pop-up with a white rim, a teal ribbon title and a red close disc; long copy sits in cream boxes; buttons are glossy rounded rectangles (green Play, blue, gold, red) with outlined white labels. Type is Exo 2, the closest free match to the kit's Neuron.
+- **Home is the kit's home screen.** A coral top bar with the daily flame, the WORD-KRUSH! block logo and your coins; a level strip; the daily chest as a Claim card; one pop-up card per game with its own green Play; and the kit's bottom row — Settings and Scores, a big gold Play that reopens the game you played last, Teams and Account.
+- **The menu drawer is gone.** Sound, Vibration, Account, Scores, Teams and Send feedback live in the kit's Settings pop-up, opened from the gear on Home.
+- **A game's start screen is the kit's LEVEL pop-up**: the game on the tab, its art and pitch, the goal in a cream box (Clueless shows its three sparks and the vault as cubes), your best, and a green Play.
+- **Every game plays on the kit's game screen**: cream HUD panels with red tabs, the board in a cyan frame, and a booster dock of green tiles with prices beside a gold gear that pauses the game. More or Less frames both photos on the board and answers with glossy More / Less; Clueless ranks guesses as cream rows with heat-coloured chips; Wordfall's letters are cream studded cubes, specials are coloured cubes and crates are stone, with a star bar that fills as the goals do.
+- **Results are the kit's result pop-up**: stars on the blue scroll, coin and XP chips, the score in a cream pill, and Play again / Continue with Home, Scores and Share squares. A personal best in More or Less raises Block King's NEW RECORD! banner over a trophy; a solved Clueless word is spelled in cubes. The second chance is the kit's More Lives? pop-up.
+- **Wordfall's level map is the kit's Levels pop-up**: numbers drawn in little cubes, the current level in gold, locked levels in stone.
+- **Juice from Block King**: a gold +1 bursts from a right More or Less call, milestone streaks and Wordfall chains throw a GREAT! / CASCADE! / KRUSH! banner, and a miss shakes the board red.
+- **First visit** opens on the kit's hero: the block logo drops in, a hand taps a cube, and a gold Play starts More or Less.
+
+- **Pop-ups make room for the keyboard**, and a Feedback draft is no longer lost to a tap outside the card. A pop-up opened from another one (How to play from Pause, Feedback from Settings) waits for the first to close, so iOS shows it; Wordfall's clock stays stopped in between.
+- **Analytics:** the gold Play on Home reports `game_selected` with `source: 'quick_play'`; a game's own Play still reports `hub`. `drawer` no longer occurs.
+
+### Removed
+- The deer mascot from Home and the first visit (the kit has no mascot). The Lottie module stays in the repo, unused.
+
+## [0.9.1] - 2026-10-18
+
+### Changed
+- **Wordfall's level list is a path.** Opening the map shows a grass field, a wooden LEVEL MAP sign, and a winding path of stones. Each stone is the level number. The move budget, or the time on a race, sits under the stone. The stone you are on is gold. A cleared stone carries a star. A locked stone does not start.
+
+## [0.9.0] - 2026-10-18
+
+### Added
+- **A finished run now pays the player.** XP, stars, and coins land on the result, then a level-up or milestone celebration if one was earned. The hub shows today's chest: locked until a run finishes, ready to open, then back tomorrow. Coins buy boosts inside a solo run. A boosted run still counts on this device, shows a Boosted tag, and is not uploaded to the global board. Live races do not offer boosts.
+- **The casual-game look is on every screen.** Sand pages, wood playfields, and glossy pills are the shared chrome. Each game only changes its ribbon and accent.
+- **A first visit can start in one tap.** One welcome page, then More or Less. Browser Back follows the in-app parent instead of leaving the site. Wordfall shows a short drag coach on the first visit, and again after two single-tile releases.
+
+### Fixed
+- **The hub no longer covers Wordfall after a run.** The chest, the three games, and "View your scores" scroll together, so the scores button cannot sit on top of Wordfall.
+- **A More or Less miss is game over.** The title stays "GAME OVER". "New personal best" appears only when the streak that just ended is above zero and beats the previous best. A first run that ends on round 0 is not presented as a win.
+- **A tie is not a new best.** The result and its analytics use the board from before the run is saved.
+- **Reopening Wordfall no longer replays a finished level.** A won or lost board is not saved, and a restored terminal board is not reported again.
+- **A Wordfall loss extends the daily flame.** Finishing a run in any solo game counts, including a loss.
+- **Web analytics records one page view per load** after consent.
 
 ## [0.8.37] - 2026-09-25
 

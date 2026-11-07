@@ -1,0 +1,352 @@
+{
+  "id": "lagos-football",
+  "name": "Naija football",
+  "metricLabel": "monthly Wikipedia pageviews",
+  "unit": "count",
+  "provisional": true,
+  "items": [
+    {
+      "id": "lagos-football.victor-osimhen",
+      "categoryId": "lagos-football",
+      "label": "Victor Osimhen",
+      "value": 55216,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/3/34/Victor-osimhen-nigeria-2024-3-4.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Fédération Guinéenne Football",
+      "imageLicense": "Public domain",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.jay-jay-okocha",
+      "categoryId": "lagos-football",
+      "label": "Jay-Jay Okocha",
+      "value": 47398,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7e/Match_legends_2017_CC_%285%29.jpg/960px-Match_legends_2017_CC_%285%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Кирилл Венедиктов",
+      "imageLicense": "CC BY-SA 3.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.nigeria-national-football-team",
+      "categoryId": "lagos-football",
+      "label": "Super Eagles",
+      "value": 31812,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c9/Black_Stars_%28Ghana_national_football_team%29_versus_Super_Eagles_%28Nigeria_national_football_team%29.jpg/960px-Black_Stars_%28Ghana_national_football_team%29_versus_Super_Eagles_%28Nigeria_national_football_team%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Blaise Raise",
+      "imageLicense": "CC BY-SA 3.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.ademola-lookman",
+      "categoryId": "lagos-football",
+      "label": "Ademola Lookman",
+      "value": 30499,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b7/Ademola_Lookman_%282019%29_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Willibald11",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.mikel-john-obi",
+      "categoryId": "lagos-football",
+      "label": "Mikel Obi",
+      "value": 26787,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2b/Mikel_John_Obi_%2853557649520%29_%28cropped%29.jpg/960px-Mikel_John_Obi_%2853557649520%29_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Web Summit Qatar",
+      "imageLicense": "CC BY 2.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.nwankwo-kanu",
+      "categoryId": "lagos-football",
+      "label": "Kanu Nwankwo",
+      "value": 22854,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8d/1_nwankwo_kanu_2017_%28edited%29.jpg/960px-1_nwankwo_kanu_2017_%28edited%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Original: Chensiyuan / Derivative work: Danyele",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.kelechi-iheanacho",
+      "categoryId": "lagos-football",
+      "label": "Kelechi Iheanacho",
+      "value": 22559,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/c/cb/Kelechi_Iheanacho-Nigeria_%282%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Дмитрий Пукалик",
+      "imageLicense": "CC BY-SA 3.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.alex-iwobi",
+      "categoryId": "lagos-football",
+      "label": "Alex Iwobi",
+      "value": 21176,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b4/Issa_Diop%2C_Alex_Iwobi_and_Antonee_Robinson_04032026_%281%29_%28cropped%29.jpg/960px-Issa_Diop%2C_Alex_Iwobi_and_Antonee_Robinson_04032026_%281%29_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Timmy96",
+      "imageLicense": "CC0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.victor-moses",
+      "categoryId": "lagos-football",
+      "label": "Victor Moses",
+      "value": 16080,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Victor_Moses_%28SPA-AKH%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Анна Нэсси",
+      "imageLicense": "CC BY-SA 3.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.obafemi-martins",
+      "categoryId": "lagos-football",
+      "label": "Obafemi Martins",
+      "value": 13659,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/2/25/Martins_Llevant.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Martins_Llevant_UD_-_Valencia_CF.jpg: Carlos RM derivative work: Coentor",
+      "imageLicense": "CC BY 2.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.samuel-chukwueze",
+      "categoryId": "lagos-football",
+      "label": "Samuel Chukwueze",
+      "value": 12589,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b4/Samuel_Chukwueze_01112025_%281%29.jpg/960px-Samuel_Chukwueze_01112025_%281%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Timmy96",
+      "imageLicense": "CC0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.wilfred-ndidi",
+      "categoryId": "lagos-football",
+      "label": "Wilfred Ndidi",
+      "value": 12203,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/f/fb/Wilfred_Ndidi-Nigeria.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Дмитрий Пукалик",
+      "imageLicense": "CC BY-SA 3.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.calvin-bassey",
+      "categoryId": "lagos-football",
+      "label": "Calvin Bassey",
+      "value": 12183,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/Calvin_Bassey_01112025_%281%29.jpg/960px-Calvin_Bassey_01112025_%281%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Timmy96",
+      "imageLicense": "CC0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.odion-ighalo",
+      "categoryId": "lagos-football",
+      "label": "Odion Ighalo",
+      "value": 8843,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/Odion_Ighalo_24.jpeg/960px-Odion_Ighalo_24.jpeg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Franziska",
+      "imageLicense": "CC BY 2.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.ola-aina",
+      "categoryId": "lagos-football",
+      "label": "Ola Aina",
+      "value": 7654,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Ola_Aina_2016.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "@cfcunofficial (Chelsea Debs) London",
+      "imageLicense": "CC BY-SA 2.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.ahmed-musa",
+      "categoryId": "lagos-football",
+      "label": "Ahmed Musa",
+      "value": 7610,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/a/aa/Ahmed_Musa_20180625.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Кирилл Венедиктов",
+      "imageLicense": "CC BY-SA 3.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.peter-odemwingie",
+      "categoryId": "lagos-football",
+      "label": "Peter Odemwingie",
+      "value": 6985,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/1_peter_odemwingie_stoke_2015_%28cropped%29.jpg/960px-1_peter_odemwingie_stoke_2015_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Chensiyuan",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.taribo-west",
+      "categoryId": "lagos-football",
+      "label": "Taribo West",
+      "value": 6388,
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.daniel-amokachi",
+      "categoryId": "lagos-football",
+      "label": "Daniel Amokachi",
+      "value": 5420,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Daniel_Amokachi.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "FOOTBALL REPORTERS",
+      "imageLicense": "CC BY 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.rashidi-yekini",
+      "categoryId": "lagos-football",
+      "label": "Rashidi Yekini",
+      "value": 5246,
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.moses-simon",
+      "categoryId": "lagos-football",
+      "label": "Moses Simon",
+      "value": 4299,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d7/Simon_asse_fcn_2425.png?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Paté kroute",
+      "imageLicense": "CC0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.asisat-oshoala",
+      "categoryId": "lagos-football",
+      "label": "Asisat Oshoala",
+      "value": 4216,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d7/NC_Courage_vs_Bay_FC_%28Apr_2025%29_009_%28cropped%29.jpg/960px-NC_Courage_vs_Bay_FC_%28Apr_2025%29_009_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Hameltion",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.celestine-babayaro",
+      "categoryId": "lagos-football",
+      "label": "Celestine Babayaro",
+      "value": 4168,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d3/Celestine_Babayaro_%28cropped%29.jpg/960px-Celestine_Babayaro_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "@cfcunofficial (Chelsea Debs) London from London, UK",
+      "imageLicense": "CC BY-SA 2.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.nigeria-women-s-national-football-team",
+      "categoryId": "lagos-football",
+      "label": "Super Falcons",
+      "value": 3592,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6a/A_well_detailed_throw_in.jpg/960px-A_well_detailed_throw_in.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Agasielisha1234",
+      "imageLicense": "CC BY 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.joseph-yobo",
+      "categoryId": "lagos-football",
+      "label": "Joseph Yobo",
+      "value": 3096,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/JosephYobo%2713_%28cropped%29.JPG/960px-JosephYobo%2713_%28cropped%29.JPG?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Ultraslansi",
+      "imageLicense": "CC BY-SA 3.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.vincent-enyeama",
+      "categoryId": "lagos-football",
+      "label": "Vincent Enyeama",
+      "value": 2592,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/4/46/Krasnodar-Lille_%2821%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "Владислав Федченко",
+      "imageLicense": "CC BY-SA 3.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.emmanuel-amunike",
+      "categoryId": "lagos-football",
+      "label": "Emmanuel Amunike",
+      "value": 2585,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4a/Emmanuel_Amunike_2017.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "PB84",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.stephen-keshi",
+      "categoryId": "lagos-football",
+      "label": "Stephen Keshi",
+      "value": 1738,
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.rasheedat-ajibade",
+      "categoryId": "lagos-football",
+      "label": "Rasheedat Ajibade",
+      "value": 1675,
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Rasheedat_Ajibade_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageAttribution": "LasColchoneras",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.chiamaka-nnadozie",
+      "categoryId": "lagos-football",
+      "label": "Chiamaka Nnadozie",
+      "value": 1582,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Chiamaka_Nnadozie.jpg/960px-Chiamaka_Nnadozie.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Happiraphael",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.enyimba-f-c-",
+      "categoryId": "lagos-football",
+      "label": "Enyimba",
+      "value": 1532,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f8/Stephen_Worgu_of_Enyimba.jpg/960px-Stephen_Worgu_of_Enyimba.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Soccermax Nig",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    },
+    {
+      "id": "lagos-football.kano-pillars-f-c-",
+      "categoryId": "lagos-football",
+      "label": "Kano Pillars",
+      "value": 1115,
+      "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b2/Kano_Pillars_01.jpg/960px-Kano_Pillars_01.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageAttribution": "Anasskoko",
+      "imageLicense": "CC BY-SA 4.0",
+      "source": "wikipedia-pageviews:20260401-20260930",
+      "updatedAt": "2026-10-19"
+    }
+  ]
+}

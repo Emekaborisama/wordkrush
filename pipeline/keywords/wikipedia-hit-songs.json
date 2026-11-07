@@ -1,0 +1,186 @@
+{
+  "category": {
+    "id": "wikipedia-hit-songs",
+    "name": "Hit songs",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to exist on 2026-10-19. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "Africa",
+      "term": "Africa (song)",
+      "imageTerm": "Toto (band)"
+    },
+    {
+      "label": "Anti-Hero",
+      "term": "Anti-Hero (song)"
+    },
+    {
+      "label": "APT.",
+      "term": "APT. (song)",
+      "imageTerm": "Rosé (singer)"
+    },
+    {
+      "label": "As It Was",
+      "term": "As It Was",
+      "imageTerm": "Harry Styles"
+    },
+    {
+      "label": "Bad Guy",
+      "term": "Bad Guy (Billie Eilish song)"
+    },
+    {
+      "label": "Billie Jean",
+      "term": "Billie Jean"
+    },
+    {
+      "label": "Blinding Lights",
+      "term": "Blinding Lights",
+      "imageTerm": "The Weeknd"
+    },
+    {
+      "label": "Bohemian Rhapsody",
+      "term": "Bohemian Rhapsody"
+    },
+    {
+      "label": "Calm Down",
+      "term": "Calm Down (Rema song)",
+      "imageTerm": "Rema (musician)"
+    },
+    {
+      "label": "Crazy in Love",
+      "term": "Crazy in Love"
+    },
+    {
+      "label": "Dance Monkey",
+      "term": "Dance Monkey",
+      "imageTerm": "Tones and I"
+    },
+    {
+      "label": "Despacito",
+      "term": "Despacito"
+    },
+    {
+      "label": "Die with a Smile",
+      "term": "Die with a Smile"
+    },
+    {
+      "label": "Espresso",
+      "term": "Espresso (song)"
+    },
+    {
+      "label": "Essence",
+      "term": "Essence (Wizkid song)"
+    },
+    {
+      "label": "Flowers",
+      "term": "Flowers (Miley Cyrus song)"
+    },
+    {
+      "label": "Gangnam Style",
+      "term": "Gangnam Style"
+    },
+    {
+      "label": "Hey Jude",
+      "term": "Hey Jude"
+    },
+    {
+      "label": "Hips Don't Lie",
+      "term": "Hips Don't Lie"
+    },
+    {
+      "label": "Hotel California",
+      "term": "Hotel California"
+    },
+    {
+      "label": "Imagine",
+      "term": "Imagine (song)"
+    },
+    {
+      "label": "Jerusalema",
+      "term": "Jerusalema",
+      "imageTerm": "Master KG"
+    },
+    {
+      "label": "Last Last",
+      "term": "Last Last",
+      "imageTerm": "Burna Boy"
+    },
+    {
+      "label": "Let It Go",
+      "term": "Let It Go"
+    },
+    {
+      "label": "Levitating",
+      "term": "Levitating (song)"
+    },
+    {
+      "label": "Like a Rolling Stone",
+      "term": "Like a Rolling Stone"
+    },
+    {
+      "label": "Macarena",
+      "term": "Macarena"
+    },
+    {
+      "label": "My Heart Will Go On",
+      "term": "My Heart Will Go On",
+      "imageTerm": "Celine Dion"
+    },
+    {
+      "label": "Never Gonna Give You Up",
+      "term": "Never Gonna Give You Up"
+    },
+    {
+      "label": "Not Like Us",
+      "term": "Not Like Us"
+    },
+    {
+      "label": "Old Town Road",
+      "term": "Old Town Road"
+    },
+    {
+      "label": "Rolling in the Deep",
+      "term": "Rolling in the Deep",
+      "imageTerm": "Adele"
+    },
+    {
+      "label": "See You Again",
+      "term": "See You Again"
+    },
+    {
+      "label": "Seven Nation Army",
+      "term": "Seven Nation Army"
+    },
+    {
+      "label": "Shape of You",
+      "term": "Shape of You",
+      "imageTerm": "Ed Sheeran"
+    },
+    {
+      "label": "Smells Like Teen Spirit",
+      "term": "Smells Like Teen Spirit"
+    },
+    {
+      "label": "Someone like You",
+      "term": "Someone like You (Adele song)"
+    },
+    {
+      "label": "Thriller",
+      "term": "Thriller (song)"
+    },
+    {
+      "label": "Umbrella",
+      "term": "Umbrella (song)"
+    },
+    {
+      "label": "Uptown Funk",
+      "term": "Uptown Funk"
+    },
+    {
+      "label": "Wonderwall",
+      "term": "Wonderwall"
+    }
+  ]
+}

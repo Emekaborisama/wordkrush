@@ -1,9 +1,3 @@
-import {
-  Fredoka_500Medium,
-  Fredoka_600SemiBold,
-  Fredoka_700Bold,
-  useFonts,
-} from '@expo-google-fonts/fredoka';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -17,6 +11,7 @@ import { readArrivalContext, type ArrivalContext } from './src/analytics/arrival
 import { isLandingArrival } from './src/analytics/attribution';
 import {
   captureAnalytics,
+  captureWebPageview,
   identifyAnalytics,
   initializeAnalytics,
   isAnalyticsConfigured,
@@ -25,9 +20,11 @@ import {
   setAnalyticsConsent as persistAnalyticsConsent,
 } from './src/analytics/client';
 import {
+  levelBucket,
   runCountBucket,
   streakBucket,
   type AnalyticsConsent,
+  type AnalyticsEvents,
 } from './src/analytics/events';
 import * as Linking from 'expo-linking';
 import {
@@ -38,8 +35,10 @@ import {
   type Profile,
 } from './src/auth/auth';
 import { isBackendConfigured } from './src/auth/client';
+import appConfig from './app.json';
 import categoryData from './src/data/categories/wikipedia-popularity.json';
 import {
+  CLUELESS_SOLO_LEVELS,
   cluelessSoloLevelByNumber,
   puzzleForCluelessSoloLevel,
   type CluelessSoloLevel,
@@ -48,7 +47,21 @@ import {
   cluelessTeamLevelByNumber,
   puzzleForCluelessTeamLevel,
 } from './src/data/clueless/campaign';
+import { labelCategory } from './src/data/more-or-less/labelCategories';
+import { labelLevel, labelPath } from './src/data/more-or-less/labelPaths';
 import { moreOrLessLevelByNumber } from './src/data/more-or-less/levels';
+import {
+  bestStreakFor,
+  EMPTY_LABEL_PATH,
+  isLevelUnlocked,
+  levelStars,
+  nextLevelNumber,
+  recordLevelRun,
+  type LabelLevel,
+  type LabelPathId,
+  type LabelPathProgress,
+} from './src/games/more-or-less/labelPath';
+import { loadLabelPathProgress, saveLabelPathProgress } from './src/games/more-or-less/labelPath-storage';
 import { applyMatchUnlocks, LIVE_ROSTER_LABEL, playerCountBucket, type PathGameId } from './src/games/campaign';
 import { loadPersonalUnlocked, savePersonalUnlocked } from './src/games/campaignStorage';
 import {
@@ -93,10 +106,29 @@ import {
   recordScore,
   saveBoard,
 } from './src/scores/storage';
-import { EMPTY_BOARD, type ScoreBoard } from './src/scores/types';
+import { EMPTY_BOARD, isNewBest, needsGlobalSync, type ScoreBoard, type ScoreDirection, type ScoreEntry } from './src/scores/types';
+import { duelPlayerFrom, type DuelIdentity } from './src/duel/identity';
+import { loadIdentity, refreshCountry, saveIdentity } from './src/duel/identity-storage';
+import { roomFromPath } from './src/duel/rules';
+import { publishCountry } from './src/scores/countries';
 import { loadStreak, markPlayedToday } from './src/streak/storage';
 import { dayKey, EMPTY_STREAK, type DailyStreak } from './src/streak/types';
 import { applyFeedbackSettings, feedback } from './src/native/feedback';
+import { setMusicEnabled, setMusicTrack } from './src/native/music';
+import { loadLagosSeen, markLagosSeen } from './src/onboarding/lagos';
+import { loadOnboarding, markOnboardingComplete } from './src/onboarding/storage';
+import { COMPLETED_ONBOARDING, type OnboardingState } from './src/onboarding/types';
+import { chestStatus, claimChest, nextChestDay } from './src/rewards/chest';
+import { applyRun, levelProgress } from './src/rewards/progression';
+import { loadRewards, saveRewards } from './src/rewards/storage';
+import {
+  EMPTY_REWARDS,
+  type BoostKind,
+  type RewardEvent,
+  type RewardsState,
+  type RunSummary,
+} from './src/rewards/types';
+import { spend } from './src/rewards/wallet';
 import { loadFeedbackSettings, saveFeedbackSettings } from './src/settings/storage';
 import {
   DEFAULT_FEEDBACK_SETTINGS,
@@ -110,14 +142,43 @@ import { joinMatch, postMatchScore } from './src/live/api';
 import type { LiveMatchSnapshot } from './src/live/types';
 import { clearExistingMembership } from './src/teams/api';
 import { parseTeamInviteUrl } from './src/teams/codes';
-import { Drawer, type DrawerDestination } from './src/ui/Drawer';
+import { afterModalClose, CoinsPill, EmptyState, SkyBackground, StreakPill, TopBar } from './src/ui/components';
+import { parentOf, type Parent } from './src/ui/navigation';
+import {
+  clearSharePath,
+  installWebHistory,
+  noteWebNavigation,
+  openedAtLagosPath,
+  openedAtPathname,
+  syncLagosPath,
+} from './src/ui/webHistory';
+import { challengeFromShare, challengeVerdict, shareTokenFromPath, type Challenge } from './src/games/more-or-less/challenge';
+import { DAILY_PAIRS, dailyNumber, dailySeed, todaysResult, type DailyResult } from './src/games/more-or-less/daily';
+import { loadDailyResult, saveDailyResult } from './src/games/more-or-less/daily-storage';
+import { buildDailyShareText } from './src/games/more-or-less/share';
+import { shareResult } from './src/native/share';
+import { decodeShareData } from './src/games/share-data';
+import { LabelLevelCard } from './src/ui/LabelLevelCard';
+import { LabelLevelsPopup } from './src/ui/LabelLevelsPopup';
+import { GAME_ANIMAL } from './src/ui/fluent';
+import type { Stone } from './src/ui/levelTrail';
+import { ChallengePopup } from './src/ui/ChallengePopup';
+import { MeadowMap } from './src/ui/MeadowMap';
+import { MeadowRide, type MeadowHop } from './src/ui/MeadowRide';
+import { DanfoRide, type DanfoRideStop } from './src/ui/lagos/DanfoRide';
+import { LagosAnnouncement } from './src/ui/lagos/LagosBanner';
+import { LagosScreen } from './src/ui/screens/LagosScreen';
+import { OnboardingScreen } from './src/ui/screens/OnboardingScreen';
+import type { RunReward } from './src/ui/rewards/RunReward';
 import { FeedbackPrompt } from './src/ui/FeedbackPrompt';
-import { TopBar } from './src/ui/TopBar';
+import { FlagPicker } from './src/ui/FlagPicker';
+import { SettingsPopup } from './src/ui/SettingsPopup';
 import { AccountScreen } from './src/ui/screens/AccountScreen';
 import { CluelessScreen } from './src/ui/screens/CluelessScreen';
 import { GameOverScreen } from './src/ui/screens/GameOverScreen';
 import { GameScreen } from './src/ui/screens/GameScreen';
-import { GameStartScreen, StartDetail } from './src/ui/screens/GameStartScreen';
+import { GameStartScreen, PathRail, StartDetail } from './src/ui/screens/GameStartScreen';
+import { DuelScreen, type DuelFinish } from './src/ui/screens/DuelScreen';
 import { HubScreen } from './src/ui/screens/HubScreen';
 import { LiveLobbyScreen } from './src/ui/screens/LiveLobbyScreen';
 import { LivePlayShell } from './src/ui/screens/LivePlayShell';
@@ -125,9 +186,10 @@ import { LiveResultsScreen } from './src/ui/screens/LiveResultsScreen';
 import { ScoresScreen } from './src/ui/screens/ScoresScreen';
 import { TeamsScreen } from './src/ui/screens/TeamsScreen';
 import { WordfallScreen } from './src/ui/screens/WordfallScreen';
-import { LAPTOP_MAX_WIDTH, isWideLayout } from './src/ui/layout';
+import { COLUMN_MAX_WIDTH, HOME_MAX_WIDTH, isWideLayout } from './src/ui/layout';
 import { theme } from './src/ui/theme';
 import { ensureWebViewport } from './src/ui/webViewport';
+import { useAppFonts } from './src/ui/fonts';
 
 const snapshot = categoryData as CategorySnapshot;
 const category: Category & { provisional?: boolean } = snapshot;
@@ -142,11 +204,45 @@ type LiveRun = {
   endsAt: string | null;
 };
 
+/** A More or Less run on one level of a label path. */
+type MolLevelRef = { path: LabelPathId; number: number };
+
+/** What a finished level run did for its path, for the result screen. */
+type MolLevelResult = MolLevelRef & { cleared: boolean; clearedNow: boolean };
+
 type Screen =
   | { name: 'hub' }
   | { name: 'home'; gameId: string }
-  | { name: 'game'; gameId: string; seed: number; cluelessLevelNumber?: number; live?: LiveRun }
-  | { name: 'over'; gameId: string; state: GameState; entryId: string }
+  | { name: 'lagos' }
+  /** A 1v1; `invite` is a friend's room when they arrived through a link. */
+  | { name: 'duel'; invite: string | null }
+  | {
+      name: 'game';
+      gameId: string;
+      seed: number;
+      cluelessLevelNumber?: number;
+      live?: LiveRun;
+      molLevel?: MolLevelRef;
+      /** A friend's challenge: their streak to beat on this seed. */
+      challenge?: { target: number };
+      /** Today's Daily 10. */
+      daily?: { day: string; number: number };
+    }
+  | {
+      name: 'over';
+      gameId: string;
+      state: GameState;
+      entryId: string;
+      isNewBest: boolean;
+      boosted: boolean;
+      events: RewardEvent[];
+      molLevel?: MolLevelResult;
+      /** The run's starting seed, so sharing it becomes a challenge. */
+      runSeed?: number;
+      challenge?: { target: number };
+      /** The Daily 10 number, when this was the daily. */
+      daily?: number;
+    }
   | { name: 'scores'; gameId: string; highlightId?: string }
   | { name: 'auth'; returnTo?: 'teams' | 'scores'; returnGameId?: string }
   | { name: 'teams' }
@@ -215,35 +311,33 @@ function startDetailFor(
       );
     }
     const level = clueless.currentLevel;
-    const tutorialRail = [1, 2, 3]
-      .map((number) => (number <= clueless.progress.completedThrough ? '●' : '○'))
-      .join(' — ');
-    const vaultNode = level.phase === 'daily' ? (clueless.availability === 'playable' ? '✦' : '◇') : '◇';
     const unlockMeta =
       clueless.nextUnlockAt && clueless.availability === 'waiting'
         ? localUnlockCopy(clueless.nextUnlockAt, clueless.now)
         : level.description;
+    // One line each: where you are, the path as cubes, and what clearing it
+    // unlocks — no heading repeated under another heading.
     return (
       <>
         <StartDetail
-          label={
-            clueless.availability === 'waiting'
-              ? 'DAILY VAULT · LOCKED'
-              : level.phase === 'daily'
-                ? 'DAILY VAULT · READY'
-                : 'SOLO PATH'
-          }
+          label={clueless.availability === 'waiting' ? `VAULT ${level.number}` : `LEVEL ${level.number}`}
           title={
             clueless.availability === 'waiting'
               ? `Vault ${level.number} is sealed`
-              : `Level ${level.number} · ${level.name}`
+              : level.phase === 'daily'
+                ? 'Daily Vault'
+                : level.name
           }
           meta={unlockMeta}
           accent={accent}
         />
+        <PathRail
+          cleared={clueless.progress.completedThrough}
+          vaultOpen={level.phase === 'daily' && clueless.availability === 'playable'}
+        />
         <StartDetail
           label="YOUR PATH"
-          title={`${tutorialRail}  →  ${vaultNode}`}
+          title=""
           meta={
             clueless.progress.completedThrough < 3
               ? 'Clear the three sparks to reach the Daily Vault.'
@@ -257,7 +351,7 @@ function startDetailFor(
   if (gameId === 'wordfall') {
     return (
       <StartDetail
-        label="THIS WEEK"
+        label="WORDFALL"
         title="Campaign levels"
         meta="A new level drops every Monday"
         accent={accent}
@@ -265,6 +359,36 @@ function startDetailFor(
     );
   }
   return null;
+}
+
+/** More or Less' start pop-up goal: the chosen level of the main label path. */
+function WorldLevelCard({
+  number,
+  progress,
+  setLine,
+  onLevels,
+  onCity,
+}: {
+  number: number;
+  progress: LabelPathProgress;
+  /** Popularity's weekly set progress, shown on that level only. */
+  setLine: string;
+  onLevels: () => void;
+  onCity: () => void;
+}) {
+  const levels = labelPath('world');
+  const level = levels[number - 1] ?? levels[0];
+  if (!level) return null;
+  return (
+    <LabelLevelCard
+      level={level}
+      levelCount={levels.length}
+      best={bestStreakFor(progress, level.number)}
+      extra={level.categoryId === snapshot.id ? setLine : undefined}
+      onLevels={onLevels}
+      onCity={onCity}
+    />
+  );
 }
 
 function localUnlockCopy(unlockAt: Date, now: Date): string {
@@ -310,11 +434,7 @@ function LiveMaybe({
 }
 
 export default function App() {
-  const [fontsLoaded, fontError] = useFonts({
-    Fredoka_500Medium,
-    Fredoka_600SemiBold,
-    Fredoka_700Bold,
-  });
+  const [fontsLoaded, fontError] = useAppFonts();
   const { width } = useWindowDimensions();
   const wide = isWideLayout(width);
   const [screen, setScreen] = useState<Screen>({ name: 'hub' });
@@ -325,8 +445,11 @@ export default function App() {
   const [cluelessPathNow, setCluelessPathNow] = useState(() => new Date());
   const [profile, setProfile] = useState<Profile | null>(null);
   const [pendingInvite, setPendingInvite] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [streak, setStreak] = useState<DailyStreak>(EMPTY_STREAK);
+  const [rewards, setRewards] = useState<RewardsState>(EMPTY_REWARDS);
+  const [onboarding, setOnboarding] = useState<OnboardingState | null>(null);
+  const [chestOpen, setChestOpen] = useState<{ day: number; coins: number } | null>(null);
   const [feedbackSettings, setFeedbackSettings] =
     useState<FeedbackSettings>(DEFAULT_FEEDBACK_SETTINGS);
   const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent>('granted');
@@ -339,6 +462,44 @@ export default function App() {
     emptyProgress(FIRST_ROUND_ID),
   );
   const [labelJustPassed, setLabelJustPassed] = useState(false);
+  const [labelPaths, setLabelPaths] = useState<Record<LabelPathId, LabelPathProgress>>({
+    world: EMPTY_LABEL_PATH,
+    lagos: EMPTY_LABEL_PATH,
+  });
+  // Mirrors `labelPaths` for callbacks that fire between renders (the
+  // per-answer streak bank), so two quick answers cannot read a stale copy.
+  const labelPathsRef = useRef(labelPaths);
+  labelPathsRef.current = labelPaths;
+  // Whether this level run made its first clear, banked before game over.
+  const runClearedNow = useRef(false);
+  // The level a player picked on each path; null follows the first uncleared one.
+  const [labelChoice, setLabelChoice] = useState<Record<LabelPathId, number | null>>({ world: null, lagos: null });
+  const [levelsOpen, setLevelsOpen] = useState<LabelPathId | null>(null);
+  // The meadow map opened from a run's trail: a view of the journey, not a picker.
+  const [runMapOpen, setRunMapOpen] = useState(false);
+  const [cluelessMapOpen, setCluelessMapOpen] = useState(false);
+  const [lagosSeen, setLagosSeen] = useState(true);
+  const [lagosAnnouncement, setLagosAnnouncement] = useState(false);
+  // The danfo carrying the player to a level; `board` starts it under the cover.
+  const [ride, setRide] = useState<(DanfoRideStop & { board: () => void }) | null>(null);
+  // The world path's ride: the animal hopping to the next stone.
+  const [hop, setHop] = useState<(MeadowHop & { board: () => void }) | null>(null);
+  const rideCount = useRef(0);
+  // Opened at /isabilagos: skip the welcome and go straight to the route.
+  const arrivedAtLagos = useRef(openedAtLagosPath());
+  // Opened from a friend's 1v1 link: they are waiting, so go straight in.
+  const arrivedAtDuel = useRef(roomFromPath(openedAtPathname()));
+  const [duelIdentity, setDuelIdentity] = useState<DuelIdentity | null>(null);
+  const [flagPickerOpen, setFlagPickerOpen] = useState(false);
+  // Opened from a friend's shared result: offer to replay their run.
+  // The last Daily 10 played; today's when its day is today.
+  const [dailyResult, setDailyResult] = useState<DailyResult | null>(null);
+  const [challengeOffer, setChallengeOffer] = useState<Challenge | null>(() => {
+    const token = shareTokenFromPath(openedAtPathname());
+    return token ? challengeFromShare(decodeShareData(token)) : null;
+  });
+  // Finished the welcome in an earlier session: the "NEW" news is for them.
+  const returningPlayer = useRef(false);
   const [boardsResult, setBoardsResult] = useState<'loaded' | 'fallback'>('loaded');
   const startupAt = useRef(Date.now());
   const openedReported = useRef(false);
@@ -352,6 +513,38 @@ export default function App() {
   const restoredSessionReported = useRef(false);
   const hadRestoredSession = useRef(false);
   const identifiedProfileId = useRef<string | null>(null);
+  const rewardsRef = useRef(rewards);
+  rewardsRef.current = rewards;
+  const boardsRef = useRef(boards);
+  boardsRef.current = boards;
+  const historyReady = useRef(false);
+
+  const progress = levelProgress(rewards.xp);
+  const todayKey = dayKey(new Date());
+  const todayChest = chestStatus(rewards, todayKey);
+  const todayChestDay = nextChestDay(rewards, todayKey) ?? (rewards.chest.day >= 1 ? rewards.chest.day : 1);
+  const hasScoreHistory = Object.values(boards).some((board) => board.totalRuns > 0);
+  const showOnboarding =
+    onboarding !== null &&
+    !onboarding.completed &&
+    boardsReady &&
+    !hasScoreHistory &&
+    !arrivedAtLagos.current &&
+    arrivedAtDuel.current === null;
+  const selectedLevel = (path: LabelPathId): number =>
+    labelChoice[path] ?? nextLevelNumber(labelPaths[path], labelPath(path).length);
+
+  const dismissOnboarding = () => {
+    setOnboarding(COMPLETED_ONBOARDING);
+    void markOnboardingComplete();
+  };
+
+  const applyParent = (parent: Parent): Screen => {
+    if (parent.name === 'hub') return { name: 'hub' };
+    if (parent.name === 'home') return { name: 'home', gameId: parent.gameId };
+    if (parent.name === 'lagos') return { name: 'lagos' };
+    return { name: 'teams' };
+  };
 
   useEffect(() => {
     ensureWebViewport();
@@ -403,12 +596,41 @@ export default function App() {
       }
     })();
     // Display only — a visit alone does not extend the streak, finishing a
-    // run does (see recordFinish below).
+    // run does (see finishRun below).
     void loadStreak().then((loadedStreak) => {
       setStreak(loadedStreak);
       setStreakReady(true);
     });
+    void loadRewards().then(setRewards);
+    void loadOnboarding().then((loaded) => {
+      returningPlayer.current = loaded.completed;
+      setOnboarding(loaded);
+    });
     void loadRoundProgress(FIRST_ROUND_ID).then(setLabelProgress);
+    void loadDailyResult().then(setDailyResult);
+    void loadIdentity()
+      .then((identity) => {
+        setDuelIdentity(identity);
+        return refreshCountry();
+      })
+      .then((identity) => {
+        if (identity) setDuelIdentity(identity);
+      });
+    if (arrivedAtDuel.current !== null) {
+      setScreen({ name: 'duel', invite: arrivedAtDuel.current });
+      clearSharePath();
+    }
+    void Promise.all([loadLabelPathProgress('world'), loadLabelPathProgress('lagos')]).then(([world, lagos]) =>
+      setLabelPaths({ world, lagos }),
+    );
+    void loadLagosSeen().then((seen) => {
+      setLagosSeen(seen);
+      if (arrivedAtLagos.current) {
+        setScreen({ name: 'lagos' });
+        if (!seen) void markLagosSeen();
+        setLagosSeen(true);
+      }
+    });
     void loadCluelessPathProgress().then((progress) => {
       setCluelessPath(progress);
       setCluelessPathReady(true);
@@ -418,6 +640,7 @@ export default function App() {
     void loadFeedbackSettings().then((stored) => {
       setFeedbackSettings(stored);
       applyFeedbackSettings(stored);
+      setMusicEnabled(stored.music);
     });
     void initializeAnalytics().then((storedConsent) => {
       setAnalyticsConsent(storedConsent);
@@ -465,8 +688,26 @@ export default function App() {
   }, []);
 
   const boardFor = (gameId: string) => boards[gameId] ?? EMPTY_BOARD;
+  const duelPlayer = duelIdentity ? duelPlayerFrom(duelIdentity, profile?.username ?? null) : null;
+  const signedInId = profile?.id ?? null;
+  const shownCountry = duelPlayer ? duelPlayer.country : undefined;
+  // Boards read a signed-in player's flag from `players` (0009); hiding it clears it there.
+  useEffect(() => {
+    if (signedInId && shownCountry !== undefined) void publishCountry(signedInId, shownCountry);
+  }, [signedInId, shownCountry]);
   const labelResolved = resolveRound(snapshot, labelProgress);
   const soloPool = soloCategory(snapshot, labelProgress);
+  /** The category a level plays. Popularity keeps its weekly set. */
+  const levelCategory = (ref: MolLevelRef): CategorySnapshot => {
+    const level = labelLevel(ref.path, ref.number);
+    if (!level || level.categoryId === snapshot.id) return soloPool;
+    return labelCategory(level.categoryId) ?? soloPool;
+  };
+  const molRef = screen.name === 'game' && screen.gameId === MORE_OR_LESS && !screen.live ? screen.molLevel : undefined;
+  const molLevel = molRef ? labelLevel(molRef.path, molRef.number) : undefined;
+  const molCategory = molRef ? levelCategory(molRef) : soloPool;
+  // Popularity's weekly sets only advance on Popularity runs.
+  const molTracksSet = molCategory.id === snapshot.id;
   const currentCluelessLevelNumber = currentCluelessPathLevel(cluelessPath);
   const currentCluelessLevel = cluelessSoloLevelByNumber(currentCluelessLevelNumber);
   const currentCluelessAvailability = availabilityForCluelessPathLevel(
@@ -482,6 +723,10 @@ export default function App() {
     setScreen({ name: 'home', gameId });
   };
   const startGame = (gameId: string) => {
+    if (gameId === MORE_OR_LESS) {
+      startLevel('world');
+      return;
+    }
     if (
       gameId === 'clueless' &&
       (!cluelessPathReady ||
@@ -497,6 +742,140 @@ export default function App() {
       seed: randomSeed(),
       cluelessLevelNumber: gameId === 'clueless' ? currentCluelessLevel?.number : undefined,
     });
+  };
+
+  /** Boards a level of a label path: More or Less' levels or I Sabi Lagos. */
+  const startLevel = (path: LabelPathId, number = selectedLevel(path), challenge?: { seed: number; target: number }) => {
+    runClearedNow.current = false;
+    setLabelJustPassed(false);
+    setLabelChoice((current) => ({ ...current, [path]: number }));
+    setScreen({
+      name: 'game',
+      gameId: MORE_OR_LESS,
+      seed: challenge?.seed ?? randomSeed(),
+      molLevel: { path, number },
+      ...(challenge ? { challenge: { target: challenge.target } } : {}),
+    });
+  };
+
+  /** Today's Daily 10, once a day: the same ten pairs for everyone today. */
+  const startDaily = () => {
+    if (todaysResult(dailyResult, todayKey)) return;
+    setLabelJustPassed(false);
+    setScreen({
+      name: 'game',
+      gameId: MORE_OR_LESS,
+      seed: dailySeed(todayKey),
+      daily: { day: todayKey, number: dailyNumber(todayKey) },
+    });
+  };
+
+  const shareDaily = () => {
+    const today = todaysResult(dailyResult, todayKey);
+    if (!today) return;
+    void shareResult(
+      buildDailyShareText({ number: dailyNumber(todayKey), streak: today.streak, bestStreak: boardFor(MORE_OR_LESS).bestStreak }),
+    );
+  };
+
+  /** Plays a friend's run: their seed, their level, their streak to beat. */
+  const acceptChallenge = (offer: Challenge) => {
+    setChallengeOffer(null);
+    clearSharePath();
+    if (showOnboarding) dismissOnboarding();
+    captureAnalytics('challenge_accepted', { level_number: offer.level });
+    startLevel(offer.path, offer.level, { seed: offer.seed, target: offer.target });
+  };
+
+  /**
+   * Banks a level's clear and best the moment the streak earns them. Waiting
+   * for game over lost a clear to anyone who left during the second-chance
+   * offer, or mid-run, after "LEVEL CLEARED!".
+   */
+  const bankLevelStreak = (ref: MolLevelRef, level: LabelLevel, streak: number) => {
+    if (streak < level.targetStreak) return;
+    const current = labelPathsRef.current[ref.path];
+    const recorded = recordLevelRun(current, level, streak);
+    if (recorded.progress === current) return;
+    if (recorded.clearedNow) {
+      runClearedNow.current = true;
+      // A first clear moves the start screen on to the next level.
+      setLabelChoice((choice) => ({ ...choice, [ref.path]: null }));
+    }
+    labelPathsRef.current = { ...labelPathsRef.current, [ref.path]: recorded.progress };
+    setLabelPaths(labelPathsRef.current);
+    void saveLabelPathProgress(ref.path, recorded.progress);
+  };
+
+  /** The Clueless solo path as stones: cleared through `completedThrough`, then yours. */
+  const cluelessStones = (): Stone[] =>
+    CLUELESS_SOLO_LEVELS.map((level) => ({
+      number: level.number,
+      name: level.name,
+      state:
+        level.number <= cluelessPath.completedThrough
+          ? 'cleared'
+          : level.number === currentCluelessLevelNumber
+            ? 'current'
+            : 'locked',
+    }));
+
+  /** A label path as stones for the trail and the meadow map. */
+  const pathStones = (path: LabelPathId, playing?: number): Stone[] => {
+    const progress = labelPaths[path];
+    return labelPath(path).map((level) => {
+      const cleared = progress.clearedThrough >= level.number;
+      return {
+        number: level.number,
+        name: level.name,
+        state:
+          level.number === playing
+            ? 'current'
+            : cleared
+              ? 'cleared'
+              : isLevelUnlocked(progress, level.number)
+                ? 'open'
+                : 'locked',
+        stars: cleared ? levelStars(level.targetStreak, bestStreakFor(progress, level.number)) : undefined,
+      };
+    });
+  };
+
+  /**
+   * Boards a level with its game's ride: on the Lagos route the danfo pulls
+   * in with the stop's name; on the world path the lion hops along the meadow
+   * from the stone just cleared. Then the level shows.
+   */
+  const rideToLevel = (path: LabelPathId, number = selectedLevel(path)) => {
+    const level = labelLevel(path, number);
+    if (!level) return;
+    if (ride || hop) return;
+    rideCount.current += 1;
+    const lagos = path === 'lagos';
+    const stones = pathStones(path, number);
+    const from = stones.find((stone) => stone.number === number - 1);
+    const to = stones.find((stone) => stone.number === number);
+    if (!lagos && from && to) {
+      setHop({ key: rideCount.current, from, to, animal: GAME_ANIMAL[MORE_OR_LESS], board: () => startLevel(path, number) });
+      return;
+    }
+    setRide({
+      key: rideCount.current,
+      eyebrow: lagos ? `STOP ${level.number}` : `LEVEL ${level.number}`,
+      title: lagos ? level.stop ?? level.name : level.name,
+      subtitle: lagos ? level.name : undefined,
+      lagos,
+      board: () => startLevel(path, number),
+    });
+  };
+
+  const openLagos = () => {
+    if (!lagosSeen) {
+      setLagosSeen(true);
+      void markLagosSeen();
+    }
+    setLagosAnnouncement(false);
+    setScreen({ name: 'lagos' });
   };
 
   const startLiveRace = (snapshot: LiveMatchSnapshot) => {
@@ -545,6 +924,61 @@ export default function App() {
   };
 
   useEffect(() => {
+    return installWebHistory(() => {
+      let handled = false;
+      setScreen((current) => {
+        const parent = parentOf(current);
+        if (!parent) return current;
+        handled = true;
+        return applyParent(parent);
+      });
+      return handled;
+    });
+  }, []);
+
+  // Whether this player had scores before this session began, read once when
+  // the boards load, so a first run today does not make them "returning".
+  const scoresAtLaunch = useRef<boolean | null>(null);
+  if (boardsReady && scoresAtLaunch.current === null) scoresAtLaunch.current = hasScoreHistory;
+  // Set by the first game of the session: the announcement is for arriving at
+  // the hub, not for coming back to it from a run.
+  const playedThisSession = useRef(false);
+  if (screen.name === 'game' || screen.name === 'duel') playedThisSession.current = true;
+
+  // A returning player hears about I Sabi Lagos once, on the hub, when they
+  // arrive. A first visit already has the welcome; it finds the banner later.
+  useEffect(() => {
+    const returning = returningPlayer.current || scoresAtLaunch.current === true;
+    if (lagosSeen || !returning || playedThisSession.current || screen.name !== 'hub') return;
+    const timer = setTimeout(() => setLagosAnnouncement(true), 900);
+    return () => clearTimeout(timer);
+  }, [lagosSeen, boardsReady, screen.name]);
+
+
+  // The journey maps belong to the run they were opened from.
+  useEffect(() => {
+    setRunMapOpen(false);
+    setCluelessMapOpen(false);
+  }, [screen]);
+
+  // The menu groove everywhere but a game; the play groove inside one.
+  useEffect(() => {
+    setMusicTrack(screen.name === 'game' ? 'play' : 'menu');
+  }, [screen.name]);
+
+  useEffect(() => {
+    if (!historyReady.current) historyReady.current = true;
+    else noteWebNavigation(parentOf(screen) === null);
+    // `/isabilagos` names the Lagos route and its runs, so the address a
+    // player copies opens it. Set after the push, so the entry before keeps
+    // its own address and browser Back returns to `/`, not to Lagos.
+    const inLagos =
+      screen.name === 'lagos' ||
+      ((screen.name === 'game' || screen.name === 'over') && screen.molLevel?.path === 'lagos');
+    syncLagosPath(inLagos);
+  }, [screen]);
+
+  useEffect(() => {
     if (analyticsConsent !== 'granted' || !arrivalReady) return;
     const authStatus = profile ? 'signed_in' : 'guest';
     if (profile && identifiedProfileId.current !== profile.id) {
@@ -554,6 +988,7 @@ export default function App() {
     registerAnalyticsContext(authStatus);
     if (!openedReported.current) {
       openedReported.current = true;
+      captureWebPageview();
       const arrival = arrivalRef.current;
       captureAnalytics('app_opened', {
         backend_configured: isBackendConfigured,
@@ -642,7 +1077,7 @@ export default function App() {
   useEffect(() => {
     if (!profile || screen.name !== 'scores') return;
     const local = boardFor(screen.gameId);
-    if (!local.history.some((entry) => !entry.synced)) return;
+    if (!local.history.some((entry) => needsGlobalSync(entry))) return;
 
     let cancelled = false;
     void syncPendingScores(screen.gameId, local, profile).then(async (synced) => {
@@ -657,18 +1092,112 @@ export default function App() {
     };
   }, [profile, screen]);
 
-  // Every place a run ends and its score is recorded also counts today
-  // towards the cross-game daily streak — finishing a run in any game
-  // counts, not just opening the app.
-  const recordFinish = async <T,>(save: () => Promise<T>): Promise<T> => {
-    const [result] = await Promise.all([save(), markPlayedToday(dayKey(new Date())).then(setStreak)]);
-    return result;
+  const finishRun = async (input: {
+    gameId: string;
+    direction: ScoreDirection;
+    entry: ScoreEntry;
+    summary: (fresh: boolean) => RunSummary;
+    clueless?: { tutorialCleared: boolean; vaultsSolved: number };
+    wordfall?: { campaignCleared: boolean };
+    analytics: Omit<AnalyticsEvents['run_completed'], 'is_new_best' | 'boosted'>;
+  }): Promise<RunReward> => {
+    const previous = boardsRef.current[input.gameId] ?? EMPTY_BOARD;
+    const fresh = isNewBest(previous, input.entry.streak, input.direction);
+    const today = dayKey(new Date());
+    const [nextBoard, nextStreak] = await Promise.all([
+      recordScore(input.gameId, { ...input.entry, boosted: input.entry.boosted === true }, input.direction),
+      markPlayedToday(today),
+    ]);
+    boardsRef.current = { ...boardsRef.current, [input.gameId]: nextBoard };
+    setBoards((prev) => ({ ...prev, [input.gameId]: nextBoard }));
+    setStreak(nextStreak);
+    const applied = applyRun(rewardsRef.current, input.summary(fresh), {
+      today,
+      dailyStreakAfter: nextStreak.current,
+      clueless: input.clueless,
+      wordfall: input.wordfall,
+    });
+    rewardsRef.current = applied.state;
+    setRewards(applied.state);
+    await saveRewards(applied.state);
+    captureAnalytics('run_completed', {
+      ...input.analytics,
+      is_new_best: fresh,
+      boosted: input.entry.boosted === true,
+    });
+    for (const event of applied.events) {
+      if (event.kind === 'levelUp') {
+        captureAnalytics('player_level_up', { level_bucket: levelBucket(event.to) });
+      }
+      if (event.kind === 'milestone') {
+        captureAnalytics('milestone_reached', { milestone_id: event.id });
+      }
+    }
+    return {
+      events: applied.events,
+      isNewBest: fresh,
+      boosted: input.entry.boosted === true,
+    };
   };
 
-  // The game screen owns the whole viewport during play, so the chrome is
-  // hidden there — a menu bar over a live round is a mis-tap waiting to happen.
-  // Every game now plays under `game`, so the one check covers all three.
-  const showChrome = screen.name !== 'game';
+  /** Pays a finished 1v1 like any run: it is the same game on the full set. */
+  const finishDuel = async ({ seed, streak, verdict }: DuelFinish): Promise<RewardEvent[]> => {
+    const runId = makeEntryId();
+    const reward = await finishRun({
+      gameId: MORE_OR_LESS,
+      direction: 'higher',
+      entry: { id: runId, streak, categoryId: snapshot.id, playedAt: new Date().toISOString(), seed, boosted: false },
+      summary: (fresh) => ({ gameId: 'more-or-less', runId, streak, isNewBest: fresh, setCleared: false, boosted: false }),
+      analytics: {
+        game_id: 'more-or-less',
+        outcome: verdict === 'won' ? 'win' : 'loss',
+        score: streak,
+        score_kind: 'streak',
+        category_id: snapshot.id,
+      },
+    });
+    return reward.events;
+  };
+
+  const changeIdentity = (next: DuelIdentity) => {
+    setDuelIdentity(next);
+    void saveIdentity(next);
+    setFlagPickerOpen(false);
+  };
+
+  const spendBoost = (kind: BoostKind, gameId: 'more-or-less' | 'clueless' | 'wordfall'): boolean => {
+    const result = spend(rewardsRef.current, kind);
+    if (!result.ok) return false;
+    rewardsRef.current = result.state;
+    setRewards(result.state);
+    void saveRewards(result.state);
+    captureAnalytics('boost_used', { game_id: gameId, boost_kind: kind });
+    feedback('boost');
+    return true;
+  };
+
+  const openChest = () => {
+    const today = dayKey(new Date());
+    const claimed = claimChest(rewardsRef.current, today);
+    if (claimed.events.length === 0) return;
+    rewardsRef.current = claimed.state;
+    setRewards(claimed.state);
+    void saveRewards(claimed.state);
+    const day = claimed.state.chest.day;
+    if (day === 1 || day === 2 || day === 3 || day === 4 || day === 5 || day === 6 || day === 7) {
+      captureAnalytics('daily_chest_claimed', { chest_day: day });
+    }
+    feedback('chest');
+    const coins = claimed.events.reduce((total, event) => (event.kind === 'coins' ? total + event.amount : total), 0);
+    setChestOpen({ day, coins });
+  };
+
+  // Game and result screens own the whole viewport, as in the kit: a top bar
+  // over a live round is a mis-tap waiting to happen, and a result pop-up sits
+  // straight on the dimmed board.
+  const playing =
+    screen.name === 'game' || screen.name === 'over' || screen.name === 'live-results' || screen.name === 'duel';
+  const showChrome = !playing;
   const activeSoloCluelessLevel =
     screen.name === 'game' && screen.gameId === 'clueless' && !screen.live
       ? cluelessSoloLevelByNumber(screen.cluelessLevelNumber ?? currentCluelessLevelNumber)
@@ -683,17 +1212,6 @@ export default function App() {
       ? puzzleForCluelessTeamLevel(activeTeamCluelessLevel)
       : undefined;
   const activeGameId = 'gameId' in screen ? screen.gameId : undefined;
-  const activeKind: DrawerDestination['kind'] =
-    screen.name === 'hub'
-      ? 'hub'
-      : screen.name === 'scores'
-        ? 'scores'
-        : screen.name === 'auth'
-          ? 'account'
-          : screen.name === 'teams' || screen.name === 'live-lobby' || screen.name === 'live-results'
-            ? 'teams'
-            : 'game';
-
   /**
    * Flips one feedback channel. Applied to the effect layer immediately so the
    * tap that turns sound back on is itself audible, then persisted; a failed
@@ -703,22 +1221,53 @@ export default function App() {
     const next = toggleChannel(feedbackSettings, channel);
     setFeedbackSettings(next);
     applyFeedbackSettings(next);
+    setMusicEnabled(next.music);
     void saveFeedbackSettings(next);
     // Demonstrate what was just switched on. Gating happens inside `feedback`,
     // so enabling vibration buzzes without also making noise, and vice versa.
-    if (next[channel]) feedback('correct');
+    // Music demonstrates itself by starting.
+    if (next[channel] && channel !== 'music') feedback('correct');
   };
 
-  const navigate = (to: DrawerDestination) => {
-    if (to.kind === 'hub') setScreen({ name: 'hub' });
-    else if (to.kind === 'game') {
-      captureAnalytics('game_selected', { game_id: to.gameId, source: 'drawer' });
-      openGameHome(to.gameId);
-    }
-    else if (to.kind === 'scores') setScreen({ name: 'scores', gameId: to.gameId });
-    else if (to.kind === 'teams') setScreen({ name: 'teams' });
-    else setScreen({ name: 'auth', returnGameId: activeGameId });
+  const chromeBack = (): (() => void) | undefined => {
+    if (screen.name === 'hub' || screen.name === 'game' || screen.name === 'over') return undefined;
+    const parent = parentOf(screen);
+    if (!parent) return undefined;
+    return () => setScreen(applyParent(parent));
   };
+
+  /** The result screen's level block, with "Next" wired when there is one. */
+  const overLevel = (result: MolLevelResult | undefined) => {
+    if (!result) return undefined;
+    const level = labelLevel(result.path, result.number);
+    if (!level) return undefined;
+    const next = labelLevel(result.path, result.number + 1);
+    return {
+      number: level.number,
+      label: result.path === 'lagos' ? level.stop ?? level.name : level.name,
+      targetStreak: level.targetStreak,
+      cleared: result.cleared,
+      clearedNow: result.clearedNow,
+      lagos: result.path === 'lagos',
+      onNext: next ? () => rideToLevel(result.path, next.number) : undefined,
+    };
+  };
+
+  /**
+   * Quick play from the hub's gold button: the game played most recently,
+   * More or Less before anything has been played.
+   */
+  const quickPlayGameId = (): string => {
+    let latest: { gameId: string; at: number } | null = null;
+    for (const [gameId, board] of Object.entries(boards)) {
+      for (const entry of board.history) {
+        const at = Date.parse(entry.playedAt);
+        if (Number.isFinite(at) && (!latest || at > latest.at)) latest = { gameId, at };
+      }
+    }
+    return latest && getGame(latest.gameId)?.status === 'available' ? latest.gameId : MORE_OR_LESS;
+  };
+
 
   if (!fontsLoaded && !fontError) {
     return (
@@ -730,23 +1279,105 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, wide && styles.safeLaptop]}>
+    <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor={theme.bg} />
-      <View style={styles.glowViolet} pointerEvents="none" />
-      <View style={styles.glowCoral} pointerEvents="none" />
-      <View style={[styles.frame, wide && styles.frameLaptop]}>
-        {showChrome && <TopBar onMenu={() => setMenuOpen(true)} />}
+      {/* Full-bleed backdrop: the menu sky, or the calmer play sky behind a
+          board and its result pop-up. The column sits on top of it. */}
+      <SkyBackground variant={playing ? 'play' : 'sky'} />
+      <View style={[styles.frame, wide && (screen.name === 'hub' && !showOnboarding ? styles.frameHome : styles.frameLaptop)]}>
+        {showChrome && !showOnboarding && (
+          <TopBar
+            onBack={chromeBack()}
+            left={<StreakPill streak={streak} today={todayKey} />}
+            right={<CoinsPill coins={rewards.coins} />}
+          />
+        )}
 
-        {screen.name === 'hub' && (
+        {showOnboarding ? (
+          <OnboardingScreen
+            onPick={(pick) => {
+              dismissOnboarding();
+              if (pick === 'lagos') {
+                openLagos();
+                return;
+              }
+              captureAnalytics('game_selected', { game_id: pick, source: 'first_visit' });
+              openGameHome(pick);
+            }}
+            onExplore={dismissOnboarding}
+          />
+        ) : null}
+
+        {screen.name === 'hub' && !showOnboarding && (
           <HubScreen
             boards={boards}
             streak={streak}
-            labelRoundsPassed={labelProgress.roundsPassed}
+            chest={todayChest}
+            chestDay={todayChestDay}
+            chestClaim={chestOpen}
+            onOpenChest={openChest}
+            onChestClosed={() => setChestOpen(null)}
+            level={progress.level}
+            levelProgress={progress.fraction}
             onPlay={(gameId) => {
               captureAnalytics('game_selected', { game_id: gameId, source: 'hub' });
               openGameHome(gameId);
             }}
+            quickPlayName={getGame(quickPlayGameId())?.name ?? 'Higher or Lower'}
+            onQuickPlay={() => {
+              const gameId = quickPlayGameId();
+              captureAnalytics('game_selected', { game_id: gameId, source: 'quick_play' });
+              openGameHome(gameId);
+            }}
             onScores={() => setScreen({ name: 'scores', gameId: MORE_OR_LESS })}
+            onSettings={() => setSettingsOpen(true)}
+            onTeams={() => setScreen({ name: 'teams' })}
+            onAccount={() => setScreen({ name: 'auth' })}
+            onLagos={() => {
+              captureAnalytics('game_selected', { game_id: MORE_OR_LESS, source: 'hub' });
+              openLagos();
+            }}
+            lagosFresh={!lagosSeen}
+            duel={
+              duelPlayer
+                ? {
+                    player: duelPlayer,
+                    onPress: () => {
+                      captureAnalytics('game_selected', { game_id: MORE_OR_LESS, source: 'hub' });
+                      setScreen({ name: 'duel', invite: null });
+                    },
+                  }
+                : undefined
+            }
+            daily={{
+              number: dailyNumber(todayKey),
+              result: todaysResult(dailyResult, todayKey),
+              onPlay: startDaily,
+              onShare: shareDaily,
+            }}
+          />
+        )}
+
+        {/* Up to a moment on a first visit, while the flag is worked out. */}
+        {screen.name === 'duel' && !duelPlayer && <EmptyState title="1v1" body="Getting you ready…" />}
+        {screen.name === 'duel' && duelPlayer && (
+          <DuelScreen
+            me={duelPlayer}
+            bestStreak={boardFor(MORE_OR_LESS).bestStreak}
+            category={snapshot}
+            invite={screen.invite}
+            onExit={() => setScreen({ name: 'hub' })}
+            onFinished={finishDuel}
+          />
+        )}
+
+        {screen.name === 'lagos' && (
+          <LagosScreen
+            levels={labelPath('lagos')}
+            progress={labelPaths.lagos}
+            selected={selectedLevel('lagos')}
+            onSelect={(number) => setLabelChoice((current) => ({ ...current, lagos: number }))}
+            onPlay={() => rideToLevel('lagos')}
           />
         )}
 
@@ -760,11 +1391,14 @@ export default function App() {
             key={screen.live ? `team-${screen.live.levelNumber}` : `solo-${activeSoloCluelessLevel?.number}`}
             puzzleNumber={activeCluelessPuzzle.number}
             levelNumber={screen.live?.levelNumber ?? activeSoloCluelessLevel?.number}
+            trail={screen.live ? undefined : { stones: cluelessStones(), onOpen: () => setCluelessMapOpen(true) }}
             levelName={screen.live ? activeTeamCluelessLevel?.name : activeSoloCluelessLevel?.name}
             pathPhase={screen.live ? 'team' : activeSoloCluelessLevel?.phase}
             hintPolicy={screen.live ? 'none' : activeSoloCluelessLevel?.hintPolicy ?? 'none'}
             hint={screen.live ? null : activeSoloCluelessLevel?.hint}
             persist={!screen.live}
+            coins={rewards.coins}
+            onSpend={screen.live ? undefined : (kind) => spendBoost(kind, 'clueless')}
             onScore={
               screen.live
                 ? (score, complete) => {
@@ -775,47 +1409,54 @@ export default function App() {
             onExit={() =>
               screen.live ? setScreen({ name: 'teams' }) : openGameHome('clueless')
             }
-            onWin={async (guessesUsed, assistanceContext) => {
+            onWin={async (guessesUsed, assistanceContext, detail) => {
               if (screen.live) {
                 await postMatchScore(screen.live.matchId, guessesUsed, true, true);
                 return;
               }
               const level = activeSoloCluelessLevel;
               if (!level) return;
-              const previous = boardForCluelessAssistanceContext(
-                boardFor('clueless'),
-                assistanceContext,
-              );
-              const next = await recordFinish(() =>
-                recordScore(
-                  'clueless',
-                  {
-                    id: makeEntryId(),
-                    streak: guessesUsed,
-                    categoryId: assistanceContext,
-                    playedAt: new Date().toISOString(),
-                    seed: activeCluelessPuzzle.number,
-                  },
-                  'lower',
-                ),
-              );
-              setBoards((prev) => ({ ...prev, clueless: next }));
+              const entryId = makeEntryId();
               const completedAt = new Date();
               const nextPath = completeCluelessPathLevel(cluelessPath, level.number, completedAt);
               await saveCluelessPathProgress(nextPath);
               setCluelessPath(nextPath);
               setCluelessPathNow(completedAt);
-              captureAnalytics('run_completed', {
-                game_id: 'clueless',
-                outcome: 'win',
-                score: guessesUsed,
-                score_kind: 'guesses_used',
-                is_new_best: previous.totalRuns === 0 || guessesUsed < previous.bestStreak,
-                puzzle_number: activeCluelessPuzzle.number,
-                level_number: level.number,
-                path_phase: level.phase,
-                assistance_context: assistanceContext,
-                hint_source: level.hintPolicy,
+              return finishRun({
+                gameId: 'clueless',
+                direction: 'lower',
+                entry: {
+                  id: entryId,
+                  streak: guessesUsed,
+                  categoryId: assistanceContext,
+                  playedAt: completedAt.toISOString(),
+                  seed: activeCluelessPuzzle.number,
+                  boosted: detail.boosted,
+                },
+                summary: (fresh) => ({
+                  gameId: 'clueless',
+                  runId: entryId,
+                  levelNumber: level.number,
+                  phase: level.phase,
+                  guesses: guessesUsed,
+                  isNewBest: fresh,
+                  boosted: detail.boosted,
+                }),
+                clueless: {
+                  tutorialCleared: nextPath.completedThrough >= 3,
+                  vaultsSolved: Math.max(0, nextPath.completedThrough - 3),
+                },
+                analytics: {
+                  game_id: 'clueless',
+                  outcome: 'win',
+                  score: guessesUsed,
+                  score_kind: 'guesses_used',
+                  puzzle_number: activeCluelessPuzzle.number,
+                  level_number: level.number,
+                  path_phase: level.phase,
+                  assistance_context: assistanceContext,
+                  hint_source: level.hintPolicy,
+                },
               });
             }}
           />
@@ -843,35 +1484,86 @@ export default function App() {
             onExit={() =>
               screen.live ? setScreen({ name: 'teams' }) : setScreen({ name: 'home', gameId: 'wordfall' })
             }
-            onLevelWon={async (score, levelNumber, elapsedMs) => {
+            coins={rewards.coins}
+            onSpend={screen.live ? undefined : (kind) => spendBoost(kind, 'wordfall')}
+            onLevelWon={async (score, levelNumber, elapsedMs, detail) => {
               if (screen.live) {
                 await postMatchScore(screen.live.matchId, score, true, true);
                 return;
               }
-              const previous = boardFor('wordfall');
-              const next = await recordFinish(() =>
-                recordScore(
-                  'wordfall',
-                  {
-                    id: makeEntryId(),
-                    streak: score,
-                    categoryId: `level-${levelNumber}`,
-                    playedAt: new Date().toISOString(),
-                    seed: levelNumber,
-                    durationMs: elapsedMs,
-                  },
-                  'higher',
-                ),
-              );
-              setBoards((prev) => ({ ...prev, wordfall: next }));
-              captureAnalytics('run_completed', {
-                game_id: 'wordfall',
-                outcome: 'win',
-                score,
-                score_kind: 'points',
-                duration_ms: elapsedMs,
-                is_new_best: previous.totalRuns === 0 || score > previous.bestStreak,
-                level_number: levelNumber,
+              const entryId = makeEntryId();
+              return finishRun({
+                gameId: 'wordfall',
+                direction: 'higher',
+                entry: {
+                  id: entryId,
+                  streak: score,
+                  categoryId: `level-${levelNumber}`,
+                  playedAt: new Date().toISOString(),
+                  seed: levelNumber,
+                  durationMs: elapsedMs,
+                  boosted: detail.boosted,
+                },
+                summary: (fresh) => ({
+                  gameId: 'wordfall',
+                  runId: entryId,
+                  levelNumber,
+                  weekly: detail.weekly,
+                  outcome: 'win',
+                  movesLeft: detail.movesLeft,
+                  moves: detail.moves,
+                  timeLeftMs: detail.timeLeftMs,
+                  timeLimitMs: detail.timeLimitMs,
+                  isNewBest: fresh,
+                  boosted: detail.boosted,
+                }),
+                wordfall: { campaignCleared: !detail.weekly && levelNumber >= 11 },
+                analytics: {
+                  game_id: 'wordfall',
+                  outcome: 'win',
+                  score,
+                  score_kind: 'points',
+                  duration_ms: elapsedMs,
+                  level_number: levelNumber,
+                },
+              });
+            }}
+            onLevelLost={async (score, levelNumber, elapsedMs, detail) => {
+              if (screen.live) return;
+              const entryId = makeEntryId();
+              return finishRun({
+                gameId: 'wordfall',
+                direction: 'higher',
+                entry: {
+                  id: entryId,
+                  streak: score,
+                  categoryId: `level-${levelNumber}`,
+                  playedAt: new Date().toISOString(),
+                  seed: levelNumber,
+                  durationMs: elapsedMs,
+                  boosted: detail.boosted,
+                },
+                summary: (fresh) => ({
+                  gameId: 'wordfall',
+                  runId: entryId,
+                  levelNumber,
+                  weekly: detail.weekly,
+                  outcome: 'loss',
+                  movesLeft: detail.movesLeft,
+                  moves: detail.moves,
+                  timeLeftMs: detail.timeLeftMs,
+                  timeLimitMs: detail.timeLimitMs,
+                  isNewBest: fresh,
+                  boosted: detail.boosted,
+                }),
+                analytics: {
+                  game_id: 'wordfall',
+                  outcome: 'loss',
+                  score,
+                  score_kind: 'points',
+                  duration_ms: elapsedMs,
+                  level_number: levelNumber,
+                },
               });
             }}
           />
@@ -881,6 +1573,7 @@ export default function App() {
         {screen.name === 'home' && (
           <GameStartScreen
             gameId={screen.gameId}
+            onClose={() => setScreen({ name: 'hub' })}
             board={
               screen.gameId === 'clueless'
                 ? boardForCluelessAssistanceContext(
@@ -899,21 +1592,31 @@ export default function App() {
                     : currentCluelessLevel?.phase === 'daily'
                       ? 'Open Daily Vault'
                       : 'Play level'
-                : undefined
+                : screen.gameId === MORE_OR_LESS
+                  ? `Play level ${selectedLevel('world')}`
+                  : undefined
             }
             onRace={() => {
               if (!profile) setScreen({ name: 'auth', returnTo: 'teams', returnGameId: screen.gameId });
               else setScreen({ name: 'teams' });
             }}
             raceDisabled={!isBackendConfigured}
-            raceLabel={isBackendConfigured ? 'Race with team' : 'Race with team (offline)'}
+            raceLabel={isBackendConfigured ? 'Race team' : 'Race (offline)'}
             raceHint={
               isBackendConfigured
                 ? `A live race is ${LIVE_ROSTER_LABEL} players on the same board.`
                 : undefined
             }
             onScores={() => setScreen({ name: 'scores', gameId: screen.gameId })}
-            detail={startDetailFor(
+            detail={screen.gameId === MORE_OR_LESS ? (
+              <WorldLevelCard
+                number={selectedLevel('world')}
+                progress={labelPaths.world}
+                setLine={`${labelResolved.seenCount} / ${labelResolved.round.itemIds.length} names seen in this set`}
+                onLevels={() => setLevelsOpen('world')}
+                onCity={openLagos}
+              />
+            ) : startDetailFor(
               screen.gameId,
               soloPool,
               {
@@ -946,12 +1649,51 @@ export default function App() {
             // Remounting per seed guarantees a clean run rather than relying on
             // the reducer's initializer, which React only calls on first mount.
             key={screen.seed}
-            category={screen.live ? category : soloPool}
+            // The daily draws from the whole Popularity set, the same for everyone.
+            category={screen.live ? category : screen.daily ? snapshot : molCategory}
             seed={screen.seed}
-            bestStreak={boardFor(screen.gameId).bestStreak}
+            bestStreak={
+              molRef ? bestStreakFor(labelPaths[molRef.path], molRef.number) : boardFor(screen.gameId).bestStreak
+            }
             persist={!screen.live}
+            session={
+              screen.daily
+                ? `daily:${screen.daily.day}`
+                : screen.challenge
+                  ? `challenge:${screen.seed}`
+                  : molRef
+                    ? `level:${molRef.path}:${molRef.number}`
+                    : undefined
+            }
+            rival={screen.challenge?.target}
+            daily={screen.daily?.number}
+            trail={
+              molRef?.path === 'world'
+                ? {
+                    stones: pathStones('world', molRef.number),
+                    current: molRef.number,
+                    animal: GAME_ANIMAL[MORE_OR_LESS],
+                    onOpen: () => setRunMapOpen(true),
+                  }
+                : undefined
+            }
+            lagos={molRef?.path === 'lagos'}
+            levelGoal={
+              molLevel && molRef
+                ? {
+                    target: molLevel.targetStreak,
+                    label:
+                      molRef.path === 'lagos'
+                        ? `STOP ${molLevel.number} · ${(molLevel.stop ?? molLevel.name).toUpperCase()}`
+                        : `LEVEL ${molLevel.number} · ${molLevel.name.toUpperCase()}`,
+                    // The danfo drives from this stop toward the next one.
+                    stop: labelLevel(molRef.path, molRef.number + 1)?.stop ?? molLevel.stop,
+                  }
+                : undefined
+            }
             labelRound={
-              screen.live
+              // A challenge or the daily replays exact pairs, so no unseen-first steering.
+              screen.live || !molTracksSet || screen.challenge || screen.daily
                 ? undefined
                 : {
                     seenCount: labelResolved.seenCount,
@@ -969,12 +1711,14 @@ export default function App() {
             band={
               screen.live
                 ? moreOrLessLevelByNumber(screen.live.levelNumber)?.band
-                : undefined
+                : molLevel?.band
             }
             targetStreak={
               screen.live
                 ? moreOrLessLevelByNumber(screen.live.levelNumber)?.targetStreak
-                : undefined
+                : screen.daily
+                  ? DAILY_PAIRS
+                  : undefined
             }
             onScore={
               screen.live
@@ -982,7 +1726,9 @@ export default function App() {
                     const target = moreOrLessLevelByNumber(screen.live!.levelNumber)?.targetStreak ?? 0;
                     void postMatchScore(screen.live!.matchId, score, target > 0 && score >= target, false);
                   }
-                : undefined
+                : molRef && molLevel
+                  ? (score) => bankLevelStreak(molRef, molLevel, score)
+                  : undefined
             }
             onDone={
               screen.live
@@ -993,49 +1739,112 @@ export default function App() {
                 : undefined
             }
             onExit={() =>
-              screen.live ? setScreen({ name: 'teams' }) : setScreen({ name: 'home', gameId: screen.gameId })
+              screen.live
+                ? setScreen({ name: 'teams' })
+                : molRef?.path === 'lagos'
+                  ? setScreen({ name: 'lagos' })
+                  : setScreen({ name: 'home', gameId: screen.gameId })
             }
-            onGameOver={async (state) => {
-              if (screen.live) {
-                // Should not reach here for live mode if we properly intercepted it, but just in case:
-                return;
-              }
+            coins={rewards.coins}
+            // No boosts in the daily: everyone plays the same ten on equal terms.
+            onSpend={screen.live || screen.daily ? undefined : (kind) => spendBoost(kind, 'more-or-less')}
+            onGameOver={async (state, detail) => {
+              if (screen.live) return;
               const entryId = makeEntryId();
-              const previous = boardFor(screen.gameId);
-              const roundResult = recordSeen(snapshot, labelProgress, state.seenIds);
-              setLabelProgress(roundResult.progress);
-              setLabelJustPassed(roundResult.justPassed);
-              await saveRoundProgress(roundResult.progress);
-              if (roundResult.justPassed) {
-                captureAnalytics('label_round_passed', {
-                  game_id: 'more-or-less',
-                  round_id: labelResolved.round.id,
-                  rounds_passed: roundResult.progress.roundsPassed,
-                  item_count: labelResolved.round.itemIds.length,
-                });
+              const playedCategory = molCategory;
+              let setCleared = false;
+              if (molTracksSet) {
+                const roundResult = recordSeen(snapshot, labelProgress, state.seenIds);
+                setLabelProgress(roundResult.progress);
+                setLabelJustPassed(roundResult.justPassed);
+                setCleared = roundResult.justPassed;
+                await saveRoundProgress(roundResult.progress);
+                if (roundResult.justPassed) {
+                  captureAnalytics('label_round_passed', {
+                    game_id: 'more-or-less',
+                    round_id: labelResolved.round.id,
+                    rounds_passed: roundResult.progress.roundsPassed,
+                    item_count: labelResolved.round.itemIds.length,
+                  });
+                }
+              } else {
+                setLabelJustPassed(false);
               }
-              // Persist before navigating so a reload mid-transition cannot
-              // lose the run that just finished.
-              const next = await recordFinish(() =>
-                recordScore(screen.gameId, {
+              let levelResult: MolLevelResult | undefined;
+              if (molRef && molLevel) {
+                // Usually already banked mid-run (`bankLevelStreak`); this catches the rest.
+                const before = labelPathsRef.current[molRef.path];
+                const recorded = recordLevelRun(before, molLevel, state.streak);
+                if (recorded.progress !== before) {
+                  labelPathsRef.current = { ...labelPathsRef.current, [molRef.path]: recorded.progress };
+                  setLabelPaths(labelPathsRef.current);
+                  await saveLabelPathProgress(molRef.path, recorded.progress);
+                }
+                const clearedNow = recorded.clearedNow || runClearedNow.current;
+                // A first clear moves the start screen on to the next level.
+                if (clearedNow) setLabelChoice((current) => ({ ...current, [molRef.path]: null }));
+                levelResult = {
+                  ...molRef,
+                  cleared: state.streak >= molLevel.targetStreak,
+                  clearedNow,
+                };
+              }
+              const reward = await finishRun({
+                gameId: screen.gameId,
+                direction: 'higher',
+                entry: {
                   id: entryId,
                   streak: state.streak,
-                  categoryId: category.id,
+                  categoryId: playedCategory.id,
                   playedAt: new Date().toISOString(),
                   seed: screen.seed,
+                  boosted: detail.boosted,
+                },
+                summary: (fresh) => ({
+                  gameId: 'more-or-less',
+                  runId: entryId,
+                  streak: state.streak,
+                  isNewBest: fresh,
+                  setCleared,
+                  boosted: detail.boosted,
+                  ...(molRef && molLevel
+                    ? { level: { key: `${molRef.path}:${molRef.number}`, targetStreak: molLevel.targetStreak } }
+                    : {}),
                 }),
-              );
-              setBoards((prev) => ({ ...prev, [screen.gameId]: next }));
-              captureAnalytics('run_completed', {
-                game_id: 'more-or-less',
-                outcome: 'loss',
-                score: state.streak,
-                score_kind: 'streak',
-                is_new_best: previous.totalRuns === 0 || state.streak > previous.bestStreak,
-                category_id: category.id,
-                relaxed_rounds: state.relaxedRounds,
+                analytics: {
+                  game_id: 'more-or-less',
+                  outcome: 'loss',
+                  score: state.streak,
+                  score_kind: 'streak',
+                  category_id: playedCategory.id,
+                  relaxed_rounds: state.relaxedRounds,
+                  ...(molRef ? { level_number: molRef.number } : {}),
+                },
               });
-              setScreen({ name: 'over', gameId: screen.gameId, state, entryId });
+              setScreen({
+                name: 'over',
+                gameId: screen.gameId,
+                state,
+                entryId,
+                isNewBest: reward.isNewBest,
+                boosted: reward.boosted,
+                events: reward.events,
+                molLevel: levelResult,
+                runSeed: screen.seed,
+                ...(screen.challenge ? { challenge: screen.challenge } : {}),
+                ...(screen.daily ? { daily: screen.daily.number } : {}),
+              });
+              if (screen.daily) {
+                const result = { day: screen.daily.day, streak: Math.min(state.streak, DAILY_PAIRS) };
+                setDailyResult(result);
+                void saveDailyResult(result);
+              }
+              if (screen.challenge && molRef) {
+                captureAnalytics('challenge_finished', {
+                  level_number: molRef.number,
+                  outcome: challengeVerdict(screen.challenge.target, state.streak),
+                });
+              }
             }}
           />
           </LiveMaybe>
@@ -1075,38 +1884,57 @@ export default function App() {
         {screen.name === 'over' && (
           <GameOverScreen
             state={screen.state}
-            category={soloPool}
+            category={screen.molLevel ? levelCategory(screen.molLevel) : soloPool}
             board={boardFor(screen.gameId)}
-            labelRound={{
-              roundsPassed: labelProgress.roundsPassed,
-              remaining: labelResolved.remaining,
-              justPassed: labelJustPassed,
-              caughtUp: labelResolved.caughtUp,
-            }}
+            labelRound={
+              screen.daily || (screen.molLevel && levelCategory(screen.molLevel).id !== snapshot.id)
+                ? undefined
+                : {
+                    roundsPassed: labelProgress.roundsPassed,
+                    remaining: labelResolved.remaining,
+                    justPassed: labelJustPassed,
+                    caughtUp: labelResolved.caughtUp,
+                  }
+            }
+            level={overLevel(screen.molLevel)}
+            challengeRun={
+              screen.molLevel && screen.runSeed !== undefined
+                ? { seed: screen.runSeed, path: screen.molLevel.path, level: screen.molLevel.number }
+                : undefined
+            }
+            rival={screen.challenge?.target}
+            daily={screen.daily}
+            isNewBest={screen.isNewBest}
+            boosted={screen.boosted}
+            events={screen.events}
             onPlayAgain={() => {
               captureAnalytics('game_over_action', {
                 game_id: 'more-or-less',
                 action: 'play_again',
                 streak_bucket: streakBucket(screen.state.streak),
-                is_new_best: screen.state.streak >= boardFor(screen.gameId).bestStreak,
+                is_new_best: screen.isNewBest,
               });
-              startGame(screen.gameId);
+              if (screen.molLevel && screen.challenge && screen.runSeed !== undefined) {
+                // A rematch: the same friend's pairs, the same streak to beat.
+                startLevel(screen.molLevel.path, screen.molLevel.number, { seed: screen.runSeed, target: screen.challenge.target });
+              } else if (screen.molLevel) startLevel(screen.molLevel.path, screen.molLevel.number);
+              else startGame(screen.gameId);
             }}
             onHome={() => {
               captureAnalytics('game_over_action', {
                 game_id: 'more-or-less',
                 action: 'home',
                 streak_bucket: streakBucket(screen.state.streak),
-                is_new_best: screen.state.streak >= boardFor(screen.gameId).bestStreak,
+                is_new_best: screen.isNewBest,
               });
-              setScreen({ name: 'hub' });
+              setScreen(screen.molLevel?.path === 'lagos' ? { name: 'lagos' } : { name: 'hub' });
             }}
             onScores={() => {
               captureAnalytics('game_over_action', {
                 game_id: 'more-or-less',
                 action: 'scores',
                 streak_bucket: streakBucket(screen.state.streak),
-                is_new_best: screen.state.streak >= boardFor(screen.gameId).bestStreak,
+                is_new_best: screen.isNewBest,
               });
               setScreen({ name: 'scores', gameId: screen.gameId, highlightId: screen.entryId });
             }}
@@ -1178,23 +2006,135 @@ export default function App() {
           />
         )}
 
-        <Drawer
-          open={menuOpen}
-          onClose={() => setMenuOpen(false)}
-          onNavigate={navigate}
-          activeGameId={activeGameId}
-          activeKind={activeKind}
-          signedInAs={profile?.username ?? null}
+        {levelsOpen === 'world' ? (
+          <MeadowMap
+            visible
+            title="LEVELS"
+            stones={pathStones('world', selectedLevel('world'))}
+            current={selectedLevel('world')}
+            animal={GAME_ANIMAL[MORE_OR_LESS]}
+            onClose={() => setLevelsOpen(null)}
+            onSelect={(number) => {
+              setLabelChoice((current) => ({ ...current, world: number }));
+              setLevelsOpen(null);
+            }}
+          />
+        ) : null}
+        {runMapOpen && molRef ? (
+          <MeadowMap
+            visible
+            title="YOUR JOURNEY"
+            stones={pathStones(molRef.path, molRef.number)}
+            current={molRef.number}
+            animal={GAME_ANIMAL[MORE_OR_LESS]}
+            onClose={() => setRunMapOpen(false)}
+          />
+        ) : null}
+        {cluelessMapOpen ? (
+          <MeadowMap
+            visible
+            title="YOUR CASES"
+            stones={cluelessStones()}
+            current={currentCluelessLevelNumber}
+            animal={GAME_ANIMAL.clueless}
+            onClose={() => setCluelessMapOpen(false)}
+          />
+        ) : null}
+        {levelsOpen === 'lagos' ? (
+          <LabelLevelsPopup
+            visible
+            onClose={() => setLevelsOpen(null)}
+            title={levelsOpen === 'lagos' ? 'Stops' : 'Levels'}
+            levels={labelPath(levelsOpen)}
+            progress={labelPaths[levelsOpen]}
+            selected={selectedLevel(levelsOpen)}
+            lagos={levelsOpen === 'lagos'}
+            onSelect={(number) => {
+              const path = levelsOpen;
+              setLabelChoice((current) => ({ ...current, [path]: number }));
+              setLevelsOpen(null);
+            }}
+          />
+        ) : null}
+        <ChallengePopup
+          challenge={boardsReady ? challengeOffer : null}
+          levelName={challengeOffer ? labelLevel(challengeOffer.path, challengeOffer.level)?.name ?? 'a level' : ''}
+          onAccept={() => {
+            if (challengeOffer) acceptChallenge(challengeOffer);
+          }}
+          onDecline={() => {
+            setChallengeOffer(null);
+            clearSharePath();
+          }}
+        />
+        <LagosAnnouncement
+          // One pop-up at a time: iOS will not present a second sibling modal.
+          visible={
+            lagosAnnouncement &&
+            challengeOffer === null &&
+            screen.name === 'hub' &&
+            !showOnboarding &&
+            !settingsOpen &&
+            !showFeedback &&
+            chestOpen === null &&
+            levelsOpen === null
+          }
+          onEnter={openLagos}
+          onLater={() => {
+            setLagosAnnouncement(false);
+            setLagosSeen(true);
+            void markLagosSeen();
+          }}
+        />
+        <SettingsPopup
+          visible={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
           feedbackSettings={feedbackSettings}
           onToggleFeedback={toggleFeedback}
+          signedInAs={profile?.username ?? null}
+          flag={duelPlayer?.country ?? null}
+          onFlag={() => {
+            setSettingsOpen(false);
+            afterModalClose(() => setFlagPickerOpen(true));
+          }}
+          onAccount={() => {
+            setSettingsOpen(false);
+            setScreen({ name: 'auth', returnGameId: activeGameId });
+          }}
+          onScores={() => {
+            setSettingsOpen(false);
+            setScreen({ name: 'scores', gameId: activeGameId ?? MORE_OR_LESS });
+          }}
+          onTeams={() => {
+            setSettingsOpen(false);
+            setScreen({ name: 'teams' });
+          }}
           canSendFeedback={isFeedbackConfigured()}
-          onSendFeedback={() => setShowFeedback(true)}
+          onSendFeedback={() => {
+            setSettingsOpen(false);
+            afterModalClose(() => setShowFeedback(true));
+          }}
+          version={appConfig.expo.version}
+        />
+        <FlagPicker
+          visible={flagPickerOpen}
+          current={duelIdentity?.country ?? null}
+          hidden={duelIdentity?.flagHidden === true}
+          onPick={(code) => {
+            if (duelIdentity) changeIdentity({ ...duelIdentity, country: code, countryChosen: true, flagHidden: false });
+          }}
+          onHide={() => {
+            if (duelIdentity) changeIdentity({ ...duelIdentity, flagHidden: true });
+          }}
+          onClose={() => setFlagPickerOpen(false)}
         />
         <FeedbackPrompt
           visible={showFeedback}
           identity={toFeedbackIdentity(profile)}
           onClose={() => setShowFeedback(false)}
         />
+        <DanfoRide ride={ride} onCovered={() => ride?.board()} onDone={() => setRide(null)} />
+        <MeadowRide ride={hop} onCovered={() => hop?.board()} onDone={() => setHop(null)} />
       </View>
     </SafeAreaView>
   );
@@ -1211,38 +2151,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.bg,
   },
-  safeLaptop: {
-    alignItems: 'center',
-    paddingHorizontal: 28,
-  },
-  glowViolet: {
-    position: 'absolute',
-    width: 460,
-    height: 460,
-    borderRadius: 230,
-    backgroundColor: theme.accentSecondarySoft,
-    top: -250,
-    right: -180,
-  },
-  glowCoral: {
-    position: 'absolute',
-    width: 360,
-    height: 360,
-    borderRadius: 180,
-    backgroundColor: theme.accentSoft,
-    bottom: -220,
-    left: -170,
-  },
   frame: {
     flex: 1,
     alignSelf: 'stretch',
     width: '100%',
-    backgroundColor: theme.bg,
     overflow: 'hidden',
   },
   frameLaptop: {
-    maxWidth: LAPTOP_MAX_WIDTH,
+    maxWidth: COLUMN_MAX_WIDTH,
     alignSelf: 'center',
-    marginHorizontal: 'auto',
+  },
+  frameHome: {
+    maxWidth: HOME_MAX_WIDTH,
+    alignSelf: 'center',
   },
 });

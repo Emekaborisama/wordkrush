@@ -1,5 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { brand, font, proximityColor, theme, type, withAlpha } from './theme';
+import {
+  brand,
+  contrastRatio,
+  cube,
+  font,
+  gloss,
+  kit,
+  motion,
+  palette,
+  proximityColor,
+  reward,
+  screen,
+  shade,
+  theme,
+  tint,
+  tone,
+  toneFrom,
+  type,
+  withAlpha,
+} from './theme';
 
 /** hsl(H, S%, L%) -> [h, s, l] */
 function parseHsl(css: string): [number, number, number] {
@@ -61,30 +80,141 @@ describe('proximityColor', () => {
   });
 });
 
+
 describe('brand tokens', () => {
-  it('keeps the umbrella accent on lockup gold', () => {
-    expect(theme.accent).toBe(brand.krush);
-    expect(theme.bg).toBe(brand.ink);
-    expect(theme.text).toBe(brand.word);
-    expect(theme.accentSecondary).toBe(brand.purple);
+  it('keeps the lockup hexes and does not use them as the screen canvas', () => {
+    expect(brand.ink).toBe('#0A0817');
+    expect(brand.word).toBe('#FFF9F6');
+    expect(brand.krush).toBe('#FFB020');
+    expect(brand.krushHot).toBe('#FF8C00');
+    expect(brand.purple).toBe('#8B6BFF');
+    expect(brand.purpleDeep).toBe('#2E0854');
+    expect(theme.bg).not.toBe(brand.ink);
+    expect(screen.page.backgroundColor).toBe(palette.skyMid);
+    expect(screen.playfield.backgroundColor).toBe(palette.playTop);
+  });
+});
+
+describe('Block Blast kit', () => {
+  it('names the five main colours exactly as the kit does', () => {
+    expect(kit).toEqual({
+      coral: '#F15D70',
+      sky: '#6BB9E0',
+      cream: '#FFE1BE',
+      green: '#62AC25',
+      teal: '#2DADBD',
+    });
+    expect(palette.coral).toBe(kit.coral);
+    expect(palette.teal).toBe(kit.teal);
+  });
+
+  it('lights every glossy face from the top: top lighter than foot, lip and outline darker', () => {
+    const lum = (hex: string) => contrastRatio(hex, '#000000');
+    for (const [name, face] of Object.entries(tone)) {
+      expect(lum(face.top), `${name} top`).toBeGreaterThan(lum(face.bottom));
+      expect(lum(face.lip), `${name} lip`).toBeLessThan(lum(face.bottom));
+      expect(lum(face.outline), `${name} outline`).toBeLessThan(lum(face.lip));
+    }
+  });
+
+  it('strokes white labels in a shade that clears 4.5:1 against them', () => {
+    // Labels on glossy faces are white with an outline in `tone.*.outline`; the
+    // outline is what separates the glyph from a pale face.
+    for (const [name, face] of Object.entries(tone)) {
+      expect(contrastRatio(palette.white, face.outline), name).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('derives a glossy tone from any accent hex', () => {
+    const derived = toneFrom('#9B78FF');
+    expect(derived.bottom).toBe('#9B78FF');
+    expect(derived.top).toBe(tint('#9B78FF', 0.42));
+    expect(derived.lip).toBe(shade('#9B78FF', 0.3));
+  });
+
+
+  it('keeps cubes distinct from each other', () => {
+    const faces = Object.values(cube);
+    expect(new Set(faces).size).toBe(faces.length);
+  });
+});
+
+describe('contrastRatio', () => {
+  it('matches the WCAG ends of the scale', () => {
+    expect(contrastRatio('#FFFFFF', '#000000')).toBeCloseTo(21, 5);
+    expect(contrastRatio('#000000', '#FFFFFF')).toBeCloseTo(21, 5);
+    expect(contrastRatio('#FFFFFF', '#FFFFFF')).toBeCloseTo(1, 5);
+  });
+
+  it('clears 4.5:1 for every small-text pair the kit uses', () => {
+    // Navy and soft navy ink on cream boxes, white, and the pale board well.
+    for (const ground of [palette.cream, palette.creamFill, palette.creamShade, palette.white, palette.well]) {
+      expect(contrastRatio(theme.text, ground), `text on ${ground}`).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(theme.textMuted, ground), `muted on ${ground}`).toBeGreaterThanOrEqual(4.5);
+    }
+    // Teal labels (Music / SFX) on cream.
+    expect(contrastRatio(palette.tealInk, palette.creamFill)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(palette.tealInk, palette.cream)).toBeGreaterThanOrEqual(4.5);
+    // White copy on the deep end of the coral panel and on the night sky.
+    expect(contrastRatio(palette.white, palette.coralEdge)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(palette.white, palette.navy)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe('reward and motion tokens', () => {
+  it('keeps reward gold on the kit gold, not a new brand', () => {
+    expect(reward.gold).toBe(palette.gold);
+    expect(reward.xp).toBe(palette.purple);
+    expect(reward.starOff).toBe(palette.coralEdge);
+  });
+
+  it('publishes the motion and depth tokens', () => {
+    expect(motion.pressMs).toBe(70);
+    expect(motion.popMs).toBe(260);
+    expect(motion.staggerMs).toBe(140);
+    expect(motion.countXpMs).toBe(900);
+    expect(motion.shakeMs).toBe(320);
+    expect(motion.coinFlyMs).toBe(650);
+    expect(gloss.alpha).toBeGreaterThan(0);
+    expect(gloss.height).toBeLessThan(1);
+    expect(type.overline.fontSize).toBeGreaterThanOrEqual(11);
   });
 });
 
 describe('type scale', () => {
-  it('gives display sizes negative tracking', () => {
-    // Large text at default spacing is the most common typography tell.
-    expect(type.display.letterSpacing).toBeLessThan(0);
-    expect(type.title.letterSpacing).toBeLessThan(0);
+  it('tightens the largest display sizes', () => {
+    expect(type.hero.letterSpacing).toBeLessThan(0);
+    expect(type.display.letterSpacing).toBeLessThanOrEqual(0);
   });
 
-  it('gives small-caps labels positive tracking', () => {
+  it('gives small labels positive tracking', () => {
     expect(type.overline.letterSpacing).toBeGreaterThan(1);
   });
 
   it('keeps line height comfortably above font size for body copy', () => {
     expect(type.body.lineHeight / type.body.fontSize).toBeGreaterThan(1.35);
   });
+
+  it('never sets fontWeight, which fakes a bolder face on web', () => {
+    for (const [tier, style] of Object.entries(type)) {
+      expect(style, tier).not.toHaveProperty('fontWeight');
+    }
+  });
 });
+
+describe('shade and tint', () => {
+  it('mixes toward black and white and clamps', () => {
+    expect(shade('#FF0000', 0)).toBe('#FF0000');
+    expect(shade('#FF0000', 1)).toBe('#000000');
+    expect(shade('#FF0000', 0.5)).toBe('#800000');
+    expect(tint('#000000', 0)).toBe('#000000');
+    expect(tint('#000000', 1)).toBe('#FFFFFF');
+    expect(tint('#000000', 0.5)).toBe('#808080');
+    expect(shade('#FF0000', 5)).toBe('#000000');
+    expect(tint('#000000', -2)).toBe('#000000');
+  });
+});
+
 
 describe('withAlpha', () => {
   it('appends a hex alpha pair to a hex colour', () => {
@@ -113,10 +243,10 @@ describe('withAlpha', () => {
   });
 });
 
-describe('type scale typeface (D-030)', () => {
+describe('type scale typeface (Exo 2)', () => {
   const FACES: string[] = Object.values(font);
 
-  it('names a bundled Fredoka face on every tier, body and caption included', () => {
+  it('names a bundled Exo 2 face on every tier, body and caption included', () => {
     for (const [tier, style] of Object.entries(type)) {
       expect(FACES, `${tier} must use a bundled face`).toContain(
         (style as { fontFamily?: string }).fontFamily,
@@ -125,10 +255,9 @@ describe('type scale typeface (D-030)', () => {
   });
 
   it('only ever names faces that App.tsx actually loads', () => {
-    // Fredoka ships 300/400 too; loading is limited to 500/600/700, so naming
-    // an unloaded face would silently fall back to the system typeface.
-    expect(FACES.sort()).toEqual(
-      ['Fredoka_500Medium', 'Fredoka_600SemiBold', 'Fredoka_700Bold'].sort(),
+    // Naming an unloaded face would silently fall back to the system typeface.
+    expect([...new Set(FACES)].sort()).toEqual(
+      ['Exo2_600SemiBold', 'Exo2_700Bold', 'Exo2_800ExtraBold', 'Exo2_900Black'].sort(),
     );
   });
 });

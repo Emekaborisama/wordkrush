@@ -25,6 +25,7 @@ import {
 } from './board';
 import type { Dictionary } from './dictionary';
 import { analyze, letterValues, scoreWord, specialFor } from './linguistics';
+import { EXTRA_MOVES, EXTRA_TIME_MS } from '../../rewards/config';
 import {
   BOARD_HEIGHT,
   BOARD_WIDTH,
@@ -51,6 +52,11 @@ export type Action =
    * a start timestamp is self-correcting.
    */
   | { type: 'tick'; elapsedMs: number }
+  /**
+   * Paid board help. Shuffle spends no move. Extra moves and extra time can
+   * each be taken once; a second dispatch is ignored.
+   */
+  | { type: 'boost'; kind: 'shuffle' | 'extraMoves' | 'extraTime' }
   /** Start this level again from a fresh seed. */
   | { type: 'restart'; seed: number }
   /** Replace state wholesale when resuming a saved session. */
@@ -112,11 +118,16 @@ export function tracedWord(state: WordfallState): string {
   return state.selection.map((i) => state.board.tiles[i].letter).join('');
 }
 
-/** Milliseconds left on the clock, or null on an untimed level. */
+function grantedBonusMs(state: WordfallState): number {
+  const bonus = state.bonusMs ?? 0;
+  return Number.isFinite(bonus) && bonus > 0 ? bonus : 0;
+}
+
+/** Milliseconds left on the clock, including a +10s boost, or null when the level is untimed. */
 export function timeLeftMs(state: WordfallState, ctx: WordfallContext): number | null {
   const limit = ctx.level.timeLimitMs;
   if (limit === undefined) return null;
-  return Math.max(0, limit - state.elapsedMs);
+  return Math.max(0, limit + grantedBonusMs(state) - state.elapsedMs);
 }
 
 /**
@@ -288,19 +299,47 @@ export function reducer(
       if (elapsedMs === state.elapsedMs) return state;
 
       // Untimed levels still accumulate elapsed time — it is reported as the
-      // completion time — they just cannot lose to it.
+      // completion time — they just cannot lose to it. A +10s boost extends
+      // the budget; the pin includes it so the recorded time matches the clock.
       const limit = ctx.level.timeLimitMs;
-      if (limit !== undefined && elapsedMs >= limit) {
-        return {
-          ...state,
-          // Pinned to the limit so the recorded time is the budget, not
-          // "however late the last tick happened to land".
-          elapsedMs: limit,
-          status: 'lost',
-          selection: [],
-        };
+      if (limit !== undefined) {
+        const budget = limit + grantedBonusMs(state);
+        if (elapsedMs >= budget) {
+          return {
+            ...state,
+            elapsedMs: budget,
+            status: 'lost',
+            selection: [],
+          };
+        }
       }
       return { ...state, elapsedMs };
+    }
+
+    case 'boost': {
+      if (state.status !== 'playing') return state;
+      if (action.kind === 'shuffle') {
+        const shuffled = reshuffle(state.board, ctx.bag, state.seed);
+        return {
+          ...state,
+          board: shuffled.board,
+          seed: shuffled.seed,
+          selection: [],
+          rejection: null,
+          lastPlay: null,
+        };
+      }
+      if (action.kind === 'extraMoves') {
+        if (state.extraMovesGranted) return state;
+        return {
+          ...state,
+          movesLeft: state.movesLeft + EXTRA_MOVES,
+          extraMovesGranted: true,
+        };
+      }
+      if (ctx.level.timeLimitMs === undefined) return state;
+      if (grantedBonusMs(state) > 0) return state;
+      return { ...state, bonusMs: EXTRA_TIME_MS };
     }
 
     case 'trace': {

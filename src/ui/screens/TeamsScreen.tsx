@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Platform, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Platform, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import type { Profile } from '../../auth/auth';
 import { isBackendConfigured } from '../../auth/client';
 import { LIVE_ROSTER_LABEL, PATH_GAME_IDS, type PathGameId } from '../../games/campaign';
-import { GAMES, getGame } from '../../games/registry';
+import { GAMES } from '../../games/registry';
 import { createMatch, loadActiveMatch } from '../../live/api';
 import { clearExistingMembership, createTeam, joinTeam } from '../../teams/api';
 import { teamInviteUrl } from '../../teams/codes';
@@ -12,14 +12,17 @@ import type { TeamSnapshot } from '../../teams/types';
 import {
   Badge,
   Button,
+  CreamBox,
+  CreamText,
   EmptyState,
   FeedbackBanner,
-  ScreenHeader,
-  Surface,
+  Panel,
+  PanelText,
+  StrokeText,
+  TabSwitch,
   TextField,
 } from '../components';
-import { isWideLayout } from '../layout';
-import { space, theme, type } from '../theme';
+import { font, palette, space } from '../theme';
 
 type Props = {
   profile: Profile | null;
@@ -29,13 +32,12 @@ type Props = {
   onInviteConsumed: () => void;
 };
 
-export function TeamsScreen({
-  profile,
-  pendingInviteCode,
-  onNeedAuth,
-  onOpenLobby,
-  onInviteConsumed,
-}: Props) {
+/**
+ * Private rooms for live races, as kit pop-ups: create and join each get a
+ * panel; a room shows its invite code big, its roster as cream rows, and the
+ * game switch as small glossy tabs over a green Open lobby.
+ */
+export function TeamsScreen({ profile, pendingInviteCode, onNeedAuth, onOpenLobby, onInviteConsumed }: Props) {
   const [snapshot, setSnapshot] = useState<TeamSnapshot | null>(null);
   const [gameId, setGameId] = useState<PathGameId>('wordfall');
   const [name, setName] = useState('');
@@ -43,8 +45,6 @@ export function TeamsScreen({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
-  const wide = isWideLayout(useWindowDimensions().width);
-
   useEffect(() => {
     if (!profile || !isBackendConfigured) {
       setReady(true);
@@ -76,9 +76,6 @@ export function TeamsScreen({
       cancelled = true;
     };
   }, [profile, pendingInviteCode, snapshot, onInviteConsumed]);
-
-
-  const accent = getGame(gameId)?.accent ?? theme.accent;
 
   async function handleCreate() {
     if (!profile) return;
@@ -146,51 +143,48 @@ export function TeamsScreen({
 
   if (!isBackendConfigured) {
     return (
-      <View style={[styles.root, styles.empty]}>
-        <EmptyState
-          title="Teams are offline"
-          body="Live races need the optional backend. Solo play still works."
-        />
-      </View>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Panel title="Teams">
+          <EmptyState title="Teams are offline" body="Live races need the optional backend. Solo play still works." />
+        </Panel>
+      </ScrollView>
     );
   }
 
   if (!profile) {
     return (
-      <View style={[styles.root, styles.empty]}>
-        <EmptyState
-          title="Sign in to race"
-          body={`Guests keep solo Play. Sign in to race ${LIVE_ROSTER_LABEL} friends on an invite-only team.`}
-          actionLabel="Sign in"
-          onAction={onNeedAuth}
-        />
-      </View>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Panel title="Teams">
+          <EmptyState
+            title="Sign in to race"
+            body={`Guests keep solo Play. Sign in to race ${LIVE_ROSTER_LABEL} friends on an invite-only team.`}
+            actionLabel="Sign in"
+            onAction={onNeedAuth}
+          />
+        </Panel>
+      </ScrollView>
     );
   }
 
-  if (!ready) return <View style={styles.root} />;
+  if (!ready) return <View style={styles.flex} />;
 
   if (!snapshot) {
     return (
-      <ScrollView
-        style={styles.root}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-        <ScreenHeader
-          eyebrow="TEAMS"
-          title="Create or join a race room"
-          size={wide ? 'display' : 'title'}
-          subtitle={`Private invite only. Race with ${LIVE_ROSTER_LABEL} people on More or Less, Clueless, or Wordfall.`}
-        />
-        {error ? <FeedbackBanner title="Couldn’t continue" body={error} tone="danger" /> : null}
-        <Surface style={styles.card}>
-          <Text style={styles.cardTitle}>Create a room</Text>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Panel title="Teams">
+          <PanelText>{`Private invite only. Race with ${LIVE_ROSTER_LABEL} people on Higher or Lower, Clueless, or Wordfall.`}</PanelText>
+          {error ? <FeedbackBanner title="Couldn’t continue" body={error} tone="danger" /> : null}
+          <PanelText variant="heading">Create a room</PanelText>
           <TextField label="Room name" value={name} onChangeText={setName} autoCapitalize="words" />
-          <Button title="Create room" onPress={() => void handleCreate()} disabled={busy || name.trim().length < 2} />
-        </Surface>
-        <Surface style={styles.card}>
-          <Text style={styles.cardTitle}>Join with a code</Text>
+          <Button
+            title="Create room"
+            size="lg"
+            tone="green"
+            onPress={() => void handleCreate()}
+            disabled={busy || name.trim().length < 2}
+          />
+        </Panel>
+        <Panel title="Join" tone="purple">
           <TextField
             label="Invite code"
             value={code}
@@ -198,103 +192,67 @@ export function TeamsScreen({
             autoCapitalize="characters"
             autoCorrect={false}
           />
-          <Button title="Join room" variant="tonal" onPress={() => void handleJoin()} disabled={busy} />
-        </Surface>
+          <Button title="Join room" tone="green" size="md" onPress={() => void handleJoin()} disabled={busy} />
+        </Panel>
       </ScrollView>
     );
   }
 
-  const raceActions = (
-    <View style={styles.actions}>
-      <Button
-        title="Open lobby"
-        onPress={() => void handleOpenLobby()}
-        color={accent}
-        disabled={busy}
-      />
-    </View>
-  );
-
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-        <ScreenHeader
-          eyebrow="TEAM"
-          title={snapshot.team.name}
-          size={wide ? 'display' : 'title'}
-          subtitle={`${snapshot.members.length} ${snapshot.members.length === 1 ? 'player' : 'players'} · races hold ${LIVE_ROSTER_LABEL} · code ${snapshot.team.inviteCode}`}
-        />
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <Panel title="Your room">
+        <PanelText variant="heading">{snapshot.team.name}</PanelText>
+        <PanelText>
+          {`${snapshot.members.length} ${snapshot.members.length === 1 ? 'player' : 'players'} · races hold ${LIVE_ROSTER_LABEL}`}
+        </PanelText>
         {error ? <FeedbackBanner title="Couldn’t continue" body={error} tone="danger" /> : null}
 
-        <Surface style={styles.inviteCard}>
-          <Text style={styles.inviteTitle}>Invite players</Text>
-          <Text style={styles.inviteCode}>{snapshot.team.inviteCode}</Text>
-          <Button 
-            title="Share invite link" 
-            size="lg"
-            onPress={() => void shareInvite()} 
-            color={accent}
-          />
-        </Surface>
+        <CreamBox style={styles.invite}>
+          <CreamText variant="teal">Invite players</CreamText>
+          <StrokeText size={34} stroke={palette.ink} strokeWidth={2.5} depth={2} letterSpacing={4}>
+            {snapshot.team.inviteCode}
+          </StrokeText>
+          <Button title="Share invite link" size="md" tone="blue" onPress={() => void shareInvite()} />
+        </CreamBox>
 
-        <Surface style={styles.card}>
-          <Text style={styles.cardTitle}>Roster</Text>
+        <View style={styles.roster}>
           {snapshot.members.map((member) => (
-            <View key={member.playerId} style={styles.member}>
-              <Text style={styles.memberName}>{member.username}</Text>
-              <Badge label={member.role === 'owner' ? 'HOST' : 'PLAYER'} />
-            </View>
+            <CreamBox key={member.playerId} style={styles.member}>
+              <View style={styles.memberRow}>
+                <Text style={styles.memberName} numberOfLines={1}>
+                  {member.username}
+                </Text>
+                <Badge label={member.role === 'owner' ? 'HOST' : 'PLAYER'} tone={member.role === 'owner' ? 'warning' : 'accent'} />
+              </View>
+            </CreamBox>
           ))}
-        </Surface>
-
-        <Text style={styles.section}>SELECT GAME</Text>
-        <View style={styles.gameRow}>
-          {PATH_GAME_IDS.map((id) => {
-            const game = GAMES.find((item) => item.id === id);
-            const active = gameId === id;
-            return (
-              <Button
-                key={id}
-                title={game?.name ?? id}
-                size="md"
-                variant={active ? 'primary' : 'tonal'}
-                color={game?.accent ?? theme.accent}
-                fullWidth={false}
-                style={styles.gameChip}
-                onPress={() => {
-                  setGameId(id);
-                }}
-              />
-            );
-          })}
         </View>
-        {raceActions}
+
+        <TabSwitch
+          options={PATH_GAME_IDS.map((id) => ({ id, label: GAMES.find((item) => item.id === id)?.name ?? id }))}
+          value={gameId}
+          onChange={setGameId}
+        />
+        <Button title="Open lobby" size="lg" tone="green" onPress={() => void handleOpenLobby()} disabled={busy} />
+      </Panel>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: theme.bg,
-    paddingHorizontal: space.lg,
-    paddingTop: space.md,
+  flex: { flex: 1 },
+  content: {
+    gap: space.xl,
+    paddingHorizontal: space.md,
+    paddingTop: space.lg,
+    paddingBottom: space.xxl,
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
   },
-  empty: { justifyContent: 'center' },
-  content: { paddingBottom: space.md, gap: space.md },
-  card: { gap: space.sm },
-  cardTitle: { ...type.subtitle, color: theme.text, fontSize: 16 },
-  inviteCard: { gap: space.md, alignItems: 'center', padding: space.lg },
-  inviteTitle: { ...type.subtitle, color: theme.text, fontSize: 18 },
-  inviteCode: { ...type.display, color: theme.accent, fontSize: 32, letterSpacing: 4 },
-  member: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  memberName: { ...type.bodyStrong, color: theme.text },
-  section: { ...type.overline, color: theme.textDim },
-  gameRow: { flexDirection: 'row', gap: space.xs },
-  gameChip: { flex: 1, minWidth: 0 },
-  actions: { gap: space.xs },
+  invite: { alignItems: 'center', gap: space.xs },
+  roster: { gap: space.xs },
+  member: { paddingVertical: space.xs + 2 },
+  memberRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
+  memberName: { flex: 1, fontFamily: font.black, fontSize: 16, color: palette.ink },
 });
-

@@ -10,7 +10,7 @@
  * nothing here can reject — see `sound.ts` and `haptics.native.ts`.
  */
 import { tapCelebrate, tapLight, tapSelect, tapWrong } from './haptics';
-import { play, unloadAll, type SoundName } from './sound';
+import { CHIME, play, unloadAll, type SoundName } from './sound';
 import { DEFAULT_FEEDBACK_SETTINGS, type FeedbackSettings } from '../settings/types';
 
 /**
@@ -28,7 +28,15 @@ export type FeedbackEvent =
   /** A Wordfall level cleared. */
   | 'levelUp'
   /** A run won, or a new personal best. The biggest moment in the app. */
-  | 'win';
+  | 'win'
+  /** A star landing on a result. */
+  | 'star'
+  /** Coins counting onto a result. */
+  | 'coin'
+  /** The daily chest opening. */
+  | 'chest'
+  /** A boost being spent. */
+  | 'boost';
 
 type Effect = {
   readonly sound?: SoundName;
@@ -50,6 +58,10 @@ const EFFECTS: Record<FeedbackEvent, Effect> = {
   select: { haptic: tapSelect },
   levelUp: { sound: 'nextLevel', haptic: tapCelebrate },
   win: { sound: 'win', haptic: tapCelebrate },
+  star: { sound: 'win', haptic: tapCelebrate },
+  coin: { sound: 'bonus', haptic: tapLight },
+  chest: { sound: 'nextLevel', haptic: tapCelebrate },
+  boost: { sound: 'bonus', haptic: tapLight },
 };
 
 /**
@@ -87,4 +99,16 @@ export function feedback(event: FeedbackEvent): void {
   const effect = EFFECTS[event];
   if (settings.sound && effect.sound) void play(effect.sound);
   if (settings.vibration && effect.haptic) void effect.haptic();
+}
+
+/**
+ * One step of the rising chime: Wordfall plays the next note for each letter
+ * traced, and Higher or Lower climbs the scale with the streak, the way
+ * Wordscapes and Candy Crush make a run feel like it is building. Sound only,
+ * honouring the Sound switch. `step` counts from 1; past the top it holds.
+ */
+export function chime(step: number): void {
+  if (!settings.sound) return;
+  const index = Math.min(CHIME.length, Math.max(1, Math.round(step))) - 1;
+  void play(CHIME[index]);
 }

@@ -174,6 +174,13 @@ export type WordfallState = {
   played: string[];
   /** Monotonic id source for newly spawned tiles. */
   nextTileId: number;
+  /**
+   * Extra milliseconds from the +10s boost. Absent on saves from before the
+   * boost existed. The clock budget is the level limit plus this.
+   */
+  bonusMs?: number;
+  /** The +3 moves boost can be taken once per level. Absent means not yet used. */
+  extraMovesGranted?: boolean;
 };
 
 export const BOARD_WIDTH = 7;

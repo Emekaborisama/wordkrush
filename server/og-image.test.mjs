@@ -187,7 +187,7 @@ describe('the More or Less card', () => {
     expect(svg.match(/<image /g)).toHaveLength(2);
     // The only words on the card. Not a title, not an item name, not a value,
     // not `? ? ?`, and none of the STREAK / BEST / SEEN pills the board wears.
-    expect(drawnText(svg)).toEqual(['More', 'Less']);
+    expect(drawnText(svg)).toEqual(['Higher', 'Lower']);
   });
 
   it('carries no streak, best or count — the same board whatever the run scored', async () => {

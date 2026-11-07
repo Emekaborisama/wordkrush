@@ -1,0 +1,215 @@
+{
+  "category": {
+    "id": "wikipedia-movies",
+    "name": "Movies",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to exist on 2026-10-19. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "Amélie",
+      "term": "Amélie"
+    },
+    {
+      "label": "Avatar",
+      "term": "Avatar (2009 film)"
+    },
+    {
+      "label": "Avengers: Endgame",
+      "term": "Avengers: Endgame"
+    },
+    {
+      "label": "Barbie",
+      "term": "Barbie (film)"
+    },
+    {
+      "label": "Black Panther",
+      "term": "Black Panther (film)"
+    },
+    {
+      "label": "Blood Diamond",
+      "term": "Blood Diamond"
+    },
+    {
+      "label": "Casablanca",
+      "term": "Casablanca (film)"
+    },
+    {
+      "label": "Citizen Kane",
+      "term": "Citizen Kane"
+    },
+    {
+      "label": "Coming to America",
+      "term": "Coming to America"
+    },
+    {
+      "label": "Deadpool & Wolverine",
+      "term": "Deadpool & Wolverine"
+    },
+    {
+      "label": "District 9",
+      "term": "District 9"
+    },
+    {
+      "label": "Dune",
+      "term": "Dune (2021 film)"
+    },
+    {
+      "label": "Encanto",
+      "term": "Encanto"
+    },
+    {
+      "label": "Fight Club",
+      "term": "Fight Club"
+    },
+    {
+      "label": "Forrest Gump",
+      "term": "Forrest Gump"
+    },
+    {
+      "label": "Frozen",
+      "term": "Frozen (2013 film)"
+    },
+    {
+      "label": "Get Out",
+      "term": "Get Out"
+    },
+    {
+      "label": "Gladiator",
+      "term": "Gladiator (2000 film)"
+    },
+    {
+      "label": "Harry Potter and the Philosopher's Stone",
+      "term": "Harry Potter and the Philosopher's Stone (film)"
+    },
+    {
+      "label": "Home Alone",
+      "term": "Home Alone"
+    },
+    {
+      "label": "Hotel Rwanda",
+      "term": "Hotel Rwanda"
+    },
+    {
+      "label": "Inception",
+      "term": "Inception"
+    },
+    {
+      "label": "Inside Out 2",
+      "term": "Inside Out 2"
+    },
+    {
+      "label": "Interstellar",
+      "term": "Interstellar (film)"
+    },
+    {
+      "label": "Joker",
+      "term": "Joker (2019 film)"
+    },
+    {
+      "label": "Jurassic Park",
+      "term": "Jurassic Park"
+    },
+    {
+      "label": "Lawrence of Arabia",
+      "term": "Lawrence of Arabia (film)"
+    },
+    {
+      "label": "Mean Girls",
+      "term": "Mean Girls"
+    },
+    {
+      "label": "Metropolis",
+      "term": "Metropolis (1927 film)"
+    },
+    {
+      "label": "Moana",
+      "term": "Moana (2016 film)"
+    },
+    {
+      "label": "Oppenheimer",
+      "term": "Oppenheimer (film)"
+    },
+    {
+      "label": "Paddington 2",
+      "term": "Paddington 2"
+    },
+    {
+      "label": "Parasite",
+      "term": "Parasite (2019 film)"
+    },
+    {
+      "label": "Pulp Fiction",
+      "term": "Pulp Fiction"
+    },
+    {
+      "label": "Shrek",
+      "term": "Shrek"
+    },
+    {
+      "label": "Spider-Man: No Way Home",
+      "term": "Spider-Man: No Way Home"
+    },
+    {
+      "label": "Spirited Away",
+      "term": "Spirited Away"
+    },
+    {
+      "label": "Star Wars",
+      "term": "Star Wars (film)"
+    },
+    {
+      "label": "The Dark Knight",
+      "term": "The Dark Knight"
+    },
+    {
+      "label": "The Fellowship of the Ring",
+      "term": "The Lord of the Rings: The Fellowship of the Ring"
+    },
+    {
+      "label": "The Godfather",
+      "term": "The Godfather"
+    },
+    {
+      "label": "The Gods Must Be Crazy",
+      "term": "The Gods Must Be Crazy"
+    },
+    {
+      "label": "The Matrix",
+      "term": "The Matrix"
+    },
+    {
+      "label": "The Notebook",
+      "term": "The Notebook"
+    },
+    {
+      "label": "The Shawshank Redemption",
+      "term": "The Shawshank Redemption"
+    },
+    {
+      "label": "The Woman King",
+      "term": "The Woman King"
+    },
+    {
+      "label": "Titanic",
+      "term": "Titanic (1997 film)"
+    },
+    {
+      "label": "Top Gun: Maverick",
+      "term": "Top Gun: Maverick"
+    },
+    {
+      "label": "Toy Story",
+      "term": "Toy Story"
+    },
+    {
+      "label": "Twilight",
+      "term": "Twilight (2008 film)"
+    },
+    {
+      "label": "Wicked",
+      "term": "Wicked (2024 film)"
+    }
+  ]
+}

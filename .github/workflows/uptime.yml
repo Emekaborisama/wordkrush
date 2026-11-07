@@ -1,0 +1,31 @@
+name: Production uptime
+
+# The external synthetic check from docs/OBSERVABILITY.md: public DNS,
+# Cloudflare, TLS, the app shell, the main bundle and /healthz. A failed run
+# emails the repository owner through GitHub's normal workflow notifications.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-uptime
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts/synthetic-check.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Check https://wordkrush.com
+        run: node scripts/synthetic-check.mjs https://wordkrush.com

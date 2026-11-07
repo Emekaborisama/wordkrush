@@ -1,7 +1,5 @@
-import { StyleSheet, View } from 'react-native';
-import { isAtRisk, type DailyStreak } from '../../streak/types';
-import { theme } from '../theme';
-import { Stat } from './Stat';
+import type { DailyStreak } from '../../streak/types';
+import { StreakPill } from './TopBar';
 
 type Props = {
   streak: DailyStreak;
@@ -10,38 +8,7 @@ type Props = {
   today: string;
 };
 
-/** Hub header flame. Dims and drops the border when today's run has not
-    landed yet — the Duolingo "streak in danger" read, not a plain count. */
+/** Daily flame. Kept under its old name; it is the top bar's streak pill. */
 export function StreakBadge({ streak, today }: Props) {
-  if (streak.current === 0) return null;
-  const atRisk = isAtRisk(streak, today);
-
-  return (
-    <View style={[styles.pill, atRisk && styles.atRisk]}>
-      <Stat
-        value={streak.current}
-        label={atRisk ? 'PLAY TODAY' : 'DAY STREAK'}
-        variant="streak"
-        size="md"
-        align="center"
-        color={atRisk ? theme.textMuted : theme.warning}
-      />
-    </View>
-  );
+  return <StreakPill streak={streak} today={today} />;
 }
-
-const styles = StyleSheet.create({
-  pill: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: theme.warningSoft,
-    backgroundColor: theme.warningSoft,
-  },
-  atRisk: {
-    borderColor: theme.border,
-    backgroundColor: theme.bgElevated,
-    opacity: 0.76,
-  },
-});

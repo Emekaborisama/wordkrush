@@ -1,0 +1,176 @@
+{
+  "category": {
+    "id": "lagos-afrobeats-hits",
+    "name": "Afrobeats hits",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to exist on 2026-10-19. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "African Giant — Burna Boy",
+      "term": "African Giant",
+      "imageTerm": "Burna Boy"
+    },
+    {
+      "label": "African Queen — 2Baba",
+      "term": "African Queen (song)",
+      "imageTerm": "2Baba"
+    },
+    {
+      "label": "Bandana — Fireboy & Asake",
+      "term": "Bandana (song)",
+      "imageTerm": "Fireboy DML"
+    },
+    {
+      "label": "Calm Down — Rema",
+      "term": "Calm Down (Rema song)",
+      "imageTerm": "Rema (musician)"
+    },
+    {
+      "label": "City Boys — Burna Boy",
+      "term": "City Boys",
+      "imageTerm": "Burna Boy"
+    },
+    {
+      "label": "Commas — Ayra Starr",
+      "term": "Commas (Ayra Starr song)",
+      "imageTerm": "Ayra Starr"
+    },
+    {
+      "label": "Dumebi — Rema",
+      "term": "Dumebi",
+      "imageTerm": "Rema (musician)"
+    },
+    {
+      "label": "Essence — Wizkid",
+      "term": "Essence (Wizkid song)",
+      "imageTerm": "Wizkid"
+    },
+    {
+      "label": "Fall — Davido",
+      "term": "Fall (Davido song)",
+      "imageTerm": "Davido"
+    },
+    {
+      "label": "Free Mind — Tems",
+      "term": "Free Mind",
+      "imageTerm": "Tems"
+    },
+    {
+      "label": "Ginger — Wizkid",
+      "term": "Ginger (Wizkid song)",
+      "imageTerm": "Wizkid"
+    },
+    {
+      "label": "If — Davido",
+      "term": "If (Davido song)",
+      "imageTerm": "Davido"
+    },
+    {
+      "label": "Jerusalema — Master KG",
+      "term": "Jerusalema",
+      "imageTerm": "Master KG"
+    },
+    {
+      "label": "Jowo — Davido",
+      "term": "Jowo",
+      "imageTerm": "Davido"
+    },
+    {
+      "label": "Ku Lo Sa — Oxlade",
+      "term": "Ku Lo Sa",
+      "imageTerm": "Oxlade"
+    },
+    {
+      "label": "Kwaku the Traveller — Burna Boy",
+      "term": "Kwaku the Traveller",
+      "imageTerm": "Burna Boy"
+    },
+    {
+      "label": "Last Last — Burna Boy",
+      "term": "Last Last",
+      "imageTerm": "Burna Boy"
+    },
+    {
+      "label": "Love Nwantiti — CKay",
+      "term": "Love Nwantiti",
+      "imageTerm": "CKay"
+    },
+    {
+      "label": "Made in Lagos",
+      "term": "Made in Lagos",
+      "imageTerm": "Wizkid"
+    },
+    {
+      "label": "Mr Money with the Vibe",
+      "term": "Mr. Money with the Vibe",
+      "imageTerm": "Asake"
+    },
+    {
+      "label": "Ojuelegba — Wizkid",
+      "term": "Ojuelegba (song)",
+      "imageTerm": "Wizkid"
+    },
+    {
+      "label": "Oliver Twist — D'banj",
+      "term": "Oliver Twist (D'banj song)",
+      "imageTerm": "D'banj"
+    },
+    {
+      "label": "On the Low — Burna Boy",
+      "term": "On the Low (Burna Boy song)",
+      "imageTerm": "Burna Boy"
+    },
+    {
+      "label": "Peru — Fireboy DML",
+      "term": "Peru (song)",
+      "imageTerm": "Fireboy DML"
+    },
+    {
+      "label": "Rave & Roses",
+      "term": "Rave & Roses",
+      "imageTerm": "Rema (musician)"
+    },
+    {
+      "label": "Rush — Ayra Starr",
+      "term": "Rush (Ayra Starr song)",
+      "imageTerm": "Ayra Starr"
+    },
+    {
+      "label": "Soweto — Victony",
+      "term": "Soweto (song)",
+      "imageTerm": "Victony"
+    },
+    {
+      "label": "Timeless — Davido",
+      "term": "Timeless (Davido album)",
+      "imageTerm": "Davido"
+    },
+    {
+      "label": "Twice as Tall",
+      "term": "Twice as Tall",
+      "imageTerm": "Burna Boy"
+    },
+    {
+      "label": "Unavailable — Davido",
+      "term": "Unavailable (song)",
+      "imageTerm": "Davido"
+    },
+    {
+      "label": "Wait for U — Future ft. Tems",
+      "term": "Wait for U",
+      "imageTerm": "Tems"
+    },
+    {
+      "label": "Water — Tyla",
+      "term": "Water (Tyla song)",
+      "imageTerm": "Tyla"
+    },
+    {
+      "label": "Ye — Burna Boy",
+      "term": "Ye (song)",
+      "imageTerm": "Burna Boy"
+    }
+  ]
+}

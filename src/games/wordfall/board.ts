@@ -200,6 +200,49 @@ export function isPlayable(board: Board, solver: Solver): boolean {
   return findWords(board, solver, 1).length > 0;
 }
 
+/**
+ * Tile indices of one real word still on the board, skipping `exclude`.
+ *
+ * The trace coach and the word-hint boost both need a path a player could
+ * actually drag. `null` means the board has no such word. This does not
+ * change the board.
+ */
+export function findWordPath(
+  board: Board,
+  solver: Solver,
+  exclude: readonly string[],
+): number[] | null {
+  const skipped = new Set(exclude);
+  const visited = new Array<boolean>(board.tiles.length).fill(false);
+  const path: number[] = [];
+
+  const walk = (index: number, prefix: string): boolean => {
+    const tile = board.tiles[index];
+    if (!tile || tile.crate) return false;
+
+    const word = prefix + tile.letter;
+    if (word.length > solver.maxLength) return false;
+    if (word.length > 1 && !solver.prefixes.has(word) && !solver.words.has(word)) return false;
+
+    visited[index] = true;
+    path.push(index);
+    if (word.length >= 3 && solver.words.has(word) && !skipped.has(word)) return true;
+    if (solver.prefixes.has(word)) {
+      for (const next of neighbors(board, index)) {
+        if (!visited[next] && walk(next, word)) return true;
+      }
+    }
+    path.pop();
+    visited[index] = false;
+    return false;
+  };
+
+  for (let i = 0; i < board.tiles.length; i++) {
+    if (walk(i, '')) return path.slice();
+  }
+  return null;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Generation                                                                 */
 /* -------------------------------------------------------------------------- */

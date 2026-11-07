@@ -17,6 +17,12 @@ export type Action =
   | { type: 'guess'; word: string }
   | { type: 'dismissRejection' }
   | { type: 'newPuzzle'; puzzleNumber: number; hintPolicy?: CluelessHintPolicy }
+  /**
+   * Paid hint. A threshold level becomes an opening hint, which is the `easy`
+   * assistance context — runs with different help never share a board.
+   * Any other policy is left alone.
+   */
+  | { type: 'unlockHint' }
   /** Replace state wholesale when resuming a saved session. */
   | { type: 'restore'; state: CluelessState };
 
@@ -95,6 +101,10 @@ export function reducer(state: CluelessState, action: Action, index: PuzzleIndex
 
     case 'dismissRejection':
       return state.rejection ? { ...state, rejection: null } : state;
+
+    case 'unlockHint':
+      if (state.hintPolicy !== 'guess_threshold') return state;
+      return { ...state, hintPolicy: 'opening' };
 
     case 'guess': {
       // Ignore input after a win — otherwise the guess count keeps climbing

@@ -25,6 +25,12 @@ export type MoreOrLessShareData = {
    * derives a stable pair for those from the decoded payload.
    */
   photos?: [string, string];
+  /**
+   * The run itself, so a friend who opens the link can replay the same pairs
+   * against this streak (`src/games/more-or-less/challenge.ts`). Optional:
+   * older links, and runs that were not on a level, carry none.
+   */
+  challenge?: { seed: number; path: 'world' | 'lagos'; level: number };
 };
 
 export type CluelessShareData = {

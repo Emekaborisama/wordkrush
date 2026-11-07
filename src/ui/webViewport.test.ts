@@ -7,4 +7,9 @@ describe('WEB_VIEWPORT_CSS', () => {
     expect(WEB_VIEWPORT_CSS).toContain('user-select:none');
     expect(WEB_VIEWPORT_CSS).toContain('touch-action:none');
   });
+
+  it('sizes only the app root, so empty modal hosts add no hidden scroll room', () => {
+    expect(WEB_VIEWPORT_CSS).toContain('#root{height:100%}');
+    expect(WEB_VIEWPORT_CSS).not.toContain('body>div');
+  });
 });

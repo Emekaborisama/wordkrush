@@ -1,0 +1,139 @@
+{
+  "category": {
+    "id": "lagos-football",
+    "name": "Naija football",
+    "metricLabel": "monthly Wikipedia pageviews",
+    "unit": "count"
+  },
+  "_note": "term = the exact Wikipedia article title sent to the Wikimedia pageviews API. Resolved through redirects and verified to exist on 2026-10-19. Do not edit term without re-verifying; label is the display name and is safe to edit freely.",
+  "items": [
+    {
+      "label": "Ademola Lookman",
+      "term": "Ademola Lookman"
+    },
+    {
+      "label": "Ahmed Musa",
+      "term": "Ahmed Musa"
+    },
+    {
+      "label": "Alex Iwobi",
+      "term": "Alex Iwobi"
+    },
+    {
+      "label": "Asisat Oshoala",
+      "term": "Asisat Oshoala"
+    },
+    {
+      "label": "Calvin Bassey",
+      "term": "Calvin Bassey"
+    },
+    {
+      "label": "Celestine Babayaro",
+      "term": "Celestine Babayaro"
+    },
+    {
+      "label": "Chiamaka Nnadozie",
+      "term": "Chiamaka Nnadozie"
+    },
+    {
+      "label": "Daniel Amokachi",
+      "term": "Daniel Amokachi"
+    },
+    {
+      "label": "Emmanuel Amunike",
+      "term": "Emmanuel Amunike"
+    },
+    {
+      "label": "Enyimba",
+      "term": "Enyimba F.C."
+    },
+    {
+      "label": "Jay-Jay Okocha",
+      "term": "Jay-Jay Okocha"
+    },
+    {
+      "label": "Joseph Yobo",
+      "term": "Joseph Yobo"
+    },
+    {
+      "label": "Kano Pillars",
+      "term": "Kano Pillars F.C."
+    },
+    {
+      "label": "Kanu Nwankwo",
+      "term": "Nwankwo Kanu"
+    },
+    {
+      "label": "Kelechi Iheanacho",
+      "term": "Kelechi Iheanacho"
+    },
+    {
+      "label": "Mikel Obi",
+      "term": "Mikel John Obi"
+    },
+    {
+      "label": "Moses Simon",
+      "term": "Moses Simon"
+    },
+    {
+      "label": "Obafemi Martins",
+      "term": "Obafemi Martins"
+    },
+    {
+      "label": "Odion Ighalo",
+      "term": "Odion Ighalo"
+    },
+    {
+      "label": "Ola Aina",
+      "term": "Ola Aina"
+    },
+    {
+      "label": "Peter Odemwingie",
+      "term": "Peter Odemwingie"
+    },
+    {
+      "label": "Rasheedat Ajibade",
+      "term": "Rasheedat Ajibade"
+    },
+    {
+      "label": "Rashidi Yekini",
+      "term": "Rashidi Yekini"
+    },
+    {
+      "label": "Samuel Chukwueze",
+      "term": "Samuel Chukwueze"
+    },
+    {
+      "label": "Stephen Keshi",
+      "term": "Stephen Keshi"
+    },
+    {
+      "label": "Super Eagles",
+      "term": "Nigeria national football team"
+    },
+    {
+      "label": "Super Falcons",
+      "term": "Nigeria women's national football team"
+    },
+    {
+      "label": "Taribo West",
+      "term": "Taribo West"
+    },
+    {
+      "label": "Victor Moses",
+      "term": "Victor Moses"
+    },
+    {
+      "label": "Victor Osimhen",
+      "term": "Victor Osimhen"
+    },
+    {
+      "label": "Vincent Enyeama",
+      "term": "Vincent Enyeama"
+    },
+    {
+      "label": "Wilfred Ndidi",
+      "term": "Wilfred Ndidi"
+    }
+  ]
+}
