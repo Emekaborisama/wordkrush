@@ -227,6 +227,45 @@ survivor. The title is our creative. Same title never goes in two subs.
 
 ---
 
+## 6. Launch week, 2026-11-10 — the drafts to use
+
+Sections 1–5 are August drafts, kept as history and already in the ledger.
+For the launch, use these two; the plan is [../LAUNCH-PLAN.md](../LAUNCH-PLAN.md).
+They lead with Clueless for word-game players (G-008), which departs from the
+skill's "Lead Wordfall" rule — the owner decides which holds. Both passed
+`scripts/dedupe.mjs` and are in the ledger as `drafted`. Post them yourself,
+from your own aged account, on the days the plan gives.
+
+### r/WordGames — Tuesday 2026-11-10, 13:00 UTC, text post
+
+**Title:** I made a word game where every guess is ranked by meaning. Level 1 took me [N] guesses.
+
+> I've been building WordKrush, a free browser game with three word games. The one I'd most like feedback on is Clueless.
+>
+> You guess a word and it tells you how close it is in meaning to the secret word: #1 is the word itself, and anything outside the closest 5,000 is cold. Spelling doesn't help; meaning does.
+>
+> The first two levels give you a hint. From level 3 you're on your own, and a new vault opens each day.
+>
+> Level 1 took me [N] guesses. Everyone starts on the same level, so I'm curious how you do, and where you got stuck.
+>
+> No sign-up, no ads: https://wordkrush.com/?utm_source=reddit&utm_medium=social&utm_campaign=launch_wordgames
+
+### r/playmygame — Thursday 2026-11-12, 13:00 UTC
+
+**Title:** [Playable Link] WordKrush – three small word games in the browser. Where did the first five minutes lose you?
+
+> I'm the developer. WordKrush is free, has no ads and needs no sign-up. It has three games:
+>
+> - Clueless: guess a secret word by meaning; every guess gets a rank.
+> - Wordfall: trace words on a grid to set off cascades; a new level every Monday.
+> - Higher or Lower: which of two things gets more Wikipedia pageviews? Today's 10 is the same ten pairs for everyone.
+>
+> What I want to learn: which game did you open first, did you try a second, and where did you stop?
+>
+> Playable link: https://wordkrush.com/?utm_source=reddit&utm_medium=social&utm_campaign=launch_playmygame
+
+---
+
 ## Before any of these go out
 
 - **Fill in every [N].** Two drafts have a bracketed placeholder for your real

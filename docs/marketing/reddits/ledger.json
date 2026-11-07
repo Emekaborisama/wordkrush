@@ -217,6 +217,30 @@
       "body": "The interesting bit is not the dungeon dressing. It is whether the word you spell is the move or just a key you farm so you can open a chest.\n\nIf a 6-letter word is the only way through a frost room, I am playing a word game. If I am mostly managing HP and keys and the letters are loot, I bounce.\n\nI will try the demo. The one I keep opening when I want the word itself to be the punch is Wordfall — you trace it, leftovers turn into a nova or a beam, the next word caves the grid.\n\nhttps://wordkrush.com/?utm_source=reddit&utm_medium=social&utm_campaign=wordgames",
       "url": "https://www.reddit.com/r/wordgames/comments/1vvwivd/does_this_word_game_idea_sound_interesting/",
       "note": "Filled; submit blocked by rate limit. Word is the move → Wordfall CTA."
+    },
+    {
+      "status": "drafted",
+      "subreddit": "WordGames",
+      "draftedAt": "2026-11-07",
+      "source": "launch-plan-2026-11-07",
+      "title": "I made a word game where every guess is ranked by meaning. Level 1 took me [N] guesses.",
+      "hook": "",
+      "body": "I've been building WordKrush, a free browser game with three word games. The one I'd most like feedback on is Clueless.\n\nYou guess a word and it tells you how close it is in meaning to the secret word: #1 is the word itself, and anything outside the closest 5,000 is cold. Spelling doesn't help; meaning does.\n\nThe first two levels give you a hint. From level 3 you're on your own, and a new vault opens each day.\n\nLevel 1 took me [N] guesses. Everyone starts on the same level, so I'm curious how you do, and where you got stuck.\n\nNo sign-up, no ads: https://wordkrush.com/?utm_source=reddit&utm_medium=social&utm_campaign=launch_wordgames",
+      "titleFingerprint": "c1b8b9ec310f49b38c9bc598d96878ef0c34595176188b907cfc87da2ddb87da",
+      "bodyFingerprint": "b3e3b3a6263b386b719e3137bd41f13a7a97b3fec0e9091e2db0aa9b8f954370",
+      "firstSentence": "i ve been building wordkrush a free browser game with three word games"
+    },
+    {
+      "status": "drafted",
+      "subreddit": "playmygame",
+      "draftedAt": "2026-11-07",
+      "source": "launch-plan-2026-11-07",
+      "title": "[Playable Link] WordKrush – three small word games in the browser. Where did the first five minutes lose you?",
+      "hook": "",
+      "body": "I'm the developer. WordKrush is free, has no ads and needs no sign-up. It has three games:\n\n- Clueless: guess a secret word by meaning; every guess gets a rank.\n- Wordfall: trace words on a grid to set off cascades; a new level every Monday.\n- Higher or Lower: which of two things gets more Wikipedia pageviews? Today's 10 is the same ten pairs for everyone.\n\nWhat I want to learn: which game did you open first, did you try a second, and where did you stop?\n\nPlayable link: https://wordkrush.com/?utm_source=reddit&utm_medium=social&utm_campaign=launch_playmygame",
+      "titleFingerprint": "c25d2fde853aa5ec9a382a646c9d04eca6a829c3b1b0145557acf0b1b729ec52",
+      "bodyFingerprint": "f20190f520ba8e7879a993d35756403d46491c14814cb6e32e73e3058b62f607",
+      "firstSentence": "i m the developer"
     }
   ]
 }

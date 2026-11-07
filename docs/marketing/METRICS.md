@@ -4,6 +4,8 @@
 **Status:** Draft. No baseline exists — no launch has run and no analytics data has been collected.
 **Read first:** [GTM-STRATEGY.md](GTM-STRATEGY.md).
 
+> **Corrected on 2026-11-07.** Analytics has been default-on with an opt-out since 2026-09-02 (commit `a2948be`), so PostHog now counts every player who has not opted out; the "consented floor" premise below no longer holds. Ad blockers still hide some visitors, so Cloudflare's arrival count runs higher. The launch-week scorecard is [LAUNCH-PLAN.md](LAUNCH-PLAN.md) §5. Whether default-on is acceptable for UK/EU visitors is an open owner decision.
+
 How we will know whether any of this is working, given a deliberately
 privacy-limited analytics setup.
 

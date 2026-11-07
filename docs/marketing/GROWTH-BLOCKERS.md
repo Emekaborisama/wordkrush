@@ -4,6 +4,8 @@
 **Status:** Audit of commit `5ca2a6b`. Every gap below was verified in the code, not assumed.
 **Read first:** [README.md](README.md), then [GTM-STRATEGY.md](GTM-STRATEGY.md).
 
+> **Superseded in part on 2026-11-07.** Items 0–2 are met (G-009) and no longer gate a launch. Item 3's per-game pages are still open; a `/clueless` deep link is the launch-relevant piece (LAUNCH-PLAN.md §7). The current blocker list is [LAUNCH-PLAN.md](LAUNCH-PLAN.md) §2.
+
 This is the Phase 0 work list. These are **product** gaps that cap growth, not
 marketing tasks — no amount of promotion routes around them. They are ranked by
 leverage, and the ranking is the recommended build order.

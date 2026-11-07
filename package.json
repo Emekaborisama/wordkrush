@@ -1,6 +1,6 @@
 {
   "name": "wordkrush",
-  "version": "0.19.2",
+  "version": "0.19.3",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
