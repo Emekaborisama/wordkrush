@@ -1,0 +1,238 @@
+{
+  "category": {
+    "id": "mountains-height",
+    "name": "Mountains",
+    "metricLabel": "height above sea level",
+    "display": {
+      "suffix": " m"
+    }
+  },
+  "metric": "elevation",
+  "_note": "label = what the card shows (safe to edit). qid = the Wikidata item (identity; do not edit without re-checking). Built with `npm run pipeline:wikidata`; propose rows with `npm run pipeline:wikidata:discover`.",
+  "items": [
+    {
+      "label": "Aconcagua",
+      "qid": "Q39739"
+    },
+    {
+      "label": "Annapurna",
+      "qid": "Q16466024"
+    },
+    {
+      "label": "Aoraki / Mount Cook",
+      "qid": "Q5059"
+    },
+    {
+      "label": "Arthur's Seat",
+      "qid": "Q712311"
+    },
+    {
+      "label": "Ben Nevis",
+      "qid": "Q104674"
+    },
+    {
+      "label": "Chimborazo",
+      "qid": "Q14081"
+    },
+    {
+      "label": "Cotopaxi",
+      "qid": "Q181476"
+    },
+    {
+      "label": "Denali",
+      "qid": "Q130018"
+    },
+    {
+      "label": "Eiger",
+      "qid": "Q4425"
+    },
+    {
+      "label": "K2",
+      "qid": "Q43512"
+    },
+    {
+      "label": "Kangchenjunga",
+      "qid": "Q82019"
+    },
+    {
+      "label": "Kilimanjaro",
+      "qid": "Q7296"
+    },
+    {
+      "label": "Krakatoa",
+      "qid": "Q82613"
+    },
+    {
+      "label": "Lhotse",
+      "qid": "Q168702"
+    },
+    {
+      "label": "Makalu",
+      "qid": "Q169986"
+    },
+    {
+      "label": "Matterhorn",
+      "qid": "Q1374"
+    },
+    {
+      "label": "Mauna Kea",
+      "qid": "Q131230"
+    },
+    {
+      "label": "Mauna Loa",
+      "qid": "Q159762"
+    },
+    {
+      "label": "Mont Blanc",
+      "qid": "Q583"
+    },
+    {
+      "label": "Mount Ararat",
+      "qid": "Q72303"
+    },
+    {
+      "label": "Mount Cameroon",
+      "qid": "Q190562"
+    },
+    {
+      "label": "Mount Elbrus",
+      "qid": "Q43105"
+    },
+    {
+      "label": "Mount Etna",
+      "qid": "Q16990"
+    },
+    {
+      "label": "Mount Everest",
+      "qid": "Q513"
+    },
+    {
+      "label": "Mount Fuji",
+      "qid": "Q39231"
+    },
+    {
+      "label": "Mount Hood",
+      "qid": "Q275662"
+    },
+    {
+      "label": "Mount Kailash",
+      "qid": "Q229107"
+    },
+    {
+      "label": "Mount Kenya",
+      "qid": "Q172070"
+    },
+    {
+      "label": "Mount Kinabalu",
+      "qid": "Q60967"
+    },
+    {
+      "label": "Mount Kosciuszko",
+      "qid": "Q178167"
+    },
+    {
+      "label": "Mount Logan",
+      "qid": "Q120306"
+    },
+    {
+      "label": "Mount Olympus",
+      "qid": "Q80344"
+    },
+    {
+      "label": "Mount Pinatubo",
+      "qid": "Q1451"
+    },
+    {
+      "label": "Mount Rainier",
+      "qid": "Q194057"
+    },
+    {
+      "label": "Mount Rushmore",
+      "qid": "Q83497"
+    },
+    {
+      "label": "Mount Sinai",
+      "qid": "Q377485"
+    },
+    {
+      "label": "Mount St. Helens",
+      "qid": "Q4675"
+    },
+    {
+      "label": "Mount Stanley (Rwenzori)",
+      "qid": "Q221666"
+    },
+    {
+      "label": "Mount Tai",
+      "qid": "Q216059"
+    },
+    {
+      "label": "Mount Vesuvius",
+      "qid": "Q524"
+    },
+    {
+      "label": "Mount Washington",
+      "qid": "Q572801"
+    },
+    {
+      "label": "Mount Whitney",
+      "qid": "Q235539"
+    },
+    {
+      "label": "Pico de Orizaba",
+      "qid": "Q238147"
+    },
+    {
+      "label": "Pikes Peak",
+      "qid": "Q665321"
+    },
+    {
+      "label": "Popocatépetl",
+      "qid": "Q181157"
+    },
+    {
+      "label": "Ras Dashen",
+      "qid": "Q275435"
+    },
+    {
+      "label": "Scafell Pike",
+      "qid": "Q1146222"
+    },
+    {
+      "label": "Snowdon",
+      "qid": "Q217142"
+    },
+    {
+      "label": "Stromboli",
+      "qid": "Q131148"
+    },
+    {
+      "label": "Sugarloaf Mountain",
+      "qid": "Q210722"
+    },
+    {
+      "label": "Table Mountain",
+      "qid": "Q213360"
+    },
+    {
+      "label": "Teide",
+      "qid": "Q38954"
+    },
+    {
+      "label": "Toubkal",
+      "qid": "Q503433"
+    },
+    {
+      "label": "Uluru",
+      "qid": "Q33910"
+    },
+    {
+      "label": "Vinson Massif",
+      "qid": "Q163758"
+    },
+    {
+      "label": "Zugspitze",
+      "qid": "Q3375"
+    }
+  ]
+}

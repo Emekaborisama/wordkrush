@@ -405,7 +405,7 @@ function localUnlockCopy(unlockAt: Date, now: Date): string {
 function startFooterFor(gameId: string) {
   // The data's provisional flag stays in the snapshot; players see the source,
   // not an internal status that reads as "these answers may be wrong".
-  if (gameId === MORE_OR_LESS) return 'Monthly Wikipedia pageviews · Works offline';
+  if (gameId === MORE_OR_LESS) return 'Wikipedia and Wikidata · Works offline';
   return 'Works offline';
 }
 

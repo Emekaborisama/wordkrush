@@ -6,6 +6,20 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.22.0] - 2026-11-07
+
+### Added
+- **Six new Higher or Lower levels with real-world numbers, not pageviews.** After Hit songs, the world path carries on with **Population** (66 countries), **Tall landmarks** (42, from the Parthenon to the Burj Khalifa), **Mountains** (56, from Arthur's Seat to Everest), **Rivers** (56, from the Liffey to the Nile), **Country size** (66, from Vatican City to Russia) and **Islands** (59, from Alcatraz to Greenland). Levels 8–13; levels 1–7 and everyone's progress on them are unchanged.
+- **A new I Sabi Lagos stop: Naija states** (stop 8, Ojota). All 36 states and the FCT, by land area.
+- Numbers read the way the thing is measured: `1.4B`, `8,849 m`, `6,650 km`, `17.1M km²`. Pageview levels still show every digit.
+- Every new number comes from Wikidata, which is CC0: free to ship in the app, no key and no account. Each card's source line says "Wikidata" and the date it was read. Photos come from Wikipedia through the same free-licence check as before; 381 of the 382 new items have one.
+- `npm run pipeline:wikidata` builds these levels from curated lists in `pipeline/entities/`, and `npm run pipeline:wikidata:discover` proposes items for a new list, ranked by how many Wikipedias cover them, with the number each would ship with.
+
+### Changed
+- **A disputed number is left out, never guessed.** When Wikidata's figures for one item disagree by more than the game's 15% fairness margin (the CN Tower at 447 or 553 m, the Chrysler Building at 252, 282 or 319 m), the item is not used. Where editors mark one figure as agreed, that figure is used.
+- The Higher or Lower start pop-up reads "Wikipedia and Wikidata · Works offline", and its description now names both kinds of level. The I Sabi Lagos page no longer says every stop is measured in pageviews.
+- Screen readers hear "Guess that X is higher than Y" on the Higher and Lower buttons, which is true of every level. It used to say "has more monthly Wikipedia pageviews".
+
 ## [0.21.0] - 2026-11-07
 
 0.20.0 was the Home rebuild, which was reverted (#83). That number is taken, so this is 0.21.0, and nothing from 0.20.0 is in it.

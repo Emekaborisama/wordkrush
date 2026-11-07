@@ -6,7 +6,8 @@ import type { GameState } from '../../games/more-or-less/engine';
 import { challengeVerdict, type ChallengeRun } from '../../games/more-or-less/challenge';
 import { DAILY_PAIRS } from '../../games/more-or-less/daily';
 import { buildDailySharePayload, buildSharePayload } from '../../games/more-or-less/share';
-import type { Category } from '../../games/more-or-less/types';
+import type { Category, ValueDisplay } from '../../games/more-or-less/types';
+import { formatMetric } from '../../games/more-or-less/format';
 import { feedback } from '../../native/feedback';
 import { prepareShareImage, sharePayload } from '../../native/share';
 import type { ScoreBoard } from '../../scores/types';
@@ -24,7 +25,7 @@ import {
 } from '../components';
 import { RewardPanel } from '../rewards/RewardReveal';
 import { danfo } from '../lagos/danfoTheme';
-import { font, formatValue, palette, space, tone } from '../theme';
+import { font, palette, space, tone } from '../theme';
 
 type Props = {
   state: GameState;
@@ -280,9 +281,9 @@ export function GameOverScreen({
             THE MATCHUP THAT ENDED THE RUN
           </CreamText>
           <View style={styles.pairRow}>
-            <Pair item={state.left} />
+            <Pair item={state.left} display={category.display} />
             <Text style={styles.vs}>VS</Text>
-            <Pair item={state.right} />
+            <Pair item={state.right} display={category.display} />
           </View>
           <CreamText style={[styles.center, styles.metric]}>{category.metricLabel}</CreamText>
         </CreamBox>
@@ -291,13 +292,13 @@ export function GameOverScreen({
   );
 }
 
-function Pair({ item }: { item: GameState['left'] }) {
+function Pair({ item, display }: { item: GameState['left']; display?: ValueDisplay }) {
   return (
     <View style={styles.pairItem}>
       <Text style={styles.pairLabel} numberOfLines={2}>
         {item.label}
       </Text>
-      <Text style={styles.pairValue}>{formatValue(item.value)}</Text>
+      <Text style={styles.pairValue}>{formatMetric(item.value, display)}</Text>
     </View>
   );
 }

@@ -12,7 +12,8 @@ import {
 import { isGameState, isResumable, matchesDataset } from '../../games/more-or-less/persistence';
 import { starThresholds } from '../../games/more-or-less/labelPath';
 import type { RatioBand } from '../../games/more-or-less/pairing';
-import type { Category, Item } from '../../games/more-or-less/types';
+import type { Category, Item, ValueDisplay } from '../../games/more-or-less/types';
+import { formatMetric, sourceName } from '../../games/more-or-less/format';
 import { clearProgress, loadProgressEnvelope, saveProgress } from '../../games/progress';
 import { secondChance, skipChallenger } from '../../games/more-or-less/boosts';
 import { boostPrice } from '../../rewards/wallet';
@@ -44,7 +45,7 @@ import {
 } from '../components';
 import { danfo } from '../lagos/danfoTheme';
 import { RoadProgress } from '../lagos/RoadProgress';
-import { font, formatValue, motion, palette, space, tone } from '../theme';
+import { font, motion, palette, space, tone } from '../theme';
 import { useCountUp } from '../useCountUp';
 import type { Stone } from '../levelTrail';
 import { useHeightClass } from '../useHeightClass';
@@ -372,12 +373,20 @@ export function GameScreen({
       ) : null}
 
       <Animated.View style={[styles.board, short && styles.boardRow, { transform: [{ translateX: shake }] }]}>
-        <Card item={state.left} metricLabel={category.metricLabel} value={state.left.value} footRoom={!short} compact={short} />
+        <Card
+          item={state.left}
+          metricLabel={category.metricLabel}
+          display={category.display}
+          value={state.left.value}
+          footRoom={!short}
+          compact={short}
+        />
         <Card
           compact={short}
           item={state.right}
           mystery={state.status === 'playing' && isMysteryRound(state.streak)}
           metricLabel={category.metricLabel}
+          display={category.display}
           value={revealed ? counted.value : null}
           highlight={correct === null ? undefined : correct}
           sparkling={sparkling}
@@ -413,7 +422,7 @@ export function GameScreen({
               size={short ? 'md' : 'lg'}
               tone="green"
               onPress={() => submitGuess('more')}
-              accessibilityHint={`${state.right.label} has more ${category.metricLabel}`}
+              accessibilityHint={`Guess that ${state.right.label} is higher than ${state.left.label}`}
               leading={<GameIcon name="arrowUp" size={26} color={tone.green.outline} />}
               style={styles.choice}
             />
@@ -422,7 +431,7 @@ export function GameScreen({
               size={short ? 'md' : 'lg'}
               tone="red"
               onPress={() => submitGuess('less')}
-              accessibilityHint={`${state.right.label} has fewer ${category.metricLabel}`}
+              accessibilityHint={`Guess that ${state.right.label} is lower than ${state.left.label}`}
               leading={<GameIcon name="arrowDown" size={26} color={tone.red.outline} />}
               style={styles.choice}
             />
@@ -492,14 +501,12 @@ export function GameScreen({
       {short ? (
         // One small block on a short screen: the same claim and credits, less height.
         <Text style={[styles.provenance, styles.provenanceShort]} numberOfLines={2}>
-          {`${category.metricLabel} · ${state.left.source?.startsWith('wikipedia') ? 'Wikipedia' : state.left.source} · ${state.left.updatedAt} · ${imageCredits([state.left, state.right])}`}
+          {`${category.metricLabel} · ${sourceName(state.left.source)} · ${state.left.updatedAt} · ${imageCredits([state.left, state.right])}`}
         </Text>
       ) : (
         <View>
           <Text style={styles.provenance}>
-            {category.metricLabel} ·{' '}
-            {state.left.source?.startsWith('wikipedia') ? 'Wikipedia' : state.left.source} ·{' '}
-            {state.left.updatedAt}
+            {category.metricLabel} · {sourceName(state.left.source)} · {state.left.updatedAt}
           </Text>
           <Text style={styles.provenance} numberOfLines={2}>
             {imageCredits([state.left, state.right])}
@@ -628,6 +635,7 @@ const COMBO_WORDS: Readonly<Record<number, string>> = { 5: 'GREAT!', 10: 'AMAZIN
 function Card({
   item,
   metricLabel,
+  display,
   value,
   highlight,
   sparkling = false,
@@ -638,6 +646,8 @@ function Card({
 }: {
   item: Item;
   metricLabel: string;
+  /** How the category writes its numbers; absent writes a plain integer. */
+  display?: ValueDisplay;
   value: number | null;
   highlight?: boolean;
   sparkling?: boolean;
@@ -686,7 +696,7 @@ function Card({
               depth={2}
               textStyle={styles.tabular}
             >
-              {formatValue(value)}
+              {formatMetric(value, display)}
             </StrokeText>
             <Sparkle active={sparkling} />
           </View>

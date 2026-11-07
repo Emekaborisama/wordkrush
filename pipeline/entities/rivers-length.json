@@ -1,0 +1,238 @@
+{
+  "category": {
+    "id": "rivers-length",
+    "name": "Rivers",
+    "metricLabel": "length",
+    "display": {
+      "suffix": " km"
+    }
+  },
+  "metric": "length",
+  "_note": "label = what the card shows (safe to edit). qid = the Wikidata item (identity; do not edit without re-checking). Built with `npm run pipeline:wikidata`; propose rows with `npm run pipeline:wikidata:discover`.",
+  "items": [
+    {
+      "label": "Amazon",
+      "qid": "Q3783"
+    },
+    {
+      "label": "Amur",
+      "qid": "Q6862"
+    },
+    {
+      "label": "Benue River",
+      "qid": "Q204806"
+    },
+    {
+      "label": "Blue Nile",
+      "qid": "Q882739"
+    },
+    {
+      "label": "Brahmaputra River",
+      "qid": "Q45403"
+    },
+    {
+      "label": "Colorado River",
+      "qid": "Q1265"
+    },
+    {
+      "label": "Columbia River",
+      "qid": "Q2251"
+    },
+    {
+      "label": "Congo River",
+      "qid": "Q3503"
+    },
+    {
+      "label": "Danube",
+      "qid": "Q1653"
+    },
+    {
+      "label": "Dnieper",
+      "qid": "Q40855"
+    },
+    {
+      "label": "Douro",
+      "qid": "Q14299"
+    },
+    {
+      "label": "Ebro",
+      "qid": "Q10965"
+    },
+    {
+      "label": "Elbe",
+      "qid": "Q1644"
+    },
+    {
+      "label": "Euphrates",
+      "qid": "Q34589"
+    },
+    {
+      "label": "Ganges",
+      "qid": "Q5089"
+    },
+    {
+      "label": "Hudson River",
+      "qid": "Q3140"
+    },
+    {
+      "label": "Indus River",
+      "qid": "Q7348"
+    },
+    {
+      "label": "Jordan River",
+      "qid": "Q40059"
+    },
+    {
+      "label": "Limpopo River",
+      "qid": "Q173017"
+    },
+    {
+      "label": "Loire",
+      "qid": "Q1469"
+    },
+    {
+      "label": "Mackenzie River",
+      "qid": "Q3411"
+    },
+    {
+      "label": "Mekong",
+      "qid": "Q41179"
+    },
+    {
+      "label": "Mississippi",
+      "qid": "Q1497"
+    },
+    {
+      "label": "Missouri",
+      "qid": "Q5419"
+    },
+    {
+      "label": "Murray River",
+      "qid": "Q183078"
+    },
+    {
+      "label": "Niger River",
+      "qid": "Q3542"
+    },
+    {
+      "label": "Nile",
+      "qid": "Q3392"
+    },
+    {
+      "label": "Okavango River",
+      "qid": "Q188773"
+    },
+    {
+      "label": "Orange River",
+      "qid": "Q181475"
+    },
+    {
+      "label": "Orinoco",
+      "qid": "Q131792"
+    },
+    {
+      "label": "Paraná River",
+      "qid": "Q127892"
+    },
+    {
+      "label": "Po",
+      "qid": "Q643"
+    },
+    {
+      "label": "Potomac River",
+      "qid": "Q179444"
+    },
+    {
+      "label": "Rhine",
+      "qid": "Q584"
+    },
+    {
+      "label": "Rhône",
+      "qid": "Q602"
+    },
+    {
+      "label": "Rio Grande",
+      "qid": "Q160636"
+    },
+    {
+      "label": "River Liffey",
+      "qid": "Q208009"
+    },
+    {
+      "label": "River Severn",
+      "qid": "Q19682"
+    },
+    {
+      "label": "River Shannon",
+      "qid": "Q192820"
+    },
+    {
+      "label": "River Thames",
+      "qid": "Q19686"
+    },
+    {
+      "label": "Seine",
+      "qid": "Q1471"
+    },
+    {
+      "label": "Senegal River",
+      "qid": "Q3569"
+    },
+    {
+      "label": "St. Lawrence River",
+      "qid": "Q134750"
+    },
+    {
+      "label": "Tagus",
+      "qid": "Q14294"
+    },
+    {
+      "label": "Tiber",
+      "qid": "Q13712"
+    },
+    {
+      "label": "Tigris",
+      "qid": "Q35591"
+    },
+    {
+      "label": "Ural River",
+      "qid": "Q80240"
+    },
+    {
+      "label": "Vistula",
+      "qid": "Q548"
+    },
+    {
+      "label": "Volga",
+      "qid": "Q626"
+    },
+    {
+      "label": "Volta River",
+      "qid": "Q192415"
+    },
+    {
+      "label": "White Nile",
+      "qid": "Q4814791"
+    },
+    {
+      "label": "Yangtze",
+      "qid": "Q5413"
+    },
+    {
+      "label": "Yellow River",
+      "qid": "Q7355"
+    },
+    {
+      "label": "Yenisei",
+      "qid": "Q78707"
+    },
+    {
+      "label": "Yukon River",
+      "qid": "Q104437"
+    },
+    {
+      "label": "Zambezi",
+      "qid": "Q43106"
+    }
+  ]
+}

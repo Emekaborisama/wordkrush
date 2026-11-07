@@ -45,8 +45,10 @@ export const GAMES: GameDefinition[] = [
     // not "the next number" (UX review 2026-11-07).
     tagline: 'Which is more popular? Trust your gut and build a streak.',
     badge: 'QUICK THINKING',
+    // The blurb says what the numbers are. Since 0.22.0 later levels measure
+    // facts from Wikidata (population, height, length, area), not pageviews.
     blurb:
-      'Two things, one question: which gets more monthly Wikipedia pageviews? Every right call keeps your streak alive.',
+      'Two things, one question: which number is higher? Start with what the world looks up on Wikipedia, then population, heights, rivers and more. Every right call keeps your streak alive.',
     accent: '#32E487',
     emoji: '⚖️',
     status: 'available',

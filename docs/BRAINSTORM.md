@@ -1,6 +1,6 @@
 # WordKrush — Design Brainstorm
 
-**Last updated:** 2026-08-25
+**Last updated:** 2026-11-07
 **Status:** Design exploration. Nothing implemented yet.
 **Audience:** Whoever (human or LLM) picks this up next. Read this before writing code.
 
@@ -247,6 +247,18 @@ Each category needs ~50–200 items with a *consistent, defensible* metric. Cand
 
 **[OPEN]** — search volume is the most fun metric and the hardest to license. Do not build v1's content plan around it.
 
+### Beyond pageviews: Wikidata labels (added 2026-11-07)
+
+- **[GIVEN]** Owner: Wikipedia pageviews alone do not cut it; competitors have many more labels and everyday metrics. Add different metrics and labels.
+- **[GIVEN]** Numbers must be ones we may bundle. Wikidata (CC0) is the source; no key or account (D-075). Google volume, Spotify streams, follower counts and IMDb-style box office stay out on licence grounds.
+- **[ASSUMED]** First batch, appended so progress by level number is safe: world levels 8–13 are Population, Tall landmarks, Mountains, Rivers, Country size and Islands; Lagos stop 8 is Naija states by area. Targets 6–8, set lower than level 7's 8 because each is a new kind of knowledge.
+- **[ASSUMED]** A disputed item is left out rather than resolved by hand: if an item's candidate figures differ by more than the 1.15× fairness guard after the selection rule, the game must not ask about it. Two definitional gotchas were dropped by judgement on top of the rule: the Statue of Liberty (46 m statue vs 93 m with pedestal) and Lagos Island (the item reads as the wider area).
+- **[ASSUMED]** Lists are curated by hand from `pipeline:wikidata:discover` output (fame by sitelinks), because recognisability is the game.
+- Checked and deferred: **city population** (city proper vs metro makes "Chongqing has more people than Tokyo" true and unfair), **box office** (stale, missing re-releases), **GDP** (years differ by country), **animal weight/speed/lifespan** (ranges and sex-specific values), **running time / stadium capacity / human height** (spread under 10×, which the difficulty curve cannot use).
+- **[OPEN]** Whether the tagline "Which is more popular?" (Home, first visit, search page) should change now that levels 8–13 are not popularity. Left as is for the launch; the start pop-up's description names both.
+- **[OPEN]** Whether Wikidata labels should also get solo/quick play outside the level path, and whether the Popularity solo mode itself should move off pageviews.
+- **[OPEN]** "Which came first" (years) needs an absolute-gap fairness rule instead of a ratio and different button copy; not built.
+
 ## 9. App Store considerations
 
 Guideline 4.2 (minimum functionality) is the live risk for a simple casual game. Mitigations, all cheap:
@@ -397,3 +409,4 @@ Append here whenever an assumption is confirmed or overturned. Never delete an e
 | 2026-10-18 | Clueless hints | The reviewed thematic hint is unchanged. A separate paid warmer-word boost may suggest a ranked vocabulary word. It is not reviewed hint copy, and it never returns the secret, a rank under 10, a 4-letter prefix of the secret, or a word containing the secret. |
 | 2026-10-18 | §6 onboarding | A one-page first-run welcome now exists. `src/onboarding/` holds the parser and the local flag. This supersedes "no onboarding in v1". |
 | 2026-10-18 | Daily flame | Any finished run extends the flame, including a Wordfall loss. Previously only a recorded score did, so a lost Wordfall level left the flame unchanged. |
+| 2026-11-07 | §8 beyond pageviews | Owner: pageviews alone are not enough; add different metrics and labels. Six Wikidata labels and one Lagos stop shipped in 0.22.0 (D-075). §8's "Cities: population, low risk" was overturned by the data: city proper vs metro is too ambiguous to ask fairly. |

@@ -1,0 +1,280 @@
+{
+  "category": {
+    "id": "countries-area",
+    "name": "Country size",
+    "metricLabel": "area",
+    "display": {
+      "compact": true,
+      "suffix": " km²",
+      "decimals": 2
+    }
+  },
+  "metric": "area",
+  "_note": "label = what the card shows (safe to edit). qid = the Wikidata item (identity; do not edit without re-checking). Built with `npm run pipeline:wikidata`; propose rows with `npm run pipeline:wikidata:discover`.",
+  "items": [
+    {
+      "label": "Algeria",
+      "qid": "Q262"
+    },
+    {
+      "label": "Argentina",
+      "qid": "Q414"
+    },
+    {
+      "label": "Australia",
+      "qid": "Q408"
+    },
+    {
+      "label": "Bahamas",
+      "qid": "Q778"
+    },
+    {
+      "label": "Barbados",
+      "qid": "Q244"
+    },
+    {
+      "label": "Belgium",
+      "qid": "Q31"
+    },
+    {
+      "label": "Brazil",
+      "qid": "Q155"
+    },
+    {
+      "label": "Canada",
+      "qid": "Q16"
+    },
+    {
+      "label": "Chile",
+      "qid": "Q298"
+    },
+    {
+      "label": "China",
+      "qid": "Q148"
+    },
+    {
+      "label": "Colombia",
+      "qid": "Q739"
+    },
+    {
+      "label": "Cuba",
+      "qid": "Q241"
+    },
+    {
+      "label": "Denmark",
+      "qid": "Q35"
+    },
+    {
+      "label": "DR Congo",
+      "qid": "Q974"
+    },
+    {
+      "label": "Egypt",
+      "qid": "Q79"
+    },
+    {
+      "label": "Ethiopia",
+      "qid": "Q115"
+    },
+    {
+      "label": "Fiji",
+      "qid": "Q712"
+    },
+    {
+      "label": "France",
+      "qid": "Q142"
+    },
+    {
+      "label": "Germany",
+      "qid": "Q183"
+    },
+    {
+      "label": "Ghana",
+      "qid": "Q117"
+    },
+    {
+      "label": "Greece",
+      "qid": "Q41"
+    },
+    {
+      "label": "Iceland",
+      "qid": "Q189"
+    },
+    {
+      "label": "India",
+      "qid": "Q668"
+    },
+    {
+      "label": "Indonesia",
+      "qid": "Q252"
+    },
+    {
+      "label": "Iran",
+      "qid": "Q794"
+    },
+    {
+      "label": "Ireland",
+      "qid": "Q27"
+    },
+    {
+      "label": "Israel",
+      "qid": "Q801"
+    },
+    {
+      "label": "Italy",
+      "qid": "Q38"
+    },
+    {
+      "label": "Jamaica",
+      "qid": "Q766"
+    },
+    {
+      "label": "Japan",
+      "qid": "Q17"
+    },
+    {
+      "label": "Kazakhstan",
+      "qid": "Q232"
+    },
+    {
+      "label": "Kenya",
+      "qid": "Q114"
+    },
+    {
+      "label": "Libya",
+      "qid": "Q1016"
+    },
+    {
+      "label": "Liechtenstein",
+      "qid": "Q347"
+    },
+    {
+      "label": "Luxembourg",
+      "qid": "Q32"
+    },
+    {
+      "label": "Maldives",
+      "qid": "Q826"
+    },
+    {
+      "label": "Malta",
+      "qid": "Q233"
+    },
+    {
+      "label": "Mexico",
+      "qid": "Q96"
+    },
+    {
+      "label": "Monaco",
+      "qid": "Q235"
+    },
+    {
+      "label": "Mongolia",
+      "qid": "Q711"
+    },
+    {
+      "label": "Morocco",
+      "qid": "Q1028"
+    },
+    {
+      "label": "Netherlands",
+      "qid": "Q55"
+    },
+    {
+      "label": "New Zealand",
+      "qid": "Q664"
+    },
+    {
+      "label": "Nigeria",
+      "qid": "Q1033"
+    },
+    {
+      "label": "Norway",
+      "qid": "Q20"
+    },
+    {
+      "label": "Peru",
+      "qid": "Q419"
+    },
+    {
+      "label": "Philippines",
+      "qid": "Q928"
+    },
+    {
+      "label": "Poland",
+      "qid": "Q36"
+    },
+    {
+      "label": "Portugal",
+      "qid": "Q45"
+    },
+    {
+      "label": "Qatar",
+      "qid": "Q846"
+    },
+    {
+      "label": "Russia",
+      "qid": "Q159"
+    },
+    {
+      "label": "Rwanda",
+      "qid": "Q1037"
+    },
+    {
+      "label": "San Marino",
+      "qid": "Q238"
+    },
+    {
+      "label": "Saudi Arabia",
+      "qid": "Q851"
+    },
+    {
+      "label": "Singapore",
+      "qid": "Q334"
+    },
+    {
+      "label": "South Africa",
+      "qid": "Q258"
+    },
+    {
+      "label": "South Korea",
+      "qid": "Q884"
+    },
+    {
+      "label": "Spain",
+      "qid": "Q29"
+    },
+    {
+      "label": "Sweden",
+      "qid": "Q34"
+    },
+    {
+      "label": "Switzerland",
+      "qid": "Q39"
+    },
+    {
+      "label": "Turkey",
+      "qid": "Q43"
+    },
+    {
+      "label": "Ukraine",
+      "qid": "Q212"
+    },
+    {
+      "label": "United Kingdom",
+      "qid": "Q145"
+    },
+    {
+      "label": "United States",
+      "qid": "Q30"
+    },
+    {
+      "label": "Vatican City",
+      "qid": "Q237"
+    },
+    {
+      "label": "Vietnam",
+      "qid": "Q881"
+    }
+  ]
+}

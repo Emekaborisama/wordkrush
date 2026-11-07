@@ -17,9 +17,25 @@ describe.each([
     for (const level of levels) {
       const category = labelCategory(level.categoryId);
       expect(category, level.categoryId).toBeDefined();
-      expect(category!.metricLabel).toBe('monthly Wikipedia pageviews');
       expect(category!.items.length, level.categoryId).toBeGreaterThanOrEqual(20);
+      // Measured by one of the two sources the pipeline can build, and says
+      // which: pageview labels by their metric, Wikidata labels by provenance.
+      const sources = new Set(category!.items.map((item) => item.source?.split(':')[0]));
+      expect(sources.size, level.categoryId).toBe(1);
+      const source = [...sources][0];
+      expect(['wikipedia-pageviews', 'wikidata'], level.categoryId).toContain(source);
+      if (source === 'wikipedia-pageviews') expect(category!.metricLabel).toBe('monthly Wikipedia pageviews');
+      if (source === 'wikidata') expect(category!.display, level.categoryId).toBeDefined();
     }
+  });
+
+  it('only ever appends levels: the pageview levels keep their numbers', () => {
+    // Progress and stars are stored by level number, so the levels that
+    // shipped first must stay where they were.
+    const pageviewLevels = levels.filter((level) =>
+      labelCategory(level.categoryId)!.items[0].source?.startsWith('wikipedia-pageviews'),
+    );
+    expect(pageviewLevels.map((level) => level.number)).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 
   it('never repeats a label on one path', () => {

@@ -1,6 +1,6 @@
 {
   "name": "wordkrush",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -17,6 +17,8 @@
     "check:all": "npm run check && npm run test:validator",
     "pipeline:ingest": "tsx --env-file=.env pipeline/ingest.ts",
     "pipeline:preview": "tsx pipeline/preview-category.ts",
+    "pipeline:wikidata": "tsx pipeline/build-wikidata-category.ts",
+    "pipeline:wikidata:discover": "tsx pipeline/discover-wikidata.ts",
     "pipeline:rotate": "tsx pipeline/rotate-wikipedia-popularity.ts",
     "pipeline:reservoir": "tsx pipeline/build-wikipedia-reservoir.ts",
     "pipeline:export": "tsx --env-file=.env pipeline/export-snapshot.ts",
