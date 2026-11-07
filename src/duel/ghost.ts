@@ -11,6 +11,7 @@ import { nextInt, nextRandom } from '../games/rng';
 import { DUEL_MS, START_PROGRESS, type DuelPlayer, type Progress } from './rules';
 
 const NAMES = ['Fox', 'Owl', 'Panda', 'Tiger', 'Raven', 'Moth', 'Lynx', 'Otter', 'Heron', 'Wolf', 'Gecko', 'Hare'];
+const COUNTRIES = ['NG', 'GH', 'KE', 'ZA', 'GB', 'US', 'CA', 'IN', 'BR', 'DE', 'FR', 'AU', 'PH', 'EG', 'JP'];
 
 /** The pause a real round has after an answer, while the value counts up. */
 const REVEAL_MS = 1_250;
@@ -21,9 +22,9 @@ export function ghostTarget(bestStreak: number): number {
 }
 
 export function ghostPlayer(seed: number): DuelPlayer {
-  const [nameIndex] = nextInt(seed, NAMES.length);
-  // No flag: a ghost is from nowhere, and a country would make it look like a person.
-  return { id: `ghost-${seed}`, name: `Ghost ${NAMES[nameIndex]}`, country: null, ghost: true };
+  const [nameIndex, next] = nextInt(seed, NAMES.length);
+  const [countryIndex] = nextInt(next, COUNTRIES.length);
+  return { id: `ghost-${seed}`, name: `Ghost ${NAMES[nameIndex]}`, country: COUNTRIES[countryIndex], ghost: true };
 }
 
 /** The ghost's run: one step per answer, in time order, the last one its miss if it missed. */
