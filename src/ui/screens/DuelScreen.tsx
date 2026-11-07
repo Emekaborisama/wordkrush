@@ -10,7 +10,7 @@ import type { Category } from '../../games/more-or-less/types';
 import { feedback } from '../../native/feedback';
 import { shareResult } from '../../native/share';
 import type { RewardEvent } from '../../rewards/types';
-import { Button, CountryFlag, CreamBox, CreamText, GameIcon, Panel, PanelText, StrokeText } from '../components';
+import { Button, CountryFlag, CreamBox, CreamText, GameIcon, Panel, PanelText, Rays, StrokeText } from '../components';
 import { FLUENT } from '../fluent';
 import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
 import { font, palette, space, tone } from '../theme';
@@ -284,18 +284,16 @@ function Radar() {
 function PlayerCard({ player, label, value }: { player: DuelPlayer; label: string; value?: string }) {
   return (
     <View style={styles.card}>
-      <View style={styles.cardFace}>
-        {player.ghost ? (
-          <Image source={FLUENT.ghost} style={styles.cardGhost} />
-        ) : player.country ? (
-          <CountryFlag code={player.country} size={44} />
-        ) : (
-          <GameIcon name="user" size={44} color={palette.inkSoft} />
-        )}
-      </View>
+      {player.ghost ? <Image source={FLUENT.ghost} style={styles.cardGhost} /> : <CountryFlag code={player.country} size={44} />}
       <Text style={styles.cardName} numberOfLines={2}>
         {label}
       </Text>
+      {player.ghost ? (
+        <View style={styles.ghostTag}>
+          <CountryFlag code={player.country} size={12} />
+          <Text style={styles.ghostTagText}>GHOST</Text>
+        </View>
+      ) : null}
       {value ? <Text style={styles.cardValue}>{value}</Text> : null}
     </View>
   );
@@ -315,7 +313,7 @@ function FaceOff({ me, state }: { me: DuelPlayer; state: Extract<DuelState, { ph
       </StrokeText>
       <View style={styles.versus}>
         <PlayerCard player={me} label={me.name} />
-        <StrokeText size={30} stroke={tone.red.outline} strokeWidth={2.5} depth={2} style={styles.vs}>
+        <StrokeText size={30} stroke={tone.red.outline} strokeWidth={2.5} depth={2}>
           VS
         </StrokeText>
         <PlayerCard player={state.opponent} label={state.opponent.name} />
@@ -350,10 +348,14 @@ function Result({
   onHome: () => void;
 }) {
   const won = state.verdict === 'won';
-  const ghost = state.opponent.ghost === true;
-  const title = state.verdict === 'tied' ? 'DRAW' : won ? (ghost ? 'GHOST BEATEN!' : 'YOU WIN!') : ghost ? 'THE GHOST WINS' : 'YOU LOST';
+  const title = won ? 'YOU WIN!' : state.verdict === 'tied' ? 'DRAW' : 'YOU LOST';
   return (
     <View style={styles.flex}>
+      {won ? (
+        <View style={styles.rays} pointerEvents="none">
+          <Rays />
+        </View>
+      ) : null}
       <ScrollView contentContainerStyle={styles.lobby}>
         <Panel
           title={title}
@@ -374,12 +376,13 @@ function Result({
         >
           <View style={styles.versus}>
             <PlayerCard player={me} label="You" value={String(state.me.streak)} />
-            <StrokeText size={22} stroke={tone.red.outline} strokeWidth={2} depth={1.5} style={styles.vs}>
+            <StrokeText size={22} stroke={tone.red.outline} strokeWidth={2} depth={1.5}>
               VS
             </StrokeText>
             <PlayerCard player={state.opponent} label={state.opponent.name} value={String(state.them.streak)} />
           </View>
           <PanelText>{resultLine(state)}</PanelText>
+          {state.opponent.ghost ? <PanelText>That was a ghost, not a person. Try again for a real opponent.</PanelText> : null}
           <RewardPanel events={events} boosted={false} stars={false} />
         </Panel>
       </ScrollView>
@@ -404,15 +407,13 @@ const styles = StyleSheet.create({
   radar: { alignItems: 'center', paddingVertical: space.sm },
   swords: { width: 96, height: 96 },
   faceOff: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.xl, paddingHorizontal: space.md },
-  // Stretch, so the two cards match and their scores sit on one line.
-  versus: { flexDirection: 'row', alignItems: 'stretch', justifyContent: 'center', gap: space.sm, alignSelf: 'stretch' },
-  vs: { alignSelf: 'center' },
+  versus: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm, alignSelf: 'stretch' },
   card: {
     flex: 1,
     minWidth: 0,
     minHeight: 150,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     gap: 4,
     padding: space.sm,
     borderRadius: 18,
@@ -420,10 +421,12 @@ const styles = StyleSheet.create({
     borderColor: palette.white,
     backgroundColor: palette.creamFill,
   },
-  cardFace: { height: 56, alignItems: 'center', justifyContent: 'center' },
   cardGhost: { width: 56, height: 56 },
   cardName: { fontFamily: font.black, fontSize: 16, lineHeight: 20, color: palette.ink, textAlign: 'center' },
   cardValue: { fontFamily: font.black, fontSize: 32, lineHeight: 38, color: palette.ink, fontVariant: ['tabular-nums'] },
+  ghostTag: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, borderRadius: 9, backgroundColor: palette.navyDeep },
+  ghostTagText: { fontFamily: font.black, fontSize: 10, letterSpacing: 1, color: palette.white },
+  rays: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
   whistle: {
     position: 'absolute',
     top: 0,
