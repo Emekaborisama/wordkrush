@@ -499,38 +499,47 @@ describe('the branded cards', () => {
     team: { game: 'team', code: 'AB23CD' },
   };
 
-  /** Every character set as text on the card. */
-  function textOf(svg) {
-    return [...svg.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)].map((m) => m[1].replace(/<[^>]+>/g, '')).join('');
+  /** Every run of words the card draws, from the lettering groups. */
+  function wordsOf(svg) {
+    return [...svg.matchAll(/data-text="([^"]*)"/g)].map((m) => m[1]);
   }
 
-  it('sets only characters the card fonts have, so nothing renders as tofu', () => {
-    for (const data of Object.values(CARDS)) {
-      const text = textOf(generateOgImageSvg(data));
-      // Latin, digits, punctuation and the middle dot. No emoji, no ✓.
-      expect(text).toMatch(/^[\x20-\x7E·&;]*$/);
-    }
-  });
-
-  it('draws the result grid as shapes, one square per guess', () => {
-    const svg = generateOgImageSvg(CARDS.clueless);
-    expect(svg).not.toMatch(/[🟩🟥🟧🟨⬛🟦]/u);
-    // Four guesses, each a lip and a face rect plus a shine.
-    const faces = svg.match(/stroke-opacity="0.35"/g) ?? [];
-    expect(faces).toHaveLength(4);
-  });
-
-  it('puts the mascot and the wordmark on every branded card', () => {
+  it('draws every word as outlines, so the card needs no font to look right', () => {
     for (const data of Object.values(CARDS)) {
       const svg = generateOgImageSvg(data);
-      expect(svg).toContain('url(#wkcat-fur)');
-      expect(svg).toContain('<tspan fill="#FFFFFF">Word</tspan><tspan fill="#FFE45C">Krush</tspan>');
+      // `<text>` is what fell back to Helvetica off Railway, and to `.notdef` boxes for emoji.
+      expect(svg).not.toMatch(/<text[\s>]/);
+      expect(wordsOf(svg).length).toBeGreaterThan(3);
     }
   });
 
-  it('shows the streak days and the code a friend types to join', () => {
-    expect(textOf(generateOgImageSvg(CARDS.streak))).toContain('12DAY STREAK');
-    expect(textOf(generateOgImageSvg(CARDS.team))).toContain('AB23CD');
+  it('follows the reference pop-up: banner, panel, cream box, button, bubble, logo', () => {
+    for (const data of Object.values(CARDS)) {
+      const svg = generateOgImageSvg(data);
+      for (const part of ['banner', 'panel', 'box', 'button', 'bubble', 'wordmark']) {
+        expect(svg).toContain(`data-part="${part}"`);
+      }
+      expect(svg).toContain('url(#wkcat-fur)');
+    }
+  });
+
+  it('draws the result grid as cubes, one per guess', () => {
+    const svg = generateOgImageSvg(CARDS.clueless);
+    expect(svg).not.toMatch(/[🟩🟥🟧🟨⬛🟦]/u);
+    expect(svg.match(/data-square="/g) ?? []).toHaveLength(4);
+  });
+
+  it('names the result, the streak and the code a friend types', () => {
+    expect(wordsOf(generateOgImageSvg(CARDS.clueless))).toEqual(expect.arrayContaining(['Clueless #29', 'Found it in 4 guesses']));
+    expect(wordsOf(generateOgImageSvg(CARDS.streak))).toEqual(expect.arrayContaining(['Daily Streak', '12', 'My best is 15 days.']));
+    const team = wordsOf(generateOgImageSvg(CARDS.team));
+    expect(team).toEqual(expect.arrayContaining(['Join My Team', 'A', 'B', '2', '3', 'C', 'D']));
+  });
+
+  it('never claims a best the streak does not have', () => {
+    const words = wordsOf(generateOgImageSvg({ game: 'streak', days: 9, best: 9 }));
+    expect(words).toContain('My longest streak yet!');
+    expect(words.join(' ')).not.toMatch(/best is/);
   });
 
   it('rasterises each to a 1200×630 truecolour PNG', async () => {

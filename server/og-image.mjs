@@ -12,8 +12,9 @@
  * line above the link.
  *
  * Every other card — the Clueless and Wordfall results, the daily streak, and
- * the 1v1 and team invites — is the branded frame in `og-brand.mjs`: the
- * kit's sky, the mascot, and the result in outlined lettering.
+ * the 1v1 and team invites — is the branded pop-up in `og-brand.mjs`, after
+ * the Treasure Match pre-level page: scroll banner, cream box, gold-rimmed
+ * Play, and the mascot with a speech bubble.
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -21,7 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
-import { brandCard, flame, glossButton, letterTiles, outlined, squareGrid } from './og-brand.mjs';
+import { BUTTON, PANEL_CX, brandCard, creamBox, flame, fluentIcon, inkText, letterTiles, lettering, measureCardText, squareGrid } from './og-brand.mjs';
 import { PHOTO_HEIGHT, PHOTO_WIDTH, cardPhotoPair } from './og-photos.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -98,15 +99,12 @@ export const MORE_OR_LESS_X_TITLE_STRIP = BOARD.bottomSafePad;
 /** Dark pad under the MORE / LESS row. Same figure as the top-strip budget. */
 export const MORE_OR_LESS_BOTTOM_SAFE_PAD = BOARD.bottomSafePad;
 
-// Copy the card fonts to a location fontconfig can find: librsvg (used by
-// sharp for SVG) doesn't support data URI fonts in @font-face. Fredoka sets
-// the More or Less buttons; Exo 2 Black is the kit's headline face
-// (`font.black`) and sets every branded card (`og-brand.mjs`).
+// Copy Fredoka to a location fontconfig can find: librsvg (used by sharp for
+// SVG) doesn't support data URI fonts in @font-face. Only the Higher or Lower
+// board's button labels still use it; every branded card draws its lettering
+// as outlines (`glyphs.mjs`) and needs no font at all.
 const FONT_DIR = join(tmpdir(), 'wordkrush-fonts');
-const CARD_FONTS = [
-  ['fredoka/600SemiBold/Fredoka_600SemiBold.ttf', 'Fredoka-SemiBold.ttf'],
-  ['exo-2/900Black/Exo2_900Black.ttf', 'Exo2-Black.ttf'],
-];
+const CARD_FONTS = [['fredoka/600SemiBold/Fredoka_600SemiBold.ttf', 'Fredoka-SemiBold.ttf']];
 
 // Ensure the fonts are installed for fontconfig/pango
 mkdirSync(FONT_DIR, { recursive: true });
@@ -401,90 +399,137 @@ function bucketSquares(buckets, order) {
   return order.flatMap(([key, color]) => Array(Math.min(buckets[key], 50)).fill(color));
 }
 
-/**
- * Title, optional subtitle, the grid, the standing and the button, stacked
- * down the right-hand column whatever the grid's height.
- */
-function resultColumn({ title, subtitle, squares, standing, button }) {
-  const parts = [outlined(title, { y: 172, size: title.length > 18 ? 46 : 56 })];
-  if (subtitle) parts.push(outlined(subtitle, { y: 214, size: 28, strokeWidth: 6 }));
-  const gridTop = subtitle ? 236 : 210;
-  const grid = squareGrid(squares, { top: gridTop, maxHeight: 386 - gridTop });
-  parts.push(grid.body);
-  const standingY = Math.max(gridTop + grid.height + 58, 330);
-  parts.push(outlined(standing, { y: standingY, size: 44, fill: '#FFE45C', stroke: '#8C4F00' }));
-  const cta = glossButton(button, { y: standingY + 30, tone: 'green', id: 'wk-cta' });
-  parts.push(cta.body);
-  return { content: parts.join('\n  '), defs: cta.defs };
+/** The cream box every card fills: top edge under the banner, bottom above the button. */
+const BOX = { top: 192, bottom: BUTTON.top - 22 };
+
+const GOLD_NUMBER = { fill: '#FFD447', outline: '#7C3F00', shadow: '#7C3F00', weight: 0.2, drop: 0.05 };
+
+/** A label line, the grid of squares, and the standing, stacked inside the box. */
+function resultBox({ label, squares, standing }) {
+  // Measure first, then centre the grid and the standing in the room left
+  // under the label, so a short grid does not leave a hole at the bottom.
+  const roomTop = BOX.top + 58;
+  const room = BOX.bottom - 10 - roomTop;
+  const measured = squareGrid(squares, { top: 0, maxHeight: 96 });
+  const block = measured.height + 46;
+  const gridTop = roomTop + Math.max(0, (room - block) / 2);
+  const grid = squareGrid(squares, { top: gridTop, maxHeight: 96 });
+  const standingY = gridTop + grid.height + 40;
+  return [
+    creamBox(BOX),
+    inkText(label, { y: BOX.top + 42, size: fitIn(label, 28) }),
+    grid.body,
+    inkText(standing, { y: standingY, size: fitIn(standing, 34) }),
+  ].join('');
+}
+
+/** Fits a line inside the cream box. */
+function fitIn(text, size) {
+  const max = 500;
+  const width = measureCardText(text, size);
+  return width <= max ? size : Math.floor((size * max) / width);
+}
+
+function plural(n, one, many) {
+  return `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
 }
 
 function generateCluelessImage(data) {
-  const { content, defs } = resultColumn({
+  return brandCard({
     title: `Clueless #${data.puzzleNumber}`,
-    subtitle: data.levelName,
-    squares: bucketSquares(data.heatBuckets, HEAT_SQUARES),
-    standing: `Found it in ${data.guessCount}`,
+    bubble: data.guessCount <= 1 ? ['First try!', 'Can you match it?'] : ['Can you find it', `in fewer than ${data.guessCount}?`],
     button: 'YOUR TURN',
+    mood: 'cheer',
+    content: resultBox({
+      label: data.levelName ? data.levelName : 'Secret word found',
+      squares: bucketSquares(data.heatBuckets, HEAT_SQUARES),
+      standing: `Found it in ${plural(data.guessCount, 'guess', 'guesses')}`,
+    }),
   });
-  return brandCard({ content, defs, mood: 'cheer' });
 }
 
 function generateWordfallImage(data) {
-  const words = data.wordCount;
-  const { content, defs } = resultColumn({
+  const score = data.score.toLocaleString('en-US');
+  return brandCard({
     title: `Wordfall · Level ${data.levelNumber}`,
-    subtitle: data.won ? `${data.levelName} · cleared!` : `${data.levelName} · so close`,
-    squares: bucketSquares(data.lengthBuckets, LENGTH_SQUARES),
-    standing: `${data.score.toLocaleString('en-US')} pts · ${words} ${words === 1 ? 'word' : 'words'}`,
+    bubble: data.won ? ['Level cleared!', `Can you beat ${score}?`] : ['So close!', 'Can you finish it?'],
     button: 'YOUR TURN',
+    mood: data.won ? 'cheer' : 'idle',
+    content: resultBox({
+      label: `${data.levelName} · ${data.won ? 'cleared' : 'almost'}`,
+      squares: bucketSquares(data.lengthBuckets, LENGTH_SQUARES),
+      standing: `${score} pts · ${plural(data.wordCount, 'word', 'words')}`,
+    }),
   });
-  return brandCard({ content, defs, mood: data.won ? 'cheer' : 'idle' });
 }
 
-/** The daily streak: the flame, the count, and the best behind it. */
+/**
+ * The daily streak: the flame and the count, then the last seven days as
+ * sockets, lit for the days the streak covers — the streak calendar of the
+ * Magic Streak reference, cut to a week.
+ */
 function generateStreakImage(data) {
   const days = data.days;
-  const big = String(days);
-  const numberSize = big.length > 3 ? 120 : 150;
-  // Flame and number sit side by side, centred on the column together.
-  const flameSize = 150;
-  const numberWidth = big.length * numberSize * 0.62;
-  const groupWidth = flameSize + 12 + numberWidth;
-  const left = 815 - groupWidth / 2;
-  const fire = flame({ x: left, y: 128, size: flameSize });
-  const cta = glossButton('PLAY FREE', { y: 452, tone: 'green', id: 'wk-cta' });
-  const parts = [
-    fire.body,
-    outlined(big, { x: left + flameSize + 12, y: 262, size: numberSize, anchor: 'start', fill: '#FFE45C', stroke: '#8C4F00' }),
-    outlined('DAY STREAK', { y: 342, size: 58 }),
-    outlined(data.best > days ? `Best ${data.best} · keep it going` : 'Played every day. Your move.', { y: 400, size: 30, strokeWidth: 6 }),
-    cta.body,
-  ];
-  return brandCard({ content: parts.join('\n  '), defs: fire.defs + cta.defs, mood: 'cheer' });
+  const count = String(days);
+  const numberSize = count.length > 3 ? 84 : 100;
+  const flameSize = 88;
+  const numberWidth = measureCardText(count, numberSize);
+  const left = PANEL_CX - (flameSize + 14 + numberWidth) / 2;
+  const sockets = Array.from({ length: 7 }, (_, i) => {
+    const size = 46;
+    const gap = 14;
+    const x = PANEL_CX - (7 * size + 6 * gap) / 2 + i * (size + gap);
+    const y = BOX.bottom - 66;
+    const lit = i >= 7 - Math.min(days, 7);
+    return `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${size / 2}" fill="${lit ? '#FFE7A3' : '#F2D9B5'}" stroke="${lit ? '#E8920B' : '#E0BF95'}" stroke-width="3"/>${lit ? flame({ x: x + 7, y: y + 6, size: size - 14 }) : ''}`;
+  }).join('');
+  return brandCard({
+    title: 'Daily Streak',
+    bubble: data.best > days ? [`My best is ${data.best} days.`, 'Can you keep up?'] : [days > 1 ? 'My longest streak yet!' : 'Day one!', 'Can you keep up?'],
+    button: 'PLAY FREE',
+    mood: 'cheer',
+    content: [
+      creamBox(BOX),
+      flame({ x: left, y: BOX.top + 14, size: flameSize }),
+      lettering(count, { x: left + flameSize + 14, y: BOX.top + 92, size: numberSize, anchor: 'start', ...GOLD_NUMBER }),
+      inkText(days === 1 ? 'DAY IN A ROW' : 'DAYS IN A ROW', { y: BOX.top + 128, size: 24 }),
+      sockets,
+    ].join(''),
+  });
 }
 
-/** A 1v1 invite: no result, just the challenge. */
+/** A 1v1 invite: you against me, the same pairs, one minute. */
 function generateDuelInviteImage() {
-  const cta = glossButton('ACCEPT', { y: 452, tone: 'green', id: 'wk-cta' });
-  const parts = [
-    outlined('1V1 CHALLENGE', { y: 190, size: 64 }),
-    outlined('Higher or Lower, head to head', { y: 262, size: 34, strokeWidth: 7 }),
-    outlined('Same pairs. One minute.', { y: 340, size: 46, fill: '#FFE45C', stroke: '#8C4F00' }),
-    outlined('Who reads the world better?', { y: 396, size: 30, strokeWidth: 6 }),
-    cta.body,
-  ];
-  return brandCard({ content: parts.join('\n  '), defs: cta.defs, mood: 'idle' });
+  const disc = (cx, label, fill, edge) =>
+    `<circle cx="${cx}" cy="${BOX.top + 104}" r="46" fill="${edge}"/><circle cx="${cx}" cy="${BOX.top + 100}" r="44" fill="${fill}" stroke="#FFFFFF" stroke-width="4"/>${lettering(label, { x: cx, y: BOX.top + 113, size: 36 })}`;
+  return brandCard({
+    title: '1v1 Challenge',
+    bubble: ['Think you can', 'beat me?'],
+    button: 'ACCEPT',
+    mood: 'idle',
+    content: [
+      creamBox(BOX),
+      inkText('Higher or Lower', { y: BOX.top + 40, size: 28 }),
+      disc(PANEL_CX - 150, 'ME', '#FFB31F', '#C97905'),
+      fluentIcon('swords', { x: PANEL_CX - 46, y: BOX.top + 54, size: 92 }),
+      disc(PANEL_CX + 150, 'YOU', '#3E9BFF', '#2560CC'),
+      inkText('Same pairs · one minute', { y: BOX.bottom - 18, size: 26 }),
+    ].join(''),
+  });
 }
 
 /** A team invite, with the code in letter tiles for anyone who types it. */
 function generateTeamInviteImage(data) {
-  const cta = glossButton('JOIN THE TEAM', { y: 452, tone: 'green', id: 'wk-cta' });
-  const parts = [
-    outlined('JOIN MY TEAM', { y: 178, size: 64 }),
-    outlined('Live word races with friends', { y: 236, size: 32, strokeWidth: 6 }),
-    letterTiles(data.code, { y: 276 }),
-    outlined('Invite code', { y: 404, size: 26, strokeWidth: 5 }),
-    cta.body,
-  ];
-  return brandCard({ content: parts.join('\n  '), defs: cta.defs, mood: 'cheer' });
+  return brandCard({
+    title: 'Join My Team',
+    bubble: ['Come race', 'with us!'],
+    button: 'JOIN',
+    mood: 'cheer',
+    content: [
+      creamBox(BOX),
+      inkText('Invite code', { y: BOX.top + 40, size: 28 }),
+      letterTiles(data.code, { y: BOX.top + 72 }),
+      inkText('Live word races with friends', { y: BOX.bottom - 18, size: 26 }),
+    ].join(''),
+  });
 }

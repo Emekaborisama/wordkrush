@@ -27,7 +27,13 @@ Rules:
 
 ### Fixed
 - **Clueless and Wordfall share cards drew a row of broken boxes.** The server has no emoji font, so every 🟩 🟥 and ✓ on those cards came out as an empty box. The grids are now drawn as shapes, like the board's tiles.
-- **Shared links now show a card made for them.** Clueless, Wordfall, streak and invite links all open a card with the kit's sky, the cat, WordKrush in the app's lettering and a button saying what the link does. The Higher or Lower board card is unchanged.
+- **Shared links now show a card made for them**, in the style of a game pop-up:
+  - a red scroll banner with the title in chunky cream lettering;
+  - a cream box with the result or the invite;
+  - a green button in a gold rim saying what the link does;
+  - the cat beside it with a speech bubble ("Think you can beat me?").
+
+  Clueless, Wordfall, streak and invite links all get one. The Higher or Lower board card is unchanged. The lettering is drawn as shapes, so the card looks the same wherever it is rendered.
 - **Team invites from the iPhone app sent a link nobody could open.** It was `wordkrush://team?code=…`, which is not a tappable link in a chat or a post. Every platform now sends `https://wordkrush.com/team/CODE`.
 - **Team invites from the web used whatever address the page was on**, so a preview build or a local server sent a link that would not open for a friend. They now always use wordkrush.com.
 - **1v1 and team links previewed as the homepage.** They now open their own card: "1v1 challenge" for a duel, and "Join my team" with the invite code in letter tiles for a team. Old `/?team=CODE` links get the same team card.
