@@ -4,6 +4,8 @@
 **Status:** Draft for owner sign-off. Nothing here has been executed or tested.
 **Read first:** [README.md](README.md) for the one-page summary and decision log.
 
+> **Superseded in part on 2026-11-07.** Launch week (from Tuesday 2026-11-10) runs from [LAUNCH-PLAN.md](LAUNCH-PLAN.md): UK/US word-game players, organic only, Clueless as the hook. This file is kept as the August reasoning; [README.md](README.md) G-007 to G-010 record what changed.
+
 ---
 
 ## 1. What we are actually selling

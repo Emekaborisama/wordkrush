@@ -1,7 +1,7 @@
 # Marketing & GTM
 
-**Last updated:** 2026-08-30
-**Status:** Strategy drafted, nothing executed. No launch has happened.
+**Last updated:** 2026-11-07
+**Status:** Launching Tuesday 2026-11-10 to UK/US word-game players, organic only. **Read [LAUNCH-PLAN.md](LAUNCH-PLAN.md) first.** The August strategy below is kept as history; G-007 to G-010 record what changed.
 **Audience:** Whoever (human or LLM) runs growth for WordKrush. Read this file first.
 
 This directory holds the go-to-market strategy. It follows the same conventions
@@ -67,6 +67,7 @@ Wordfall. That is a real retention difference and it is already built.
 
 | File | What it answers |
 |---|---|
+| [LAUNCH-PLAN.md](LAUNCH-PLAN.md) | **Start here.** Launch week of 2026-11-09: audience, blockers, calendar, channel rules, scorecard and kill/scale rules |
 | [GTM-STRATEGY.md](GTM-STRATEGY.md) | Who this is for, how it's positioned, the growth model, and the phased plan with dates |
 | [GROWTH-BLOCKERS.md](GROWTH-BLOCKERS.md) | The ranked product gaps that must close before acquisition spend makes sense, with implementation notes |
 | [CHANNELS.md](CHANNELS.md) | Channel-by-channel playbook — effort, expected value, and the honest case against the ones we're skipping |
@@ -85,13 +86,18 @@ Marketing decisions get `G-0xx` ids, mirroring the `D-0xx` convention in
 
 | Id | Date | Decision | Rationale | Status |
 |---|---|---|---|---|
-| G-001 | 2026-08-22 | **Do not run any acquisition push until the share loop, link previews, and a search surface all ship** | All three are verified missing. A daily word game grows through shared results and "games like X" search; both paths are closed today. Traffic driven now converts at the same rate but propagates at zero, so the spend buys one cohort instead of compounding. Cost of waiting is ~2 weeks. | Proposed |
-| G-002 | 2026-08-22 | **The Clueless content runway is the launch gate.** No public push before the daily puzzle pool covers 90+ days | The pool wraps to puzzle #1 on 2026-09-16. Acquiring players into a game that repeats its daily within weeks converts a retention win into a visible defect. | Proposed |
-| G-003 | 2026-08-22 | **Positioning is "one streak, three games," not any single game's mechanic** | Clueless is a Semantle/Contexto-style game, More or Less is a higher-lower game, Wordfall is a word-trace game. Individually none is novel and each faces an entrenched incumbent. The hub plus a cross-game streak is the only structurally defensible claim, and it is already shipped. | Proposed |
-| G-004 | 2026-08-22 | **No paid acquisition in 2026** | The product has no monetization, therefore no LTV to pay against, so any CAC is pure loss with no payback model. Paid is reconsidered only after a retention benchmark is met (see METRICS.md) and a revenue path exists. | Proposed |
+| G-001 | 2026-08-22 | **Do not run any acquisition push until the share loop, link previews, and a search surface all ship** | All three are verified missing. A daily word game grows through shared results and "games like X" search; both paths are closed today. Traffic driven now converts at the same rate but propagates at zero, so the spend buys one cohort instead of compounding. Cost of waiting is ~2 weeks. | Met 2026-11-07 (G-009) |
+| G-002 | 2026-08-22 | **The Clueless content runway is the launch gate.** No public push before the daily puzzle pool covers 90+ days | The pool wraps to puzzle #1 on 2026-09-16. Acquiring players into a game that repeats its daily within weeks converts a retention win into a visible defect. | Superseded by the Clueless level path (G-009) |
+| G-003 | 2026-08-22 | **Positioning is "one streak, three games," not any single game's mechanic** | Clueless is a Semantle/Contexto-style game, More or Less is a higher-lower game, Wordfall is a word-trace game. Individually none is novel and each faces an entrenched incumbent. The hub plus a cross-game streak is the only structurally defensible claim, and it is already shipped. | Proposed; superseded for acquisition copy by G-008 |
+| G-004 | 2026-08-22 | **No paid acquisition in 2026** | The product has no monetization, therefore no LTV to pay against, so any CAC is pure loss with no payback model. Paid is reconsidered only after a retention benchmark is met (see METRICS.md) and a revenue path exists. | Overridden by the owner (G-010) |
 | G-005 | 2026-08-22 | **Web is the launch platform; iOS/Android follow retention proof** | The App Store path is blocked on owner purchases (Apple Developer Program, Expo login) per `../ROADMAP.md`, and Guideline 4.2 risk is real for a casual game (`../STACK.md` D-002). Web costs nothing to distribute, is linkable, and is where share loops and SEO actually compound. | Proposed |
+| G-007 | 2026-11-07 | **Launch week of 2026-11-09 targets UK/US word-game players, organic only** | Owner's decision when asked to choose between a Lagos-first, a UK/US word-game, and a split launch, and between no budget and a small paid test. The Wordle/Semantle/Contexto audience is findable on Reddit, HN and in "games like" lists, and needs no money to reach. | Active (owner) |
+| G-008 | 2026-11-07 | **Clueless is the acquisition hook for word-game audiences; the streak and the hub are retention, not the headline** | Clueless is the strongest loop in the 2026-11-07 UX review and is legible in one line ("every guess is ranked by meaning"). It extends the owner's G-006 (in the uncommitted `AD-VIDEO.md`: sell the moment, not the streak) to organic posts. Conflicts with `.cursor/skills/reddit-ad-posts/` "Lead Wordfall"; the owner decides. | Proposed |
+| G-009 | 2026-11-07 | **G-001 and G-002 are met; launch is no longer gated on them** | Share grids shipped in 0.8.19, per-result share cards and Open Graph are live, and the homepage has crawlable copy, `robots.txt` and a sitemap. Clueless moved from a 30-puzzle daily rotation to a 29-level path with one Daily Vault a day (about 26 days of vaults per new player). | Active |
+| G-010 | 2026-11-07 | **Record the G-004 override: paid tests ran in Aug–Sep; launch week is organic by choice** | Reddit Ads (£0.29 a click, 0.48% click-through), a Meta flight that went 99.99% to India through a mislabelled saved audience, and a scoped £10 Snapchat test. None installed a conversion pixel or read retention, so there is still no payback model. Paid returns only after the launch-week D7 read. | Active |
 
-**All five are `Proposed`, not `Active`** — they need the owner's sign-off. Per
+**G-001 to G-005 were `Proposed`** and are kept as written; their Status column
+now points at the row that overtook them. Per
 `../ROADMAP.md`, decisions that commit money or a launch window are the
 owner's call, not an agent's.
 
@@ -127,3 +133,6 @@ Append whenever reality overturns something here. Never delete a row.
 | 2026-08-22 | — | Directory created. Strategy derived from a codebase audit at commit `5ca2a6b`; no market testing, no analytics data, and no launch has occurred. Every projection is a benchmark from category convention, not a forecast. |
 | 2026-08-30 | No search surface | Homepage + robots.txt + sitemap.xml shipped (ST-92 / D-061). Gap 3 is now “thin search surface”: branded queries can be indexed; alternatives-intent pages are still missing. |
 | 2026-08-30 | Reddit / Devvit launch | The Grok-bot operating system will not run Reddit listicle campaigns or Devvit posting. Acquisition in this OS is organic X (@WordKrushGame) only. The `reddit/` app remains in the repo as product how-it-works; no bot posts to Reddit or publishes the Devvit app. |
+| 2026-11-07 | Traction | No measured baseline exists. X @WordKrushGame had 0 followers after a month (last check 2026-09-22); the one organic Reddit post (r/WordGames, 2026-08-23) now shows as removed; the global board has 5 players, newest early September. Launch week exists to produce D1/D7. |
+| 2026-11-07 | Consent premise in METRICS.md | Analytics has been default-on with an opt-out since 2026-09-02 (commit `a2948be`). PostHog numbers are no longer a consented floor. STACK D-022/D-024 still describe opt-in; the UK/EU consent question is open for the owner. |
+| 2026-11-07 | `www.wordkrush.com` | Returns 404 "Application not found" from Railway behind Cloudflare; the www → apex redirect is not live. Launch blocker for the owner. |

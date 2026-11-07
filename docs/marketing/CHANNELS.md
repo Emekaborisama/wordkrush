@@ -4,6 +4,8 @@
 **Status:** Draft. Nothing executed — no post has been made, no list has been contacted.
 **Read first:** [GTM-STRATEGY.md](GTM-STRATEGY.md). Channels are Phase 1+; none of this runs until Phase 0 closes.
 
+> **Superseded in part on 2026-11-07.** Launch week (from Tuesday 2026-11-10) runs from [LAUNCH-PLAN.md](LAUNCH-PLAN.md): UK/US word-game players, organic only, Clueless as the hook. This file is kept as the August reasoning; [README.md](README.md) G-007 to G-010 record what changed. For this week's channels and their subreddit rules, see LAUNCH-PLAN.md §4.
+
 Ranked by expected value per hour of effort, for *this* product — a free web
 word game with no budget, no audience, and no monetization. The ranking would be
 different for almost any other product, and the reasoning is included so it can

@@ -4,6 +4,8 @@
 **Status:** Strategy. Marked **[DECIDE]** where the owner's call is needed.
 **Related:** [BRAINSTORM.md](BRAINSTORM.md) (what the games are) · [ROADMAP.md](ROADMAP.md) (what is being built) · [OBSERVABILITY.md](OBSERVABILITY.md) (how we measure) · [branding/](branding/) (name, voice, logo) · [security-and-anti-cheat/](security-and-anti-cheat/) (why the leaderboard is a launch gate)
 
+> **Superseded in part on 2026-11-07.** The launch plan is [marketing/LAUNCH-PLAN.md](marketing/LAUNCH-PLAN.md); [marketing/README.md](marketing/README.md) G-007 to G-010 record what changed since this was written. Kept as the August reasoning.
+
 No claim here is a market statistic. Everything is reasoned from what is in the
 repo and from how the genre's growth mechanics work. Where a number would
 matter, this document says which instrument should produce it.

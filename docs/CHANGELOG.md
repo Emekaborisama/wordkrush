@@ -6,6 +6,13 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.19.3] - 2026-11-07
+
+### Docs
+- **The launch plan.** `docs/marketing/LAUNCH-PLAN.md` is the plan for launch week (Tuesday 10 November): UK/US word-game players, organic only, Clueless as the hook. It holds the blockers, the calendar, each channel's posting rules, the scorecard and the kill/scale rules decided in advance.
+- **The August strategy is marked as overtaken, not rewritten.** `docs/marketing/README.md` adds decisions G-007 to G-010 and points G-001 to G-004 at them. `GTM-STRATEGY.md`, `CHANNELS.md`, `GROWTH-BLOCKERS.md`, `METRICS.md` and `docs/GTM.md` each carry a dated banner. METRICS.md's "consented floor" premise is corrected: analytics has been default-on since 2 September.
+- Two launch drafts (r/WordGames, r/playmygame) are added to `reddits/POSTS.md` and the ledger as `drafted`. ROADMAP has a launch-week track with the owner's blockers.
+
 ## [0.19.2] - 2026-11-07
 
 ### Changed
