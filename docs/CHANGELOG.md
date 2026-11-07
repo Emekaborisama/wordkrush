@@ -6,6 +6,21 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.20.0] - 2026-10-31
+
+### Changed
+- **Home is rebuilt around what a player came for.** The three games now come first, at full size, instead of below five other blocks. 1v1, Daily 10 and I Sabi Lagos sit together as "Higher or Lower modes", so it is clear they are one game. The word "Play" appears once, on the gold button, which now says which game it opens; every card and tile is its own button. All of it fits above the dock on an iPhone SE, and nothing slides under the dock any more.
+- **On a laptop or tablet, Home uses the screen.** The games sit side by side with large art and the modes below them, in place of a phone column with the sides empty. Game screens stay phone-shaped.
+- **Your name, flag and level share one strip**, so "Bold Lion" no longer reads like the rival you are about to meet. Today's chest appears there when it can be opened, and stays out of the way when it cannot.
+- **The streak pill always says DAY or DAYS.** "1 PLAY!" meant nothing; the flame now burns low until you have played today.
+- **Shorter game lines**, so each fits one line on Home, and the unexplained "Sets" and "New!" chips are gone.
+- **The ghost result stops taking your win back.** The title now says "GHOST BEATEN!" or "THE GHOST WINS", and the line "That was a ghost, not a person. Try again for a real opponent." is gone, which also promised a person who may not be there. The two player cards now match, with their scores on one line, and the rays that floated above the panel are gone.
+
+### Fixed
+- **Ghosts no longer have a country.** A flag on a ghost made no sense and made it look more like a person.
+- **A wrong flag now corrects itself.** The country was read once and kept for good, so a first visit on a VPN stuck for ever. It is now read again on each launch without slowing the launch down. A flag you picked yourself is never changed.
+- **The dock fits a 320-wide phone.** "Settings" and "Account" were cut off at the edges.
+
 ## [0.19.1] - 2026-10-30
 
 ### Added

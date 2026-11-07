@@ -70,9 +70,14 @@ export function StreakPill({ streak, today, onPress }: { streak: DailyStreak; to
         : `${streak.current} day streak`;
   return (
     <ResourcePill
-      icon={<GameIcon name="flame" size={34} />}
+      // The flame burns low until today's run is in, Duolingo's way of saying it.
+      icon={
+        <View style={atRisk ? styles.flameLow : undefined}>
+          <GameIcon name="flame" size={34} />
+        </View>
+      }
       value={streak.current}
-      suffix={atRisk ? 'PLAY!' : streak.current === 1 ? 'DAY' : 'DAYS'}
+      suffix={streak.current === 1 ? 'DAY' : 'DAYS'}
       countUp={false}
       onPress={onPress}
       accessibilityLabel={label}
@@ -126,6 +131,7 @@ const styles = StyleSheet.create({
     height: '42%',
     backgroundColor: 'rgba(255,255,255,0.16)',
   },
+  flameLow: { opacity: 0.45 },
   side: { minWidth: 96, flexShrink: 0, justifyContent: 'center' },
   right: { alignItems: 'flex-end' },
   center: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center' },

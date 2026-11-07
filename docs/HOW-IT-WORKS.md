@@ -307,8 +307,8 @@ JSON; missing Supabase keys still leave every title playable. Splash uses the
 black lockup in `assets/logo/`. Every screen follows the Block Blast UI kit
 (`docs/DESIGN_SYSTEM.md`, D-067): `App.tsx` paints a full-bleed
 `SkyBackground` (the menu sky, or the play sky behind a board and its result)
-and keeps the app in a phone-width column (`COLUMN_MAX_WIDTH`, 560px) on wide
-screens. Menu screens get the kit's coral `TopBar` (daily flame, block logo,
+and keeps the app in a phone-width column (`COLUMN_MAX_WIDTH`, 500px) on wide
+screens. Home alone widens to `HOME_MAX_WIDTH` (1040px). Menu screens get the kit's coral `TopBar` (daily flame, block logo,
 coins; or back, block logo, coins); game and result screens hide it. There is no
 drawer: Home's bottom row opens Settings, Scores, Teams and Account, and the
 gold Play there reopens the game with the most recent `playedAt` across the
@@ -612,7 +612,7 @@ Every level run is stored and uploaded as `game_id = more-or-less`, with the cat
 **Next level** or **Next stop** on the result, and **Oya, enter!** on the Lagos route, call `rideToLevel`. `DanfoRide` (`src/ui/lagos/DanfoRide.tsx`) covers the screen in danfo yellow (sky blue on the world path). It calls `onCovered`, which starts the level underneath. The bus then pulls in under the stop's sign, holds while the conductor calls the stop, and drives off as the cover fades.
 
 **5. `/isabilagos` is a web path, not a router.** [BUILT]
-`server/serve.mjs` already serves `index.html` for extensionless paths. `webHistory.ts` `openedAtLagosPath()` sends a visit to `/isabilagos` straight to the Lagos route and skips the welcome. While the Lagos route or a Lagos run is open, `syncLagosPath` keeps that address in the bar with `replaceState`, so it can be shared. The hub's yellow `LagosBanner` and the one-time `LagosAnnouncement` (shown only to returning players, `wordkrush.seen.isabilagos.v1`) are how players find it.
+`server/serve.mjs` already serves `index.html` for extensionless paths. `webHistory.ts` `openedAtLagosPath()` sends a visit to `/isabilagos` straight to the Lagos route and skips the welcome. While the Lagos route or a Lagos run is open, `syncLagosPath` keeps that address in the bar with `replaceState`, so it can be shared. The yellow tile on Home and the one-time `LagosAnnouncement` (shown only to returning players, `wordkrush.seen.isabilagos.v1`) are how players find it.
 
 ## Journey 11 — Two strangers play a 1v1
 
@@ -620,7 +620,7 @@ Every level run is stored and uploaded as `game_id = more-or-less`, with the cat
 
 **Finding someone.** Tapping the Home card opens `DuelScreen`, which runs one `DuelController` (`src/duel/controller.ts`). The controller joins the public presence channel `wk-duel-queue-v1`. Everyone looking shows up there. `partnerFor` (`src/duel/rules.ts`) pairs the longest-waiting players, so both sides reach the same answer without talking to each other, and the host is the one who joined first. The host broadcasts `pick`, the guest answers `accept`, and both leave the queue for a private room, `wk-duel-room-<code>`. A `pick` that gets lost is sent again.
 
-**Nobody there.** After `GHOST_AFTER_MS` (10s) the search ends with a ghost (`src/duel/ghost.ts`): a seeded, simulated opponent whose streak is planned from the player's best (`ghostTarget`). The same happens at once if there is no backend at all. A ghost is always marked `ghost: true`, drawn with the ghost icon and tag, and named on the result. It is never counted as a person, and `duel_matched` reports it separately.
+**Nobody there.** After `GHOST_AFTER_MS` (10s) the search ends with a ghost (`src/duel/ghost.ts`): a seeded, simulated opponent whose streak is planned from the player's best (`ghostTarget`). The same happens at once if there is no backend at all. A ghost is always marked `ghost: true`, drawn with the ghost icon, given a `Ghost` name and no country, and named in the result's title. It is never counted as a person, and `duel_matched` reports it separately.
 
 **Inviting a friend.** `inviteFriend` opens a room straight away and shows `https://wordkrush.com/duel/<code>`. The server's normal page fallback serves the app at that address. `App.tsx` reads the code once with `roomFromPath`, skips the welcome and clears the address bar, so a refresh does not rejoin a dead room.
 
@@ -630,7 +630,7 @@ Scores and exits carry the sender's id, and the host answers only the first play
 
 **How it ends.** `settle` is the only rule. Longest streak wins, and equal streaks go to the lower `atMs`. It ends early once the player still going passes the one who missed, and otherwise at `DUEL_MS` (60s). If the opponent says `bye` or goes quiet for `SILENCE_FORFEIT_MS` (9s), the player still there wins. `DuelScreen` then calls `finishRun`, so a match pays like any run and goes on the player's own board with their own streak.
 
-**Where the flag comes from.** `loadIdentity` (`src/duel/identity-storage.ts`) keeps a random id, a guest name and a country in AsyncStorage. The country comes from `/country` in `server/serve.mjs`, which reads Cloudflare's `cf-ipcountry` header, and falls back to the device locale. A player's own pick is never overwritten. The flag is sent only to the current opponent.
+**Where the flag comes from.** `loadIdentity` (`src/duel/identity-storage.ts`) keeps a random id, a guest name and a country in AsyncStorage. The country comes from `/country` in `server/serve.mjs`, which reads Cloudflare's `cf-ipcountry` header, and falls back to the device locale. `refreshCountry` reads it again after each launch, without holding the launch up, so a country first seen on a VPN corrects itself. A player's own pick is never overwritten. The flag is sent only to the current opponent.
 
 **Flags outside a match.** The global board and live races read `players.country_code` with `loadPlayerCountries` (`src/scores/countries.ts`, through `usePlayerCountries`), and `App.tsx` keeps a signed-in player's value current with `publishCountry`. That column comes from migration `0009`. It is not applied unless the owner has decided to; until then both calls fail quietly and these screens show no flags (D-073).
 
@@ -647,8 +647,8 @@ Quick map of where each journey step lives:
 | Mascot (deer) | `src/ui/lottie/`, `LOTTIE_CLIPS`, `assets/lottie/deer.lottie` | [PARKED] — off screen since 0.10.0: the Block Blast kit has no mascot. Code and asset kept (D-032, D-050) |
 | Display type | `@expo-google-fonts/exo-2`, `src/ui/fonts.ts`, `src/ui/theme.ts` | [BUILT] — Exo 2 on every app text tier (stand-in for the kit's Neuron, D-067); Fredoka stays for the server's share cards |
 | Fairness guard + difficulty bands | `src/games/more-or-less/pairing.ts` (+ 9 tests) | [BUILT] |
-| Daily 10 | `src/games/more-or-less/daily.ts` (+ `daily-storage.ts`), `buildDailyShareText`, `src/ui/DailyCard.tsx` | [BUILT] — `dailySeed(dayKey)` (FNV-1a over the local day) on the whole Popularity snapshot. Ten pairs (`targetStreak` 10), no `onSpend` so no boosts or second chance, a `daily:<day>` resume slot. One result per day in `wordkrush.more-or-less.daily.v1`; numbered from 2026-10-25 |
-| 1v1, ghosts and flags | `src/duel/` (rules, ghost, controller, transport, identity, country), `src/ui/screens/DuelScreen.tsx`, `src/ui/duel/DuelHud.tsx`, `src/ui/DuelCard.tsx`, `src/ui/FlagPicker.tsx`, `/country` in `server/serve.mjs` | [BUILT] — Realtime presence and broadcast on public channels (D-072), no tables. Pure rules and a controller tested with a fake network; see Journey 11 |
+| Daily 10 | `src/games/more-or-less/daily.ts` (+ `daily-storage.ts`), `buildDailyShareText`, `src/ui/ModeTile.tsx` on Home | [BUILT] — `dailySeed(dayKey)` (FNV-1a over the local day) on the whole Popularity snapshot. Ten pairs (`targetStreak` 10), no `onSpend` so no boosts or second chance, a `daily:<day>` resume slot. One result per day in `wordkrush.more-or-less.daily.v1`; numbered from 2026-10-25 |
+| 1v1, ghosts and flags | `src/duel/` (rules, ghost, controller, transport, identity, country), `src/ui/screens/DuelScreen.tsx`, `src/ui/duel/DuelHud.tsx`, `src/ui/ModeTile.tsx`, `src/ui/FlagPicker.tsx`, `/country` in `server/serve.mjs` | [BUILT] — Realtime presence and broadcast on public channels (D-072), no tables. Pure rules and a controller tested with a fake network; see Journey 11 |
 | Challenge a friend | `src/games/more-or-less/challenge.ts`, `MoreOrLessShareData.challenge` in `src/games/share-data.ts`, `src/ui/ChallengePopup.tsx` | [BUILT] — a level result's share link carries `{seed, path, level}`. Opening `/share/<token>` offers the run: the same seed, no unseen-first steering, a `challenge:<seed>` resume slot, and a Rival HUD. The result gives the verdict, and Play again is a rematch. The server's card check ignores the extra field |
 | More or Less level paths + I Sabi Lagos | `src/games/more-or-less/{labelPath,labelPath-storage}.ts`, `src/data/more-or-less/{labelPaths,labelCategories}.ts`, `src/ui/lagos/`, `src/ui/screens/LagosScreen.tsx`, `src/ui/{LabelLevelCard,LabelLevelsPopup}.tsx` | [BUILT] — device-local unlocks and stars; `/isabilagos`; danfo ride between levels; scores stay under `more-or-less` with the category as context (Journey 8a, D-068) |
 | Engine reducer, pair selector, scoring | `src/games/more-or-less/engine.ts` | [BUILT] |

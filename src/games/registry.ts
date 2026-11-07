@@ -41,7 +41,7 @@ export const GAMES: GameDefinition[] = [
     id: 'more-or-less',
     // Player-facing name since 0.12.0 ("More or Less" read as vague); the id stays.
     name: 'Higher or Lower',
-    tagline: 'Is the next number higher or lower? Trust your gut and build a streak.',
+    tagline: 'Trust your gut. Build a streak.',
     badge: 'QUICK THINKING',
     blurb:
       'One number is shown. Guess if the next one is higher or lower. Every right call keeps your streak alive.',
@@ -54,7 +54,7 @@ export const GAMES: GameDefinition[] = [
   {
     id: 'clueless',
     name: 'Clueless',
-    tagline: 'Follow the meaning trail to the secret word.',
+    tagline: 'Find the secret word by meaning.',
     badge: 'SOLO PATH',
     blurb:
       'Every guess is ranked by meaning, not spelling. Clear the sparks, then open the vault.',
@@ -67,7 +67,7 @@ export const GAMES: GameDefinition[] = [
   {
     id: 'wordfall',
     name: 'Wordfall',
-    tagline: 'New levels every Monday. Trace words and set off cascades.',
+    tagline: 'Trace words. Set off cascades.',
     badge: 'WEEKLY LEVELS',
     blurb:
       'Trace words across the grid to clear tiles and set off cascades. A new level drops every Monday.',

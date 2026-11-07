@@ -50,6 +50,16 @@ export function parseIdentity(raw: string | null): DuelIdentity | null {
   }
 }
 
+/**
+ * A new reading of where the player is. It replaces the last reading, because
+ * one taken on a VPN or a holiday should not stick for good. A flag the player
+ * picked stays, and no reading (`null`) changes nothing.
+ */
+export function withDetectedCountry(identity: DuelIdentity, detected: string | null): DuelIdentity {
+  if (identity.countryChosen || detected === null || detected === identity.country) return identity;
+  return { ...identity, country: detected };
+}
+
 /** The player as the other side sees them: username if signed in, flag unless hidden. */
 export function duelPlayerFrom(identity: DuelIdentity, username: string | null): DuelPlayer {
   return {

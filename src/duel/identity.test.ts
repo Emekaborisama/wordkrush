@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { validateUsername } from '../auth/validation';
-import { duelPlayerFrom, guestName, newIdentity, parseIdentity } from './identity';
+import { duelPlayerFrom, guestName, newIdentity, parseIdentity, withDetectedCountry } from './identity';
 
 const seq = (values: number[]) => {
   let i = 0;
@@ -41,5 +41,23 @@ describe('duelPlayerFrom', () => {
 
   it('sends no country when the flag is hidden', () => {
     expect(duelPlayerFrom({ ...identity, flagHidden: true }, null).country).toBeNull();
+  });
+});
+
+describe('withDetectedCountry', () => {
+  const detected = { ...newIdentity(() => 0.5), country: 'AF' };
+
+  it('replaces an old reading, so a flag from a VPN corrects itself', () => {
+    expect(withDetectedCountry(detected, 'GB').country).toBe('GB');
+  });
+
+  it('never touches a flag the player picked', () => {
+    const picked = { ...detected, countryChosen: true };
+    expect(withDetectedCountry(picked, 'GB')).toBe(picked);
+  });
+
+  it('keeps what it has when there is no reading, or the same one', () => {
+    expect(withDetectedCountry(detected, null)).toBe(detected);
+    expect(withDetectedCountry(detected, 'AF')).toBe(detected);
   });
 });

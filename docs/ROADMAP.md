@@ -92,6 +92,7 @@ The first shipped category uses monthly Wikipedia pageviews, not Google searches
 
 - [ ] **Teams and live races** (ST-83) — **Doing**; private invite-only crew, 2–10 player simultaneous races on a numbered path, dual team/personal unlock. Needs `0006_teams_and_live_matches.sql`, `0007_team_crud.sql`, and `0008_live_roster_ten.sql` applied on the project.
 - [ ] **Live races hold 2–10** (ST-88) — **Doing**; player-facing copy plus the cap raise (D-055).
+- [x] **Home rebuilt** (ST-123) — **Done** in 0.20.0. Games first, one Play, modes grouped, and Home widens on a laptop. Ghost result copy and cards fixed.
 - [x] **1v1 live, ghosts and flags** (ST-123) — **Done** in 0.19.0. Random matchmaking and friend links on Realtime with no sign-in (D-072), labelled ghosts when the queue is empty, and a flag beside each name.
 - [ ] **Flags on leaderboards and races** — built in 0.19.1 and blocked on the owner. Applying `0009_player_country.sql` turns it on; it stores a public country per signed-in player (D-073).
 

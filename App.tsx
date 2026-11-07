@@ -108,7 +108,7 @@ import {
 } from './src/scores/storage';
 import { EMPTY_BOARD, isNewBest, needsGlobalSync, type ScoreBoard, type ScoreDirection, type ScoreEntry } from './src/scores/types';
 import { duelPlayerFrom, type DuelIdentity } from './src/duel/identity';
-import { loadIdentity, saveIdentity } from './src/duel/identity-storage';
+import { loadIdentity, refreshCountry, saveIdentity } from './src/duel/identity-storage';
 import { roomFromPath } from './src/duel/rules';
 import { publishCountry } from './src/scores/countries';
 import { loadStreak, markPlayedToday } from './src/streak/storage';
@@ -186,7 +186,7 @@ import { LiveResultsScreen } from './src/ui/screens/LiveResultsScreen';
 import { ScoresScreen } from './src/ui/screens/ScoresScreen';
 import { TeamsScreen } from './src/ui/screens/TeamsScreen';
 import { WordfallScreen } from './src/ui/screens/WordfallScreen';
-import { COLUMN_MAX_WIDTH, isWideLayout } from './src/ui/layout';
+import { COLUMN_MAX_WIDTH, HOME_MAX_WIDTH, isWideLayout } from './src/ui/layout';
 import { theme } from './src/ui/theme';
 import { ensureWebViewport } from './src/ui/webViewport';
 import { useAppFonts } from './src/ui/fonts';
@@ -608,7 +608,14 @@ export default function App() {
     });
     void loadRoundProgress(FIRST_ROUND_ID).then(setLabelProgress);
     void loadDailyResult().then(setDailyResult);
-    void loadIdentity().then(setDuelIdentity);
+    void loadIdentity()
+      .then((identity) => {
+        setDuelIdentity(identity);
+        return refreshCountry();
+      })
+      .then((identity) => {
+        if (identity) setDuelIdentity(identity);
+      });
     if (arrivedAtDuel.current !== null) {
       setScreen({ name: 'duel', invite: arrivedAtDuel.current });
       clearSharePath();
@@ -1277,7 +1284,7 @@ export default function App() {
       {/* Full-bleed backdrop: the menu sky, or the calmer play sky behind a
           board and its result pop-up. The column sits on top of it. */}
       <SkyBackground variant={playing ? 'play' : 'sky'} />
-      <View style={[styles.frame, wide && styles.frameLaptop]}>
+      <View style={[styles.frame, wide && (screen.name === 'hub' && !showOnboarding ? styles.frameHome : styles.frameLaptop)]}>
         {showChrome && !showOnboarding && (
           <TopBar
             onBack={chromeBack()}
@@ -1312,11 +1319,11 @@ export default function App() {
             onChestClosed={() => setChestOpen(null)}
             level={progress.level}
             levelProgress={progress.fraction}
-            labelRoundsPassed={labelProgress.roundsPassed}
             onPlay={(gameId) => {
               captureAnalytics('game_selected', { game_id: gameId, source: 'hub' });
               openGameHome(gameId);
             }}
+            quickPlayName={getGame(quickPlayGameId())?.name ?? 'Higher or Lower'}
             onQuickPlay={() => {
               const gameId = quickPlayGameId();
               captureAnalytics('game_selected', { game_id: gameId, source: 'quick_play' });
@@ -2152,6 +2159,10 @@ const styles = StyleSheet.create({
   },
   frameLaptop: {
     maxWidth: COLUMN_MAX_WIDTH,
+    alignSelf: 'center',
+  },
+  frameHome: {
+    maxWidth: HOME_MAX_WIDTH,
     alignSelf: 'center',
   },
 });

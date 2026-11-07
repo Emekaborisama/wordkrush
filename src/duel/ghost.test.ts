@@ -3,11 +3,12 @@ import { ghostAt, ghostPlan, ghostPlayer, ghostTarget } from './ghost';
 import { DUEL_MS } from './rules';
 
 describe('ghostPlayer', () => {
-  it('is always marked a ghost, by name and by flag', () => {
+  it('is always marked a ghost by name, and has no country', () => {
     for (let seed = 1; seed < 50; seed += 1) {
       const ghost = ghostPlayer(seed);
       expect(ghost.ghost).toBe(true);
       expect(ghost.name.startsWith('Ghost ')).toBe(true);
+      expect(ghost.country).toBeNull();
     }
   });
 

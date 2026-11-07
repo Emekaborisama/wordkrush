@@ -139,8 +139,9 @@ gear) → result pop-up (stars on the scroll, points, Continue) → home**, with
 Settings, More Lives, Shop and Levels as pop-ups over whatever is underneath.
 WordKrush follows that journey for all three games.
 
-Everything sits on a phone-width column (max 520 px) centred on the window;
-backdrops are full-bleed.
+Everything sits on a phone-width column (`COLUMN_MAX_WIDTH`, 500 px) centred on
+the window, except Home, which widens to `HOME_MAX_WIDTH` (1040 px). Backdrops
+are full-bleed.
 
 ### Shell (`App.tsx`)
 
@@ -166,17 +167,38 @@ a hand tapping a cube; big **gold Play** (starts More or Less) and a blue
 
 ### Home (`HubScreen`)
 
-Top bar, then a scroll of pop-up cards, then the kit's home dock:
+Rebuilt in 0.20.0 after the owner judged the stack of cards as making no sense
+from a staff product designer's view, on phone and on PC. The old stack had
+seven blocks of equal weight, four separate Plays and the games below the fold.
+Three rules hold Home now:
 
-1. **Daily chest** — a cream "paper" card with the chest icon, `Day n/7`, and a
-   green **Claim** when ready; "Finish any run to unlock" / "Back tomorrow"
-   otherwise. Claiming opens the chest pop-up (rays, coins, Continue).
-2. **One `Panel` per game** — teal tab with the game name, key art in a white
-   framed tile, tagline in a `CreamBox`, a best-score chip, and a green
-   **PLAY**. XP level and progress sit in a strip above the cards.
-3. **Dock** (fixed at the bottom, over the clouds): `[Settings gear] [Scores
-   trophy]  [ PLAY gold ]  [Teams] [Account]` — the kit's home row. The gold
-   Play opens the next suggested game's level pop-up.
+- **One order: who you are, what you can play, what else is on.** Games are the
+  product, so they come before modes. Modes come before anything decorative.
+- **One Play.** Only the gold button carries the word. Each game card and mode
+  tile is itself a button, with a green disc as the cue on game cards. Do not
+  add a second labelled Play.
+- **It fits.** Everything shows above the dock on a 375×667 phone. A new block
+  has to replace something or earn its height; do not add a card to the list.
+
+The blocks, top to bottom:
+
+1. **Player strip** — a `CreamBox` with the level star, flag, name and XP bar.
+   Green **Claim** appears only while the chest can be opened. A locked or
+   opened chest shows nothing, because neither gives the player anything to do.
+2. **Pick a game** — one `GameCard` per game: key art, name, a one-line tagline
+   and the player's best. The whole card is the button.
+3. **Higher or Lower modes** — three `ModeTile`s: 1v1 live, Today's 10, I Sabi
+   Lagos. The label says they are one game.
+4. **Dock** — `[Settings] [Scores]  [ Play gold ]  [Teams] [Account]`, the kit's
+   home row. It sits in the layout under the scroll, not over it, so nothing
+   slides beneath it. The gold Play opens the last game played, and its name is
+   written underneath.
+
+**Wide (720 and up):** only Home widens, to `HOME_MAX_WIDTH` (1040). Games and
+modes sit three across, the game cards stand upright with large art, and the
+content centres in the height. Every other screen stays in the phone column.
+**Short (`tight`, under 620):** game cards drop the tagline, so the modes stay
+in view.
 
 ### Level pop-up (`GameStartScreen`)
 
@@ -258,7 +280,7 @@ glossy button). Its pieces:
   streak builds.
 - `LagosScene` — skyline, Third Mainland bridge, and a bus looping the road.
 - `LagosWordmark` — "I SABI" outlined, with "LAGOS!" in gold.
-- `LagosBanner` — the hub card with a NEW badge.
+- The `danfo` `ModeTile` on Home, with a NEW tag until it is first opened.
 - `LagosAnnouncement` — a one-time "NEW!" pop-up.
 - `DanfoRide` — the between-levels ride.
 
@@ -278,10 +300,10 @@ Copy is pidgin from one table (`lagosCopy`): "Oya, enter!", "You sabi!",
 
 **1v1** (0.19.0, D-072):
 
-- `DuelCard` is Home's red card, above Daily 10, with the 3D crossed swords and the player's own flag and name.
+- The `rival` `ModeTile` is the way in from Home, with the 3D crossed swords. The player's own flag and name are in the player strip.
 - `DuelHud` is the strip over the board: your side in gold, the clock in the middle (red for the last 10 seconds), your opponent on the right. A player who missed reads OUT, in words as well as fading, so colour never carries it alone.
 - `CountryFlag` is the only way to draw a flag. It renders nothing when there is no flag, so a hidden flag leaves no gap. The same holds on the global board and in live races, which use it through `usePlayerCountries`.
-- A ghost always shows the ghost icon, and on cards the GHOST tag.
+- A ghost always shows the ghost icon and a `Ghost` name, and never a flag. On the result the title names it: "GHOST BEATEN!" or "THE GHOST WINS". Say it was a ghost once, in the title, and do not follow a win with a line that takes it back.
 - During a match `GameScreen` drops its HUD and pause tray (`hideHud`). A live clock cannot pause.
 - The 1v1 result shows coins and XP without the star ribbon (`RewardPanel stars={false}`), because a match has no star rating.
 
@@ -369,6 +391,7 @@ library (and to the `?kit` page) first.
 
 ## History
 
+- **2026-10-31 (0.20.0):** Home rebuilt around one order and one Play, and widened on a laptop. This replaces the stacked cards and the rule that every screen stays in a phone column; game screens still do.
 - **2026-10-18 (0.9.0, superseded the same day):** sand page, wood playfield,
   warm-white cards and glossy pills on every screen (ST-108 / ST-109).
 - **2026-08-22:** dark ink canvas with per-game accents, token layering and the
