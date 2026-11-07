@@ -1,0 +1,252 @@
+{
+  "category": {
+    "id": "islands-area",
+    "name": "Islands",
+    "metricLabel": "area",
+    "display": {
+      "compact": true,
+      "suffix": " km²",
+      "decimals": 2
+    }
+  },
+  "metric": "area",
+  "_note": "label = what the card shows (safe to edit). qid = the Wikidata item (identity; do not edit without re-checking). Built with `npm run pipeline:wikidata`; propose rows with `npm run pipeline:wikidata:discover`.",
+  "items": [
+    {
+      "label": "Alcatraz Island",
+      "qid": "Q131354"
+    },
+    {
+      "label": "Anglesey",
+      "qid": "Q168159"
+    },
+    {
+      "label": "Baffin Island",
+      "qid": "Q81178"
+    },
+    {
+      "label": "Bali",
+      "qid": "Q3125978"
+    },
+    {
+      "label": "Barbados",
+      "qid": "Q244"
+    },
+    {
+      "label": "Bora Bora",
+      "qid": "Q183113"
+    },
+    {
+      "label": "Borneo",
+      "qid": "Q36117"
+    },
+    {
+      "label": "Capri",
+      "qid": "Q173292"
+    },
+    {
+      "label": "Corsica",
+      "qid": "Q14112"
+    },
+    {
+      "label": "Crete",
+      "qid": "Q34374"
+    },
+    {
+      "label": "Cyprus",
+      "qid": "Q229"
+    },
+    {
+      "label": "Easter Island",
+      "qid": "Q14452"
+    },
+    {
+      "label": "Ellesmere Island",
+      "qid": "Q146841"
+    },
+    {
+      "label": "Gozo",
+      "qid": "Q170488"
+    },
+    {
+      "label": "Great Britain",
+      "qid": "Q23666"
+    },
+    {
+      "label": "Greenland",
+      "qid": "Q223"
+    },
+    {
+      "label": "Hispaniola",
+      "qid": "Q25277"
+    },
+    {
+      "label": "Hokkaido",
+      "qid": "Q35581"
+    },
+    {
+      "label": "Hong Kong Island",
+      "qid": "Q19483"
+    },
+    {
+      "label": "Honshu",
+      "qid": "Q13989"
+    },
+    {
+      "label": "Ibiza",
+      "qid": "Q52631"
+    },
+    {
+      "label": "Iceland",
+      "qid": "Q189"
+    },
+    {
+      "label": "Ireland (island)",
+      "qid": "Q22890"
+    },
+    {
+      "label": "Isle of Man",
+      "qid": "Q9676"
+    },
+    {
+      "label": "Isle of Skye",
+      "qid": "Q107393"
+    },
+    {
+      "label": "Isle of Wight",
+      "qid": "Q9679"
+    },
+    {
+      "label": "Java",
+      "qid": "Q3757"
+    },
+    {
+      "label": "Jersey",
+      "qid": "Q785"
+    },
+    {
+      "label": "Lindisfarne",
+      "qid": "Q213804"
+    },
+    {
+      "label": "Long Island",
+      "qid": "Q18438"
+    },
+    {
+      "label": "Lundy",
+      "qid": "Q324812"
+    },
+    {
+      "label": "Luzon",
+      "qid": "Q125384"
+    },
+    {
+      "label": "Madagascar",
+      "qid": "Q1019"
+    },
+    {
+      "label": "Mallorca",
+      "qid": "Q8828"
+    },
+    {
+      "label": "Malta",
+      "qid": "Q193896"
+    },
+    {
+      "label": "Manhattan",
+      "qid": "Q11299"
+    },
+    {
+      "label": "Martha's Vineyard",
+      "qid": "Q49148"
+    },
+    {
+      "label": "Mindanao",
+      "qid": "Q124873"
+    },
+    {
+      "label": "Mykonos",
+      "qid": "Q190210"
+    },
+    {
+      "label": "Nantucket",
+      "qid": "Q49149"
+    },
+    {
+      "label": "New Guinea",
+      "qid": "Q40285"
+    },
+    {
+      "label": "Newfoundland",
+      "qid": "Q48335"
+    },
+    {
+      "label": "North Island (NZ)",
+      "qid": "Q118863"
+    },
+    {
+      "label": "Rhodes",
+      "qid": "Q43048"
+    },
+    {
+      "label": "Robben Island",
+      "qid": "Q192493"
+    },
+    {
+      "label": "Sakhalin",
+      "qid": "Q7792"
+    },
+    {
+      "label": "Santorini",
+      "qid": "Q129296"
+    },
+    {
+      "label": "Sardinia",
+      "qid": "Q1462"
+    },
+    {
+      "label": "Sicily",
+      "qid": "Q1460"
+    },
+    {
+      "label": "South Island (NZ)",
+      "qid": "Q120755"
+    },
+    {
+      "label": "Sri Lanka",
+      "qid": "Q854"
+    },
+    {
+      "label": "Staten Island",
+      "qid": "Q18432"
+    },
+    {
+      "label": "Sulawesi",
+      "qid": "Q3812"
+    },
+    {
+      "label": "Sumatra",
+      "qid": "Q3492"
+    },
+    {
+      "label": "Tasmania",
+      "qid": "Q34366"
+    },
+    {
+      "label": "Tenerife",
+      "qid": "Q40846"
+    },
+    {
+      "label": "Trinidad",
+      "qid": "Q128323"
+    },
+    {
+      "label": "Vancouver Island",
+      "qid": "Q170479"
+    },
+    {
+      "label": "Victoria Island",
+      "qid": "Q158129"
+    }
+  ]
+}

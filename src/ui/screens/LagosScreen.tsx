@@ -62,7 +62,7 @@ export function LagosScreen({
           ))}
         </View>
         <Text style={styles.source}>
-          Measured by monthly Wikipedia pageviews — how often each one gets looked up.
+          Numbers from Wikipedia pageviews and Wikidata. Each card says what it measures.
         </Text>
       </ScrollView>
       <View style={styles.cta} pointerEvents="box-none">

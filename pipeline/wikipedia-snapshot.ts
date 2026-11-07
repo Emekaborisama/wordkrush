@@ -5,6 +5,7 @@
  */
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import type { ValueDisplay } from '../src/games/more-or-less/types';
 import { MAX_SWING_VS_PREVIOUS } from './sanity';
 import { fetchImages } from './sources/wikipedia-images';
 import { createWikipediaSource } from './sources/wikipedia';
@@ -50,6 +51,8 @@ export type BundledCategory = {
   name: string;
   metricLabel: string;
   unit: string;
+  /** How the numbers are written; absent on pageview categories (plain integers). */
+  display?: ValueDisplay;
   provisional: true;
   items: BundledItem[];
   rounds?: LabelRoundDef[];

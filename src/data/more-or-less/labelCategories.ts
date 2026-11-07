@@ -1,9 +1,13 @@
 /**
- * Every bundled More or Less label, by category id. Built offline by the
- * Wikipedia pipeline (`CATEGORY=<id> npm run pipeline:preview`) and shipped in
- * the app, so a level plays with no network (D-004).
+ * Every bundled More or Less label, by category id. Built offline and shipped
+ * in the app, so a level plays with no network (D-004): the pageview labels
+ * by `CATEGORY=<id> npm run pipeline:preview`, the Wikidata labels by
+ * `npm run pipeline:wikidata` (D-075).
  */
 import type { CategorySnapshot } from '../../games/more-or-less/rounds';
+import countriesArea from '../categories/countries-area.json';
+import countriesPopulation from '../categories/countries-population.json';
+import islandsArea from '../categories/islands-area.json';
 import lagosAfrobeatsHits from '../categories/lagos-afrobeats-hits.json';
 import lagosAfrobeatsStars from '../categories/lagos-afrobeats-stars.json';
 import lagosFood from '../categories/lagos-food.json';
@@ -11,6 +15,10 @@ import lagosFootball from '../categories/lagos-football.json';
 import lagosMoments from '../categories/lagos-moments.json';
 import lagosNollywood from '../categories/lagos-nollywood.json';
 import lagosPlaces from '../categories/lagos-places.json';
+import lagosStatesArea from '../categories/lagos-states-area.json';
+import landmarksHeight from '../categories/landmarks-height.json';
+import mountainsHeight from '../categories/mountains-height.json';
+import riversLength from '../categories/rivers-length.json';
 import food from '../categories/wikipedia-food.json';
 import footballStars from '../categories/wikipedia-football-stars.json';
 import hitSongs from '../categories/wikipedia-hit-songs.json';
@@ -27,6 +35,12 @@ const ALL: readonly CategorySnapshot[] = [
   worldCities,
   food,
   hitSongs,
+  countriesPopulation,
+  landmarksHeight,
+  mountainsHeight,
+  riversLength,
+  countriesArea,
+  islandsArea,
   lagosPlaces,
   lagosFood,
   lagosAfrobeatsStars,
@@ -34,6 +48,7 @@ const ALL: readonly CategorySnapshot[] = [
   lagosAfrobeatsHits,
   lagosFootball,
   lagosMoments,
+  lagosStatesArea,
 ] as CategorySnapshot[];
 
 const BY_ID = new Map(ALL.map((category) => [category.id, category]));

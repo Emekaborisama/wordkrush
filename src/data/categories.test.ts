@@ -27,7 +27,14 @@ describe.each(files)('%s', (file) => {
     expect(category.id).toBeTruthy();
     expect(category.name).toBeTruthy();
     expect(category.metricLabel).toBeTruthy();
-    expect(['count', 'currency', 'percent']).toContain(category.unit);
+    expect(['count', 'currency', 'percent', 'length', 'area']).toContain(category.unit);
+  });
+
+  it('writes a physical quantity with its unit', () => {
+    // "8,849" alone is not an answer anyone can check; "8,849 m" is.
+    if (category.unit === 'length' || category.unit === 'area') {
+      expect(category.display?.suffix, category.id).toBeTruthy();
+    }
   });
 
   it('does not claim to measure Google searches', () => {

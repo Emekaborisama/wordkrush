@@ -1,0 +1,182 @@
+{
+  "category": {
+    "id": "landmarks-height",
+    "name": "Tall landmarks",
+    "metricLabel": "height",
+    "display": {
+      "suffix": " m"
+    }
+  },
+  "metric": "height",
+  "_note": "label = what the card shows (safe to edit). qid = the Wikidata item (identity; do not edit without re-checking). Built with `npm run pipeline:wikidata`; propose rows with `npm run pipeline:wikidata:discover`.",
+  "items": [
+    {
+      "label": "Angel of the North",
+      "qid": "Q1325290"
+    },
+    {
+      "label": "Arc de Triomphe",
+      "qid": "Q64436"
+    },
+    {
+      "label": "Atomium",
+      "qid": "Q180901"
+    },
+    {
+      "label": "Berlin TV Tower",
+      "qid": "Q151356"
+    },
+    {
+      "label": "Big Ben",
+      "qid": "Q41225"
+    },
+    {
+      "label": "Blackpool Tower",
+      "qid": "Q880905"
+    },
+    {
+      "label": "Brandenburg Gate",
+      "qid": "Q82425"
+    },
+    {
+      "label": "Burj Al Arab",
+      "qid": "Q62939"
+    },
+    {
+      "label": "Burj Khalifa",
+      "qid": "Q12495"
+    },
+    {
+      "label": "Cologne Cathedral",
+      "qid": "Q4176"
+    },
+    {
+      "label": "Colosseum",
+      "qid": "Q10285"
+    },
+    {
+      "label": "Eiffel Tower",
+      "qid": "Q243"
+    },
+    {
+      "label": "Empire State Building",
+      "qid": "Q9188"
+    },
+    {
+      "label": "Gateway Arch",
+      "qid": "Q2027162"
+    },
+    {
+      "label": "Golden Gate Bridge",
+      "qid": "Q44440"
+    },
+    {
+      "label": "Great Pyramid of Giza",
+      "qid": "Q37200"
+    },
+    {
+      "label": "Hagia Sophia",
+      "qid": "Q12506"
+    },
+    {
+      "label": "Leaning Tower of Pisa",
+      "qid": "Q39054"
+    },
+    {
+      "label": "London Eye",
+      "qid": "Q160659"
+    },
+    {
+      "label": "Lotte World Tower",
+      "qid": "Q494895"
+    },
+    {
+      "label": "Milad Tower",
+      "qid": "Q622796"
+    },
+    {
+      "label": "Milan Cathedral",
+      "qid": "Q18068"
+    },
+    {
+      "label": "One World Trade Center",
+      "qid": "Q11245"
+    },
+    {
+      "label": "Oriental Pearl Tower",
+      "qid": "Q223207"
+    },
+    {
+      "label": "Ostankino Tower",
+      "qid": "Q181324"
+    },
+    {
+      "label": "Parthenon",
+      "qid": "Q10288"
+    },
+    {
+      "label": "Petronas Towers",
+      "qid": "Q83063"
+    },
+    {
+      "label": "Sagrada Família",
+      "qid": "Q48435"
+    },
+    {
+      "label": "Shanghai Tower",
+      "qid": "Q18547"
+    },
+    {
+      "label": "Space Needle",
+      "qid": "Q5317"
+    },
+    {
+      "label": "St Paul's Cathedral",
+      "qid": "Q173882"
+    },
+    {
+      "label": "St. Peter's Basilica",
+      "qid": "Q12512"
+    },
+    {
+      "label": "Sydney Harbour Bridge",
+      "qid": "Q54495"
+    },
+    {
+      "label": "Sydney Opera House",
+      "qid": "Q45178"
+    },
+    {
+      "label": "Taipei 101",
+      "qid": "Q83101"
+    },
+    {
+      "label": "Taj Mahal",
+      "qid": "Q9141"
+    },
+    {
+      "label": "The Shard",
+      "qid": "Q18536"
+    },
+    {
+      "label": "Tokyo Skytree",
+      "qid": "Q57965"
+    },
+    {
+      "label": "Tokyo Tower",
+      "qid": "Q183536"
+    },
+    {
+      "label": "Tower Bridge",
+      "qid": "Q83125"
+    },
+    {
+      "label": "Washington Monument",
+      "qid": "Q178114"
+    },
+    {
+      "label": "Willis Tower",
+      "qid": "Q29294"
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+{
+  "category": {
+    "id": "lagos-states-area",
+    "name": "Naija states",
+    "metricLabel": "area",
+    "display": {
+      "suffix": " km²"
+    }
+  },
+  "metric": "area",
+  "_note": "label = what the card shows (safe to edit). qid = the Wikidata item (identity; do not edit without re-checking). Built with `npm run pipeline:wikidata`; propose rows with `npm run pipeline:wikidata:discover`.",
+  "items": [
+    {
+      "label": "Abia",
+      "qid": "Q320852"
+    },
+    {
+      "label": "Abuja (FCT)",
+      "qid": "Q509300"
+    },
+    {
+      "label": "Adamawa",
+      "qid": "Q337514"
+    },
+    {
+      "label": "Akwa Ibom",
+      "qid": "Q424388"
+    },
+    {
+      "label": "Anambra",
+      "qid": "Q117714"
+    },
+    {
+      "label": "Bauchi",
+      "qid": "Q503936"
+    },
+    {
+      "label": "Bayelsa",
+      "qid": "Q532153"
+    },
+    {
+      "label": "Benue",
+      "qid": "Q429908"
+    },
+    {
+      "label": "Borno",
+      "qid": "Q130626"
+    },
+    {
+      "label": "Cross River",
+      "qid": "Q739676"
+    },
+    {
+      "label": "Delta",
+      "qid": "Q503910"
+    },
+    {
+      "label": "Ebonyi",
+      "qid": "Q506808"
+    },
+    {
+      "label": "Edo",
+      "qid": "Q682704"
+    },
+    {
+      "label": "Ekiti",
+      "qid": "Q534917"
+    },
+    {
+      "label": "Enugu",
+      "qid": "Q3817714"
+    },
+    {
+      "label": "Gombe",
+      "qid": "Q376241"
+    },
+    {
+      "label": "Imo",
+      "qid": "Q842939"
+    },
+    {
+      "label": "Jigawa",
+      "qid": "Q682691"
+    },
+    {
+      "label": "Kaduna",
+      "qid": "Q878284"
+    },
+    {
+      "label": "Kano",
+      "qid": "Q682571"
+    },
+    {
+      "label": "Katsina",
+      "qid": "Q657821"
+    },
+    {
+      "label": "Kebbi",
+      "qid": "Q748523"
+    },
+    {
+      "label": "Kogi",
+      "qid": "Q387745"
+    },
+    {
+      "label": "Kwara",
+      "qid": "Q464953"
+    },
+    {
+      "label": "Lagos",
+      "qid": "Q815913"
+    },
+    {
+      "label": "Nasarawa",
+      "qid": "Q836645"
+    },
+    {
+      "label": "Niger",
+      "qid": "Q503932"
+    },
+    {
+      "label": "Ogun",
+      "qid": "Q836657"
+    },
+    {
+      "label": "Ondo",
+      "qid": "Q836654"
+    },
+    {
+      "label": "Osun",
+      "qid": "Q682721"
+    },
+    {
+      "label": "Oyo",
+      "qid": "Q503905"
+    },
+    {
+      "label": "Plateau",
+      "qid": "Q503928"
+    },
+    {
+      "label": "Rivers",
+      "qid": "Q503923"
+    },
+    {
+      "label": "Sokoto",
+      "qid": "Q503941"
+    },
+    {
+      "label": "Taraba",
+      "qid": "Q463959"
+    },
+    {
+      "label": "Yobe",
+      "qid": "Q682777"
+    },
+    {
+      "label": "Zamfara",
+      "qid": "Q145793"
+    }
+  ]
+}

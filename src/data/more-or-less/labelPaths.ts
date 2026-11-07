@@ -1,11 +1,18 @@
 /**
  * The level-by-level labels for More or Less, and the I Sabi Lagos route.
  *
- * Every label is measured the same way as Popularity — median monthly
- * Wikipedia pageviews, built by `CATEGORY=<id> npm run pipeline:preview` from
- * `pipeline/keywords/<id>.json` — so a pair is always a fair comparison and
- * the numbers are measured, never guessed (D-012). Targets climb slowly; the
- * pairing curve already gets tighter as a streak grows.
+ * Every label is one measured metric shared by all its items, so a pair is
+ * always a fair comparison and the numbers are measured, never guessed:
+ *
+ *  - levels 1–7 and Lagos stops 1–7 are median monthly Wikipedia pageviews,
+ *    built by `CATEGORY=<id> npm run pipeline:preview` from
+ *    `pipeline/keywords/<id>.json` (D-012);
+ *  - the levels after them are facts from Wikidata (population, height,
+ *    length, area), built by `npm run pipeline:wikidata` from
+ *    `pipeline/entities/<id>.json` (D-075).
+ *
+ * New levels are only ever APPENDED: a player's progress is stored by level
+ * number, so inserting one would shift every level after it.
  */
 import type { LabelLevel, LabelPathId } from '../../games/more-or-less/labelPath';
 
@@ -59,9 +66,52 @@ export const WORLD_PATH: readonly LabelLevel[] = [
     description: 'The playlist round: which song gets read more?',
     targetStreak: 8,
   },
+  // From here on, the numbers are facts from Wikidata rather than pageviews.
+  {
+    number: 8,
+    categoryId: 'countries-population',
+    name: 'Population',
+    description: 'Which country has more people?',
+    targetStreak: 6,
+  },
+  {
+    number: 9,
+    categoryId: 'landmarks-height',
+    name: 'Tall landmarks',
+    description: 'Skyscrapers, towers and temples: which stands taller?',
+    targetStreak: 6,
+  },
+  {
+    number: 10,
+    categoryId: 'mountains-height',
+    name: 'Mountains',
+    description: 'From Arthur’s Seat to Everest: which peak climbs higher?',
+    targetStreak: 7,
+  },
+  {
+    number: 11,
+    categoryId: 'rivers-length',
+    name: 'Rivers',
+    description: 'From the Liffey to the Nile: which river runs longer?',
+    targetStreak: 7,
+  },
+  {
+    number: 12,
+    categoryId: 'countries-area',
+    name: 'Country size',
+    description: 'Which country covers more ground?',
+    targetStreak: 8,
+  },
+  {
+    number: 13,
+    categoryId: 'islands-area',
+    name: 'Islands',
+    description: 'From Alcatraz to Greenland: which island is bigger?',
+    targetStreak: 8,
+  },
 ];
 
-/** The danfo route: each level is a stop between Ojuelegba and Oshodi. */
+/** The danfo route: each level is a stop, from Ojuelegba onward. */
 export const LAGOS_PATH: readonly LabelLevel[] = [
   {
     number: 1,
@@ -118,6 +168,14 @@ export const LAGOS_PATH: readonly LabelLevel[] = [
     description: 'The wild things wey happen for Lagos — which one people still dey read?',
     targetStreak: 8,
     stop: 'Oshodi',
+  },
+  {
+    number: 8,
+    categoryId: 'lagos-states-area',
+    name: 'Naija states',
+    description: 'Kano or Kaduna? Which state get more land?',
+    targetStreak: 7,
+    stop: 'Ojota',
   },
 ];
 
