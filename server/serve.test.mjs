@@ -22,7 +22,7 @@ import {
   applySearchSurface,
   applyViewportCss,
 } from '../scripts/patch-web-head.mjs';
-import { buildShareText } from '../src/games/more-or-less/share';
+import { buildSharePayload } from '../src/games/more-or-less/share';
 import { cardId, cardImagePath } from './og-card.mjs';
 
 const HOMEPAGE_OG_IMAGE = 'https://wordkrush.com/og-image.png?v=deadbeef01';
@@ -315,15 +315,13 @@ describe('share ids as they actually arrive', () => {
 });
 
 /**
- * The one path that has to work: what `GameOverScreen` puts on the clipboard,
- * followed the way a scraper follows it. Everything else in this file builds
- * its own token, so nothing else would notice the app and the server drifting.
+ * The one path that has to work: what `GameOverScreen` shares, followed the
+ * way a scraper follows it. Everything else in this file builds its own
+ * token, so nothing else would notice the app and the server drifting.
  */
-describe('the link a player actually pastes', () => {
+describe('the link a player actually shares', () => {
   it('reaches a 1200×630 card, with no ~ anywhere on the way', async () => {
-    const pageUrl = new URL(
-      /https:\/\/wordkrush\.com\/share\/\S+/.exec(buildShareText({ streak: 7, bestStreak: 12 }))[0],
-    );
+    const pageUrl = new URL(buildSharePayload({ streak: 7, bestStreak: 12 }).url);
     expect(pageUrl.href).not.toContain('~');
 
     const html = await (
@@ -340,6 +338,15 @@ describe('the link a player actually pastes', () => {
     expect(card.headers.get('content-type')).toBe('image/png');
     expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
     expect(png.readUInt8(25)).toBe(2);
+  });
+
+  it('attaches the very card the link unfurls to', async () => {
+    const share = buildSharePayload({ streak: 7, bestStreak: 12 });
+    const html = await (await fetch(`${origin}${new URL(share.url).pathname}`)).text();
+    const declared = new URL(/<meta property="og:image" content="([^"]+)"\/>/.exec(html)[1]);
+    const unfurled = Buffer.from(await (await fetch(`${origin}${declared.pathname}`)).arrayBuffer());
+    const attached = Buffer.from(await (await fetch(`${origin}${new URL(share.imageUrl).pathname}`)).arrayBuffer());
+    expect(attached.equals(unfurled)).toBe(true);
   });
 });
 
@@ -527,6 +534,13 @@ describe('invite links', () => {
 });
 
 describe('a shared streak', () => {
+  it('serves its card by token, the image the app attaches to the share', async () => {
+    const id = shareId({ game: 'streak', days: 12, best: 15 });
+    const response = await fetch(`${origin}/share/${id}/og.png`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('image/png');
+  });
+
   it('unfurls to the streak, in the title and the description', async () => {
     const id = shareId({ game: 'streak', days: 12, best: 15 });
     const html = await (await fetch(`${origin}/share/${id}`)).text();

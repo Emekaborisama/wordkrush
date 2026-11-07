@@ -149,3 +149,18 @@ export function buildShareUrl(data: ShareData): string {
   const encoded = encodeShareData(data);
   return `${SITE_URL}/share/${encoded}?utm_source=player&utm_medium=share`;
 }
+
+/**
+ * The card a share's link unfurls to, as a PNG the app can attach to the
+ * share itself. `server/serve.mjs` answers `/share/:token/og.png` with the
+ * same bytes as the card the page declares, so the app needs no copy of the
+ * server's card-id rules.
+ */
+export function buildShareImageUrl(data: ShareData): string {
+  return `${SITE_URL}/share/${encodeShareData(data)}/og.png`;
+}
+
+/** A short file name for an attached card: `wordkrush-clueless.png`. */
+export function shareFileName(kind: string): string {
+  return `wordkrush-${kind}.png`;
+}

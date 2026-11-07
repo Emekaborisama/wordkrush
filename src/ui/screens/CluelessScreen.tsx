@@ -21,7 +21,7 @@ import {
   type Action,
 } from '../../games/clueless/engine';
 import { isCluelessState, rehydrate } from '../../games/clueless/persistence';
-import { buildShareText } from '../../games/clueless/share';
+import { buildSharePayload } from '../../games/clueless/share';
 import {
   assistanceContextForHintPolicy,
   type CluelessAssistanceContext,
@@ -33,7 +33,7 @@ import { loadProgressEnvelope, saveProgress } from '../../games/progress';
 import { boostPrice } from '../../rewards/wallet';
 import type { BoostKind } from '../../rewards/types';
 import { feedback } from '../../native/feedback';
-import { shareResult } from '../../native/share';
+import { prepareShareImage, sharePayload } from '../../native/share';
 import { GuessRow } from '../GuessRow';
 import { ExampleRow, HowToPlay } from '../HowToPlay';
 import {
@@ -259,16 +259,21 @@ export function CluelessScreen({
     };
   }, []);
 
+  const solved = state.status === 'won';
+  const share = solved
+    ? buildSharePayload({ puzzleNumber, levelName, guesses: state.guesses.map((guess) => ({ rank: guess.rank })) })
+    : null;
+
+  // Fetch the card as soon as the word is found, so Share can attach it at once.
+  useEffect(() => {
+    if (share) prepareShareImage(share);
+  }, [share?.imageUrl]);
+
   async function onShare() {
-    const outcome = await shareResult(
-      buildShareText({
-        puzzleNumber,
-        levelName,
-        guesses: state.guesses.map((guess) => ({ rank: guess.rank })),
-      }),
-    );
+    if (!share) return;
+    const outcome = await sharePayload(share);
     if (outcome === 'copied') {
-      setShareNote('Copied to clipboard');
+      setShareNote('Link copied');
       if (shareNoteTimer.current !== null) clearTimeout(shareNoteTimer.current);
       shareNoteTimer.current = setTimeout(() => setShareNote(null), 2000);
     }

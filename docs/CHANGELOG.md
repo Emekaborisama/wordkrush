@@ -21,9 +21,16 @@ Rules:
   - your best streak, and the next flame reward with how many days are left;
   - **Share** and **Play** buttons.
   The count is today's real streak: a streak that lapsed yesterday is not shown or shared as alive.
-- **Share your streak.** The paste reads "WordKrush 🔥 12-day streak", and its link opens a card with the cat, the flame and your count.
+- **Share your streak.** It sends the streak card (the cat, the flame and your count) with its link.
 - **A 7-day chest track.** The opened chest wobbles and bursts into its coins. Underneath, the week's chests run from day 1 to day 7: days already opened are ticked, today is ringed, and day 7's big chest (+120) is ahead. A line tells you what tomorrow's chest holds.
 - Analytics: `streak_shared` (`days_bucket`, `method`) and `invite_shared` (`kind: duel | team`, `method`).
+
+### Changed
+- **Sharing sends the picture, not a block of emoji.** Every share (Higher or Lower, Daily 10, Clueless, Wordfall, your streak, and 1v1 and team invites) now sends that result's card as an image, with its link and one line daring your friend, for example "I called 12 in a row on Higher or Lower. Can you beat it?". The Wordle-style emoji grid is gone.
+  - On phone browsers the card goes as a picture, so WhatsApp, Instagram, X and Messages show it straight away. It is fetched while the result is on screen, so the share sheet opens at once.
+  - Where a browser cannot share pictures, it shares the link, which opens into the same card.
+  - Where there is no share sheet, it copies the line and the link and says "Link copied".
+  - In the iPhone and Android apps the link shows the card as its preview. Attaching the picture itself there needs two new libraries, so it is left for a later decision.
 
 ### Fixed
 - **Clueless and Wordfall share cards drew a row of broken boxes.** The server has no emoji font, so every 🟩 🟥 and ✓ on those cards came out as an empty box. The grids are now drawn as shapes, like the board's tiles.

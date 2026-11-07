@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
-import { shareResult } from '../../native/share';
+import { prepareShareImage, sharePayload } from '../../native/share';
 import { nextFlameGoal } from '../../rewards/progression';
-import { buildStreakShareText } from '../../streak/share';
+import { buildStreakSharePayload } from '../../streak/share';
 import { isAtRisk, liveStreakDays, recentStreakDays, type DailyStreak, type StreakDay } from '../../streak/types';
 import { Button, CreamBox, CreamText, GameIcon, GoldText, PanelText, PopupModal, Rays, StrokeText } from '../components';
 import { CatMascot, type CatMood } from '../mascot/CatMascot';
@@ -48,6 +48,13 @@ export function StreakPopup({ visible, streak, today, claimed, onClose, onPlay }
   const [note, setNote] = useState<string | null>(null);
   const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const sharing = days > 0 ? buildStreakSharePayload({ days, best: streak.longest }) : null;
+
+  // Fetch the card when the pop-up opens, so Share can attach it at once.
+  useEffect(() => {
+    if (visible && sharing) prepareShareImage(sharing);
+  }, [visible, sharing?.imageUrl]);
+
   useEffect(() => {
     if (!visible) setNote(null);
     return () => {
@@ -65,12 +72,13 @@ export function StreakPopup({ visible, streak, today, claimed, onClose, onPlay }
         : 'Finish any run today to light your flame.';
 
   const share = async () => {
-    const outcome = await shareResult(buildStreakShareText({ days, best: streak.longest }));
+    if (!sharing) return;
+    const outcome = await sharePayload(sharing);
     if (outcome === 'shared' || outcome === 'copied') {
       captureAnalytics('streak_shared', { days_bucket: daysBucket(days), method: outcome === 'shared' ? 'share_sheet' : 'clipboard' });
     }
     if (outcome === 'copied') {
-      setNote('Copied to clipboard');
+      setNote('Link copied');
       if (noteTimer.current !== null) clearTimeout(noteTimer.current);
       noteTimer.current = setTimeout(() => setNote(null), 2000);
     }

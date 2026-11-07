@@ -1,118 +1,65 @@
 import { describe, expect, it } from 'vitest';
 import { CARD_PHOTO_IDS } from './card-photos';
-import { buildDailyShareText, buildShareText } from './share';
+import { buildDailySharePayload, buildSharePayload } from './share';
 import { decodeShareData } from '../share-data';
 
-/** The token out of a paste, without the utm query behind it. */
-function sharedToken(text: string): string {
-  const url = /https:\/\/wordkrush\.com\/share\/([^?\s]+)/.exec(text);
-  expect(url).not.toBeNull();
-  return url?.[1] ?? '';
+/** The token out of a share link, without the utm query behind it. */
+function tokenOf(url: string): string {
+  const match = /^https:\/\/wordkrush\.com\/share\/([^?/]+)/.exec(url);
+  expect(match).not.toBeNull();
+  return match?.[1] ?? '';
 }
 
-describe('buildShareText', () => {
-  it('closes a short run with the miss that ended it', () => {
-    const text = buildShareText({ streak: 2, bestStreak: 15 });
-    expect(text).toContain('WordKrush · Higher or Lower');
-    expect(text).toContain('🟩🟩🟥');
-    expect(text).toContain('Streak 2 · best 15');
-    expect(text).toContain('A start. Then one miss.');
-    expect(text).toMatch(/https:\/\/wordkrush\.com\/share\/.+\?utm_source=player&utm_medium=share/);
+describe('a Higher or Lower share', () => {
+  it('is the card, its link and one line daring the reader, with no grid', () => {
+    const share = buildSharePayload({ streak: 12, bestStreak: 15 });
+    expect(share.caption).toBe('I called 12 in a row on Higher or Lower. Can you beat it?');
+    expect(share.caption).not.toMatch(/[🟩🟥\n]/u);
+    expect(share.imageUrl).toBe(`https://wordkrush.com/share/${tokenOf(share.url)}/og.png`);
+    expect(share.fileName).toBe('wordkrush-higher-or-lower.png');
   });
 
-  it('is just the miss at streak zero', () => {
-    const text = buildShareText({ streak: 0, bestStreak: 8 });
-    expect(text).toContain('\n🟥\n');
-    expect(text).toContain('Gone in one.');
-  });
-
-  it('uses the mid-run verdict for a streak of 12', () => {
-    const text = buildShareText({ streak: 12, bestStreak: 15 });
-    expect(text).toContain('Held the line, then blinked.');
-    expect(text).toContain('Streak 12 · best 15');
-  });
-
-  it('wraps at ten and starts a new row when the tenth was correct', () => {
-    const rows = buildShareText({ streak: 10, bestStreak: 10 }).split('\n');
-    expect(rows[1]).toBe('🟩'.repeat(10));
-    expect(rows[2]).toBe('🟥');
-  });
-
-  it('summarises instead of drawing an unreadable wall of squares', () => {
-    const text = buildShareText({ streak: 58, bestStreak: 58 });
-    expect(text).toContain('+8 more 🟥');
-    expect((text.match(/🟩/gu) ?? []).length).toBe(50);
-  });
-
-  it('includes local rank when it is provided', () => {
-    expect(buildShareText({ streak: 4, bestStreak: 9, rank: 3 })).toContain(
-      'Streak 4 · best 9 · #3',
-    );
+  it('has its own line for a run that ended on the first pair', () => {
+    expect(buildSharePayload({ streak: 0, bestStreak: 4 }).caption).toMatch(/first pair/);
   });
 
   it('leaks nothing about the pair that ended the run', () => {
-    const text = buildShareText({ streak: 9, bestStreak: 9 });
-    const grid = text.split('\n')[1] ?? '';
-    expect(grid).toMatch(/^[🟩🟥]+$/u);
-    // The lines a reader sees. The link's photo ids are card decoration seeded
-    // by the standing — `buildShareText` is never told what the pair was.
-    const readable = text
-      .split('\n')
-      .filter((line) => !line.startsWith('http'))
-      .join('\n');
-    expect(readable).not.toMatch(/sushi|pizza|wikipedia/i);
+    // The card draws photos seeded by the standing; the builder is never told the pair.
+    expect(buildSharePayload({ streak: 9, bestStreak: 9 }).caption).not.toMatch(/sushi|pizza|wikipedia/i);
   });
 
-  it('pastes a link no composer will cut short', () => {
-    // A `~` in the token is where `twitter-text` stopped reading the URL, so
-    // the link X saw was a prefix of this one and unfurled nothing.
-    const token = sharedToken(buildShareText({ streak: 0, bestStreak: 0 }));
-
+  it('links to a token no composer will cut short', () => {
+    // A `~` in the token is where `twitter-text` stopped reading the URL.
+    const token = tokenOf(buildSharePayload({ streak: 0, bestStreak: 0 }).url);
     expect(token).not.toMatch(/[~=]/);
     expect(token.at(-1)).toMatch(/[A-Za-z0-9_-]/);
   });
 
-  it('names the two photos its card draws', () => {
-    const decoded = decodeShareData(sharedToken(buildShareText({ streak: 7, bestStreak: 12 })));
-
-    expect(decoded?.game).toBe('more-or-less');
+  it('names the two photos its card draws, the same pair every time', () => {
+    const first = buildSharePayload({ streak: 7, bestStreak: 12 });
+    const decoded = decodeShareData(tokenOf(first.url));
     const photos = decoded?.game === 'more-or-less' ? decoded.photos : undefined;
     expect(photos).toHaveLength(2);
     expect(photos?.[0]).not.toBe(photos?.[1]);
     for (const id of photos ?? []) expect(CARD_PHOTO_IDS).toContain(id);
+    expect(buildSharePayload({ streak: 7, bestStreak: 12 })).toEqual(first);
   });
 
-  it('gives one result one board, however often it is shared', () => {
-    // Seeded, not random: the card is part of the result, so sharing the same
-    // run twice has to produce the same link and therefore the same board.
-    const first = sharedToken(buildShareText({ streak: 7, bestStreak: 12 }));
-    const second = sharedToken(buildShareText({ streak: 7, bestStreak: 12 }));
-
-    expect(second).toBe(first);
+  it('carries a level run as a challenge, and says so', () => {
+    const share = buildSharePayload({ streak: 7, bestStreak: 9, challenge: { seed: 42, path: 'world', level: 2 } });
+    expect(share.caption).toBe('Beat my streak of 7 on Higher or Lower. Same pairs, same order.');
+    expect(decodeShareData(tokenOf(share.url))).toMatchObject({ streak: 7, challenge: { seed: 42, path: 'world', level: 2 } });
   });
 });
 
-describe('challenge links', () => {
-  it('carries the run and dares the reader to beat it', () => {
-    const text = buildShareText({ streak: 7, bestStreak: 9, challenge: { seed: 42, path: 'world', level: 2 } });
-    expect(text).toContain('Can you beat it? Same pairs, same order.');
-    const token = /\/share\/([A-Za-z0-9_-]+)/.exec(text)?.[1] ?? '';
-    expect(decodeShareData(token)).toMatchObject({ streak: 7, challenge: { seed: 42, path: 'world', level: 2 } });
-  });
-});
-
-describe('daily share', () => {
-  it('shows the day, the squares and the score out of ten', () => {
-    const text = buildDailyShareText({ number: 3, streak: 7, bestStreak: 7 });
-    expect(text).toContain('WordKrush Daily #3');
-    expect(text).toContain('🟩🟩🟩🟩🟩🟩🟩🟥');
-    expect(text).toContain('7/10');
+describe('a Daily 10 share', () => {
+  it('names the day and the score out of ten', () => {
+    expect(buildDailySharePayload({ number: 3, streak: 7, bestStreak: 7 }).caption).toBe(
+      '7/10 on WordKrush Daily #3. Same ten pairs for everyone today.',
+    );
   });
 
-  it('closes a perfect ten without a red square', () => {
-    const text = buildDailyShareText({ number: 3, streak: 10, bestStreak: 10 });
-    expect(text).toContain('🟩'.repeat(10));
-    expect(text).not.toContain('🟥');
-    expect(text).toContain('A perfect ten.');
+  it('calls a perfect ten perfect', () => {
+    expect(buildDailySharePayload({ number: 3, streak: 10, bestStreak: 10 }).caption).toBe('A perfect 10/10 on WordKrush Daily #3. Your turn.');
   });
 });

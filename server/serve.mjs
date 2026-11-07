@@ -441,11 +441,13 @@ async function handleCardImageRoute(pathname) {
 }
 
 /**
- * Handle /share/:id/og.png, the path share pages declared before 0.8.35.
+ * Handle /share/:id/og.png: a share's card, by its share token.
  *
- * X keeps an unfurled card against its URL for days, so this stays: the token
- * resolves to the same card id the short path would, and therefore to exactly
- * the same bytes.
+ * Share pages declared this path before 0.8.35, and X keeps an unfurled card
+ * against its URL for days. Since 0.21.0 it is also what the app fetches to
+ * attach the card itself to a share (`buildShareImageUrl`), so the app needs
+ * no copy of the card-id rules. Either way the token resolves to the same
+ * card id the short path would, and therefore to exactly the same bytes.
  */
 async function handleOgImageRoute(pathname) {
   const match = /^\/share\/([^/]+)\/og\.png$/.exec(pathname);

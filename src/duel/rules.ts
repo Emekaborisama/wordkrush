@@ -10,7 +10,8 @@
  */
 import { validateUsername } from '../auth/validation';
 import { normalizeCountry } from './country';
-import { SITE_URL } from '../games/share-data';
+import type { SharePayload } from '../games/share';
+import { SITE_URL, shareFileName } from '../games/share-data';
 
 export const DUEL_MS = 60_000;
 export const COUNTDOWN_MS = 3_000;
@@ -118,4 +119,18 @@ export function roomFromPath(pathname: string): string | null {
 /** The link that brings a friend into `room`; `roomFromPath` reads it back. */
 export function duelInviteUrl(room: string): string {
   return `${SITE_URL}/duel/${room}`;
+}
+
+/**
+ * A 1v1 invite as a share: the challenge card, the room link and one line.
+ * The card is the same for every room (`d_invite` in `server/og-card.mjs`),
+ * so a live room code never appears on an image.
+ */
+export function duelSharePayload(room: string): SharePayload {
+  return {
+    caption: 'Play me 1v1 on WordKrush. Same pairs, one minute.',
+    url: duelInviteUrl(room),
+    imageUrl: `${SITE_URL}/og/share/d_invite.png`,
+    fileName: shareFileName('1v1'),
+  };
 }

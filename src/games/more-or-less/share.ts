@@ -1,88 +1,68 @@
 /**
- * Spoiler-free More or Less result paste.
+ * A Higher or Lower share: the board card, its link, and one line daring the
+ * reader to beat the streak.
  *
- * A wall of green for every correct call, closed by the red that ended the
- * run. Never the item labels or values — GameOverScreen shows the losing
- * pair on screen; a public paste must not.
+ * Never the item labels or values. GameOverScreen shows the losing pair on
+ * screen; a public share must not, and the card draws two unrelated photos.
  */
-import { SHARE_MAX_SQUARES, composeShare, wrapSquares } from '../share';
-import { buildShareUrl, type MoreOrLessShareData } from '../share-data';
+import type { SharePayload } from '../share';
+import { buildShareImageUrl, buildShareUrl, shareFileName, type MoreOrLessShareData } from '../share-data';
 import { pickCardPhotos } from './card-photos';
 import type { ChallengeRun } from './challenge';
 import { DAILY_PAIRS } from './daily';
 
-const CORRECT = '🟩';
-const WRONG = '🟥';
-
 export type MoreOrLessShareInput = {
   streak: number;
   bestStreak: number;
-  rank?: number;
   /** The run's seed and level: the link becomes a challenge to replay it. */
   challenge?: ChallengeRun;
 };
 
-export function buildShareText(input: MoreOrLessShareInput): string {
-  const shareData: MoreOrLessShareData = {
+function payload(data: MoreOrLessShareData, caption: string): SharePayload {
+  return {
+    caption,
+    url: buildShareUrl(data),
+    imageUrl: buildShareImageUrl(data),
+    fileName: shareFileName('higher-or-lower'),
+  };
+}
+
+export function buildSharePayload(input: MoreOrLessShareInput): SharePayload {
+  const data: MoreOrLessShareData = {
     game: 'more-or-less',
     streak: input.streak,
     bestStreak: input.bestStreak,
   };
 
-  // The card the link unfurls to is two photographs, and naming them here is
-  // what pins one share to one board. They are decoration, seeded by the
-  // standing rather than drawn from the run: the pair that ended it is a
-  // spoiler, and this link is public.
+  // The card is two photographs, and naming them here is what pins one share
+  // to one board. They are decoration, seeded by the standing rather than
+  // drawn from the run: the pair that ended it is a spoiler, and this link is
+  // public.
   const photos = pickCardPhotos(`${input.streak}:${input.bestStreak}`);
-  if (photos) shareData.photos = photos;
-  if (input.challenge) shareData.challenge = input.challenge;
+  if (photos) data.photos = photos;
+  if (input.challenge) data.challenge = input.challenge;
 
-  return composeShare({
-    title: 'WordKrush · Higher or Lower',
-    grid: moreOrLessGrid(input.streak),
-    standing: moreOrLessStanding(input),
-    verdict: input.challenge ? 'Can you beat it? Same pairs, same order.' : moreOrLessVerdict(input.streak),
-    url: buildShareUrl(shareData),
-  });
+  return payload(data, moreOrLessCaption(input));
 }
 
-function moreOrLessGrid(streak: number): string {
-  const correct = Math.max(0, streak);
-  if (correct <= SHARE_MAX_SQUARES) {
-    return wrapSquares(CORRECT.repeat(correct) + WRONG);
-  }
-  return wrapSquares(CORRECT.repeat(correct), (extra) => `+${extra} more ${WRONG}`);
-}
-
-function moreOrLessStanding({ streak, bestStreak, rank }: MoreOrLessShareInput): string {
-  const parts = [`Streak ${streak}`];
-  if (bestStreak > 0) parts.push(`best ${bestStreak}`);
-  if (rank !== undefined) parts.push(`#${rank}`);
-  return parts.join(' · ');
-}
-
-function moreOrLessVerdict(streak: number): string {
-  if (streak <= 0) return 'Gone in one.';
-  if (streak < 5) return 'A start. Then one miss.';
-  if (streak < 20) return 'Held the line, then blinked.';
-  return 'A long wall. Then one brick.';
+function moreOrLessCaption({ streak, challenge }: MoreOrLessShareInput): string {
+  if (challenge) return `Beat my streak of ${streak} on Higher or Lower. Same pairs, same order.`;
+  if (streak <= 0) return 'Higher or Lower got me on the first pair. Can you do better?';
+  return `I called ${streak} in a row on Higher or Lower. Can you beat it?`;
 }
 
 /**
- * The Daily 10 paste: the day's number, a green square per right call (red
- * where it ended, none if all ten held), and the score out of ten. Spoiler
- * free like the rest; the link lands on the game, where today's daily waits.
+ * The Daily 10 share: today's number and the score out of ten. The link
+ * lands on the game, where today's ten wait.
  */
-export function buildDailyShareText({ number, streak, bestStreak }: { number: number; streak: number; bestStreak: number }): string {
-  const perfect = streak >= DAILY_PAIRS;
-  const shareData: MoreOrLessShareData = { game: 'more-or-less', streak, bestStreak };
+export function buildDailySharePayload({ number, streak, bestStreak }: { number: number; streak: number; bestStreak: number }): SharePayload {
+  const score = Math.min(streak, DAILY_PAIRS);
+  const data: MoreOrLessShareData = { game: 'more-or-less', streak, bestStreak };
   const photos = pickCardPhotos(`daily:${number}`);
-  if (photos) shareData.photos = photos;
-  return composeShare({
-    title: `WordKrush Daily #${number}`,
-    grid: wrapSquares(CORRECT.repeat(Math.min(streak, DAILY_PAIRS)) + (perfect ? '' : WRONG)),
-    standing: `${Math.min(streak, DAILY_PAIRS)}/${DAILY_PAIRS}`,
-    verdict: perfect ? 'A perfect ten. Your turn.' : 'Same ten pairs for everyone today. Your turn.',
-    url: buildShareUrl(shareData),
-  });
+  if (photos) data.photos = photos;
+  const caption =
+    score >= DAILY_PAIRS
+      ? `A perfect ${DAILY_PAIRS}/${DAILY_PAIRS} on WordKrush Daily #${number}. Your turn.`
+      : `${score}/${DAILY_PAIRS} on WordKrush Daily #${number}. Same ten pairs for everyone today.`;
+  return payload(data, caption);
 }

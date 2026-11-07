@@ -38,9 +38,9 @@ import {
   unlockAfterWin,
 } from '../../games/wordfall/schedule';
 import type { Level, SpecialKind, WordfallState } from '../../games/wordfall/types';
-import { buildShareText } from '../../games/wordfall/share';
+import { buildSharePayload } from '../../games/wordfall/share';
 import { chime, feedback } from '../../native/feedback';
-import { shareResult } from '../../native/share';
+import { prepareShareImage, sharePayload } from '../../native/share';
 import { boostPrice } from '../../rewards/wallet';
 import type { BoostKind } from '../../rewards/types';
 import { HowToPlay } from '../HowToPlay';
@@ -922,19 +922,23 @@ function LevelOutcome({
     };
   }, []);
 
+  const share = buildSharePayload({
+    levelNumber: level.number,
+    levelName: level.name,
+    score: state.score,
+    wordLengths: state.played.map((word) => word.length),
+    won,
+  });
+
+  // Fetch the card while the result shows, so Share can attach it at once.
+  useEffect(() => {
+    prepareShareImage(share);
+  }, [share.imageUrl]);
+
   async function onShare() {
-    const outcome = await shareResult(
-      buildShareText({
-        levelNumber: level.number,
-        levelName: level.name,
-        score: state.score,
-        wordLengths: state.played.map((word) => word.length),
-        elapsedMs: state.elapsedMs,
-        won,
-      }),
-    );
+    const outcome = await sharePayload(share);
     if (outcome === 'copied') {
-      setShareNote('Copied to clipboard');
+      setShareNote('Link copied');
       if (shareNoteTimer.current !== null) clearTimeout(shareNoteTimer.current);
       shareNoteTimer.current = setTimeout(() => setShareNote(null), 2000);
     }

@@ -7,8 +7,8 @@ import { LIVE_ROSTER_LABEL, PATH_GAME_IDS, type PathGameId } from '../../games/c
 import { GAMES } from '../../games/registry';
 import { createMatch, loadActiveMatch } from '../../live/api';
 import { clearExistingMembership, createTeam, joinTeam } from '../../teams/api';
-import { shareResult } from '../../native/share';
-import { teamInviteUrl } from '../../teams/codes';
+import { prepareShareImage, sharePayload } from '../../native/share';
+import { teamSharePayload } from '../../teams/codes';
 import type { TeamSnapshot } from '../../teams/types';
 import {
   Badge,
@@ -132,10 +132,16 @@ export function TeamsScreen({ profile, pendingInviteCode, onNeedAuth, onOpenLobb
     onOpenLobby(created.value.match.id);
   }
 
+  const inviteCode = snapshot?.team.inviteCode ?? null;
+  const teamName = snapshot?.team.name ?? '';
+  // Fetch the invite card while the room is on screen, so Share can attach it at once.
+  useEffect(() => {
+    if (inviteCode) prepareShareImage(teamSharePayload(inviteCode, teamName));
+  }, [inviteCode, teamName]);
+
   async function shareInvite() {
     if (!snapshot) return;
-    const url = teamInviteUrl(snapshot.team.inviteCode);
-    const outcome = await shareResult(`Join ${snapshot.team.name} on WordKrush and race me live.\n${url}`);
+    const outcome = await sharePayload(teamSharePayload(snapshot.team.inviteCode, snapshot.team.name));
     if (outcome === 'shared' || outcome === 'copied') {
       captureAnalytics('invite_shared', { kind: 'team', method: outcome === 'shared' ? 'share_sheet' : 'clipboard' });
     }

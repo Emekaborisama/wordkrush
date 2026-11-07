@@ -155,8 +155,8 @@ import {
 import { challengeFromShare, challengeVerdict, shareTokenFromPath, type Challenge } from './src/games/more-or-less/challenge';
 import { DAILY_PAIRS, dailyNumber, dailySeed, todaysResult, type DailyResult } from './src/games/more-or-less/daily';
 import { loadDailyResult, saveDailyResult } from './src/games/more-or-less/daily-storage';
-import { buildDailyShareText } from './src/games/more-or-less/share';
-import { shareResult } from './src/native/share';
+import { buildDailySharePayload } from './src/games/more-or-less/share';
+import { prepareShareImage, sharePayload } from './src/native/share';
 import { StreakPopup } from './src/ui/rewards/StreakPopup';
 import { decodeShareData } from './src/games/share-data';
 import { LabelLevelCard } from './src/ui/LabelLevelCard';
@@ -768,12 +768,17 @@ export default function App() {
     });
   };
 
+  const todaysDaily = todaysResult(dailyResult, todayKey);
+  const dailyShare = todaysDaily
+    ? buildDailySharePayload({ number: dailyNumber(todayKey), streak: todaysDaily.streak, bestStreak: boardFor(MORE_OR_LESS).bestStreak })
+    : null;
+  // Fetch today's card once the Daily 10 is played, so Home's Share can attach it at once.
+  useEffect(() => {
+    if (dailyShare) prepareShareImage(dailyShare);
+  }, [dailyShare?.imageUrl]);
+
   const shareDaily = () => {
-    const today = todaysResult(dailyResult, todayKey);
-    if (!today) return;
-    void shareResult(
-      buildDailyShareText({ number: dailyNumber(todayKey), streak: today.streak, bestStreak: boardFor(MORE_OR_LESS).bestStreak }),
-    );
+    if (dailyShare) void sharePayload(dailyShare);
   };
 
   /** Plays a friend's run: their seed, their level, their streak to beat. */

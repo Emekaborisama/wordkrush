@@ -5,10 +5,10 @@ import { streakBucket } from '../../analytics/events';
 import type { GameState } from '../../games/more-or-less/engine';
 import { challengeVerdict, type ChallengeRun } from '../../games/more-or-less/challenge';
 import { DAILY_PAIRS } from '../../games/more-or-less/daily';
-import { buildDailyShareText, buildShareText } from '../../games/more-or-less/share';
+import { buildDailySharePayload, buildSharePayload } from '../../games/more-or-less/share';
 import type { Category } from '../../games/more-or-less/types';
 import { feedback } from '../../native/feedback';
-import { shareResult } from '../../native/share';
+import { prepareShareImage, sharePayload } from '../../native/share';
 import { rankOf, type ScoreBoard } from '../../scores/types';
 import type { RewardEvent } from '../../rewards/types';
 import {
@@ -85,6 +85,15 @@ export function GameOverScreen({
   const shareNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const personalBest = isNewBest && state.streak > 0;
+  const share =
+    daily !== undefined
+      ? buildDailySharePayload({ number: daily, streak: state.streak, bestStreak: board.bestStreak })
+      : buildSharePayload({ streak: state.streak, bestStreak: board.bestStreak, challenge: challengeRun });
+
+  // Fetch the card now, so a tap on Share can attach it without waiting.
+  useEffect(() => {
+    prepareShareImage(share);
+  }, [share.imageUrl]);
 
   useEffect(() => {
     if (personalBest) feedback('win');
@@ -103,13 +112,9 @@ export function GameOverScreen({
       streak_bucket: streakBucket(state.streak),
       is_new_best: isNewBest,
     });
-    const outcome = await shareResult(
-      daily !== undefined
-        ? buildDailyShareText({ number: daily, streak: state.streak, bestStreak: board.bestStreak })
-        : buildShareText({ streak: state.streak, bestStreak: board.bestStreak, rank, challenge: challengeRun }),
-    );
+    const outcome = await sharePayload(share);
     if (outcome === 'copied') {
-      setShareNote('Copied to clipboard');
+      setShareNote('Link copied');
       if (shareNoteTimer.current !== null) clearTimeout(shareNoteTimer.current);
       shareNoteTimer.current = setTimeout(() => setShareNote(null), 2000);
     }

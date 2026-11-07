@@ -1,10 +1,9 @@
 /**
- * The daily streak as a paste: the flame, the days, and a link whose card is
- * the cat cheering beside the count (`server/og-image.mjs`). Nothing in it
- * is about a game's answers, so it is spoiler-free by construction.
+ * The daily streak as a share: the card with the cat, the flame and the
+ * count, its link, and one line asking the reader to keep up.
  */
-import { composeShare, type ShareBlocks } from '../games/share';
-import { buildShareUrl, type StreakShareData } from '../games/share-data';
+import type { SharePayload } from '../games/share';
+import { buildShareImageUrl, buildShareUrl, shareFileName, type StreakShareData } from '../games/share-data';
 
 export type StreakShareInput = {
   /** Live days, from `liveStreakDays`. */
@@ -13,18 +12,13 @@ export type StreakShareInput = {
   best: number;
 };
 
-export function streakShareBlocks({ days, best }: StreakShareInput): ShareBlocks {
-  const longest = Math.max(days, best);
-  const data: StreakShareData = { game: 'streak', days, best: longest };
+export function buildStreakSharePayload({ days, best }: StreakShareInput): SharePayload {
+  // A best below the streak being shared is never claimed.
+  const data: StreakShareData = { game: 'streak', days, best: Math.max(days, best) };
   return {
-    title: `WordKrush 🔥 ${days}-day streak`,
-    grid: '',
-    standing: longest > days ? `Best ${longest}` : days > 1 ? 'My longest yet' : 'Day one',
-    verdict: 'One word game a day. Keep up with me?',
+    caption: days === 1 ? 'Day one of my WordKrush streak. Keep up with me?' : `${days} days in a row on WordKrush. Can you keep up?`,
     url: buildShareUrl(data),
+    imageUrl: buildShareImageUrl(data),
+    fileName: shareFileName('streak'),
   };
-}
-
-export function buildStreakShareText(input: StreakShareInput): string {
-  return composeShare(streakShareBlocks(input));
 }
