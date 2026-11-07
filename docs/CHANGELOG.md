@@ -6,6 +6,20 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.19.2] - 2026-11-07
+
+### Changed
+- **Higher or Lower says what it is.** The welcome tile, the Home card, the rules and the page's search copy now ask "Which is more popular?" and name monthly Wikipedia pageviews. They used to say "Is the next number higher or lower?", which described a different game.
+- **One celebration per result.** A level-up or milestone no longer opens a second pop-up over the result that had to be dismissed first. It shows as a gold row under the coins and XP, in every game and in 1v1. The XP level is always "Player level 2", so "level" on its own only ever means a game's stage. One-time streak milestones read "First streak of 5", so they stay true when the run went further.
+- **Only claims the app can back.**
+  - "NEW RECORD!" needs a record to beat: a first run no longer gets the trophy.
+  - The result no longer shows "Rank #N", which was a rank among this device's own runs. A share paste no longer adds "#N" either. "Best" stays.
+  - Home no longer puts "New!" on every unplayed game.
+  - Players no longer see "preview data" or "provisional". The source and its date stay on every pair.
+- **The I Sabi Lagos pop-up shows once.** It is marked seen the moment it is on screen. Before, only tapping "Later" or entering counted, so a reload or any other way out brought it back on every load.
+
+### Analytics
+- `utm_source` now recognises `hackernews` (also `hn`), `linkedin`, `whatsapp` (also `wa`) and `slack`, all as social. Untagged visits from Hacker News and LinkedIn count as social too. Launch links use `utm_medium=social`, because `organic` is filed under search.
 ## [0.8.38] - 2026-10-02
 
 ### Added

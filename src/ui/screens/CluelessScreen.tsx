@@ -61,7 +61,7 @@ import type { Stone } from '../levelTrail';
 import { useHeightClass } from '../useHeightClass';
 import { BoostBar, coinShortfall } from '../rewards/BoostBar';
 import type { RunReward } from '../rewards/RunReward';
-import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
+import { RewardPanel } from '../rewards/RewardReveal';
 import { cube, font, palette, proximityColor, space, tone, type CubeColor } from '../theme';
 
 const GAME_ID = 'clueless';
@@ -407,7 +407,6 @@ export function CluelessScreen({
             <ScoreWell label={state.guesses.length === 1 ? 'GUESS' : 'GUESSES'} value={String(state.guesses.length)} />
             {pathPhase !== 'team' ? <PanelText>{completionCopy}</PanelText> : null}
           </Panel>
-          {reward ? <RewardCelebration events={reward.events} /> : null}
         </View>
       ) : (
         <>

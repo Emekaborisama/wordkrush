@@ -9,7 +9,7 @@ import { buildDailyShareText, buildShareText } from '../../games/more-or-less/sh
 import type { Category } from '../../games/more-or-less/types';
 import { feedback } from '../../native/feedback';
 import { shareResult } from '../../native/share';
-import { rankOf, type ScoreBoard } from '../../scores/types';
+import type { ScoreBoard } from '../../scores/types';
 import type { RewardEvent } from '../../rewards/types';
 import {
   Button,
@@ -22,7 +22,7 @@ import {
   ScoreWell,
   SquareButton,
 } from '../components';
-import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
+import { RewardPanel } from '../rewards/RewardReveal';
 import { danfo } from '../lagos/danfoTheme';
 import { font, formatValue, palette, space, tone } from '../theme';
 
@@ -79,11 +79,12 @@ export function GameOverScreen({
   rival,
   daily,
 }: Props) {
-  const rank = rankOf(board, state.streak);
   const [shareNote, setShareNote] = useState<string | null>(null);
   const shareNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const personalBest = isNewBest && state.streak > 0;
+  // A record needs something to beat: `board` already holds this run, so a
+  // first run (totalRuns 1) is never "NEW RECORD!" (UX review 2026-11-07).
+  const personalBest = isNewBest && state.streak > 0 && board.totalRuns > 1;
 
   useEffect(() => {
     if (personalBest) feedback('win');
@@ -105,7 +106,7 @@ export function GameOverScreen({
     const outcome = await shareResult(
       daily !== undefined
         ? buildDailyShareText({ number: daily, streak: state.streak, bestStreak: board.bestStreak })
-        : buildShareText({ streak: state.streak, bestStreak: board.bestStreak, rank, challenge: challengeRun }),
+        : buildShareText({ streak: state.streak, bestStreak: board.bestStreak, challenge: challengeRun }),
     );
     if (outcome === 'copied') {
       setShareNote('Copied to clipboard');
@@ -254,7 +255,6 @@ export function GameOverScreen({
         ) : null}
         <ScoreWell label={state.streak === 1 ? 'ROUND' : 'ROUNDS'} value={String(state.streak)} />
         <View style={styles.chips}>
-          <Text style={styles.chip}>{`Rank #${rank}`}</Text>
           <Text style={styles.chip}>{`Best ${board.bestStreak}`}</Text>
           {labelRound ? <Text style={styles.chip}>{`Sets ${labelRound.roundsPassed}`}</Text> : null}
         </View>
@@ -282,7 +282,6 @@ export function GameOverScreen({
           <CreamText style={[styles.center, styles.metric]}>{category.metricLabel}</CreamText>
         </CreamBox>
       </Panel>
-      <RewardCelebration events={events} />
     </View>
   );
 }

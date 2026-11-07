@@ -41,10 +41,12 @@ export const GAMES: GameDefinition[] = [
     id: 'more-or-less',
     // Player-facing name since 0.12.0 ("More or Less" read as vague); the id stays.
     name: 'Higher or Lower',
-    tagline: 'Is the next number higher or lower? Trust your gut and build a streak.',
+    // Players judge which of two things is more popular, so the copy says that,
+    // not "the next number" (UX review 2026-11-07).
+    tagline: 'Which is more popular? Trust your gut and build a streak.',
     badge: 'QUICK THINKING',
     blurb:
-      'One number is shown. Guess if the next one is higher or lower. Every right call keeps your streak alive.',
+      'Two things, one question: which gets more monthly Wikipedia pageviews? Every right call keeps your streak alive.',
     accent: '#32E487',
     emoji: '⚖️',
     status: 'available',

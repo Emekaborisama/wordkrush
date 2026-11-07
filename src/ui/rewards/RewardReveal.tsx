@@ -1,36 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { feedback } from '../../native/feedback';
-import type { MilestoneId, RewardEvent, StarCount } from '../../rewards/types';
-import {
-  Button,
-  CoinIcon,
-  CountUpText,
-  DisplayTitle,
-  PanelText,
-  PopupModal,
-  Rays,
-  StarRibbon,
-} from '../components';
+import { celebrationLabels } from '../../rewards/celebrations';
+import type { RewardEvent, StarCount } from '../../rewards/types';
+import { CoinIcon, CountUpText, PanelText, StarRibbon } from '../components';
 import { font, palette, space } from '../theme';
-
-const MILESTONE_TITLE: Record<MilestoneId, string> = {
-  'flame-3': '3-DAY FLAME',
-  'flame-7': '7-DAY FLAME',
-  'flame-14': '14-DAY FLAME',
-  'flame-30': '30-DAY FLAME',
-  'mol-streak-5': 'STREAK 5',
-  'mol-streak-10': 'STREAK 10',
-  'mol-streak-20': 'STREAK 20',
-  'mol-set-1': 'SET CLEARED',
-  'clueless-sparks': 'SPARKS CLEARED',
-  'clueless-vault-1': 'FIRST VAULT',
-  'clueless-vault-7': 'SEVEN VAULTS',
-  'wordfall-campaign': 'CAMPAIGN CLEAR',
-  'wordfall-weekly-1': 'WEEKLY CLEAR',
-  'level-5': 'LEVEL 5',
-  'level-10': 'LEVEL 10',
-};
 
 export function starsEarned(events: readonly RewardEvent[]): StarCount {
   const stars = events.find((event) => event.kind === 'stars');
@@ -55,7 +29,9 @@ function XpGem() {
 
 /**
  * What a finished run earned, the kit way: the stars standing on the blue
- * scroll, then coin and XP chips that count up. Lives inside a result panel.
+ * scroll, coin and XP chips that count up, then one row for any level-up or
+ * milestone. Lives inside a result panel: one celebration per result, never a
+ * second pop-up over it.
  */
 export function RewardPanel({
   events,
@@ -70,6 +46,7 @@ export function RewardPanel({
   const xp = sumKind(events, 'xp');
   const coins = sumKind(events, 'coins');
   const earned = starsEarned(events);
+  const moments = celebrationLabels(events);
 
   useEffect(() => {
     if (coins > 0) feedback('coin');
@@ -82,6 +59,15 @@ export function RewardPanel({
         <RewardChip icon={<CoinIcon size={30} />} value={coins} label="coins" />
         <RewardChip icon={<XpGem />} value={xp} label="XP" />
       </View>
+      {moments.length > 0 ? (
+        <View style={styles.moments}>
+          {moments.map((label) => (
+            <Text key={label} style={styles.moment}>
+              {label}
+            </Text>
+          ))}
+        </View>
+      ) : null}
       {boosted ? <PanelText>Boosted run — not on the global board</PanelText> : null}
     </View>
   );
@@ -95,52 +81,6 @@ function RewardChip({ icon, value, label }: { icon: ReactNode; value: number; la
       <CountUpText value={value} style={styles.chipValue} announce />
       <Text style={styles.chipLabel}>{label}</Text>
     </View>
-  );
-}
-
-/**
- * Level-up and milestone beats, one pop-up each with rays behind the title.
- * They open after the result is already showing.
- */
-export function RewardCelebration({ events }: { events: readonly RewardEvent[] }) {
-  const beats = events.filter(
-    (event): event is Extract<RewardEvent, { kind: 'levelUp' | 'milestone' }> =>
-      event.kind === 'levelUp' || event.kind === 'milestone',
-  );
-  const [open, setOpen] = useState(false);
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    if (beats.length === 0) return;
-    const timer = setTimeout(() => setOpen(true), 700);
-    return () => clearTimeout(timer);
-  }, [beats.length]);
-
-  const beat = beats[index];
-  if (!open || !beat) return null;
-  const title = beat.kind === 'levelUp' ? `LEVEL ${beat.to}` : MILESTONE_TITLE[beat.id];
-  const last = index + 1 >= beats.length;
-  const next = () => setIndex((current) => current + 1);
-
-  return (
-    <PopupModal
-      visible
-      onClose={next}
-      dismissable={false}
-      hideClose
-      scrim="strong"
-      title={beat.kind === 'levelUp' ? 'LEVEL UP!' : 'MILESTONE'}
-      ribbon="banner"
-      ribbonColor={palette.goldDeep}
-      footer={<Button title={last ? 'Continue' : 'Next'} tone="green" size="lg" onPress={next} />}
-    >
-      <View style={styles.beat}>
-        <View style={styles.rays} pointerEvents="none">
-          <Rays />
-        </View>
-        <DisplayTitle accessibilityLabel={title}>{title}</DisplayTitle>
-      </View>
-    </PopupModal>
   );
 }
 
@@ -175,6 +115,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   gemShine: { position: 'absolute', top: 1, left: 1, width: 8, height: 8, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.6)' },
-  beat: { alignItems: 'center', justifyContent: 'center', minHeight: 150 },
-  rays: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+  moments: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.xs },
+  moment: {
+    fontFamily: font.heavy,
+    fontSize: 13,
+    color: palette.ink,
+    backgroundColor: palette.gold,
+    borderWidth: 2,
+    borderColor: palette.goldEdge,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    overflow: 'hidden',
+  },
 });

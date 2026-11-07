@@ -171,6 +171,11 @@ signed-in-status events, and calls `identify` after a consented sign-up or
 restored session. The first consented open also sends a bounded
 `entry_source` (and UTM buckets when present) on `app_opened`; web arrivals
 and non-auth deep links fire `landing_viewed`. Raw URLs stay out.
+`src/analytics/attribution.ts` buckets `utm_source` into a fixed list (Meta,
+Google, Reddit, X, TikTok, YouTube, and since 0.19.2 Hacker News, LinkedIn,
+WhatsApp and Slack, all social) and keeps only whether `utm_campaign` was
+present, never its value. `utm_medium=organic` counts as search, so launch
+posts are tagged `utm_medium=social`.
 Game screens capture submit and outcome aggregates. Sign-out
 resets the PostHog identity. Storage modules report bounded failure categories
 through a pure no-op sink. Reducers in `src/games/` remain deterministic and
@@ -334,8 +339,11 @@ A Wordfall loss takes the same path, including the daily flame. Live races
 skip rewards and never show boosts.
 
 The result sheet shows the stars, XP, and coins from the events `applyRun`
-returned. A level-up or milestone celebration opens after that sheet, not
-instead of the value reveal. More or Less still counts the hidden value up
+returned, then one gold row for any level-up or milestone
+(`celebrationLabels` in `src/rewards/celebrations.ts`). Since 0.19.2 there is
+no second pop-up over the result, and the XP level always reads "Player
+level N", so "level" alone means a game's stage. The More or Less result shows
+"NEW RECORD!" only when an earlier run exists, and no device-only rank. More or Less still counts the hidden value up
 before the result. The hub chest reads locked ("Finish any run to open
 today's chest"), ready ("Open — Day N/7"), or claimed ("Back tomorrow").
 
@@ -612,7 +620,7 @@ Every level run is stored and uploaded as `game_id = more-or-less`, with the cat
 **Next level** or **Next stop** on the result, and **Oya, enter!** on the Lagos route, call `rideToLevel`. `DanfoRide` (`src/ui/lagos/DanfoRide.tsx`) covers the screen in danfo yellow (sky blue on the world path). It calls `onCovered`, which starts the level underneath. The bus then pulls in under the stop's sign, holds while the conductor calls the stop, and drives off as the cover fades.
 
 **5. `/isabilagos` is a web path, not a router.** [BUILT]
-`server/serve.mjs` already serves `index.html` for extensionless paths. `webHistory.ts` `openedAtLagosPath()` sends a visit to `/isabilagos` straight to the Lagos route and skips the welcome. While the Lagos route or a Lagos run is open, `syncLagosPath` keeps that address in the bar with `replaceState`, so it can be shared. The hub's yellow `LagosBanner` and the one-time `LagosAnnouncement` (shown only to returning players, `wordkrush.seen.isabilagos.v1`) are how players find it.
+`server/serve.mjs` already serves `index.html` for extensionless paths. `webHistory.ts` `openedAtLagosPath()` sends a visit to `/isabilagos` straight to the Lagos route and skips the welcome. While the Lagos route or a Lagos run is open, `syncLagosPath` keeps that address in the bar with `replaceState`, so it can be shared. The hub's yellow `LagosBanner` and the one-time `LagosAnnouncement` (shown only to returning players, `wordkrush.seen.isabilagos.v1`, saved through `onShown` the moment it is on screen) are how players find it.
 
 ## Journey 11 — Two strangers play a 1v1
 

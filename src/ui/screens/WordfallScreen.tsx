@@ -69,7 +69,7 @@ import {
 } from '../components';
 import { BoostBar, coinShortfall } from '../rewards/BoostBar';
 import type { RunReward } from '../rewards/RunReward';
-import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
+import { RewardPanel } from '../rewards/RewardReveal';
 import { shouldShowTraceHint } from '../wordfall/coach';
 import { font, formatDuration, palette, space, tone } from '../theme';
 import { BoardView } from '../wordfall/BoardView';
@@ -1050,7 +1050,6 @@ function LevelOutcome({
           </CreamBox>
         ) : null}
       </Panel>
-      {reward ? <RewardCelebration events={reward.events} /> : null}
     </View>
   );
 }
