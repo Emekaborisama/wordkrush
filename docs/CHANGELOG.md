@@ -69,9 +69,13 @@ Rules:
 - `utm_source` now recognises `hackernews` (also `hn`), `linkedin`, `whatsapp` (also `wa`) and `slack`, all as social. Untagged visits from Hacker News and LinkedIn count as social too. Launch links use `utm_medium=social`, because `organic` is filed under search.
 ## [0.8.38] - 2026-10-02
 
+> Correction (2026-11-07): this entry came from the Wordfall weekly bot's PR #66, opened on 2 October and merged on 7 November alongside 0.19.3. The version and date are the bot's from when it opened. Levels 20 to 22 went live with the 0.19.3 deploy, which is why the 26 October and 2 November drops arrived late.
+
 ### Added
 - **Wordfall weekly buffer through 9 November.** Deep Focus asks players to score 5,000 points while playing nine words; Tactical Sweep asks for 12 T tiles and four five-letter words; Long Haul asks for three six-letter words against a 90-second clock. These are hard bundled drops. Web players receive them after the next merge and deploy; native players need a build containing this catalog.
 ## [0.20.0] - 2026-10-31
+
+> Correction (2026-11-07): reverted the same day it merged (PR #83). None of this is live. The entry came back with a content merge (PR #66) that had picked it up before the revert.
 
 ### Changed
 - **Home is rebuilt around what a player came for.** The three games now come first, at full size, instead of below five other blocks. 1v1, Daily 10 and I Sabi Lagos sit together as "Higher or Lower modes", so it is clear they are one game. The word "Play" appears once, on the gold button, which now says which game it opens; every card and tile is its own button. All of it fits above the dock on an iPhone SE, and nothing slides under the dock any more.
