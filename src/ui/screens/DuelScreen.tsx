@@ -12,7 +12,7 @@ import { shareResult } from '../../native/share';
 import type { RewardEvent } from '../../rewards/types';
 import { Button, CountryFlag, CreamBox, CreamText, GameIcon, Panel, PanelText, Rays, StrokeText } from '../components';
 import { FLUENT } from '../fluent';
-import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
+import { RewardPanel } from '../rewards/RewardReveal';
 import { font, palette, space, tone } from '../theme';
 import { useReduceMotion } from '../useReduceMotion';
 import { DuelHud } from '../duel/DuelHud';
@@ -386,7 +386,6 @@ function Result({
           <RewardPanel events={events} boosted={false} stars={false} />
         </Panel>
       </ScrollView>
-      <RewardCelebration events={events} />
     </View>
   );
 }

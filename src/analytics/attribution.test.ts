@@ -80,6 +80,43 @@ describe('resolveAttribution', () => {
       utm_medium: 'other',
     });
   });
+
+  it('tells the launch-week channels apart as social', () => {
+    const cases: Array<[string, string]> = [
+      ['hackernews', 'hackernews'],
+      ['HN', 'hackernews'],
+      ['linkedin', 'linkedin'],
+      ['whatsapp', 'whatsapp'],
+      ['slack', 'slack'],
+    ];
+    for (const [raw, bucket] of cases) {
+      expect(
+        resolveAttribution({
+          href: `https://wordkrush.com/?utm_source=${raw}&utm_medium=social&utm_campaign=launch_x`,
+        }),
+      ).toEqual({
+        entry_source: 'social',
+        has_utm_campaign: true,
+        utm_source: bucket,
+        utm_medium: 'social',
+      });
+    }
+  });
+
+  it('classifies untagged Hacker News and LinkedIn referrers as social', () => {
+    for (const referrer of ['https://news.ycombinator.com/item?id=1', 'https://www.linkedin.com/feed/', 'https://lnkd.in/abc']) {
+      expect(resolveAttribution({ href: 'https://wordkrush.com/', referrer })).toEqual({
+        entry_source: 'social',
+        has_utm_campaign: false,
+      });
+    }
+  });
+
+  it('files utm_medium=organic under search, so launch posts must say social', () => {
+    expect(
+      resolveAttribution({ href: 'https://wordkrush.com/?utm_source=reddit&utm_medium=organic' }).entry_source,
+    ).toBe('search');
+  });
 });
 
 describe('isLandingArrival', () => {

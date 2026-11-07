@@ -18,6 +18,10 @@ export type UtmSource =
   | 'twitter'
   | 'tiktok'
   | 'youtube'
+  | 'hackernews'
+  | 'linkedin'
+  | 'whatsapp'
+  | 'slack'
   | 'other';
 
 export type UtmMedium =
@@ -54,6 +58,14 @@ const UTM_SOURCE_ALIASES: Record<string, UtmSource> = {
   tiktok: 'tiktok',
   youtube: 'youtube',
   yt: 'youtube',
+  // Launch-week channels (docs/marketing/LAUNCH-PLAN.md): without these they
+  // all read as "other" and one channel cannot be told from another.
+  hackernews: 'hackernews',
+  hn: 'hackernews',
+  linkedin: 'linkedin',
+  whatsapp: 'whatsapp',
+  wa: 'whatsapp',
+  slack: 'slack',
 };
 
 const UTM_MEDIUM_ALIASES: Record<string, UtmMedium> = {
@@ -91,6 +103,9 @@ const SOCIAL_HOST_MARKERS = [
   'youtube.',
   'youtu.be',
   'tiktok.',
+  'news.ycombinator.com',
+  'linkedin.',
+  'lnkd.in',
 ];
 
 const SOCIAL_UTM_SOURCES: ReadonlySet<UtmSource> = new Set([
@@ -101,6 +116,10 @@ const SOCIAL_UTM_SOURCES: ReadonlySet<UtmSource> = new Set([
   'twitter',
   'tiktok',
   'youtube',
+  'hackernews',
+  'linkedin',
+  'whatsapp',
+  'slack',
 ]);
 
 export function resolveAttribution(input: {
