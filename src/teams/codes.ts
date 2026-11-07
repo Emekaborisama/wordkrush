@@ -1,3 +1,5 @@
+import { SITE_URL } from '../games/share-data';
+
 /**
  * Team invite codes. Alphabet drops 0/O/1/I so a code read aloud still types.
  */
@@ -30,11 +32,13 @@ export function parseTeamInviteUrl(url: string): string | null {
   }
 }
 
-export function teamInviteUrl(code: string, webOrigin?: string): string {
-  const normalized = normalizeInviteCode(code);
-  if (webOrigin) {
-    const origin = webOrigin.replace(/\/$/, '');
-    return `${origin}/?team=${normalized}`;
-  }
-  return `wordkrush://team?code=${normalized}`;
+/**
+ * The link a player sends to bring a friend onto their team. Always the
+ * public https address: a `wordkrush://` link is not a link in a chat app or
+ * a social post, and a friend without the app could not open it anyway. The
+ * app reads `/team/CODE` back through `parseTeamInviteUrl`, and the server
+ * gives it its own preview card.
+ */
+export function teamInviteUrl(code: string): string {
+  return `${SITE_URL}/team/${normalizeInviteCode(code)}`;
 }

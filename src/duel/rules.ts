@@ -10,6 +10,7 @@
  */
 import { validateUsername } from '../auth/validation';
 import { normalizeCountry } from './country';
+import { SITE_URL } from '../games/share-data';
 
 export const DUEL_MS = 60_000;
 export const COUNTDOWN_MS = 3_000;
@@ -112,4 +113,9 @@ export function isRoomCode(value: unknown): value is string {
 export function roomFromPath(pathname: string): string | null {
   const match = /^\/duel\/([a-z0-9]{6,32})\/?$/.exec(pathname);
   return match ? match[1] : null;
+}
+
+/** The link that brings a friend into `room`; `roomFromPath` reads it back. */
+export function duelInviteUrl(room: string): string {
+  return `${SITE_URL}/duel/${room}`;
 }

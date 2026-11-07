@@ -157,10 +157,10 @@ import { DAILY_PAIRS, dailyNumber, dailySeed, todaysResult, type DailyResult } f
 import { loadDailyResult, saveDailyResult } from './src/games/more-or-less/daily-storage';
 import { buildDailyShareText } from './src/games/more-or-less/share';
 import { shareResult } from './src/native/share';
+import { StreakPopup } from './src/ui/rewards/StreakPopup';
 import { decodeShareData } from './src/games/share-data';
 import { LabelLevelCard } from './src/ui/LabelLevelCard';
 import { LabelLevelsPopup } from './src/ui/LabelLevelsPopup';
-import { GAME_ANIMAL } from './src/ui/fluent';
 import type { Stone } from './src/ui/levelTrail';
 import { ChallengePopup } from './src/ui/ChallengePopup';
 import { MeadowMap } from './src/ui/MeadowMap';
@@ -446,6 +446,7 @@ export default function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [pendingInvite, setPendingInvite] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [streakOpen, setStreakOpen] = useState(false);
   const [streak, setStreak] = useState<DailyStreak>(EMPTY_STREAK);
   const [rewards, setRewards] = useState<RewardsState>(EMPTY_REWARDS);
   const [onboarding, setOnboarding] = useState<OnboardingState | null>(null);
@@ -583,7 +584,11 @@ export default function App() {
         if (initialUrl) {
           await completeSessionFromUrl(initialUrl);
           const invite = parseTeamInviteUrl(initialUrl);
-          if (invite) setPendingInvite(invite);
+          if (invite) {
+            setPendingInvite(invite);
+            // `/team/CODE` has been read; the address bar goes back to `/`.
+            clearSharePath();
+          }
         }
         const restoredProfile = await currentProfile();
         hadRestoredSession.current = restoredProfile !== null;
@@ -849,7 +854,7 @@ export default function App() {
     const from = stones.find((stone) => stone.number === number - 1);
     const to = stones.find((stone) => stone.number === number);
     if (!lagos && from && to) {
-      setHop({ key: rideCount.current, from, to, animal: GAME_ANIMAL[MORE_OR_LESS], board: () => startLevel(path, number) });
+      setHop({ key: rideCount.current, from, to, board: () => startLevel(path, number) });
       return;
     }
     setRide({
@@ -1281,7 +1286,7 @@ export default function App() {
         {showChrome && !showOnboarding && (
           <TopBar
             onBack={chromeBack()}
-            left={<StreakPill streak={streak} today={todayKey} />}
+            left={<StreakPill streak={streak} today={todayKey} onPress={() => setStreakOpen(true)} />}
             right={<CoinsPill coins={rewards.coins} />}
           />
         )}
@@ -1665,7 +1670,6 @@ export default function App() {
                 ? {
                     stones: pathStones('world', molRef.number),
                     current: molRef.number,
-                    animal: GAME_ANIMAL[MORE_OR_LESS],
                     onOpen: () => setRunMapOpen(true),
                   }
                 : undefined
@@ -2005,7 +2009,6 @@ export default function App() {
             title="LEVELS"
             stones={pathStones('world', selectedLevel('world'))}
             current={selectedLevel('world')}
-            animal={GAME_ANIMAL[MORE_OR_LESS]}
             onClose={() => setLevelsOpen(null)}
             onSelect={(number) => {
               setLabelChoice((current) => ({ ...current, world: number }));
@@ -2019,7 +2022,6 @@ export default function App() {
             title="YOUR JOURNEY"
             stones={pathStones(molRef.path, molRef.number)}
             current={molRef.number}
-            animal={GAME_ANIMAL[MORE_OR_LESS]}
             onClose={() => setRunMapOpen(false)}
           />
         ) : null}
@@ -2029,7 +2031,6 @@ export default function App() {
             title="YOUR CASES"
             stones={cluelessStones()}
             current={currentCluelessLevelNumber}
-            animal={GAME_ANIMAL.clueless}
             onClose={() => setCluelessMapOpen(false)}
           />
         ) : null}
@@ -2068,6 +2069,7 @@ export default function App() {
             screen.name === 'hub' &&
             !showOnboarding &&
             !settingsOpen &&
+            !streakOpen &&
             !showFeedback &&
             chestOpen === null &&
             levelsOpen === null
@@ -2077,6 +2079,19 @@ export default function App() {
             setLagosAnnouncement(false);
             setLagosSeen(true);
             void markLagosSeen();
+          }}
+        />
+        <StreakPopup
+          visible={streakOpen}
+          streak={streak}
+          today={todayKey}
+          claimed={rewards.milestones}
+          onClose={() => setStreakOpen(false)}
+          onPlay={() => {
+            setStreakOpen(false);
+            const gameId = quickPlayGameId();
+            captureAnalytics('game_selected', { game_id: gameId, source: 'quick_play' });
+            afterModalClose(() => openGameHome(gameId));
           }}
         />
         <SettingsPopup

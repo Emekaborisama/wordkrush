@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { FLUENT, type FluentName } from '../fluent';
 import { trailPathD, trailWindow, type Stone } from '../levelTrail';
+import { CatMascot } from '../mascot/CatMascot';
 import { font, palette } from '../theme';
-import { useReduceMotion } from '../useReduceMotion';
 import { Gradient } from './Gradient';
 import { LevelStone } from './LevelStone';
 import { PressableScale } from './PressableScale';
@@ -13,63 +12,37 @@ const HEIGHT = 70;
 const STONE = 34;
 const CURRENT = 42;
 const MID = 44;
+/** The cat on your stone: wide enough to read the glasses at a glance. */
+const CAT = 44;
 
 /**
  * The level path in the play screen, after the Animal Heroes map: a strip of
- * meadow with the sandy trail, the stones around your level, and the game's
- * 3D animal standing on the one you are playing. `progress` (0–1) rings the
+ * meadow with the sandy trail, the stones around your level, and the
+ * WordKrush cat standing on the one you are playing. `progress` (0–1) rings the
  * current stone, so a run's march toward three stars shows on the path
  * itself. Tap to open the full meadow map.
  */
 export function LevelTrail({
   stones,
   current,
-  animal,
   progress,
   reaction,
   onPress,
 }: {
   stones: readonly Stone[];
   current: number;
-  animal: FluentName;
   progress?: number;
   /**
-   * The animal answering your last move: a jump for a right call, a shake for
-   * a miss. A new `key` replays it; `null` rests. The Duolingo beat: the
-   * character on the path is watching.
+   * The cat answering your last move: a hop and a grin for a right call, a
+   * wince and a shake for a miss. A new `key` replays it; `null` rests. The
+   * Duolingo beat: the character on the path is watching.
    */
   reaction?: { key: number; mood: 'cheer' | 'oops' } | null;
   onPress?: () => void;
 }) {
   const [width, setWidth] = useState(0);
-  const reduceMotion = useReduceMotion();
-  const hop = useRef(new Animated.Value(0)).current;
-  const react = useRef(new Animated.Value(0)).current;
-  const reactionKey = reaction?.key;
-  const mood = reaction?.mood;
-
-  useEffect(() => {
-    if (reactionKey === undefined || reduceMotion) return;
-    react.setValue(0);
-    const anim = Animated.timing(react, { toValue: 1, duration: mood === 'cheer' ? 520 : 460, easing: Easing.linear, useNativeDriver: true });
-    anim.start();
-    return () => anim.stop();
-  }, [reactionKey, mood, reduceMotion, react]);
   const shown = trailWindow(stones, current);
   const total = stones.length;
-
-  useEffect(() => {
-    if (reduceMotion) return;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(hop, { toValue: 1, duration: 420, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.timing(hop, { toValue: 0, duration: 420, easing: Easing.in(Easing.quad), useNativeDriver: true }),
-        Animated.delay(900),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [reduceMotion, hop]);
 
   const pad = 30;
   const step = shown.length > 1 ? (width - pad * 2) / (shown.length - 1) : 0;
@@ -124,38 +97,9 @@ export function LevelTrail({
                   ) : null}
                   <LevelStone stone={{ ...stone, state: isCurrent ? 'current' : stone.state }} size={size} showStars={false} />
                   {isCurrent ? (
-                    <Animated.View
-                      style={[
-                        styles.animal,
-                        {
-                          left: size / 2 - 17,
-                          transform: [
-                            { translateY: hop.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) },
-                            // A cheer is a big jump with a spin of joy; an oops is a head shake.
-                            {
-                              translateY: react.interpolate({
-                                inputRange: [0, 0.35, 0.7, 1],
-                                outputRange: mood === 'cheer' ? [0, -22, 0, 0] : [0, 0, 0, 0],
-                              }),
-                            },
-                            {
-                              translateX: react.interpolate({
-                                inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1],
-                                outputRange: mood === 'oops' ? [0, -6, 6, -4, 4, 0] : [0, 0, 0, 0, 0, 0],
-                              }),
-                            },
-                            {
-                              scale: react.interpolate({
-                                inputRange: [0, 0.35, 1],
-                                outputRange: mood === 'cheer' ? [1, 1.25, 1] : [1, 0.92, 1],
-                              }),
-                            },
-                          ],
-                        },
-                      ]}
-                    >
-                      <Image source={FLUENT[animal]} style={styles.animalImage} />
-                    </Animated.View>
+                    <View style={[styles.cat, { left: size / 2 - CAT / 2 }]} pointerEvents="none">
+                      <CatMascot size={CAT} reaction={reaction ?? null} />
+                    </View>
                   ) : null}
                 </View>
               );
@@ -170,8 +114,8 @@ export function LevelTrail({
 }
 
 const styles = StyleSheet.create({
-  // Room above the strip for the animal to stand on the current stone.
-  wrap: { paddingTop: 16 },
+  // Room above the strip for the cat to stand on the current stone.
+  wrap: { paddingTop: 22 },
   meadow: {
     height: HEIGHT,
     borderRadius: 20,
@@ -182,8 +126,7 @@ const styles = StyleSheet.create({
   clip: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderRadius: 17, overflow: 'hidden' },
   slot: { position: 'absolute' },
   ring: { position: 'absolute' },
-  animal: { position: 'absolute', top: -30 },
-  animalImage: { width: 34, height: 34 },
+  cat: { position: 'absolute', top: -CAT + 8 },
   count: {
     position: 'absolute',
     right: 14,

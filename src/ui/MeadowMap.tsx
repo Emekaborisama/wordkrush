@@ -3,7 +3,8 @@ import { Animated, Easing, Image, ScrollView, StyleSheet, Text, View } from 'rea
 import Svg, { Ellipse, Path } from 'react-native-svg';
 import { CloseButton, Gradient, PressableScale } from './components';
 import { LevelStone } from './components/LevelStone';
-import { FLUENT, MEADOW_SCENERY, type FluentName } from './fluent';
+import { FLUENT, MEADOW_SCENERY } from './fluent';
+import { CatMascot } from './mascot/CatMascot';
 import { meadowLayout, trailPathD, type Stone } from './levelTrail';
 import { font, palette, space } from './theme';
 import { useReduceMotion } from './useReduceMotion';
@@ -11,12 +12,13 @@ import { useReduceMotion } from './useReduceMotion';
 const SPACING = 116;
 const STONE = 54;
 const CURRENT = 64;
+const CAT = 62;
 
 /**
  * The full level map, after the Animal Heroes kit's level path: a meadow
  * with a winding sandy trail climbing from level 1 at the bottom, numbered
  * stones (wood when cleared, gold where you are, grey ahead), the stars each
- * level earned, 3D animals and trees along the way, and the game's animal
+ * level earned, 3D animals and trees along the way, and the WordKrush cat
  * hopping on your stone. With `onSelect` an open stone starts that level;
  * without it the map is a view of the journey.
  */
@@ -25,7 +27,6 @@ export function MeadowMap({
   title,
   stones,
   current,
-  animal,
   onSelect,
   onClose,
 }: {
@@ -33,7 +34,6 @@ export function MeadowMap({
   title: string;
   stones: readonly Stone[];
   current: number;
-  animal: FluentName;
   onSelect?: (levelNumber: number) => void;
   onClose: () => void;
 }) {
@@ -137,12 +137,13 @@ export function MeadowMap({
                   ) : null}
                   {isCurrent ? (
                     <Animated.View
+                      pointerEvents="none"
                       style={[
-                        styles.animal,
-                        { left: diameter / 2 - 26, transform: [{ translateY: hop.interpolate({ inputRange: [0, 1], outputRange: [0, -8] }) }] },
+                        styles.cat,
+                        { left: diameter / 2 - CAT / 2, transform: [{ translateY: hop.interpolate({ inputRange: [0, 1], outputRange: [0, -8] }) }] },
                       ]}
                     >
-                      <Image source={FLUENT[animal]} style={styles.animalImage} />
+                      <CatMascot size={CAT} />
                     </Animated.View>
                   ) : null}
                 </PressableScale>
@@ -183,8 +184,7 @@ const styles = StyleSheet.create({
     borderColor: '#9C5F2B',
   },
   tagText: { fontFamily: font.black, fontSize: 11, color: '#5A3415' },
-  animal: { position: 'absolute', top: -46 },
-  animalImage: { width: 52, height: 52 },
+  cat: { position: 'absolute', top: -CAT + 14 },
   signWrap: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center', paddingTop: space.lg },
   chains: { position: 'absolute', top: 0, width: 190, height: space.lg + 6, flexDirection: 'row', justifyContent: 'space-between' },
   chain: { width: 4, height: '100%', backgroundColor: '#D8DCE2', borderRadius: 2 },

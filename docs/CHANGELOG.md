@@ -6,6 +6,33 @@ Rules:
 - Every PR is a version. Add a new `## [x.y.z] - YYYY-MM-DD` section at the top and bump `package.json` + `app.json` to that same number. Patch by default; minor or major when the change warrants it.
 - Do not keep an `[Unreleased]` bucket. Do not add features or dates to a version that already shipped. Merging to `master` (or pushing tag `v<version>`) publishes the GitHub Release from that section. Then `eas build --platform ios` → TestFlight when native is in play.
 
+## [0.21.0] - 2026-11-07
+
+0.20.0 was the Home rebuild, which was reverted (#83). That number is taken, so this is 0.21.0, and nothing from 0.20.0 is in it.
+
+### Added
+- **A mascot: the WordKrush cat.** A ginger cat in round glasses and a bow tie, reading a book. It breathes, blinks and swishes its tail, grins and hops for a right call, and winces at a miss. You can tap it to make it hop. With reduce motion on it keeps its faces and stops moving. It replaces the parked deer as the mascot.
+  - It guides you along every level path. It stands on your stone in the play screen and reacts to each call, and it sits on your stone on the level map.
+  - It cheers on the level-up and milestone pop-ups, on a friend's challenge, and beside the opened daily chest.
+  - It perches on the corner of each game's level pop-up. It is hidden on the shortest screens so Play never moves.
+- **Walking to the next level.** After you clear a level, the cat walks the sandy path to the next stone in three hops. It leaves paw prints, sparkles lift off the stone you cleared, and the next stone pops as it lands.
+- **A daily streak pop-up.** Tap the flame in the top bar to see:
+  - the cat beside your streak and the last seven days, each played day shown with a flame;
+  - your best streak, and the next flame reward with how many days are left;
+  - **Share** and **Play** buttons.
+  The count is today's real streak: a streak that lapsed yesterday is not shown or shared as alive.
+- **Share your streak.** The paste reads "WordKrush 🔥 12-day streak", and its link opens a card with the cat, the flame and your count.
+- **A 7-day chest track.** The opened chest wobbles and bursts into its coins. Underneath, the week's chests run from day 1 to day 7: days already opened are ticked, today is ringed, and day 7's big chest (+120) is ahead. A line tells you what tomorrow's chest holds.
+- Analytics: `streak_shared` (`days_bucket`, `method`) and `invite_shared` (`kind: duel | team`, `method`).
+
+### Fixed
+- **Clueless and Wordfall share cards drew a row of broken boxes.** The server has no emoji font, so every 🟩 🟥 and ✓ on those cards came out as an empty box. The grids are now drawn as shapes, like the board's tiles.
+- **Shared links now show a card made for them.** Clueless, Wordfall, streak and invite links all open a card with the kit's sky, the cat, WordKrush in the app's lettering and a button saying what the link does. The Higher or Lower board card is unchanged.
+- **Team invites from the iPhone app sent a link nobody could open.** It was `wordkrush://team?code=…`, which is not a tappable link in a chat or a post. Every platform now sends `https://wordkrush.com/team/CODE`.
+- **Team invites from the web used whatever address the page was on**, so a preview build or a local server sent a link that would not open for a friend. They now always use wordkrush.com.
+- **1v1 and team links previewed as the homepage.** They now open their own card: "1v1 challenge" for a duel, and "Join my team" with the invite code in letter tiles for a team. Old `/?team=CODE` links get the same team card.
+- Sharing a team invite on the web copies the link if there is no share sheet, and says so, instead of showing an error.
+
 ## [0.19.1] - 2026-10-30
 
 ### Added

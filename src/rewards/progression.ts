@@ -262,3 +262,17 @@ export function applyRun(
 
   return { state: next, events };
 }
+
+export type FlameGoal = { id: MilestoneId; days: number; coins: number; xp: number };
+
+/**
+ * The next daily-streak flame the player can still earn: the first one past
+ * `days` that is not already claimed. Flames pay once, so a player rebuilding
+ * a lost streak is pointed past the ones they own. Null once all are claimed.
+ */
+export function nextFlameGoal(claimed: readonly string[], days: number): FlameGoal | null {
+  const next = FLAME_MILESTONES.find((flame) => flame.days > days && !claimed.includes(flame.id));
+  if (!next) return null;
+  const reward = MILESTONE_REWARDS[next.id];
+  return { id: next.id, days: next.days, coins: reward.coins, xp: reward.xp };
+}

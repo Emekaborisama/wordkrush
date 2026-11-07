@@ -10,17 +10,15 @@ import {
   CreamText,
   GameArtwork,
   GameIcon,
-  GoldText,
   Panel,
   PopupModal,
   Gradient,
-  Rays,
   SquareButton,
-  StrokeText,
   XpBadge,
 } from '../components';
 import type { DuelPlayer } from '../../duel/rules';
 import { DailyCard } from '../DailyCard';
+import { ChestReveal } from '../rewards/ChestReveal';
 import { DuelCard } from '../DuelCard';
 import type { DailyResult } from '../../games/more-or-less/daily';
 import { LagosBanner } from '../lagos/LagosBanner';
@@ -185,16 +183,7 @@ export function HubScreen({
         ribbonColor={palette.goldDeep}
         footer={<Button title="Continue" tone="green" size="lg" onPress={onChestClosed} />}
       >
-        <View style={styles.chestReveal}>
-          <View style={styles.rays} pointerEvents="none">
-            <Rays size={260} />
-          </View>
-          <GameIcon name="chest" size={112} />
-          <GoldText text={`+${chestClaim?.coins ?? 0}`} size={44} accessibilityLabel={`${chestClaim?.coins ?? 0} coins`} />
-          <StrokeText size={18} stroke={palette.coralEdge} strokeWidth={2} depth={1.5}>
-            coins in your pocket
-          </StrokeText>
-        </View>
+        <ChestReveal day={chestClaim?.day ?? chestDay} coins={chestClaim?.coins ?? 0} visible={chestClaim !== null} />
       </PopupModal>
     </View>
   );
@@ -331,6 +320,4 @@ const styles = StyleSheet.create({
   },
   dockSide: { flexDirection: 'row', gap: space.xs },
   dockFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: DOCK_SPACE + 24 },
-  chestReveal: { alignItems: 'center', justifyContent: 'center', gap: space.xs, minHeight: 210 },
-  rays: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
 });

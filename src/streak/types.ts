@@ -88,3 +88,48 @@ export function parseStreak(raw: string | null): DailyStreak {
     return EMPTY_STREAK;
   }
 }
+
+/**
+ * The streak as it stands on `today`: the days still alive, not the number
+ * last stored. A streak whose last run was two or more days ago is over even
+ * though `current` keeps its old count until the next run resets it, and a
+ * pop-up or a share must never claim it.
+ */
+export function liveStreakDays(streak: DailyStreak, today: string): number {
+  if (streak.current <= 0 || !streak.lastPlayedDate) return 0;
+  const gap = daysBetween(streak.lastPlayedDate, today);
+  return gap >= 0 && gap <= 1 ? streak.current : 0;
+}
+
+export type StreakDay = {
+  /** Local calendar day, `YYYY-MM-DD`. */
+  key: string;
+  /** Day of the week, 0 = Sunday, as `Date.getDay()`. */
+  weekday: number;
+  played: boolean;
+  isToday: boolean;
+};
+
+/**
+ * The last `count` local days ending today, oldest first, each marked played
+ * or not. Only the unbroken run ending at `lastPlayedDate` is known to have
+ * been played — the stored streak keeps nothing older — so earlier days read
+ * as not played rather than guessed.
+ */
+export function recentStreakDays(streak: DailyStreak, today: string, count = 7): StreakDay[] {
+  const end = new Date(`${today}T00:00:00`);
+  const runEnd = streak.lastPlayedDate;
+  const runLength = runEnd ? Math.max(0, streak.current) : 0;
+  return Array.from({ length: count }, (_, i) => {
+    const date = new Date(end);
+    date.setDate(end.getDate() - (count - 1 - i));
+    const key = dayKey(date);
+    const sinceRun = runEnd ? daysBetween(key, runEnd) : -1;
+    return {
+      key,
+      weekday: date.getDay(),
+      played: sinceRun >= 0 && sinceRun < runLength,
+      isToday: key === today,
+    };
+  });
+}

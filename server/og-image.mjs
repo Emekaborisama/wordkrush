@@ -9,7 +9,11 @@
  * and LESS, and nothing else. A share card is an advertisement for the game, so
  * it has to look like the game — a scoreboard of counters reads as a generic
  * stats blob at timeline size, and the streak already has a home in the paste
- * line above the link. Clueless and Wordfall still draw their result grid.
+ * line above the link.
+ *
+ * Every other card — the Clueless and Wordfall results, the daily streak, and
+ * the 1v1 and team invites — is the branded frame in `og-brand.mjs`: the
+ * kit's sky, the mascot, and the result in outlined lettering.
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -17,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
+import { brandCard, flame, glossButton, letterTiles, outlined, squareGrid } from './og-brand.mjs';
 import { PHOTO_HEIGHT, PHOTO_WIDTH, cardPhotoPair } from './og-photos.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,8 +30,6 @@ const __dirname = dirname(__filename);
 const WIDTH = 1200;
 const HEIGHT = 630;
 const BG_COLOR = '#0A0817'; // brand.ink
-const TEXT_COLOR = '#F4F0FF'; // brand.text
-const ACCENT_COLOR = '#E8B840'; // brand.krush
 
 /**
  * Board geometry for the More or Less card, and the tokens it borrows from
@@ -95,22 +98,25 @@ export const MORE_OR_LESS_X_TITLE_STRIP = BOARD.bottomSafePad;
 /** Dark pad under the MORE / LESS row. Same figure as the top-strip budget. */
 export const MORE_OR_LESS_BOTTOM_SAFE_PAD = BOARD.bottomSafePad;
 
-// Copy Fredoka font to a location fontconfig can find
-// librsvg (used by sharp for SVG) doesn't support data URI fonts in @font-face
-const FREDOKA_SRC = join(
-  __dirname,
-  '../node_modules/@expo-google-fonts/fredoka/600SemiBold/Fredoka_600SemiBold.ttf',
-);
+// Copy the card fonts to a location fontconfig can find: librsvg (used by
+// sharp for SVG) doesn't support data URI fonts in @font-face. Fredoka sets
+// the More or Less buttons; Exo 2 Black is the kit's headline face
+// (`font.black`) and sets every branded card (`og-brand.mjs`).
 const FONT_DIR = join(tmpdir(), 'wordkrush-fonts');
-const FREDOKA_PATH = join(FONT_DIR, 'Fredoka-SemiBold.ttf');
+const CARD_FONTS = [
+  ['fredoka/600SemiBold/Fredoka_600SemiBold.ttf', 'Fredoka-SemiBold.ttf'],
+  ['exo-2/900Black/Exo2_900Black.ttf', 'Exo2-Black.ttf'],
+];
 
-// Ensure font is installed for fontconfig/pango
-try {
-  mkdirSync(FONT_DIR, { recursive: true });
-  if (!readFileSync(FREDOKA_PATH, { flag: 'r' }).length) throw new Error('copy');
-} catch {
-  const font = readFileSync(FREDOKA_SRC);
-  writeFileSync(FREDOKA_PATH, font);
+// Ensure the fonts are installed for fontconfig/pango
+mkdirSync(FONT_DIR, { recursive: true });
+for (const [source, name] of CARD_FONTS) {
+  const target = join(FONT_DIR, name);
+  try {
+    if (!readFileSync(target, { flag: 'r' }).length) throw new Error('copy');
+  } catch {
+    writeFileSync(target, readFileSync(join(__dirname, '../node_modules/@expo-google-fonts', source)));
+  }
 }
 
 // Create fontconfig configuration
@@ -228,6 +234,15 @@ export function generateOgDescription(data) {
       const words = data.wordCount;
       return `${data.score.toLocaleString('en-US')} pts · ${words} ${words === 1 ? 'word' : 'words'}`;
     }
+    case 'streak': {
+      const parts = [`${data.days}-day streak`];
+      if (data.best > data.days) parts.push(`best ${data.best}`);
+      return `${parts.join(' · ')}. Play a word game a day on WordKrush.`;
+    }
+    case 'duel':
+      return 'Same pairs, one minute, head to head. Tap to accept the 1v1.';
+    case 'team':
+      return `Join the team with code ${data.code} and race friends live.`;
   }
 }
 
@@ -246,6 +261,12 @@ export function generateOgImageSvg(data, cardId = '') {
       return generateCluelessImage(data);
     case 'wordfall':
       return generateWordfallImage(data);
+    case 'streak':
+      return generateStreakImage(data);
+    case 'duel':
+      return generateDuelInviteImage();
+    case 'team':
+      return generateTeamInviteImage(data);
   }
 }
 
@@ -359,90 +380,111 @@ function generateMoreOrLessImage(data, cardId) {
   return svgShell(content, defs);
 }
 
+/** Clueless heat buckets as cube colours, cold to found — the paste's 🟥 🟧 🟨 🟩 order. */
+const HEAT_SQUARES = [
+  ['unranked', 'black'],
+  ['cold', 'red'],
+  ['top_100', 'orange'],
+  ['top_10', 'yellow'],
+  ['win', 'green'],
+];
+
+/** Wordfall word lengths as cube colours, short to long. */
+const LENGTH_SQUARES = [
+  ['under_3', 'blue'],
+  ['3_4', 'blue'],
+  ['5_7', 'yellow'],
+  ['8_plus', 'green'],
+];
+
+function bucketSquares(buckets, order) {
+  return order.flatMap(([key, color]) => Array(Math.min(buckets[key], 50)).fill(color));
+}
+
+/**
+ * Title, optional subtitle, the grid, the standing and the button, stacked
+ * down the right-hand column whatever the grid's height.
+ */
+function resultColumn({ title, subtitle, squares, standing, button }) {
+  const parts = [outlined(title, { y: 172, size: title.length > 18 ? 46 : 56 })];
+  if (subtitle) parts.push(outlined(subtitle, { y: 214, size: 28, strokeWidth: 6 }));
+  const gridTop = subtitle ? 236 : 210;
+  const grid = squareGrid(squares, { top: gridTop, maxHeight: 386 - gridTop });
+  parts.push(grid.body);
+  const standingY = Math.max(gridTop + grid.height + 58, 330);
+  parts.push(outlined(standing, { y: standingY, size: 44, fill: '#FFE45C', stroke: '#8C4F00' }));
+  const cta = glossButton(button, { y: standingY + 30, tone: 'green', id: 'wk-cta' });
+  parts.push(cta.body);
+  return { content: parts.join('\n  '), defs: cta.defs };
+}
+
 function generateCluelessImage(data) {
-  const title = `WordKrush · Clueless #${data.puzzleNumber}`;
-  const subtitle = data.levelName ? escapeXml(data.levelName) : '';
-  const standing = `Found it in ${data.guessCount}`;
-
-  // Generate heat grid (sorted cold → hot, no chronological order = no spoilers)
-  const heatSquares = [
-    ...Array(data.heatBuckets.unranked).fill('⬛'),
-    ...Array(data.heatBuckets.cold).fill('🟥'),
-    ...Array(data.heatBuckets.top_100).fill('🟧'),
-    ...Array(data.heatBuckets.top_10).fill('🟨'),
-    ...Array(data.heatBuckets.win).fill('🟩'),
-  ];
-
-  const grid = [];
-  const squareSize = 40;
-  const spacing = 8;
-  const gridWidth = 10 * (squareSize + spacing) - spacing;
-  const startX = (WIDTH - gridWidth) / 2;
-  let x = startX;
-  let y = subtitle ? 200 : 180;
-
-  for (let i = 0; i < Math.min(heatSquares.length, 50); i++) {
-    if (i > 0 && i % 10 === 0) {
-      x = startX;
-      y += squareSize + spacing;
-    }
-    // Use emoji as text (browsers render them)
-    grid.push(
-      `<text x="${x + squareSize / 2}" y="${y + squareSize / 2 + 4}" font-size="32" text-anchor="middle" dominant-baseline="central">${heatSquares[i]}</text>`,
-    );
-    x += squareSize + spacing;
-  }
-
-  const content = `
-    <text x="${WIDTH / 2}" y="80" font-family="Fredoka SemiBold" font-size="48" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(title)}</text>
-    ${subtitle ? `<text x="${WIDTH / 2}" y="140" font-family="Fredoka SemiBold" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${subtitle}</text>` : ''}
-    ${grid.join('\n    ')}
-    <text x="${WIDTH / 2}" y="${y + squareSize + 80}" font-family="Fredoka SemiBold" font-size="36" fill="${ACCENT_COLOR}" text-anchor="middle">${escapeXml(standing)}</text>
-  `;
-
-  return svgShell(content);
+  const { content, defs } = resultColumn({
+    title: `Clueless #${data.puzzleNumber}`,
+    subtitle: data.levelName,
+    squares: bucketSquares(data.heatBuckets, HEAT_SQUARES),
+    standing: `Found it in ${data.guessCount}`,
+    button: 'YOUR TURN',
+  });
+  return brandCard({ content, defs, mood: 'cheer' });
 }
 
 function generateWordfallImage(data) {
-  const title = `WordKrush · Wordfall L${data.levelNumber}`;
-  const subtitle = escapeXml(data.levelName);
-  const standing = `${data.score.toLocaleString('en-US')} pts · ${data.wordCount} ${data.wordCount === 1 ? 'word' : 'words'}`;
-  const verdict = data.won ? '✓ Complete' : 'Almost there';
+  const words = data.wordCount;
+  const { content, defs } = resultColumn({
+    title: `Wordfall · Level ${data.levelNumber}`,
+    subtitle: data.won ? `${data.levelName} · cleared!` : `${data.levelName} · so close`,
+    squares: bucketSquares(data.lengthBuckets, LENGTH_SQUARES),
+    standing: `${data.score.toLocaleString('en-US')} pts · ${words} ${words === 1 ? 'word' : 'words'}`,
+    button: 'YOUR TURN',
+  });
+  return brandCard({ content, defs, mood: data.won ? 'cheer' : 'idle' });
+}
 
-  // Generate length-coded grid (no actual words = no spoilers)
-  const lengthSquares = [
-    ...Array(data.lengthBuckets.under_3).fill('🟦'),
-    ...Array(data.lengthBuckets['3_4']).fill('🟦'),
-    ...Array(data.lengthBuckets['5_7']).fill('🟨'),
-    ...Array(data.lengthBuckets['8_plus']).fill('🟩'),
+/** The daily streak: the flame, the count, and the best behind it. */
+function generateStreakImage(data) {
+  const days = data.days;
+  const big = String(days);
+  const numberSize = big.length > 3 ? 120 : 150;
+  // Flame and number sit side by side, centred on the column together.
+  const flameSize = 150;
+  const numberWidth = big.length * numberSize * 0.62;
+  const groupWidth = flameSize + 12 + numberWidth;
+  const left = 815 - groupWidth / 2;
+  const fire = flame({ x: left, y: 128, size: flameSize });
+  const cta = glossButton('PLAY FREE', { y: 452, tone: 'green', id: 'wk-cta' });
+  const parts = [
+    fire.body,
+    outlined(big, { x: left + flameSize + 12, y: 262, size: numberSize, anchor: 'start', fill: '#FFE45C', stroke: '#8C4F00' }),
+    outlined('DAY STREAK', { y: 342, size: 58 }),
+    outlined(data.best > days ? `Best ${data.best} · keep it going` : 'Played every day. Your move.', { y: 400, size: 30, strokeWidth: 6 }),
+    cta.body,
   ];
+  return brandCard({ content: parts.join('\n  '), defs: fire.defs + cta.defs, mood: 'cheer' });
+}
 
-  const grid = [];
-  const squareSize = 40;
-  const spacing = 8;
-  const gridWidth = 10 * (squareSize + spacing) - spacing;
-  const startX = (WIDTH - gridWidth) / 2;
-  let x = startX;
-  let y = 200;
+/** A 1v1 invite: no result, just the challenge. */
+function generateDuelInviteImage() {
+  const cta = glossButton('ACCEPT', { y: 452, tone: 'green', id: 'wk-cta' });
+  const parts = [
+    outlined('1V1 CHALLENGE', { y: 190, size: 64 }),
+    outlined('Higher or Lower, head to head', { y: 262, size: 34, strokeWidth: 7 }),
+    outlined('Same pairs. One minute.', { y: 340, size: 46, fill: '#FFE45C', stroke: '#8C4F00' }),
+    outlined('Who reads the world better?', { y: 396, size: 30, strokeWidth: 6 }),
+    cta.body,
+  ];
+  return brandCard({ content: parts.join('\n  '), defs: cta.defs, mood: 'idle' });
+}
 
-  for (let i = 0; i < Math.min(lengthSquares.length, 50); i++) {
-    if (i > 0 && i % 10 === 0) {
-      x = startX;
-      y += squareSize + spacing;
-    }
-    grid.push(
-      `<text x="${x + squareSize / 2}" y="${y + squareSize / 2 + 4}" font-size="32" text-anchor="middle" dominant-baseline="central">${lengthSquares[i]}</text>`,
-    );
-    x += squareSize + spacing;
-  }
-
-  const content = `
-    <text x="${WIDTH / 2}" y="80" font-family="Fredoka SemiBold" font-size="48" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(title)}</text>
-    <text x="${WIDTH / 2}" y="140" font-family="Fredoka SemiBold" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${subtitle}</text>
-    ${grid.join('\n    ')}
-    <text x="${WIDTH / 2}" y="${y + squareSize + 80}" font-family="Fredoka SemiBold" font-size="32" fill="${ACCENT_COLOR}" text-anchor="middle">${escapeXml(standing)}</text>
-    <text x="${WIDTH / 2}" y="${y + squareSize + 130}" font-family="Fredoka SemiBold" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(verdict)}</text>
-  `;
-
-  return svgShell(content);
+/** A team invite, with the code in letter tiles for anyone who types it. */
+function generateTeamInviteImage(data) {
+  const cta = glossButton('JOIN THE TEAM', { y: 452, tone: 'green', id: 'wk-cta' });
+  const parts = [
+    outlined('JOIN MY TEAM', { y: 178, size: 64 }),
+    outlined('Live word races with friends', { y: 236, size: 32, strokeWidth: 6 }),
+    letterTiles(data.code, { y: 276 }),
+    outlined('Invite code', { y: 404, size: 26, strokeWidth: 5 }),
+    cta.body,
+  ];
+  return brandCard({ content: parts.join('\n  '), defs: cta.defs, mood: 'cheer' });
 }

@@ -43,4 +43,6 @@ site copy may use the longer purpose sentence.
 - `BrandArtwork` renders the mark (default) or the clear lockup (`variant="lockup"`).
 - Splash uses the lockup on black, composited on `#0A0817`.
 - App icon and favicon use the W mark. Android adaptive foreground uses the clear lockup.
-- The **mascot** is a little deer (`Mascot` in `src/ui/lottie/`). It sits above the hub scores button. It is not the logo: do not replace the lockup or the W with it on splash, store icon, or auth.
+- The **mascot** is the WordKrush cat (since 0.21.0, STACK D-074): a ginger tabby in round navy glasses, a coral bow tie, holding an open teal book. One drawing, `src/ui/mascot/cat-art.json`, used by `CatMascot` in the app and by the share cards. Its moods are idle, cheer and oops. It is not the logo: do not replace the lockup or the W with it on splash, store icon, or auth. Change the art in the JSON only, and check it on a card (`server/mascot.mjs`) as well as in the app (`?kit=mascot`).
+- The little deer (`Mascot` in `src/ui/lottie/`) was the earlier mascot. It has been off screen since 0.10.0 and is superseded by the cat.
+- **Share cards** other than the Higher or Lower board use the branded frame (`server/og-brand.mjs`): kit sky, the cat on a cloud, "Word" in white and "Krush" in gold in Exo 2 Black, and outlined lettering. Nothing on a card is set as an emoji.

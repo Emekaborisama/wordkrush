@@ -3,7 +3,7 @@ import { Animated, Easing, Image, ScrollView, StyleSheet, Text, View } from 'rea
 import { captureAnalytics } from '../../analytics/client';
 import { streakBucket } from '../../analytics/events';
 import type { Verdict, DuelPlayer, Progress } from '../../duel/rules';
-import { START_PROGRESS } from '../../duel/rules';
+import { START_PROGRESS, duelInviteUrl } from '../../duel/rules';
 import type { DuelState } from '../../duel/controller';
 import { useDuel } from '../../duel/useDuel';
 import type { Category } from '../../games/more-or-less/types';
@@ -205,10 +205,13 @@ function Lobby({
   onRetry: () => void;
 }) {
   const [note, setNote] = useState<string | null>(null);
-  const link = state.phase === 'inviting' ? `https://wordkrush.com/duel/${state.room}` : null;
+  const link = state.phase === 'inviting' ? duelInviteUrl(state.room) : null;
   const share = async () => {
     if (!link) return;
-    const outcome = await shareResult(`Play me 1v1 on WordKrush. Same pairs, one minute. ${link}`);
+    const outcome = await shareResult(`Play me 1v1 on WordKrush. Same pairs, one minute.\n${link}`);
+    if (outcome === 'shared' || outcome === 'copied') {
+      captureAnalytics('invite_shared', { kind: 'duel', method: outcome === 'shared' ? 'share_sheet' : 'clipboard' });
+    }
     if (outcome === 'copied') setNote('Link copied');
   };
   return (

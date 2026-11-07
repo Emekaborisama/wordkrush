@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { levelProgress, starsFor, starsKey, applyRun } from './progression';
+import { levelProgress, nextFlameGoal, starsFor, starsKey, applyRun } from './progression';
 import {
   EMPTY_REWARDS,
   type ApplyRunContext,
@@ -302,5 +302,21 @@ describe('applyRun', () => {
     expect(result.events.some((event) => event.kind === 'chestReady')).toBe(false);
     expect(result.state.xp).toBeGreaterThan(state.xp);
     expect(result.state.coins).toBeGreaterThanOrEqual(state.coins);
+  });
+});
+
+describe('nextFlameGoal', () => {
+  it('points at the first flame past the streak', () => {
+    expect(nextFlameGoal([], 0)).toMatchObject({ id: 'flame-3', days: 3, coins: 25 });
+    expect(nextFlameGoal([], 3)).toMatchObject({ id: 'flame-7', days: 7 });
+  });
+
+  it('skips flames already claimed, since a flame pays once', () => {
+    expect(nextFlameGoal(['flame-3', 'flame-7'], 1)).toMatchObject({ id: 'flame-14', days: 14 });
+  });
+
+  it('is null once every flame is claimed or passed', () => {
+    expect(nextFlameGoal([], 30)).toBeNull();
+    expect(nextFlameGoal(['flame-3', 'flame-7', 'flame-14', 'flame-30'], 0)).toBeNull();
   });
 });

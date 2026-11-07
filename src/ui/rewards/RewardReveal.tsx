@@ -12,6 +12,7 @@ import {
   Rays,
   StarRibbon,
 } from '../components';
+import { CatMascot } from '../mascot/CatMascot';
 import { font, palette, space } from '../theme';
 
 const MILESTONE_TITLE: Record<MilestoneId, string> = {
@@ -139,6 +140,7 @@ export function RewardCelebration({ events }: { events: readonly RewardEvent[] }
           <Rays />
         </View>
         <DisplayTitle accessibilityLabel={title}>{title}</DisplayTitle>
+        <CatMascot size={104} mood="cheer" reaction={{ key: index, mood: 'cheer' }} />
       </View>
     </PopupModal>
   );
@@ -175,6 +177,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   gemShine: { position: 'absolute', top: 1, left: 1, width: 8, height: 8, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.6)' },
-  beat: { alignItems: 'center', justifyContent: 'center', minHeight: 150 },
+  beat: { alignItems: 'center', justifyContent: 'center', minHeight: 150, gap: space.xs },
   rays: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
 });

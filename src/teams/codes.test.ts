@@ -17,10 +17,11 @@ describe('invite codes', () => {
     expect(parseTeamInviteUrl('https://wordkrush.com/#access_token=nope')).toBeNull();
   });
 
-  it('builds a shareable URL', () => {
-    expect(teamInviteUrl('ab23cd')).toBe('wordkrush://team?code=AB23CD');
-    expect(teamInviteUrl('AB23CD', 'https://wordkrush.com')).toBe(
-      'https://wordkrush.com/?team=AB23CD',
-    );
+  it('builds a public https link on every platform, never a wordkrush:// one', () => {
+    expect(teamInviteUrl('ab23cd')).toBe('https://wordkrush.com/team/AB23CD');
+  });
+
+  it('reads back the link it builds', () => {
+    expect(parseTeamInviteUrl(teamInviteUrl('ab23cd'))).toBe('AB23CD');
   });
 });

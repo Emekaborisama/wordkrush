@@ -56,7 +56,6 @@ import {
   TextField,
   LevelTrail,
 } from '../components';
-import { GAME_ANIMAL } from '../fluent';
 import type { Stone } from '../levelTrail';
 import { useHeightClass } from '../useHeightClass';
 import { BoostBar, coinShortfall } from '../rewards/BoostBar';
@@ -354,7 +353,7 @@ export function CluelessScreen({
       </View>
 
       {trail && levelNumber !== undefined && !short ? (
-        <LevelTrail stones={trail.stones} current={levelNumber} animal={GAME_ANIMAL.clueless} onPress={trail.onOpen} />
+        <LevelTrail stones={trail.stones} current={levelNumber} onPress={trail.onOpen} />
       ) : null}
 
       {won ? (

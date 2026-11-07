@@ -475,3 +475,68 @@ describe('the card photo pool', () => {
     }
   });
 });
+
+describe('the branded cards', () => {
+  const CARDS = {
+    clueless: {
+      game: 'clueless',
+      puzzleNumber: 29,
+      levelName: 'Departure Board',
+      guessCount: 4,
+      heatBuckets: { unranked: 1, cold: 1, top_100: 1, top_10: 0, win: 1 },
+    },
+    wordfall: {
+      game: 'wordfall',
+      levelNumber: 6,
+      levelName: 'Tide Line',
+      score: 4820,
+      wordCount: 9,
+      lengthBuckets: { under_3: 0, '3_4': 4, '5_7': 4, '8_plus': 1 },
+      won: true,
+    },
+    streak: { game: 'streak', days: 12, best: 15 },
+    duel: { game: 'duel' },
+    team: { game: 'team', code: 'AB23CD' },
+  };
+
+  /** Every character set as text on the card. */
+  function textOf(svg) {
+    return [...svg.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)].map((m) => m[1].replace(/<[^>]+>/g, '')).join('');
+  }
+
+  it('sets only characters the card fonts have, so nothing renders as tofu', () => {
+    for (const data of Object.values(CARDS)) {
+      const text = textOf(generateOgImageSvg(data));
+      // Latin, digits, punctuation and the middle dot. No emoji, no ✓.
+      expect(text).toMatch(/^[\x20-\x7E·&;]*$/);
+    }
+  });
+
+  it('draws the result grid as shapes, one square per guess', () => {
+    const svg = generateOgImageSvg(CARDS.clueless);
+    expect(svg).not.toMatch(/[🟩🟥🟧🟨⬛🟦]/u);
+    // Four guesses, each a lip and a face rect plus a shine.
+    const faces = svg.match(/stroke-opacity="0.35"/g) ?? [];
+    expect(faces).toHaveLength(4);
+  });
+
+  it('puts the mascot and the wordmark on every branded card', () => {
+    for (const data of Object.values(CARDS)) {
+      const svg = generateOgImageSvg(data);
+      expect(svg).toContain('url(#wkcat-fur)');
+      expect(svg).toContain('<tspan fill="#FFFFFF">Word</tspan><tspan fill="#FFE45C">Krush</tspan>');
+    }
+  });
+
+  it('shows the streak days and the code a friend types to join', () => {
+    expect(textOf(generateOgImageSvg(CARDS.streak))).toContain('12DAY STREAK');
+    expect(textOf(generateOgImageSvg(CARDS.team))).toContain('AB23CD');
+  });
+
+  it('rasterises each to a 1200×630 truecolour PNG', async () => {
+    for (const data of Object.values(CARDS)) {
+      const meta = await sharp(await generateOgImagePng(data)).metadata();
+      expect([meta.width, meta.height, meta.channels]).toEqual([1200, 630, 3]);
+    }
+  });
+});

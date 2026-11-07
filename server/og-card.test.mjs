@@ -15,7 +15,9 @@ import {
   cardId,
   cardImagePath,
   cardPhotoIdsFor,
+  DUEL_INVITE_CARD,
   isDrawableShare,
+  teamInviteCard,
 } from './og-card.mjs';
 
 const RESULTS = {
@@ -182,5 +184,41 @@ describe('what counts as a share at all', () => {
     expect(isDrawableShare({ game: 'more-or-less', streak: -1, bestStreak: 0 })).toBe(false);
     expect(isDrawableShare({ game: 'more-or-less', streak: 1.5, bestStreak: 0 })).toBe(false);
     expect(isDrawableShare({ game: 'more-or-less', streak: 0 })).toBe(false);
+  });
+});
+
+describe('the streak and invite cards', () => {
+  const streak = { game: 'streak', days: 12, best: 15 };
+
+  it('accepts a streak share and reads its card id back to the same payload', () => {
+    expect(isDrawableShare(streak)).toBe(true);
+    const id = cardId(streak);
+    expect(id).toMatch(/^s_[A-Za-z0-9_-]+$/);
+    expect(cardFromId(id)).toEqual(streak);
+  });
+
+  it('refuses a streak of no days, or one no one could have kept', () => {
+    expect(isDrawableShare({ game: 'streak', days: 0, best: 3 })).toBe(false);
+    expect(isDrawableShare({ game: 'streak', days: 99_999, best: 99_999 })).toBe(false);
+    expect(isDrawableShare({ game: 'streak', days: 3 })).toBe(false);
+  });
+
+  it('names one 1v1 card for every room, so no room code reaches a timeline', () => {
+    expect(cardFromId(DUEL_INVITE_CARD)).toEqual({ game: 'duel' });
+    expect(CARD_IMAGE_ROUTE.test(cardImagePath(DUEL_INVITE_CARD))).toBe(true);
+  });
+
+  it('names a team card by its code, and only by a code the app could issue', () => {
+    expect(teamInviteCard('AB23CD')).toBe('t_AB23CD');
+    expect(cardFromId('t_AB23CD')).toEqual({ game: 'team', code: 'AB23CD' });
+    // 0, O, 1 and I are not in the invite alphabet; lower case is not a code.
+    expect(teamInviteCard('AB0OCD')).toBeNull();
+    expect(cardFromId('t_ab23cd')).toBeNull();
+    expect(cardFromId('t_AB23CDE')).toBeNull();
+  });
+
+  it('never decodes an invite out of a /share/ token', () => {
+    expect(isDrawableShare({ game: 'duel' })).toBe(false);
+    expect(isDrawableShare({ game: 'team', code: 'AB23CD' })).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 # Design System — WordKrush
 
-**Last updated:** 2026-10-18 (Block Blast rebuild, ST-112)
+**Last updated:** 2026-11-07 (the cat mascot, streak pop-up, chest track and level walk, 0.21.0); 2026-10-18 (Block Blast rebuild, ST-112)
 
 This is the source of truth for visual and interaction decisions across the
 hub and every game. Read it before adding a screen or component. It exists so
@@ -170,7 +170,12 @@ Top bar, then a scroll of pop-up cards, then the kit's home dock:
 
 1. **Daily chest** — a cream "paper" card with the chest icon, `Day n/7`, and a
    green **Claim** when ready; "Finish any run to unlock" / "Back tomorrow"
-   otherwise. Claiming opens the chest pop-up (rays, coins, Continue).
+   otherwise. Claiming opens the chest pop-up (`ChestReveal`): the chest
+   wobbles and bursts into the coin count with the cat cheering beside it,
+   over rays; under it the week's track, seven cream cells (day, coin, amount)
+   with opened days ticked and faded, today ringed gold, and day 7 a wider gold
+   cell with the chest; then one line for tomorrow's chest; Continue. The Home
+   card's height is unchanged.
 2. **One `Panel` per game** — teal tab with the game name, key art in a white
    framed tile, tagline in a `CreamBox`, a best-score chip, and a green
    **PLAY**. XP level and progress sit in a strip above the cards.
@@ -183,6 +188,9 @@ Top bar, then a scroll of pop-up cards, then the kit's home dock:
 The kit's "LEVEL 2 / Bomb cells / Blast bombs before they go off / ★★☆ / Goal
 ×10 / PLAY" card, over the game's play sky:
 
+- The cat perches on the card's top-left corner, its book on the rim, after
+  the Treasure Match pre-level page. Tapping it makes it hop. It is hidden on
+  `tight` screens (≤619 px tall) so the card and Play keep every pixel.
 - Tab: `LEVEL n` (Wordfall, Clueless) or the game name (More or Less).
 - Heading and one-line description in outlined white.
 - `StarRow` when the level has stars to show.
@@ -266,15 +274,20 @@ Copy is pidgin from one table (`lagosCopy`): "Oya, enter!", "You sabi!",
 "Wahala!".
 
 **Level trail and meadow map** (0.14.0, D-071, after the Animal Heroes level path):
-- `LevelTrail` sits under the HUD on regular-height screens: a grass strip with a sandy path and five `LevelStone`s around the current level. The game's 3D animal (`GAME_ANIMAL`) stands on your stone, and an optional gold ring fills with run progress. Tapping it opens the map.
+- `LevelTrail` sits under the HUD on regular-height screens: a grass strip with a sandy path and five `LevelStone`s around the current level. The cat stands on your stone (44 px) and answers each call through `reaction`, hopping with a grin or wincing with a shake. An optional gold ring fills with run progress. Tapping it opens the map. (Until 0.21.0 each game had its own Fluent animal here.)
 - `MeadowMap` is the full-screen map:
   - a wooden sign on chains;
   - a winding sandy path climbing from level 1;
   - stones that are wood (with stars) when cleared, gold for current and grey ahead;
-  - Fluent 3D scenery beside the path;
+  - Fluent 3D scenery beside the path, and the cat bobbing on your stone;
   - name tags on open levels.
 - Both draw from one pure model, `src/ui/levelTrail.ts`.
-- `MeadowRide` is the between-levels ride for the meadow games, the counterpart of the danfo ride. It covers the screen in meadow (the level loads underneath), pops the cleared stone's stars, hops the animal three times along the path to the next stone under a wooden sign, then fades. It lasts about 2.2 s.
+- `MeadowRide` is the walk between levels for the meadow games, the counterpart of the danfo ride. It covers the screen in meadow while the level loads underneath. Then, under a wooden sign naming the level:
+  - the cleared stone's stars pop and three sparkles lift off it;
+  - the cat walks the sandy path to the next stone in three hops, following the curve (`src/ui/rideMath.ts`) and leaving five paw prints;
+  - the next stone pops (1.18) as the cat lands;
+  - the meadow lifts.
+  It lasts about 2.5 s. With reduce motion on, the cat is already on the new stone and the meadow only fades.
 
 **1v1** (0.19.0, D-072):
 
@@ -298,7 +311,8 @@ The kit's "LEVEL COMPLETED" pop-up over the dimmed board:
 - A new personal best adds Block King's red "NEW RECORD!" banner over a trophy.
 - Green **Continue / Play again**, then square buttons: Home, Scores, Share
   (+ Levels for Wordfall).
-- Level-up and milestone beats follow as their own pop-ups with rays.
+- Level-up and milestone beats follow as their own pop-ups with rays, the
+  title, and the cat hopping with a grin under it.
 
 ### Other screens
 
@@ -350,6 +364,49 @@ no confetti, no pops, bursts appear in place.
 tested, `storage.ts` non-fatal I/O). `recordPlay` is idempotent per local day;
 `isAtRisk` drives the flame's "play today" state. Recorded after every finished
 run in any game, not on app open. Shown in the top bar's flame pill.
+
+Tapping the pill opens `StreakPopup` (after the Magic Streak event screen),
+a `PopupModal` with a gold **DAILY STREAK** banner:
+
+- The cat (grinning when today is lit, idle while the flame is at risk,
+  wincing only when a real streak went out) beside the flame, the count in
+  `GoldText` and DAY / DAYS, over rays. The count is `liveStreakDays`: a
+  streak that lapsed is 0 even if the stored number has not reset yet.
+- One status line on the coral.
+- A `CreamBox` with the last seven days (weekday letter over a socket): a
+  flame in a gold socket when played, a dashed teal ring with `?` for today
+  if it is not played yet, an empty socket otherwise. Each cell is labelled
+  ("Saturday, today, played"), so colour never carries it alone. BEST n DAYS
+  under it.
+- A `CreamBox` for the next flame that still pays (`nextFlameGoal`): gift
+  icon, "7-day flame", a gold progress bar, "n more days to go", and the
+  coin reward.
+- Footer: blue **Share** (with the share glyph; hidden at 0 days) and green
+  **Play** / **Play more**.
+
+## Mascot
+
+The WordKrush cat (`src/ui/mascot/`, STACK D-074): a ginger tabby in round
+navy glasses and a coral bow tie, reading an open teal book. The drawing is
+data, `cat-art.json`, shared with the share cards; change it there and look at
+both `?kit=mascot` and a rendered card.
+
+- `CatMascot size mood reaction alive onPress flip`. Moods: `idle`, `cheer`
+  (eyes closed in a grin, mouth open, two gold sparkles), `oops` (worried
+  brows, wavy mouth, sweat drop).
+- Life: breathes from the feet, the tail sways from its root, blinks every
+  ~3.4 s. A `reaction` with a new key plays a hop with squash and stretch
+  (cheer) or a shake (oops), holding that face for 0.9 s. Tapping a cat with
+  `onPress` plays the cheer and a light haptic.
+- Three stacked SVG layers (ground shadow, tail, body) so only transforms
+  move. Core `Animated`, native driver. Reduce-motion keeps the faces only.
+- Where it lives: the level trail (44 px), the map (62), the level walk (96),
+  the level pop-up's corner (70), the streak pop-up (118), the chest reveal
+  (92), the level-up and milestone beats (104), the challenge pop-up (104),
+  and every branded share card. Not on Home: Home's hierarchy is its own
+  decision.
+- Decorative cats are hidden from screen readers; a tappable cat is a button
+  labelled "The WordKrush cat".
 
 ## Token architecture
 

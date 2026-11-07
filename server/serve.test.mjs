@@ -477,3 +477,61 @@ describe('parseByteRange', () => {
     expect(parseByteRange('bytes=-0', 100)).toBe('unsatisfiable');
   });
 });
+
+describe('invite links', () => {
+  it('give a 1v1 link its own preview instead of the homepage', async () => {
+    const response = await fetch(`${origin}/duel/abc123xyz`);
+    const html = await response.text();
+    expect(response.status).toBe(200);
+    expect(html).toContain('<title>WordKrush · 1v1 challenge</title>');
+    expect(html).toContain('<meta property="og:url" content="https://wordkrush.com/duel/abc123xyz"/>');
+    expect(html).toContain(`<meta property="og:image" content="https://wordkrush.com/og/share/d_invite.png?v=${version}"/>`);
+    expect(html).not.toContain(PAGE_DESCRIPTION);
+    // The room code is the page's address, never part of the card.
+    expect(html).not.toMatch(/og\/share\/[^"]*abc123xyz/);
+    expect(html).toContain('<div id="root">');
+  });
+
+  it('give a team link its own preview, with the code on the card', async () => {
+    const html = await (await fetch(`${origin}/team/ab23cd`)).text();
+    expect(html).toContain('<title>WordKrush · Join my team</title>');
+    expect(html).toContain('<meta property="og:url" content="https://wordkrush.com/team/AB23CD"/>');
+    expect(html).toContain(`<meta property="og:image" content="https://wordkrush.com/og/share/t_AB23CD.png?v=${version}"/>`);
+    expect(html).toContain('AB23CD');
+  });
+
+  it('preview the /?team= links friends already have the same way', async () => {
+    const html = await (await fetch(`${origin}/?team=AB23CD`)).text();
+    expect(html).toContain('<title>WordKrush · Join my team</title>');
+    expect(html).toContain('<meta property="og:url" content="https://wordkrush.com/team/AB23CD"/>');
+  });
+
+  it('still open the game, with the homepage preview, for a code that is not one', async () => {
+    for (const path of ['/team/AB0OCD', '/duel/AB', '/?team=nope']) {
+      const response = await fetch(`${origin}${path}`);
+      expect(response.status).toBe(200);
+      const html = await response.text();
+      expect(html).toContain(PAGE_DESCRIPTION);
+      expect(html).toContain('<div id="root">');
+    }
+  });
+
+  it('serve the invite cards as PNGs', async () => {
+    for (const card of ['d_invite', 't_AB23CD']) {
+      const response = await fetch(`${origin}/og/share/${card}.png`);
+      expect(response.status).toBe(200);
+      expect(response.headers.get('content-type')).toBe('image/png');
+    }
+    expect((await fetch(`${origin}/og/share/t_AB0OCD.png`)).status).toBe(404);
+  });
+});
+
+describe('a shared streak', () => {
+  it('unfurls to the streak, in the title and the description', async () => {
+    const id = shareId({ game: 'streak', days: 12, best: 15 });
+    const html = await (await fetch(`${origin}/share/${id}`)).text();
+    expect(html).toContain('<title>WordKrush · 12-day streak</title>');
+    expect(html).toMatch(/<meta property="og:description" content="12-day streak · best 15[^"]*"\/>/);
+    expect(html).toMatch(/og\/share\/s_[A-Za-z0-9_-]+\.png/);
+  });
+});

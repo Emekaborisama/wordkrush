@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isRoomCode, parsePlayer, parseProgress, parseSeed, partnerFor, roomFromPath, settle, type Progress } from './rules';
+import { duelInviteUrl, isRoomCode, parsePlayer, parseProgress, parseSeed, partnerFor, roomFromPath, settle, type Progress } from './rules';
 
 const run = (streak: number, done: boolean, atMs = 1000): Progress => ({ streak, done, atMs });
 
@@ -95,6 +95,8 @@ describe('parsing what strangers send', () => {
     expect(roomFromPath('/duel/abc123')).toBe('abc123');
     expect(roomFromPath('/duel/abc123/')).toBe('abc123');
     expect(roomFromPath('/duel/AB')).toBeNull();
+    expect(roomFromPath(new URL(duelInviteUrl('abc123')).pathname)).toBe('abc123');
+    expect(duelInviteUrl('abc123')).toBe('https://wordkrush.com/duel/abc123');
     expect(roomFromPath('/isabilagos')).toBeNull();
   });
 });

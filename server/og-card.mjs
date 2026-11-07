@@ -93,8 +93,28 @@ export function pickCardPhotoIds(seed, ids = CARD_PHOTO_IDS) {
   return [ids[top], ids[(top + step) % ids.length]];
 }
 
-const GAME_LETTERS = { 'more-or-less': 'm', clueless: 'c', wordfall: 'w' };
-const GAMES_BY_LETTER = { m: 'more-or-less', c: 'clueless', w: 'wordfall' };
+const GAME_LETTERS = { 'more-or-less': 'm', clueless: 'c', wordfall: 'w', streak: 's' };
+const GAMES_BY_LETTER = { m: 'more-or-less', c: 'clueless', w: 'wordfall', s: 'streak' };
+
+/**
+ * Invite cards. They describe an invitation, not a result, so they never come
+ * out of a `/share/` token: `/duel/:room` and `/team/:code` name them.
+ * The 1v1 card is the same for every room (a room code is a live channel, and
+ * a card in a stranger's timeline should not advertise it); the team card
+ * shows the code, because a code is what a friend types to join.
+ */
+export const DUEL_INVITE_CARD = 'd_invite';
+
+/** Team codes: six of `src/teams/codes.ts`'s alphabet, which drops 0/O/1/I. */
+const TEAM_CODE = /^[A-HJ-NP-Z2-9]{6}$/;
+
+export function isTeamCode(code) {
+  return typeof code === 'string' && TEAM_CODE.test(code);
+}
+
+export function teamInviteCard(code) {
+  return isTeamCode(code) ? `t_${code}` : null;
+}
 
 /**
  * Where a card is served, as one definition — the tag the share document
@@ -155,6 +175,9 @@ export function isDrawableShare(data) {
         isDrawableName(data.levelName) &&
         hasCounts(data.lengthBuckets, ['under_3', '3_4', '5_7', '8_plus'])
       );
+    case 'streak':
+      // A day count past ten years is not a streak anyone kept.
+      return isCount(data.days, 3_650) && data.days >= 1 && isCount(data.best, 3_650);
     default:
       return false;
   }
@@ -198,7 +221,7 @@ export function cardId(shareData) {
     return `m_${top}_${bottom}`;
   }
 
-  // Clueless and Wordfall draw their own numbers, so their card is the result.
+  // Clueless, Wordfall and the streak draw their own numbers, so their card is the result.
   // base64url, unpadded: the id sits in a path, and `=` is a character
   // `twitter-text` treats as the end of one.
   const letter = GAME_LETTERS[shareData.game];
@@ -207,6 +230,12 @@ export function cardId(shareData) {
 
 /** Everything the renderer needs for a card id, or `null` if it is not one. */
 export function cardFromId(id) {
+  if (id === DUEL_INVITE_CARD) return { game: 'duel' };
+  if (id.startsWith('t_')) {
+    const code = id.slice(2);
+    return isTeamCode(code) ? { game: 'team', code } : null;
+  }
+
   const separator = id.indexOf('_');
   if (separator === -1) return null;
 
