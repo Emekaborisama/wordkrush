@@ -32,6 +32,7 @@ Rules:
 - **Team invites from the web used whatever address the page was on**, so a preview build or a local server sent a link that would not open for a friend. They now always use wordkrush.com.
 - **1v1 and team links previewed as the homepage.** They now open their own card: "1v1 challenge" for a duel, and "Join my team" with the invite code in letter tiles for a team. Old `/?team=CODE` links get the same team card.
 - Sharing a team invite on the web copies the link if there is no share sheet, and says so, instead of showing an error.
+- **The level-up pop-up covered the result after less than a second.** It opened on a 0.7 s timer, before the stars and coins had landed. It now waits for you to leave the result: tap Next level, Continue, Replay, Home, Levels or Scores, and the level-up and milestone pop-ups play first, then you go where you tapped. Share does not trigger them. The level-up also says "YOUR PLAYER LEVEL", so it is no longer mistaken for the game's next level.
 
 ## [0.19.1] - 2026-10-30
 

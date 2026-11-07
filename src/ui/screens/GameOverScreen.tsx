@@ -22,7 +22,7 @@ import {
   ScoreWell,
   SquareButton,
 } from '../components';
-import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
+import { RewardPanel, useRewardBeats } from '../rewards/RewardReveal';
 import { danfo } from '../lagos/danfoTheme';
 import { font, formatValue, palette, space, tone } from '../theme';
 
@@ -80,6 +80,7 @@ export function GameOverScreen({
   daily,
 }: Props) {
   const rank = rankOf(board, state.streak);
+  const { gate, celebration } = useRewardBeats(events);
   const [shareNote, setShareNote] = useState<string | null>(null);
   const shareNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -131,7 +132,7 @@ export function GameOverScreen({
           title={level.lagos ? 'Next stop' : 'Next level'}
           size="lg"
           tone={level.lagos ? 'danfo' : 'green'}
-          onPress={level.onNext!}
+          onPress={gate(level.onNext!)}
           leading={<GameIcon name="play" size={26} color={level.lagos ? tone.danfo.outline : tone.green.outline} />}
         />
       ) : null}
@@ -139,7 +140,7 @@ export function GameOverScreen({
         title={daily !== undefined ? 'Play a level' : level && !level.cleared ? 'Try again' : 'Play again'}
         size={nextOpen ? 'md' : 'lg'}
         tone={nextOpen ? 'sky' : 'green'}
-        onPress={onPlayAgain}
+        onPress={gate(onPlayAgain)}
         leading={<GameIcon name="retry" size={nextOpen ? 22 : 26} color={nextOpen ? tone.sky.outline : tone.green.outline} />}
       />
       <View style={styles.squares}>
@@ -149,7 +150,7 @@ export function GameOverScreen({
           caption="Home"
           tone="sky"
           size={50}
-          onPress={onHome}
+          onPress={gate(onHome)}
         />
         <SquareButton
           icon={<GameIcon name="trophy" size={34} />}
@@ -157,7 +158,7 @@ export function GameOverScreen({
           caption="Scores"
           tone="sky"
           size={50}
-          onPress={onScores}
+          onPress={gate(onScores)}
         />
         <SquareButton
           icon={<GameIcon name="share" size={28} color={tone.sky.outline} />}
@@ -282,7 +283,7 @@ export function GameOverScreen({
           <CreamText style={[styles.center, styles.metric]}>{category.metricLabel}</CreamText>
         </CreamBox>
       </Panel>
-      <RewardCelebration events={events} />
+      {celebration}
     </View>
   );
 }

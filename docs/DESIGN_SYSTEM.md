@@ -312,7 +312,12 @@ The kit's "LEVEL COMPLETED" pop-up over the dimmed board:
 - Green **Continue / Play again**, then square buttons: Home, Scores, Share
   (+ Levels for Wordfall).
 - Level-up and milestone beats follow as their own pop-ups with rays, the
-  title, and the cat hopping with a grin under it.
+  title, and the cat hopping with a grin under it. They wait for the player:
+  the result stays until an action that leaves it (Next level, Continue,
+  Replay, Home, Levels, Scores) is tapped, the beats play, and their last
+  Continue carries on to that action (`useRewardBeats` `gate`). Share does not
+  leave, so it is not gated. A level-up reads "YOUR PLAYER LEVEL" over
+  "LEVEL n", because a game's own level is also "LEVEL n".
 
 ### Other screens
 

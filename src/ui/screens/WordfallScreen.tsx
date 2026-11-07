@@ -68,7 +68,7 @@ import {
 } from '../components';
 import { BoostBar, coinShortfall } from '../rewards/BoostBar';
 import type { RunReward } from '../rewards/RunReward';
-import { RewardCelebration, RewardPanel } from '../rewards/RewardReveal';
+import { RewardPanel, useRewardBeats } from '../rewards/RewardReveal';
 import { shouldShowTraceHint } from '../wordfall/coach';
 import { font, formatDuration, palette, space, tone } from '../theme';
 import { BoardView } from '../wordfall/BoardView';
@@ -914,6 +914,7 @@ function LevelOutcome({
   const finished = won && level.number >= latest;
   const [shareNote, setShareNote] = useState<string | null>(null);
   const shareNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { gate, celebration } = useRewardBeats(reward?.events);
 
   useEffect(() => {
     return () => {
@@ -982,7 +983,7 @@ function LevelOutcome({
               title={primaryLabel}
               size="lg"
               tone="green"
-              onPress={won && !finished ? onNext : onRetry}
+              onPress={gate(won && !finished ? onNext : onRetry)}
               leading={
                 <GameIcon name={won && !finished ? 'play' : 'retry'} size={26} color={tone.green.outline} />
               }
@@ -995,7 +996,7 @@ function LevelOutcome({
                   caption="Levels"
                   tone="sky"
                   size={48}
-                  onPress={onPickLevel}
+                  onPress={gate(onPickLevel)}
                 />
               ) : null}
               <SquareButton
@@ -1004,7 +1005,7 @@ function LevelOutcome({
                 caption="Replay"
                 tone="sky"
                 size={48}
-                onPress={onRetry}
+                onPress={gate(onRetry)}
               />
               <SquareButton
                 icon={<GameIcon name="share" size={26} color={tone.sky.outline} />}
@@ -1020,7 +1021,7 @@ function LevelOutcome({
                 caption="Home"
                 tone="sky"
                 size={48}
-                onPress={onExit}
+                onPress={gate(onExit)}
               />
             </View>
             {shareNote ? <PanelText live>{shareNote}</PanelText> : null}
@@ -1047,7 +1048,7 @@ function LevelOutcome({
           </CreamBox>
         ) : null}
       </Panel>
-      {reward ? <RewardCelebration events={reward.events} /> : null}
+      {celebration}
     </View>
   );
 }

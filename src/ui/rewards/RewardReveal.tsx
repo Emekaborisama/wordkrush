@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { feedback } from '../../native/feedback';
 import type { MilestoneId, RewardEvent, StarCount } from '../../rewards/types';
@@ -11,7 +11,9 @@ import {
   PopupModal,
   Rays,
   StarRibbon,
+  StrokeText,
 } from '../components';
+import { afterModalClose } from '../components/modalHandoff';
 import { CatMascot } from '../mascot/CatMascot';
 import { font, palette, space } from '../theme';
 
@@ -99,48 +101,91 @@ function RewardChip({ icon, value, label }: { icon: ReactNode; value: number; la
   );
 }
 
+type Beat = Extract<RewardEvent, { kind: 'levelUp' | 'milestone' }>;
+
+function isBeat(event: RewardEvent): event is Beat {
+  return event.kind === 'levelUp' || event.kind === 'milestone';
+}
+
 /**
- * Level-up and milestone beats, one pop-up each with rays behind the title.
- * They open after the result is already showing.
+ * Level-up and milestone beats, one pop-up each with rays behind the title,
+ * paced by the player rather than a clock.
+ *
+ * They used to open 0.7 s after the result, on a timer, and cover it before
+ * its stars had landed. Now the result stays put until the player leaves it:
+ * wrap each action that leaves the result in `gate`, and the beats play
+ * first, then the action runs once the last one is closed. Share is not a
+ * way out, so it is not gated. With no beats, `gate(action)` is `action`.
  */
-export function RewardCelebration({ events }: { events: readonly RewardEvent[] }) {
-  const beats = events.filter(
-    (event): event is Extract<RewardEvent, { kind: 'levelUp' | 'milestone' }> =>
-      event.kind === 'levelUp' || event.kind === 'milestone',
-  );
+export function useRewardBeats(events: readonly RewardEvent[] | null | undefined): {
+  gate: (action: () => void) => () => void;
+  celebration: ReactNode;
+} {
+  const beats = (events ?? []).filter(isBeat);
+  // Content, not array identity: a replay in the same screen is a new set.
+  const runKey = beats.map((beat) => (beat.kind === 'levelUp' ? `l${beat.to}` : `m${beat.id}`)).join(',');
+  const [shown, setShown] = useState<{ key: string; index: number }>({ key: runKey, index: 0 });
   const [open, setOpen] = useState(false);
-  const [index, setIndex] = useState(0);
+  const pending = useRef<(() => void) | null>(null);
+  const index = shown.key === runKey ? shown.index : 0;
 
   useEffect(() => {
-    if (beats.length === 0) return;
-    const timer = setTimeout(() => setOpen(true), 700);
-    return () => clearTimeout(timer);
-  }, [beats.length]);
+    pending.current = null;
+    setOpen(false);
+  }, [runKey]);
+
+  const gate = (action: () => void) => () => {
+    if (index >= beats.length) {
+      action();
+      return;
+    }
+    pending.current = action;
+    setOpen(true);
+  };
+
+  const next = () => {
+    const following = index + 1;
+    setShown({ key: runKey, index: following });
+    if (following < beats.length) return;
+    setOpen(false);
+    const action = pending.current;
+    pending.current = null;
+    // Let the pop-up finish closing before the screen changes under it.
+    if (action) afterModalClose(action);
+  };
 
   const beat = beats[index];
-  if (!open || !beat) return null;
-  const title = beat.kind === 'levelUp' ? `LEVEL ${beat.to}` : MILESTONE_TITLE[beat.id];
-  const last = index + 1 >= beats.length;
-  const next = () => setIndex((current) => current + 1);
+  const celebration =
+    open && beat ? <BeatPopup beat={beat} last={index + 1 >= beats.length} onNext={next} beatKey={index} /> : null;
+  return { gate, celebration };
+}
 
+function BeatPopup({ beat, last, onNext, beatKey }: { beat: Beat; last: boolean; onNext: () => void; beatKey: number }) {
+  const title = beat.kind === 'levelUp' ? `LEVEL ${beat.to}` : MILESTONE_TITLE[beat.id];
   return (
     <PopupModal
       visible
-      onClose={next}
+      onClose={onNext}
       dismissable={false}
       hideClose
       scrim="strong"
       title={beat.kind === 'levelUp' ? 'LEVEL UP!' : 'MILESTONE'}
       ribbon="banner"
       ribbonColor={palette.goldDeep}
-      footer={<Button title={last ? 'Continue' : 'Next'} tone="green" size="lg" onPress={next} />}
+      footer={<Button title={last ? 'Continue' : 'Next'} tone="green" size="lg" onPress={onNext} />}
     >
       <View style={styles.beat}>
         <View style={styles.rays} pointerEvents="none">
           <Rays />
         </View>
-        <DisplayTitle accessibilityLabel={title}>{title}</DisplayTitle>
-        <CatMascot size={104} mood="cheer" reaction={{ key: index, mood: 'cheer' }} />
+        {beat.kind === 'levelUp' ? (
+          // A game's level is also "LEVEL n"; this one is the player's own.
+          <StrokeText size={15} stroke={palette.coralEdge} strokeWidth={1.5} depth={1}>
+            YOUR PLAYER LEVEL
+          </StrokeText>
+        ) : null}
+        <DisplayTitle accessibilityLabel={beat.kind === 'levelUp' ? `Player level ${beat.to}` : title}>{title}</DisplayTitle>
+        <CatMascot size={104} mood="cheer" reaction={{ key: beatKey, mood: 'cheer' }} />
       </View>
     </PopupModal>
   );
