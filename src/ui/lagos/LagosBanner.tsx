@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Badge, Button, GameIcon, PanelText, PopupModal, PressableScale } from '../components';
 import { font, palette, shadow, space, tone } from '../theme';
@@ -44,11 +45,19 @@ export function LagosAnnouncement({
   visible,
   onEnter,
   onLater,
+  onShown,
 }: {
   visible: boolean;
   onEnter: () => void;
   onLater: () => void;
+  /** Called once each time the pop-up comes on screen, so "seen" can be saved then. */
+  onShown?: () => void;
 }) {
+  useEffect(() => {
+    if (visible) onShown?.();
+    // Only the moment it appears matters; a new callback identity is not a new showing.
+  }, [visible]);
+
   return (
     <PopupModal
       visible={visible}

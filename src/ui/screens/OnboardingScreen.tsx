@@ -20,7 +20,7 @@ const nameOf = (id: string): string => GAMES.find((game) => game.id === id)?.nam
 
 /** One glossy tile per game, in the kit's colours, plus the Lagos route. */
 const TILES: readonly Tile[] = [
-  { pick: 'more-or-less', name: nameOf('more-or-less'), pitch: 'Is the next number higher or lower?', face: tone.green },
+  { pick: 'more-or-less', name: nameOf('more-or-less'), pitch: 'Which is more popular?', face: tone.green },
   { pick: 'clueless', name: nameOf('clueless'), pitch: 'Find the secret word by meaning.', face: tone.purple },
   { pick: 'wordfall', name: nameOf('wordfall'), pitch: 'Trace words. Set off cascades.', face: tone.blue },
   { pick: 'lagos', name: lagosCopy.title, pitch: lagosCopy.question, face: tone.danfo },

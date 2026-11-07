@@ -12,7 +12,7 @@ import { prepareShareImage, sharePayload } from '../../native/share';
 import type { RewardEvent } from '../../rewards/types';
 import { Button, CountryFlag, CreamBox, CreamText, GameIcon, Panel, PanelText, Rays, StrokeText } from '../components';
 import { FLUENT } from '../fluent';
-import { RewardPanel, useRewardBeats } from '../rewards/RewardReveal';
+import { RewardPanel } from '../rewards/RewardReveal';
 import { font, palette, space, tone } from '../theme';
 import { useReduceMotion } from '../useReduceMotion';
 import { DuelHud } from '../duel/DuelHud';
@@ -358,7 +358,6 @@ function Result({
 }) {
   const won = state.verdict === 'won';
   const title = won ? 'YOU WIN!' : state.verdict === 'tied' ? 'DRAW' : 'YOU LOST';
-  const { gate, celebration } = useRewardBeats(events);
   return (
     <View style={styles.flex}>
       {won ? (
@@ -378,9 +377,9 @@ function Result({
                 tone="green"
                 size="lg"
                 leading={<GameIcon name="retry" size={24} color={tone.green.outline} />}
-                onPress={gate(onAgain)}
+                onPress={onAgain}
               />
-              <Button title="Home" tone="sky" size="sm" onPress={gate(onHome)} />
+              <Button title="Home" tone="sky" size="sm" onPress={onHome} />
             </>
           }
         >
@@ -396,7 +395,6 @@ function Result({
           <RewardPanel events={events} boosted={false} stars={false} />
         </Panel>
       </ScrollView>
-      {celebration}
     </View>
   );
 }

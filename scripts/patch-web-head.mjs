@@ -48,7 +48,7 @@ export const GOOGLE_VERIFICATION_BODY =
 export const GAMES = [
   {
     name: 'Higher or Lower',
-    tagline: 'Which one is bigger? Trust your instinct and build a streak.',
+    tagline: 'Which is more popular? Trust your gut and build a streak.',
   },
   {
     name: 'Clueless',

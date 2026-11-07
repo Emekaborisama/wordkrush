@@ -1,39 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { feedback } from '../../native/feedback';
-import type { MilestoneId, RewardEvent, StarCount } from '../../rewards/types';
-import {
-  Button,
-  CoinIcon,
-  CountUpText,
-  DisplayTitle,
-  PanelText,
-  PopupModal,
-  Rays,
-  StarRibbon,
-  StrokeText,
-} from '../components';
-import { afterModalClose } from '../components/modalHandoff';
-import { CatMascot } from '../mascot/CatMascot';
+import { celebrationLabels } from '../../rewards/celebrations';
+import type { RewardEvent, StarCount } from '../../rewards/types';
+import { CoinIcon, CountUpText, PanelText, StarRibbon } from '../components';
 import { font, palette, space } from '../theme';
-
-const MILESTONE_TITLE: Record<MilestoneId, string> = {
-  'flame-3': '3-DAY FLAME',
-  'flame-7': '7-DAY FLAME',
-  'flame-14': '14-DAY FLAME',
-  'flame-30': '30-DAY FLAME',
-  'mol-streak-5': 'STREAK 5',
-  'mol-streak-10': 'STREAK 10',
-  'mol-streak-20': 'STREAK 20',
-  'mol-set-1': 'SET CLEARED',
-  'clueless-sparks': 'SPARKS CLEARED',
-  'clueless-vault-1': 'FIRST VAULT',
-  'clueless-vault-7': 'SEVEN VAULTS',
-  'wordfall-campaign': 'CAMPAIGN CLEAR',
-  'wordfall-weekly-1': 'WEEKLY CLEAR',
-  'level-5': 'LEVEL 5',
-  'level-10': 'LEVEL 10',
-};
 
 export function starsEarned(events: readonly RewardEvent[]): StarCount {
   const stars = events.find((event) => event.kind === 'stars');
@@ -58,7 +29,9 @@ function XpGem() {
 
 /**
  * What a finished run earned, the kit way: the stars standing on the blue
- * scroll, then coin and XP chips that count up. Lives inside a result panel.
+ * scroll, coin and XP chips that count up, then one row for any level-up or
+ * milestone. Lives inside a result panel: one celebration per result, never a
+ * second pop-up over it.
  */
 export function RewardPanel({
   events,
@@ -73,6 +46,7 @@ export function RewardPanel({
   const xp = sumKind(events, 'xp');
   const coins = sumKind(events, 'coins');
   const earned = starsEarned(events);
+  const moments = celebrationLabels(events);
 
   useEffect(() => {
     if (coins > 0) feedback('coin');
@@ -85,6 +59,15 @@ export function RewardPanel({
         <RewardChip icon={<CoinIcon size={30} />} value={coins} label="coins" />
         <RewardChip icon={<XpGem />} value={xp} label="XP" />
       </View>
+      {moments.length > 0 ? (
+        <View style={styles.moments}>
+          {moments.map((label) => (
+            <Text key={label} style={styles.moment}>
+              {label}
+            </Text>
+          ))}
+        </View>
+      ) : null}
       {boosted ? <PanelText>Boosted run — not on the global board</PanelText> : null}
     </View>
   );
@@ -98,96 +81,6 @@ function RewardChip({ icon, value, label }: { icon: ReactNode; value: number; la
       <CountUpText value={value} style={styles.chipValue} announce />
       <Text style={styles.chipLabel}>{label}</Text>
     </View>
-  );
-}
-
-type Beat = Extract<RewardEvent, { kind: 'levelUp' | 'milestone' }>;
-
-function isBeat(event: RewardEvent): event is Beat {
-  return event.kind === 'levelUp' || event.kind === 'milestone';
-}
-
-/**
- * Level-up and milestone beats, one pop-up each with rays behind the title,
- * paced by the player rather than a clock.
- *
- * They used to open 0.7 s after the result, on a timer, and cover it before
- * its stars had landed. Now the result stays put until the player leaves it:
- * wrap each action that leaves the result in `gate`, and the beats play
- * first, then the action runs once the last one is closed. Share is not a
- * way out, so it is not gated. With no beats, `gate(action)` is `action`.
- */
-export function useRewardBeats(events: readonly RewardEvent[] | null | undefined): {
-  gate: (action: () => void) => () => void;
-  celebration: ReactNode;
-} {
-  const beats = (events ?? []).filter(isBeat);
-  // Content, not array identity: a replay in the same screen is a new set.
-  const runKey = beats.map((beat) => (beat.kind === 'levelUp' ? `l${beat.to}` : `m${beat.id}`)).join(',');
-  const [shown, setShown] = useState<{ key: string; index: number }>({ key: runKey, index: 0 });
-  const [open, setOpen] = useState(false);
-  const pending = useRef<(() => void) | null>(null);
-  const index = shown.key === runKey ? shown.index : 0;
-
-  useEffect(() => {
-    pending.current = null;
-    setOpen(false);
-  }, [runKey]);
-
-  const gate = (action: () => void) => () => {
-    if (index >= beats.length) {
-      action();
-      return;
-    }
-    pending.current = action;
-    setOpen(true);
-  };
-
-  const next = () => {
-    const following = index + 1;
-    setShown({ key: runKey, index: following });
-    if (following < beats.length) return;
-    setOpen(false);
-    const action = pending.current;
-    pending.current = null;
-    // Let the pop-up finish closing before the screen changes under it.
-    if (action) afterModalClose(action);
-  };
-
-  const beat = beats[index];
-  const celebration =
-    open && beat ? <BeatPopup beat={beat} last={index + 1 >= beats.length} onNext={next} beatKey={index} /> : null;
-  return { gate, celebration };
-}
-
-function BeatPopup({ beat, last, onNext, beatKey }: { beat: Beat; last: boolean; onNext: () => void; beatKey: number }) {
-  const title = beat.kind === 'levelUp' ? `LEVEL ${beat.to}` : MILESTONE_TITLE[beat.id];
-  return (
-    <PopupModal
-      visible
-      onClose={onNext}
-      dismissable={false}
-      hideClose
-      scrim="strong"
-      title={beat.kind === 'levelUp' ? 'LEVEL UP!' : 'MILESTONE'}
-      ribbon="banner"
-      ribbonColor={palette.goldDeep}
-      footer={<Button title={last ? 'Continue' : 'Next'} tone="green" size="lg" onPress={onNext} />}
-    >
-      <View style={styles.beat}>
-        <View style={styles.rays} pointerEvents="none">
-          <Rays />
-        </View>
-        {beat.kind === 'levelUp' ? (
-          // A game's level is also "LEVEL n"; this one is the player's own.
-          <StrokeText size={15} stroke={palette.coralEdge} strokeWidth={1.5} depth={1}>
-            YOUR PLAYER LEVEL
-          </StrokeText>
-        ) : null}
-        <DisplayTitle accessibilityLabel={beat.kind === 'levelUp' ? `Player level ${beat.to}` : title}>{title}</DisplayTitle>
-        <CatMascot size={104} mood="cheer" reaction={{ key: beatKey, mood: 'cheer' }} />
-      </View>
-    </PopupModal>
   );
 }
 
@@ -222,6 +115,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   gemShine: { position: 'absolute', top: 1, left: 1, width: 8, height: 8, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.6)' },
-  beat: { alignItems: 'center', justifyContent: 'center', minHeight: 150, gap: space.xs },
-  rays: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+  moments: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.xs },
+  moment: {
+    fontFamily: font.heavy,
+    fontSize: 13,
+    color: palette.ink,
+    backgroundColor: palette.gold,
+    borderWidth: 2,
+    borderColor: palette.goldEdge,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    overflow: 'hidden',
+  },
 });

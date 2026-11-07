@@ -492,7 +492,7 @@ export function GameScreen({
       {short ? (
         // One small block on a short screen: the same claim and credits, less height.
         <Text style={[styles.provenance, styles.provenanceShort]} numberOfLines={2}>
-          {`${category.metricLabel} · ${state.left.source?.startsWith('wikipedia') ? 'Wikipedia' : state.left.source} · ${state.left.updatedAt}${category.provisional ? ' · provisional' : ''} · ${imageCredits([state.left, state.right])}`}
+          {`${category.metricLabel} · ${state.left.source?.startsWith('wikipedia') ? 'Wikipedia' : state.left.source} · ${state.left.updatedAt} · ${imageCredits([state.left, state.right])}`}
         </Text>
       ) : (
         <View>
@@ -500,7 +500,6 @@ export function GameScreen({
             {category.metricLabel} ·{' '}
             {state.left.source?.startsWith('wikipedia') ? 'Wikipedia' : state.left.source} ·{' '}
             {state.left.updatedAt}
-            {category.provisional ? ' · provisional' : ''}
           </Text>
           <Text style={styles.provenance} numberOfLines={2}>
             {imageCredits([state.left, state.right])}

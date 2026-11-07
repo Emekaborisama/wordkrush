@@ -60,7 +60,7 @@ import type { Stone } from '../levelTrail';
 import { useHeightClass } from '../useHeightClass';
 import { BoostBar, coinShortfall } from '../rewards/BoostBar';
 import type { RunReward } from '../rewards/RunReward';
-import { RewardPanel, useRewardBeats } from '../rewards/RewardReveal';
+import { RewardPanel } from '../rewards/RewardReveal';
 import { cube, font, palette, proximityColor, space, tone, type CubeColor } from '../theme';
 
 const GAME_ID = 'clueless';
@@ -121,7 +121,6 @@ export function CluelessScreen({
   const [shareNote, setShareNote] = useState<string | null>(null);
   const [boosted, setBoosted] = useState(false);
   const [reward, setReward] = useState<RunReward | null>(null);
-  const { gate, celebration } = useRewardBeats(reward?.events);
   const boostedRef = useRef(false);
   boostedRef.current = boosted;
   const reported = useRef(false);
@@ -379,7 +378,7 @@ export function CluelessScreen({
                     title="Continue"
                     size="lg"
                     tone="green"
-                    onPress={gate(onExit)}
+                    onPress={onExit}
                     accessibilityHint="Return to the Clueless path"
                   />
                 ) : null}
@@ -391,7 +390,7 @@ export function CluelessScreen({
                       caption="Home"
                       tone="sky"
                       size={50}
-                      onPress={gate(onExit)}
+                      onPress={onExit}
                     />
                   ) : null}
                   <SquareButton
@@ -412,7 +411,6 @@ export function CluelessScreen({
             <ScoreWell label={state.guesses.length === 1 ? 'GUESS' : 'GUESSES'} value={String(state.guesses.length)} />
             {pathPhase !== 'team' ? <PanelText>{completionCopy}</PanelText> : null}
           </Panel>
-          {celebration}
         </View>
       ) : (
         <>

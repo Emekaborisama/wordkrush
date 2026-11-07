@@ -171,6 +171,11 @@ signed-in-status events, and calls `identify` after a consented sign-up or
 restored session. The first consented open also sends a bounded
 `entry_source` (and UTM buckets when present) on `app_opened`; web arrivals
 and non-auth deep links fire `landing_viewed`. Raw URLs stay out.
+`src/analytics/attribution.ts` buckets `utm_source` into a fixed list (Meta,
+Google, Reddit, X, TikTok, YouTube, and since 0.19.2 Hacker News, LinkedIn,
+WhatsApp and Slack, all social) and keeps only whether `utm_campaign` was
+present, never its value. `utm_medium=organic` counts as search, so launch
+posts are tagged `utm_medium=social`.
 Game screens capture submit and outcome aggregates. Sign-out
 resets the PostHog identity. Storage modules report bounded failure categories
 through a pure no-op sink. Reducers in `src/games/` remain deterministic and
@@ -334,8 +339,11 @@ A Wordfall loss takes the same path, including the daily flame. Live races
 skip rewards and never show boosts.
 
 The result sheet shows the stars, XP, and coins from the events `applyRun`
-returned. A level-up or milestone celebration opens after that sheet, not
-instead of the value reveal. More or Less still counts the hidden value up
+returned, then one gold row for any level-up or milestone
+(`celebrationLabels` in `src/rewards/celebrations.ts`). Since 0.19.2 there is
+no second pop-up over the result, and the XP level always reads "Player
+level N", so "level" alone means a game's stage. The More or Less result shows
+"NEW RECORD!" only when an earlier run exists, and no device-only rank. More or Less still counts the hidden value up
 before the result. The hub chest reads locked ("Finish any run to open
 today's chest"), ready ("Open — Day N/7"), or claimed ("Back tomorrow").
 
@@ -612,7 +620,7 @@ Every level run is stored and uploaded as `game_id = more-or-less`, with the cat
 **Next level** or **Next stop** on the result, and **Oya, enter!** on the Lagos route, call `rideToLevel`. `DanfoRide` (`src/ui/lagos/DanfoRide.tsx`) covers the screen in danfo yellow (sky blue on the world path). It calls `onCovered`, which starts the level underneath. The bus then pulls in under the stop's sign, holds while the conductor calls the stop, and drives off as the cover fades.
 
 **5. `/isabilagos` is a web path, not a router.** [BUILT]
-`server/serve.mjs` already serves `index.html` for extensionless paths. `webHistory.ts` `openedAtLagosPath()` sends a visit to `/isabilagos` straight to the Lagos route and skips the welcome. While the Lagos route or a Lagos run is open, `syncLagosPath` keeps that address in the bar with `replaceState`, so it can be shared. The hub's yellow `LagosBanner` and the one-time `LagosAnnouncement` (shown only to returning players, `wordkrush.seen.isabilagos.v1`) are how players find it.
+`server/serve.mjs` already serves `index.html` for extensionless paths. `webHistory.ts` `openedAtLagosPath()` sends a visit to `/isabilagos` straight to the Lagos route and skips the welcome. While the Lagos route or a Lagos run is open, `syncLagosPath` keeps that address in the bar with `replaceState`, so it can be shared. The hub's yellow `LagosBanner` and the one-time `LagosAnnouncement` (shown only to returning players, `wordkrush.seen.isabilagos.v1`, saved through `onShown` the moment it is on screen) are how players find it.
 
 ## Journey 11 — Two strangers play a 1v1
 
@@ -644,7 +652,7 @@ Quick map of where each journey step lives:
 |---|---|---|
 | App shell (iOS + web) | `App.tsx`, `index.ts`, `app.json` | [BUILT] — WordKrush hub, lockup splash `#0A0817`, `expo-font`; web at wordKrush.com uses `100dvh`; phone is full-bleed, laptop is a 1080px column (D-051) |
 | Brand kit | `assets/logo/`, `docs/branding/`, `BrandArtwork`, `BlockLogo` | [BUILT] — black lockup on splash, favicons and share cards; in the app the WORD-KRUSH! block logo (kit style) on the top bar and the first visit |
-| Mascot (cat) | `src/ui/mascot/cat-art.json`, `art.ts`, `CatMascot.tsx`; `server/mascot.mjs` | [BUILT] — one drawing as layered SVG data, validated on load (`parseCatArt`) and drawn by `react-native-svg` in the app and as markup on the share cards; `art.test.ts` holds the two to the same layer choice for every mood. Moods `idle` / `cheer` / `oops`; breathing, tail, blink and a hop or shake on `reaction` use core `Animated`; reduce-motion keeps faces only. Lives on the level trail, map and walk, the streak pop-up, the chest, celebrations, the challenge pop-up, the level pop-up's corner and every branded share card (D-074) |
+| Mascot (cat) | `src/ui/mascot/cat-art.json`, `art.ts`, `CatMascot.tsx`; `server/mascot.mjs` | [BUILT] — one drawing as layered SVG data, validated on load (`parseCatArt`) and drawn by `react-native-svg` in the app and as markup on the share cards; `art.test.ts` holds the two to the same layer choice for every mood. Moods `idle` / `cheer` / `oops`; breathing, tail, blink and a hop or shake on `reaction` use core `Animated`; reduce-motion keeps faces only. Lives on the level trail, map and walk, the streak pop-up, the chest, the challenge pop-up, the level pop-up's corner and every branded share card (D-074) |
 | Mascot (deer) | `src/ui/lottie/`, `LOTTIE_CLIPS`, `assets/lottie/deer.lottie` | [PARKED] — off screen since 0.10.0, and superseded as the mascot by the cat in 0.21.0 (D-074). Code and asset kept (D-032, D-050); deleting them is the owner's call |
 | Daily streak pop-up | `src/ui/rewards/StreakPopup.tsx`, `liveStreakDays` / `recentStreakDays` in `src/streak/types.ts`, `nextFlameGoal` in `src/rewards/progression.ts`, `src/streak/share.ts` | [BUILT] — opened from the top bar's flame. The live count (a lapsed streak reads 0 even before the next run resets the stored one), the last seven days, the next unclaimed flame milestone and Share / Play. The share link is a `streak` share token |
 | Display type | `@expo-google-fonts/exo-2`, `src/ui/fonts.ts`, `src/ui/theme.ts` | [BUILT] — Exo 2 on every app text tier (stand-in for the kit's Neuron, D-067); Fredoka stays for the server's share cards |

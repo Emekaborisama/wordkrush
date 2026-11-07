@@ -311,13 +311,11 @@ The kit's "LEVEL COMPLETED" pop-up over the dimmed board:
 - A new personal best adds Block King's red "NEW RECORD!" banner over a trophy.
 - Green **Continue / Play again**, then square buttons: Home, Scores, Share
   (+ Levels for Wordfall).
-- Level-up and milestone beats follow as their own pop-ups with rays, the
-  title, and the cat hopping with a grin under it. They wait for the player:
-  the result stays until an action that leaves it (Next level, Continue,
-  Replay, Home, Levels, Scores) is tapped, the beats play, and their last
-  Continue carries on to that action (`useRewardBeats` `gate`). Share does not
-  leave, so it is not gated. A level-up reads "YOUR PLAYER LEVEL" over
-  "LEVEL n", because a game's own level is also "LEVEL n".
+- Level-ups and milestones are one row of gold chips under the reward chips
+  ("Player level 4", "7-day flame"; `celebrationLabels` in
+  `src/rewards/celebrations.ts`), never a second pop-up over the result
+  (0.19.2). The XP level is always "Player level", because "Level" alone
+  means a game's stage.
 
 ### Other screens
 
@@ -407,7 +405,7 @@ both `?kit=mascot` and a rendered card.
   move. Core `Animated`, native driver. Reduce-motion keeps the faces only.
 - Where it lives: the level trail (44 px), the map (62), the level walk (96),
   the level pop-up's corner (70), the streak pop-up (118), the chest reveal
-  (92), the level-up and milestone beats (104), the challenge pop-up (104),
+  (92), the challenge pop-up (104),
   and every branded share card. Not on Home: Home's hierarchy is its own
   decision.
 - Decorative cats are hidden from screen readers; a tappable cat is a button

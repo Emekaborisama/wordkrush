@@ -13,7 +13,7 @@ Rules:
 ### Added
 - **A mascot: the WordKrush cat.** A ginger cat in round glasses and a bow tie, reading a book. It breathes, blinks and swishes its tail, grins and hops for a right call, and winces at a miss. You can tap it to make it hop. With reduce motion on it keeps its faces and stops moving. It replaces the parked deer as the mascot.
   - It guides you along every level path. It stands on your stone in the play screen and reacts to each call, and it sits on your stone on the level map.
-  - It cheers on the level-up and milestone pop-ups, on a friend's challenge, and beside the opened daily chest.
+  - It cheers on a friend's challenge and beside the opened daily chest.
   - It perches on the corner of each game's level pop-up. It is hidden on the shortest screens so Play never moves.
 - **Walking to the next level.** After you clear a level, the cat walks the sandy path to the next stone in three hops. It leaves paw prints, sparkles lift off the stone you cleared, and the next stone pops as it lands.
 - **A daily streak pop-up.** Tap the flame in the top bar to see:
@@ -45,7 +45,46 @@ Rules:
 - **Team invites from the web used whatever address the page was on**, so a preview build or a local server sent a link that would not open for a friend. They now always use wordkrush.com.
 - **1v1 and team links previewed as the homepage.** They now open their own card: "1v1 challenge" for a duel, and "Join my team" with the invite code in letter tiles for a team. Old `/?team=CODE` links get the same team card.
 - Sharing a team invite on the web copies the link if there is no share sheet, and says so, instead of showing an error.
-- **The level-up pop-up covered the result after less than a second.** It opened on a 0.7 s timer, before the stars and coins had landed. It now waits for you to leave the result: tap Next level, Continue, Replay, Home, Levels or Scores, and the level-up and milestone pop-ups play first, then you go where you tapped. Share does not trigger them. The level-up also says "YOUR PLAYER LEVEL", so it is no longer mistaken for the game's next level.
+
+## [0.19.3] - 2026-11-07
+
+### Docs
+- **The launch plan.** `docs/marketing/LAUNCH-PLAN.md` is the plan for launch week (Tuesday 10 November): UK/US word-game players, organic only, Clueless as the hook. It holds the blockers, the calendar, each channel's posting rules, the scorecard and the kill/scale rules decided in advance.
+- **The August strategy is marked as overtaken, not rewritten.** `docs/marketing/README.md` adds decisions G-007 to G-010 and points G-001 to G-004 at them. `GTM-STRATEGY.md`, `CHANNELS.md`, `GROWTH-BLOCKERS.md`, `METRICS.md` and `docs/GTM.md` each carry a dated banner. METRICS.md's "consented floor" premise is corrected: analytics has been default-on since 2 September.
+- Two launch drafts (r/WordGames, r/playmygame) are added to `reddits/POSTS.md` and the ledger as `drafted`. ROADMAP has a launch-week track with the owner's blockers.
+
+## [0.19.2] - 2026-11-07
+
+### Changed
+- **Higher or Lower says what it is.** The welcome tile, the Home card, the rules and the page's search copy now ask "Which is more popular?" and name monthly Wikipedia pageviews. They used to say "Is the next number higher or lower?", which described a different game.
+- **One celebration per result.** A level-up or milestone no longer opens a second pop-up over the result that had to be dismissed first. It shows as a gold row under the coins and XP, in every game and in 1v1. The XP level is always "Player level 2", so "level" on its own only ever means a game's stage. One-time streak milestones read "First streak of 5", so they stay true when the run went further.
+- **Only claims the app can back.**
+  - "NEW RECORD!" needs a record to beat: a first run no longer gets the trophy.
+  - The result no longer shows "Rank #N", which was a rank among this device's own runs. A share paste no longer adds "#N" either. "Best" stays.
+  - Home no longer puts "New!" on every unplayed game.
+  - Players no longer see "preview data" or "provisional". The source and its date stay on every pair.
+- **The I Sabi Lagos pop-up shows once.** It is marked seen the moment it is on screen. Before, only tapping "Later" or entering counted, so a reload or any other way out brought it back on every load.
+
+### Analytics
+- `utm_source` now recognises `hackernews` (also `hn`), `linkedin`, `whatsapp` (also `wa`) and `slack`, all as social. Untagged visits from Hacker News and LinkedIn count as social too. Launch links use `utm_medium=social`, because `organic` is filed under search.
+## [0.8.38] - 2026-10-02
+
+### Added
+- **Wordfall weekly buffer through 9 November.** Deep Focus asks players to score 5,000 points while playing nine words; Tactical Sweep asks for 12 T tiles and four five-letter words; Long Haul asks for three six-letter words against a 90-second clock. These are hard bundled drops. Web players receive them after the next merge and deploy; native players need a build containing this catalog.
+## [0.20.0] - 2026-10-31
+
+### Changed
+- **Home is rebuilt around what a player came for.** The three games now come first, at full size, instead of below five other blocks. 1v1, Daily 10 and I Sabi Lagos sit together as "Higher or Lower modes", so it is clear they are one game. The word "Play" appears once, on the gold button, which now says which game it opens; every card and tile is its own button. All of it fits above the dock on an iPhone SE, and nothing slides under the dock any more.
+- **On a laptop or tablet, Home uses the screen.** The games sit side by side with large art and the modes below them, in place of a phone column with the sides empty. Game screens stay phone-shaped.
+- **Your name, flag and level share one strip**, so "Bold Lion" no longer reads like the rival you are about to meet. Today's chest appears there when it can be opened, and stays out of the way when it cannot.
+- **The streak pill always says DAY or DAYS.** "1 PLAY!" meant nothing; the flame now burns low until you have played today.
+- **Shorter game lines**, so each fits one line on Home, and the unexplained "Sets" and "New!" chips are gone.
+- **The ghost result stops taking your win back.** The title now says "GHOST BEATEN!" or "THE GHOST WINS", and the line "That was a ghost, not a person. Try again for a real opponent." is gone, which also promised a person who may not be there. The two player cards now match, with their scores on one line, and the rays that floated above the panel are gone.
+
+### Fixed
+- **Ghosts no longer have a country.** A flag on a ghost made no sense and made it look more like a person.
+- **A wrong flag now corrects itself.** The country was read once and kept for good, so a first visit on a VPN stuck for ever. It is now read again on each launch without slowing the launch down. A flag you picked yourself is never changed.
+- **The dock fits a 320-wide phone.** "Settings" and "Account" were cut off at the edges.
 
 ## [0.19.1] - 2026-10-30
 

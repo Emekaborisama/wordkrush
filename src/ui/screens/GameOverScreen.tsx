@@ -9,7 +9,7 @@ import { buildDailySharePayload, buildSharePayload } from '../../games/more-or-l
 import type { Category } from '../../games/more-or-less/types';
 import { feedback } from '../../native/feedback';
 import { prepareShareImage, sharePayload } from '../../native/share';
-import { rankOf, type ScoreBoard } from '../../scores/types';
+import type { ScoreBoard } from '../../scores/types';
 import type { RewardEvent } from '../../rewards/types';
 import {
   Button,
@@ -22,7 +22,7 @@ import {
   ScoreWell,
   SquareButton,
 } from '../components';
-import { RewardPanel, useRewardBeats } from '../rewards/RewardReveal';
+import { RewardPanel } from '../rewards/RewardReveal';
 import { danfo } from '../lagos/danfoTheme';
 import { font, formatValue, palette, space, tone } from '../theme';
 
@@ -79,12 +79,12 @@ export function GameOverScreen({
   rival,
   daily,
 }: Props) {
-  const rank = rankOf(board, state.streak);
-  const { gate, celebration } = useRewardBeats(events);
   const [shareNote, setShareNote] = useState<string | null>(null);
   const shareNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const personalBest = isNewBest && state.streak > 0;
+  // A record needs something to beat: `board` already holds this run, so a
+  // first run (totalRuns 1) is never "NEW RECORD!" (UX review 2026-11-07).
+  const personalBest = isNewBest && state.streak > 0 && board.totalRuns > 1;
   const share =
     daily !== undefined
       ? buildDailySharePayload({ number: daily, streak: state.streak, bestStreak: board.bestStreak })
@@ -137,7 +137,7 @@ export function GameOverScreen({
           title={level.lagos ? 'Next stop' : 'Next level'}
           size="lg"
           tone={level.lagos ? 'danfo' : 'green'}
-          onPress={gate(level.onNext!)}
+          onPress={level.onNext!}
           leading={<GameIcon name="play" size={26} color={level.lagos ? tone.danfo.outline : tone.green.outline} />}
         />
       ) : null}
@@ -145,7 +145,7 @@ export function GameOverScreen({
         title={daily !== undefined ? 'Play a level' : level && !level.cleared ? 'Try again' : 'Play again'}
         size={nextOpen ? 'md' : 'lg'}
         tone={nextOpen ? 'sky' : 'green'}
-        onPress={gate(onPlayAgain)}
+        onPress={onPlayAgain}
         leading={<GameIcon name="retry" size={nextOpen ? 22 : 26} color={nextOpen ? tone.sky.outline : tone.green.outline} />}
       />
       <View style={styles.squares}>
@@ -155,7 +155,7 @@ export function GameOverScreen({
           caption="Home"
           tone="sky"
           size={50}
-          onPress={gate(onHome)}
+          onPress={onHome}
         />
         <SquareButton
           icon={<GameIcon name="trophy" size={34} />}
@@ -163,7 +163,7 @@ export function GameOverScreen({
           caption="Scores"
           tone="sky"
           size={50}
-          onPress={gate(onScores)}
+          onPress={onScores}
         />
         <SquareButton
           icon={<GameIcon name="share" size={28} color={tone.sky.outline} />}
@@ -260,7 +260,6 @@ export function GameOverScreen({
         ) : null}
         <ScoreWell label={state.streak === 1 ? 'ROUND' : 'ROUNDS'} value={String(state.streak)} />
         <View style={styles.chips}>
-          <Text style={styles.chip}>{`Rank #${rank}`}</Text>
           <Text style={styles.chip}>{`Best ${board.bestStreak}`}</Text>
           {labelRound ? <Text style={styles.chip}>{`Sets ${labelRound.roundsPassed}`}</Text> : null}
         </View>
@@ -288,7 +287,6 @@ export function GameOverScreen({
           <CreamText style={[styles.center, styles.metric]}>{category.metricLabel}</CreamText>
         </CreamBox>
       </Panel>
-      {celebration}
     </View>
   );
 }

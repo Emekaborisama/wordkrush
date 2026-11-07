@@ -279,6 +279,40 @@ export const LEVELS: Level[] = [
     ],
     availableFrom: '2026-10-19',
   },
+  {
+    number: 20,
+    name: 'Deep Focus',
+    description: 'Play nine words and score 5,000 points.',
+    moves: 20,
+    crates: 0,
+    objectives: [
+      { kind: 'words', target: 9 },
+      { kind: 'score', target: 5000 },
+    ],
+    availableFrom: '2026-10-26',
+  },
+  {
+    number: 21,
+    name: 'Tactical Sweep',
+    description: 'Clear 12 T tiles and make four five-letter words.',
+    moves: 20,
+    crates: 0,
+    objectives: [
+      { kind: 'letter', letter: 't', target: 12 },
+      { kind: 'length', minLength: 5, target: 4 },
+    ],
+    availableFrom: '2026-11-02',
+  },
+  {
+    number: 22,
+    name: 'Long Haul',
+    description: 'Make three six-letter words in 90 seconds.',
+    moves: UNLIMITED_MOVES,
+    timeLimitMs: seconds(90),
+    crates: 0,
+    objectives: [{ kind: 'length', minLength: 6, target: 3 }],
+    availableFrom: '2026-11-09',
+  },
 ];
 
 export function levelByNumber(n: number): Level | undefined {

@@ -1,6 +1,6 @@
 # Roadmap & Task List
 
-**Last updated:** 2026-10-18
+**Last updated:** 2026-11-07
 **Board of record:** Superthread → *My Private Space* → **BestGame** board (team `tbJ3qEwK`, board `2`, lists: To do `8` / Doing `9` / Done `10`).
 
 Live status lives on the board, not here. This file exists so an LLM reading the repo cold knows what the work *is*, what blocks it, and what order it goes in — without needing board access.
@@ -35,6 +35,21 @@ Every task card should carry the same contract from [WORKFLOW.md](WORKFLOW.md): 
 ### The shipped v1 metric, stated plainly
 
 The first shipped category uses monthly Wikipedia pageviews, not Google searches. The metric is measured, free, and already wired through `pipeline/sources/wikipedia.ts`, `src/data/categories/wikipedia-popularity.json`, and the validator/export path. Treat the label as settled: **monthly Wikipedia pageviews**. If a future paid keyword source is ever added, it is a separate upgrade, not a v1 blocker.
+
+## Track: launch week, 2026-11-09 (UK/US word-game players, organic)
+
+Plan, calendar and scorecard: [marketing/LAUNCH-PLAN.md](marketing/LAUNCH-PLAN.md) (card ST-114 of 2026-11-07). Launch day is Tuesday 2026-11-10.
+
+- [x] **Honest copy and one celebration per result** (card ST-113 of 2026-11-07; Superthread reused the number of the 0.11.0 card) — 0.19.2: Higher or Lower says "Which is more popular?"; no "NEW RECORD!" on a first run, no device-only "Rank #N", no "New!", no "preview data" / "provisional"; level-ups and milestones are one inline row; the Lagos pop-up shows once; launch UTM sources recognised
+- [ ] **`www.wordkrush.com` → apex redirect** ← blocked on the owner (Cloudflare redirect rule, or the www domain on Railway); it returns 404 today
+- [ ] **Custom SMTP for Supabase Auth through Resend** ← blocked on the owner; the free plan sends 2 emails an hour
+- [ ] **Search Console: submit the sitemap and request indexing** ← blocked on the owner
+- [ ] **Launch dashboard** (LAUNCH-PLAN.md §5) ← owner, or an agent once PostHog is connected
+- [ ] **Decide the returning Home** — why #82 was reverted ← `[decide]`
+- [ ] **Decide how Scores looks with 5 players** (Today's 10 or weekly first) ← `[decide]`
+- [ ] **`/clueless` and `/today` deep links**, like `/isabilagos` — makes r/webgames and directory listings possible ← `[decide]`
+- [ ] **Analytics consent for UK/EU visitors** — default-on since 2026-09-02, while STACK D-022/D-024 say opt-in ← `[decide]`
+- [ ] **D7 readout and week-2 decision** — Tuesday 2026-11-17, against LAUNCH-PLAN.md §6
 
 ## Track: More-or-Less logic (`src/games/more-or-less/`) — pure TS, no UI needed
 

@@ -402,10 +402,10 @@ function localUnlockCopy(unlockAt: Date, now: Date): string {
   return `Opens in ${Math.max(1, minutes)}m at your local midnight.`;
 }
 
-function startFooterFor(gameId: string, category: Category & { provisional?: boolean }) {
-  if (gameId === MORE_OR_LESS) {
-    return `Wikipedia pageviews${category.provisional ? ' · preview data' : ''} · Works offline`;
-  }
+function startFooterFor(gameId: string) {
+  // The data's provisional flag stays in the snapshot; players see the source,
+  // not an internal status that reads as "these answers may be wrong".
+  if (gameId === MORE_OR_LESS) return 'Monthly Wikipedia pageviews · Works offline';
   return 'Works offline';
 }
 
@@ -1632,7 +1632,7 @@ export default function App() {
               },
               screen.gameId === MORE_OR_LESS ? labelResolved : undefined,
             )}
-            footer={startFooterFor(screen.gameId, category)}
+            footer={startFooterFor(screen.gameId)}
             playDisabled={
               screen.gameId === 'clueless' &&
               (!cluelessPathReady ||
@@ -2080,6 +2080,9 @@ export default function App() {
             levelsOpen === null
           }
           onEnter={openLagos}
+          // Saved the moment it is on screen, not on "Later": a reload or any
+          // other way out used to bring it back on every load (UX review 2026-11-07).
+          onShown={() => void markLagosSeen()}
           onLater={() => {
             setLagosAnnouncement(false);
             setLagosSeen(true);

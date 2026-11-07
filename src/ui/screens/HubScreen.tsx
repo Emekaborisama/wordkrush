@@ -248,7 +248,8 @@ function GameRow({
           </Text>
           <View style={styles.chips}>
             {locked ? <Badge label="SOON" /> : null}
-            <Text style={styles.chip}>{played ? `${bestLabel} ${best}` : 'New!'}</Text>
+            {/* No "New!" on unplayed games: on every card at once it meant nothing. */}
+            {played ? <Text style={styles.chip}>{`${bestLabel} ${best}`}</Text> : null}
             {labelRoundsPassed ? <Text style={styles.chip}>{`Sets ${labelRoundsPassed}`}</Text> : null}
           </View>
         </View>
