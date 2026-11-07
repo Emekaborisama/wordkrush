@@ -475,3 +475,77 @@ describe('the card photo pool', () => {
     }
   });
 });
+
+describe('the branded cards', () => {
+  const CARDS = {
+    clueless: {
+      game: 'clueless',
+      puzzleNumber: 29,
+      levelName: 'Departure Board',
+      guessCount: 4,
+      heatBuckets: { unranked: 1, cold: 1, top_100: 1, top_10: 0, win: 1 },
+    },
+    wordfall: {
+      game: 'wordfall',
+      levelNumber: 6,
+      levelName: 'Tide Line',
+      score: 4820,
+      wordCount: 9,
+      lengthBuckets: { under_3: 0, '3_4': 4, '5_7': 4, '8_plus': 1 },
+      won: true,
+    },
+    streak: { game: 'streak', days: 12, best: 15 },
+    duel: { game: 'duel' },
+    team: { game: 'team', code: 'AB23CD' },
+  };
+
+  /** Every run of words the card draws, from the lettering groups. */
+  function wordsOf(svg) {
+    return [...svg.matchAll(/data-text="([^"]*)"/g)].map((m) => m[1]);
+  }
+
+  it('draws every word as outlines, so the card needs no font to look right', () => {
+    for (const data of Object.values(CARDS)) {
+      const svg = generateOgImageSvg(data);
+      // `<text>` is what fell back to Helvetica off Railway, and to `.notdef` boxes for emoji.
+      expect(svg).not.toMatch(/<text[\s>]/);
+      expect(wordsOf(svg).length).toBeGreaterThan(3);
+    }
+  });
+
+  it('follows the reference pop-up: banner, panel, cream box, button, bubble, logo', () => {
+    for (const data of Object.values(CARDS)) {
+      const svg = generateOgImageSvg(data);
+      for (const part of ['banner', 'panel', 'box', 'button', 'bubble', 'wordmark']) {
+        expect(svg).toContain(`data-part="${part}"`);
+      }
+      expect(svg).toContain('url(#wkcat-fur)');
+    }
+  });
+
+  it('draws the result grid as cubes, one per guess', () => {
+    const svg = generateOgImageSvg(CARDS.clueless);
+    expect(svg).not.toMatch(/[🟩🟥🟧🟨⬛🟦]/u);
+    expect(svg.match(/data-square="/g) ?? []).toHaveLength(4);
+  });
+
+  it('names the result, the streak and the code a friend types', () => {
+    expect(wordsOf(generateOgImageSvg(CARDS.clueless))).toEqual(expect.arrayContaining(['Clueless #29', 'Found it in 4 guesses']));
+    expect(wordsOf(generateOgImageSvg(CARDS.streak))).toEqual(expect.arrayContaining(['Daily Streak', '12', 'My best is 15 days.']));
+    const team = wordsOf(generateOgImageSvg(CARDS.team));
+    expect(team).toEqual(expect.arrayContaining(['Join My Team', 'A', 'B', '2', '3', 'C', 'D']));
+  });
+
+  it('never claims a best the streak does not have', () => {
+    const words = wordsOf(generateOgImageSvg({ game: 'streak', days: 9, best: 9 }));
+    expect(words).toContain('My longest streak yet!');
+    expect(words.join(' ')).not.toMatch(/best is/);
+  });
+
+  it('rasterises each to a 1200×630 truecolour PNG', async () => {
+    for (const data of Object.values(CARDS)) {
+      const meta = await sharp(await generateOgImagePng(data)).metadata();
+      expect([meta.width, meta.height, meta.channels]).toEqual([1200, 630, 3]);
+    }
+  });
+});

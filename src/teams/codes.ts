@@ -1,3 +1,6 @@
+import type { SharePayload } from '../games/share';
+import { SITE_URL, shareFileName } from '../games/share-data';
+
 /**
  * Team invite codes. Alphabet drops 0/O/1/I so a code read aloud still types.
  */
@@ -30,11 +33,27 @@ export function parseTeamInviteUrl(url: string): string | null {
   }
 }
 
-export function teamInviteUrl(code: string, webOrigin?: string): string {
+/**
+ * The link a player sends to bring a friend onto their team. Always the
+ * public https address: a `wordkrush://` link is not a link in a chat app or
+ * a social post, and a friend without the app could not open it anyway. The
+ * app reads `/team/CODE` back through `parseTeamInviteUrl`, and the server
+ * gives it its own preview card.
+ */
+export function teamInviteUrl(code: string): string {
+  return `${SITE_URL}/team/${normalizeInviteCode(code)}`;
+}
+
+/**
+ * A team invite as a share: the card with the code in letter tiles
+ * (`t_CODE` in `server/og-card.mjs`), the join link, and one line.
+ */
+export function teamSharePayload(code: string, teamName: string): SharePayload {
   const normalized = normalizeInviteCode(code);
-  if (webOrigin) {
-    const origin = webOrigin.replace(/\/$/, '');
-    return `${origin}/?team=${normalized}`;
-  }
-  return `wordkrush://team?code=${normalized}`;
+  return {
+    caption: `Join ${teamName} on WordKrush and race me live.`,
+    url: teamInviteUrl(normalized),
+    imageUrl: `${SITE_URL}/og/share/t_${normalized}.png`,
+    fileName: shareFileName('team'),
+  };
 }

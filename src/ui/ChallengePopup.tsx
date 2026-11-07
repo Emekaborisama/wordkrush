@@ -1,7 +1,7 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { Challenge } from '../games/more-or-less/challenge';
 import { Button, GameIcon, PanelText, PopupModal } from './components';
-import { FLUENT, GAME_ANIMAL } from './fluent';
+import { CatMascot } from './mascot/CatMascot';
 import { tone } from './theme';
 
 /**
@@ -39,7 +39,7 @@ export function ChallengePopup({
       }
     >
       <View style={styles.hero}>
-        <Image source={FLUENT[GAME_ANIMAL['more-or-less']]} style={styles.animal} />
+        <CatMascot size={104} mood="cheer" />
       </View>
       <PanelText variant="heading">{`Beat a streak of ${challenge?.target ?? 0}`}</PanelText>
       <PanelText>{`A friend played Higher or Lower: ${levelName}. You get the same pairs in the same order. Can you go one better?`}</PanelText>
@@ -49,5 +49,4 @@ export function ChallengePopup({
 
 const styles = StyleSheet.create({
   hero: { alignItems: 'center' },
-  animal: { width: 96, height: 96 },
 });

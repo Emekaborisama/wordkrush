@@ -6,11 +6,12 @@ import { font, palette, space } from '../theme';
 import { BlocksKit } from './BlocksKit';
 import { ControlsKit } from './ControlsKit';
 import { IconsKit } from './IconsKit';
+import { MascotKit } from './MascotKit';
 
 /**
  * Dev-only design-system page. Open a dev build with `?kit` (web) to see
  * every Block Blast primitive on one scroll, for screenshots and review.
- * `?kit=icons`, `?kit=blocks`, `?kit=controls` show one section.
+ * `?kit=icons`, `?kit=blocks`, `?kit=controls`, `?kit=mascot` show one section.
  */
 function section(): string {
   if (typeof window === 'undefined' || !window.location) return 'all';
@@ -50,6 +51,11 @@ export function KitRoot() {
       {show('icons') ? (
         <Section title="Icons">
           <IconsKit />
+        </Section>
+      ) : null}
+      {show('mascot') ? (
+        <Section title="Mascot">
+          <MascotKit />
         </Section>
       ) : null}
       {show('blocks') ? (

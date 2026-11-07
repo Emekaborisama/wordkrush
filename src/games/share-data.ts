@@ -62,7 +62,26 @@ export type WordfallShareData = {
   won: boolean;
 };
 
-export type ShareData = MoreOrLessShareData | CluelessShareData | WordfallShareData;
+/**
+ * A daily streak: days in a row with a finished run, and the longest run of
+ * days so far. Not a game, but it travels the same `/share/` route and is
+ * told apart by the same `game` field the server switches on.
+ */
+export type StreakShareData = {
+  game: 'streak';
+  days: number;
+  best: number;
+};
+
+export type ShareData = MoreOrLessShareData | CluelessShareData | WordfallShareData | StreakShareData;
+
+/**
+ * The one address every link the app hands out starts with: results,
+ * streaks, 1v1 and team invites. Never `window.location.origin` — a player on
+ * a preview deploy, `localhost` or the `www` host (which does not resolve)
+ * would otherwise send friends a link that does not open.
+ */
+export const SITE_URL = 'https://wordkrush.com';
 
 /**
  * Encode share data to an unpadded base64url token.
@@ -128,5 +147,20 @@ export function decodeShareData(encoded: string): ShareData | null {
  */
 export function buildShareUrl(data: ShareData): string {
   const encoded = encodeShareData(data);
-  return `https://wordkrush.com/share/${encoded}?utm_source=player&utm_medium=share`;
+  return `${SITE_URL}/share/${encoded}?utm_source=player&utm_medium=share`;
+}
+
+/**
+ * The card a share's link unfurls to, as a PNG the app can attach to the
+ * share itself. `server/serve.mjs` answers `/share/:token/og.png` with the
+ * same bytes as the card the page declares, so the app needs no copy of the
+ * server's card-id rules.
+ */
+export function buildShareImageUrl(data: ShareData): string {
+  return `${SITE_URL}/share/${encodeShareData(data)}/og.png`;
+}
+
+/** A short file name for an attached card: `wordkrush-clueless.png`. */
+export function shareFileName(kind: string): string {
+  return `wordkrush-${kind}.png`;
 }

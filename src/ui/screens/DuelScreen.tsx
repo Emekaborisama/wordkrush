@@ -3,12 +3,12 @@ import { Animated, Easing, Image, ScrollView, StyleSheet, Text, View } from 'rea
 import { captureAnalytics } from '../../analytics/client';
 import { streakBucket } from '../../analytics/events';
 import type { Verdict, DuelPlayer, Progress } from '../../duel/rules';
-import { START_PROGRESS } from '../../duel/rules';
+import { START_PROGRESS, duelInviteUrl, duelSharePayload } from '../../duel/rules';
 import type { DuelState } from '../../duel/controller';
 import { useDuel } from '../../duel/useDuel';
 import type { Category } from '../../games/more-or-less/types';
 import { feedback } from '../../native/feedback';
-import { shareResult } from '../../native/share';
+import { prepareShareImage, sharePayload } from '../../native/share';
 import type { RewardEvent } from '../../rewards/types';
 import { Button, CountryFlag, CreamBox, CreamText, GameIcon, Panel, PanelText, Rays, StrokeText } from '../components';
 import { FLUENT } from '../fluent';
@@ -205,10 +205,19 @@ function Lobby({
   onRetry: () => void;
 }) {
   const [note, setNote] = useState<string | null>(null);
-  const link = state.phase === 'inviting' ? `https://wordkrush.com/duel/${state.room}` : null;
+  const link = state.phase === 'inviting' ? duelInviteUrl(state.room) : null;
+  const room = state.phase === 'inviting' ? state.room : null;
+  // Fetch the invite card while the link is on screen, so Share can attach it at once.
+  useEffect(() => {
+    if (room) prepareShareImage(duelSharePayload(room));
+  }, [room]);
   const share = async () => {
     if (!link) return;
-    const outcome = await shareResult(`Play me 1v1 on WordKrush. Same pairs, one minute. ${link}`);
+    if (state.phase !== 'inviting') return;
+    const outcome = await sharePayload(duelSharePayload(state.room));
+    if (outcome === 'shared' || outcome === 'copied') {
+      captureAnalytics('invite_shared', { kind: 'duel', method: outcome === 'shared' ? 'share_sheet' : 'clipboard' });
+    }
     if (outcome === 'copied') setNote('Link copied');
   };
   return (

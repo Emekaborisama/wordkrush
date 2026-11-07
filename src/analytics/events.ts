@@ -240,6 +240,16 @@ export type AnalyticsEvents = {
     opponent_left: boolean;
     streak_bucket: '0_4' | '5_9' | '10_19' | '20_plus';
   };
+  /** The daily streak left the app from the streak pop-up. Same "completed share" rule as `result_shared`. */
+  streak_shared: {
+    days_bucket: '1_2' | '3_6' | '7_13' | '14_29' | '30_plus';
+    method: 'share_sheet' | 'clipboard';
+  };
+  /** A 1v1 or team invite link left the app. */
+  invite_shared: {
+    kind: 'duel' | 'team';
+    method: 'share_sheet' | 'clipboard';
+  };
   /** Web only, once per page view: Core Web Vitals as rounded numbers. */
   web_vitals: {
     lcp_ms?: number;
@@ -270,6 +280,8 @@ export const ANALYTICS_EVENT_NAMES: ReadonlySet<string> = new Set<AnalyticsEvent
   'daily_puzzle_viewed',
   'game_over_action',
   'result_shared',
+  'streak_shared',
+  'invite_shared',
   'scores_viewed',
   'auth_prompt_viewed',
   'auth_submitted',

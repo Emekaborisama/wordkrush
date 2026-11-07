@@ -1,56 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import { buildShareText } from './share';
+import { decodeShareData } from '../share-data';
+import { buildSharePayload } from './share';
 
-describe('buildShareText', () => {
-  it('tiers squares by word length and names the level', () => {
-    const text = buildShareText({
-      levelNumber: 7,
-      levelName: 'Tidewrack',
-      score: 2340,
-      wordLengths: [4, 4, 6, 4, 8, 6, 4, 8],
-      elapsedMs: 102_000,
+function payloadOf(url: string) {
+  return decodeShareData(/\/share\/([^?/]+)/.exec(url)?.[1] ?? '');
+}
+
+describe('a Wordfall share', () => {
+  it('dares the reader to beat a cleared level, with the card attached', () => {
+    const share = buildSharePayload({ levelNumber: 4, levelName: 'Garden', score: 1240, wordLengths: [3, 4, 5, 8], won: true });
+    expect(share.caption).toBe('I cleared Wordfall level 4 with 1,240 points. Can you beat it?');
+    expect(share.fileName).toBe('wordkrush-wordfall.png');
+    expect(payloadOf(share.url)).toMatchObject({
+      levelNumber: 4,
+      score: 1240,
+      wordCount: 4,
+      lengthBuckets: { under_3: 0, '3_4': 2, '5_7': 1, '8_plus': 1 },
       won: true,
     });
-    expect(text).toContain('WordKrush · Wordfall L7 "Tidewrack"');
-    expect(text).toContain('🟦🟦🟨🟦🟩🟨🟦🟩');
-    expect(text).toContain('2,340 pts · 8 words · 1:42');
-    expect(text).toMatch(/https:\/\/wordkrush\.com\/share\/.+\?utm_source=player&utm_medium=share/);
   });
 
-  it('marks a loss without listing the words that fell short', () => {
-    const text = buildShareText({
-      levelNumber: 2,
-      levelName: 'First Drop',
-      score: 120,
-      wordLengths: [3, 5],
-      elapsedMs: 43_400,
-      won: false,
-    });
-    expect(text).toContain('Almost there.');
-    expect(text).toContain('120 pts · 2 words · 0:43');
+  it('asks for the clear when the level was lost', () => {
+    expect(buildSharePayload({ levelNumber: 4, levelName: 'Garden', score: 300, wordLengths: [3], won: false }).caption).toBe(
+      'So close on Wordfall level 4. Can you clear it?',
+    );
   });
 
-  it('omits the grid when no word was found', () => {
-    const rows = buildShareText({
-      levelNumber: 1,
-      levelName: 'Spark',
-      score: 0,
-      wordLengths: [],
-      elapsedMs: 0,
-      won: false,
-    }).split('\n');
-    expect(rows[1]).toBe('0 pts · 0 words · 0:00');
-  });
-
-  it('never prints a played word', () => {
-    const text = buildShareText({
-      levelNumber: 7,
-      levelName: 'Tidewrack',
-      score: 80,
-      wordLengths: [5, 7],
-      elapsedMs: 8_000,
-      won: true,
-    });
-    expect(text).not.toMatch(/\b(crate|ember|nova|beam|flare|trace)\b/i);
+  it('never carries a played word', () => {
+    const share = buildSharePayload({ levelNumber: 4, levelName: 'Garden', score: 300, wordLengths: [5], won: true });
+    expect(JSON.stringify(payloadOf(share.url))).not.toMatch(/played|words"/);
   });
 });

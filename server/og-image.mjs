@@ -9,7 +9,12 @@
  * and LESS, and nothing else. A share card is an advertisement for the game, so
  * it has to look like the game — a scoreboard of counters reads as a generic
  * stats blob at timeline size, and the streak already has a home in the paste
- * line above the link. Clueless and Wordfall still draw their result grid.
+ * line above the link.
+ *
+ * Every other card — the Clueless and Wordfall results, the daily streak, and
+ * the 1v1 and team invites — is the branded pop-up in `og-brand.mjs`, after
+ * the Treasure Match pre-level page: scroll banner, cream box, gold-rimmed
+ * Play, and the mascot with a speech bubble.
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -17,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
+import { BUTTON, PANEL_CX, brandCard, creamBox, flame, fluentIcon, inkText, letterTiles, lettering, measureCardText, squareGrid } from './og-brand.mjs';
 import { PHOTO_HEIGHT, PHOTO_WIDTH, cardPhotoPair } from './og-photos.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,8 +31,6 @@ const __dirname = dirname(__filename);
 const WIDTH = 1200;
 const HEIGHT = 630;
 const BG_COLOR = '#0A0817'; // brand.ink
-const TEXT_COLOR = '#F4F0FF'; // brand.text
-const ACCENT_COLOR = '#E8B840'; // brand.krush
 
 /**
  * Board geometry for the More or Less card, and the tokens it borrows from
@@ -95,22 +99,22 @@ export const MORE_OR_LESS_X_TITLE_STRIP = BOARD.bottomSafePad;
 /** Dark pad under the MORE / LESS row. Same figure as the top-strip budget. */
 export const MORE_OR_LESS_BOTTOM_SAFE_PAD = BOARD.bottomSafePad;
 
-// Copy Fredoka font to a location fontconfig can find
-// librsvg (used by sharp for SVG) doesn't support data URI fonts in @font-face
-const FREDOKA_SRC = join(
-  __dirname,
-  '../node_modules/@expo-google-fonts/fredoka/600SemiBold/Fredoka_600SemiBold.ttf',
-);
+// Copy Fredoka to a location fontconfig can find: librsvg (used by sharp for
+// SVG) doesn't support data URI fonts in @font-face. Only the Higher or Lower
+// board's button labels still use it; every branded card draws its lettering
+// as outlines (`glyphs.mjs`) and needs no font at all.
 const FONT_DIR = join(tmpdir(), 'wordkrush-fonts');
-const FREDOKA_PATH = join(FONT_DIR, 'Fredoka-SemiBold.ttf');
+const CARD_FONTS = [['fredoka/600SemiBold/Fredoka_600SemiBold.ttf', 'Fredoka-SemiBold.ttf']];
 
-// Ensure font is installed for fontconfig/pango
-try {
-  mkdirSync(FONT_DIR, { recursive: true });
-  if (!readFileSync(FREDOKA_PATH, { flag: 'r' }).length) throw new Error('copy');
-} catch {
-  const font = readFileSync(FREDOKA_SRC);
-  writeFileSync(FREDOKA_PATH, font);
+// Ensure the fonts are installed for fontconfig/pango
+mkdirSync(FONT_DIR, { recursive: true });
+for (const [source, name] of CARD_FONTS) {
+  const target = join(FONT_DIR, name);
+  try {
+    if (!readFileSync(target, { flag: 'r' }).length) throw new Error('copy');
+  } catch {
+    writeFileSync(target, readFileSync(join(__dirname, '../node_modules/@expo-google-fonts', source)));
+  }
 }
 
 // Create fontconfig configuration
@@ -228,6 +232,15 @@ export function generateOgDescription(data) {
       const words = data.wordCount;
       return `${data.score.toLocaleString('en-US')} pts · ${words} ${words === 1 ? 'word' : 'words'}`;
     }
+    case 'streak': {
+      const parts = [`${data.days}-day streak`];
+      if (data.best > data.days) parts.push(`best ${data.best}`);
+      return `${parts.join(' · ')}. Play a word game a day on WordKrush.`;
+    }
+    case 'duel':
+      return 'Same pairs, one minute, head to head. Tap to accept the 1v1.';
+    case 'team':
+      return `Join the team with code ${data.code} and race friends live.`;
   }
 }
 
@@ -246,6 +259,12 @@ export function generateOgImageSvg(data, cardId = '') {
       return generateCluelessImage(data);
     case 'wordfall':
       return generateWordfallImage(data);
+    case 'streak':
+      return generateStreakImage(data);
+    case 'duel':
+      return generateDuelInviteImage();
+    case 'team':
+      return generateTeamInviteImage(data);
   }
 }
 
@@ -359,90 +378,158 @@ function generateMoreOrLessImage(data, cardId) {
   return svgShell(content, defs);
 }
 
+/** Clueless heat buckets as cube colours, cold to found — the paste's 🟥 🟧 🟨 🟩 order. */
+const HEAT_SQUARES = [
+  ['unranked', 'black'],
+  ['cold', 'red'],
+  ['top_100', 'orange'],
+  ['top_10', 'yellow'],
+  ['win', 'green'],
+];
+
+/** Wordfall word lengths as cube colours, short to long. */
+const LENGTH_SQUARES = [
+  ['under_3', 'blue'],
+  ['3_4', 'blue'],
+  ['5_7', 'yellow'],
+  ['8_plus', 'green'],
+];
+
+function bucketSquares(buckets, order) {
+  return order.flatMap(([key, color]) => Array(Math.min(buckets[key], 50)).fill(color));
+}
+
+/** The cream box every card fills: top edge under the banner, bottom above the button. */
+const BOX = { top: 192, bottom: BUTTON.top - 22 };
+
+const GOLD_NUMBER = { fill: '#FFD447', outline: '#7C3F00', shadow: '#7C3F00', weight: 0.2, drop: 0.05 };
+
+/** A label line, the grid of squares, and the standing, stacked inside the box. */
+function resultBox({ label, squares, standing }) {
+  // Measure first, then centre the grid and the standing in the room left
+  // under the label, so a short grid does not leave a hole at the bottom.
+  const roomTop = BOX.top + 58;
+  const room = BOX.bottom - 10 - roomTop;
+  const measured = squareGrid(squares, { top: 0, maxHeight: 96 });
+  const block = measured.height + 46;
+  const gridTop = roomTop + Math.max(0, (room - block) / 2);
+  const grid = squareGrid(squares, { top: gridTop, maxHeight: 96 });
+  const standingY = gridTop + grid.height + 40;
+  return [
+    creamBox(BOX),
+    inkText(label, { y: BOX.top + 42, size: fitIn(label, 28) }),
+    grid.body,
+    inkText(standing, { y: standingY, size: fitIn(standing, 34) }),
+  ].join('');
+}
+
+/** Fits a line inside the cream box. */
+function fitIn(text, size) {
+  const max = 500;
+  const width = measureCardText(text, size);
+  return width <= max ? size : Math.floor((size * max) / width);
+}
+
+function plural(n, one, many) {
+  return `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
+}
+
 function generateCluelessImage(data) {
-  const title = `WordKrush · Clueless #${data.puzzleNumber}`;
-  const subtitle = data.levelName ? escapeXml(data.levelName) : '';
-  const standing = `Found it in ${data.guessCount}`;
-
-  // Generate heat grid (sorted cold → hot, no chronological order = no spoilers)
-  const heatSquares = [
-    ...Array(data.heatBuckets.unranked).fill('⬛'),
-    ...Array(data.heatBuckets.cold).fill('🟥'),
-    ...Array(data.heatBuckets.top_100).fill('🟧'),
-    ...Array(data.heatBuckets.top_10).fill('🟨'),
-    ...Array(data.heatBuckets.win).fill('🟩'),
-  ];
-
-  const grid = [];
-  const squareSize = 40;
-  const spacing = 8;
-  const gridWidth = 10 * (squareSize + spacing) - spacing;
-  const startX = (WIDTH - gridWidth) / 2;
-  let x = startX;
-  let y = subtitle ? 200 : 180;
-
-  for (let i = 0; i < Math.min(heatSquares.length, 50); i++) {
-    if (i > 0 && i % 10 === 0) {
-      x = startX;
-      y += squareSize + spacing;
-    }
-    // Use emoji as text (browsers render them)
-    grid.push(
-      `<text x="${x + squareSize / 2}" y="${y + squareSize / 2 + 4}" font-size="32" text-anchor="middle" dominant-baseline="central">${heatSquares[i]}</text>`,
-    );
-    x += squareSize + spacing;
-  }
-
-  const content = `
-    <text x="${WIDTH / 2}" y="80" font-family="Fredoka SemiBold" font-size="48" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(title)}</text>
-    ${subtitle ? `<text x="${WIDTH / 2}" y="140" font-family="Fredoka SemiBold" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${subtitle}</text>` : ''}
-    ${grid.join('\n    ')}
-    <text x="${WIDTH / 2}" y="${y + squareSize + 80}" font-family="Fredoka SemiBold" font-size="36" fill="${ACCENT_COLOR}" text-anchor="middle">${escapeXml(standing)}</text>
-  `;
-
-  return svgShell(content);
+  return brandCard({
+    title: `Clueless #${data.puzzleNumber}`,
+    bubble: data.guessCount <= 1 ? ['First try!', 'Can you match it?'] : ['Can you find it', `in fewer than ${data.guessCount}?`],
+    button: 'YOUR TURN',
+    mood: 'cheer',
+    content: resultBox({
+      label: data.levelName ? data.levelName : 'Secret word found',
+      squares: bucketSquares(data.heatBuckets, HEAT_SQUARES),
+      standing: `Found it in ${plural(data.guessCount, 'guess', 'guesses')}`,
+    }),
+  });
 }
 
 function generateWordfallImage(data) {
-  const title = `WordKrush · Wordfall L${data.levelNumber}`;
-  const subtitle = escapeXml(data.levelName);
-  const standing = `${data.score.toLocaleString('en-US')} pts · ${data.wordCount} ${data.wordCount === 1 ? 'word' : 'words'}`;
-  const verdict = data.won ? '✓ Complete' : 'Almost there';
+  const score = data.score.toLocaleString('en-US');
+  return brandCard({
+    title: `Wordfall · Level ${data.levelNumber}`,
+    bubble: data.won ? ['Level cleared!', `Can you beat ${score}?`] : ['So close!', 'Can you finish it?'],
+    button: 'YOUR TURN',
+    mood: data.won ? 'cheer' : 'idle',
+    content: resultBox({
+      label: `${data.levelName} · ${data.won ? 'cleared' : 'almost'}`,
+      squares: bucketSquares(data.lengthBuckets, LENGTH_SQUARES),
+      standing: `${score} pts · ${plural(data.wordCount, 'word', 'words')}`,
+    }),
+  });
+}
 
-  // Generate length-coded grid (no actual words = no spoilers)
-  const lengthSquares = [
-    ...Array(data.lengthBuckets.under_3).fill('🟦'),
-    ...Array(data.lengthBuckets['3_4']).fill('🟦'),
-    ...Array(data.lengthBuckets['5_7']).fill('🟨'),
-    ...Array(data.lengthBuckets['8_plus']).fill('🟩'),
-  ];
+/**
+ * The daily streak: the flame and the count, then the last seven days as
+ * sockets, lit for the days the streak covers — the streak calendar of the
+ * Magic Streak reference, cut to a week.
+ */
+function generateStreakImage(data) {
+  const days = data.days;
+  const count = String(days);
+  const numberSize = count.length > 3 ? 84 : 100;
+  const flameSize = 88;
+  const numberWidth = measureCardText(count, numberSize);
+  const left = PANEL_CX - (flameSize + 14 + numberWidth) / 2;
+  const sockets = Array.from({ length: 7 }, (_, i) => {
+    const size = 46;
+    const gap = 14;
+    const x = PANEL_CX - (7 * size + 6 * gap) / 2 + i * (size + gap);
+    const y = BOX.bottom - 66;
+    const lit = i >= 7 - Math.min(days, 7);
+    return `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${size / 2}" fill="${lit ? '#FFE7A3' : '#F2D9B5'}" stroke="${lit ? '#E8920B' : '#E0BF95'}" stroke-width="3"/>${lit ? flame({ x: x + 7, y: y + 6, size: size - 14 }) : ''}`;
+  }).join('');
+  return brandCard({
+    title: 'Daily Streak',
+    bubble: data.best > days ? [`My best is ${data.best} days.`, 'Can you keep up?'] : [days > 1 ? 'My longest streak yet!' : 'Day one!', 'Can you keep up?'],
+    button: 'PLAY FREE',
+    mood: 'cheer',
+    content: [
+      creamBox(BOX),
+      flame({ x: left, y: BOX.top + 14, size: flameSize }),
+      lettering(count, { x: left + flameSize + 14, y: BOX.top + 92, size: numberSize, anchor: 'start', ...GOLD_NUMBER }),
+      inkText(days === 1 ? 'DAY IN A ROW' : 'DAYS IN A ROW', { y: BOX.top + 128, size: 24 }),
+      sockets,
+    ].join(''),
+  });
+}
 
-  const grid = [];
-  const squareSize = 40;
-  const spacing = 8;
-  const gridWidth = 10 * (squareSize + spacing) - spacing;
-  const startX = (WIDTH - gridWidth) / 2;
-  let x = startX;
-  let y = 200;
+/** A 1v1 invite: you against me, the same pairs, one minute. */
+function generateDuelInviteImage() {
+  const disc = (cx, label, fill, edge) =>
+    `<circle cx="${cx}" cy="${BOX.top + 104}" r="46" fill="${edge}"/><circle cx="${cx}" cy="${BOX.top + 100}" r="44" fill="${fill}" stroke="#FFFFFF" stroke-width="4"/>${lettering(label, { x: cx, y: BOX.top + 113, size: 36 })}`;
+  return brandCard({
+    title: '1v1 Challenge',
+    bubble: ['Think you can', 'beat me?'],
+    button: 'ACCEPT',
+    mood: 'idle',
+    content: [
+      creamBox(BOX),
+      inkText('Higher or Lower', { y: BOX.top + 40, size: 28 }),
+      disc(PANEL_CX - 150, 'ME', '#FFB31F', '#C97905'),
+      fluentIcon('swords', { x: PANEL_CX - 46, y: BOX.top + 54, size: 92 }),
+      disc(PANEL_CX + 150, 'YOU', '#3E9BFF', '#2560CC'),
+      inkText('Same pairs · one minute', { y: BOX.bottom - 18, size: 26 }),
+    ].join(''),
+  });
+}
 
-  for (let i = 0; i < Math.min(lengthSquares.length, 50); i++) {
-    if (i > 0 && i % 10 === 0) {
-      x = startX;
-      y += squareSize + spacing;
-    }
-    grid.push(
-      `<text x="${x + squareSize / 2}" y="${y + squareSize / 2 + 4}" font-size="32" text-anchor="middle" dominant-baseline="central">${lengthSquares[i]}</text>`,
-    );
-    x += squareSize + spacing;
-  }
-
-  const content = `
-    <text x="${WIDTH / 2}" y="80" font-family="Fredoka SemiBold" font-size="48" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(title)}</text>
-    <text x="${WIDTH / 2}" y="140" font-family="Fredoka SemiBold" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${subtitle}</text>
-    ${grid.join('\n    ')}
-    <text x="${WIDTH / 2}" y="${y + squareSize + 80}" font-family="Fredoka SemiBold" font-size="32" fill="${ACCENT_COLOR}" text-anchor="middle">${escapeXml(standing)}</text>
-    <text x="${WIDTH / 2}" y="${y + squareSize + 130}" font-family="Fredoka SemiBold" font-size="28" fill="${TEXT_COLOR}" text-anchor="middle">${escapeXml(verdict)}</text>
-  `;
-
-  return svgShell(content);
+/** A team invite, with the code in letter tiles for anyone who types it. */
+function generateTeamInviteImage(data) {
+  return brandCard({
+    title: 'Join My Team',
+    bubble: ['Come race', 'with us!'],
+    button: 'JOIN',
+    mood: 'cheer',
+    content: [
+      creamBox(BOX),
+      inkText('Invite code', { y: BOX.top + 40, size: 28 }),
+      letterTiles(data.code, { y: BOX.top + 72 }),
+      inkText('Live word races with friends', { y: BOX.bottom - 18, size: 26 }),
+    ].join(''),
+  });
 }

@@ -2,8 +2,9 @@ import type { ImageSourcePropType } from 'react-native';
 
 /**
  * 3D icons from Microsoft's Fluent Emoji (MIT, `assets/fluent/LICENSE`),
- * resized to 128 px. The animals and scenery of the level maps, after the
- * Animal Heroes kit's meadow.
+ * resized to 128 px. The scenery of the level maps, after the Animal Heroes
+ * kit's meadow. The guide on the path is the WordKrush cat
+ * (`src/ui/mascot/`), which replaced the per-game lion, monkey and fox.
  */
 export const FLUENT = {
   panda: require('../../assets/fluent/panda.png'),
@@ -29,13 +30,6 @@ export const FLUENT = {
 } satisfies Record<string, ImageSourcePropType>;
 
 export type FluentName = keyof typeof FLUENT;
-
-/** Each game's guide on its trail and map. */
-export const GAME_ANIMAL: Readonly<Record<string, FluentName>> = {
-  'more-or-less': 'lion',
-  clueless: 'monkey',
-  wordfall: 'fox',
-};
 
 /** Scenery that lines the meadow map, in order, beside the stones. */
 export const MEADOW_SCENERY: readonly FluentName[] = [

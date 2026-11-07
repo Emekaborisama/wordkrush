@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isRoomCode, parsePlayer, parseProgress, parseSeed, partnerFor, roomFromPath, settle, type Progress } from './rules';
+import { duelInviteUrl, duelSharePayload, isRoomCode, parsePlayer, parseProgress, parseSeed, partnerFor, roomFromPath, settle, type Progress } from './rules';
 
 const run = (streak: number, done: boolean, atMs = 1000): Progress => ({ streak, done, atMs });
 
@@ -95,6 +95,19 @@ describe('parsing what strangers send', () => {
     expect(roomFromPath('/duel/abc123')).toBe('abc123');
     expect(roomFromPath('/duel/abc123/')).toBe('abc123');
     expect(roomFromPath('/duel/AB')).toBeNull();
+    expect(roomFromPath(new URL(duelInviteUrl('abc123')).pathname)).toBe('abc123');
+    expect(duelInviteUrl('abc123')).toBe('https://wordkrush.com/duel/abc123');
     expect(roomFromPath('/isabilagos')).toBeNull();
+  });
+});
+
+describe('a 1v1 invite share', () => {
+  it('attaches the one challenge card the server draws for every room', async () => {
+    const { DUEL_INVITE_CARD, CARD_IMAGE_ROUTE } = await import('../../server/og-card.mjs');
+    const share = duelSharePayload('abc123xyz');
+    expect(share.url).toBe('https://wordkrush.com/duel/abc123xyz');
+    expect(share.imageUrl).toBe(`https://wordkrush.com/og/share/${DUEL_INVITE_CARD}.png`);
+    expect(CARD_IMAGE_ROUTE.test(new URL(share.imageUrl).pathname)).toBe(true);
+    expect(share.imageUrl).not.toContain('abc123xyz');
   });
 });

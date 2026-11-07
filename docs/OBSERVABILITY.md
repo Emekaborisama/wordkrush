@@ -114,6 +114,8 @@ expose a typed event map so names and property shapes cannot drift.
 | `daily_puzzle_viewed` | P1 | Clueless after path restore resolves | `puzzle_number`, optional `level_number`, `already_completed`, bounded assistance, hint, and path context | Path participation |
 | `game_over_action` | P1 | WordKrush comparison result-screen action | `action: play_again \| scores \| home \| share`, `streak_bucket`, `is_new_best` | Replay, share tap, and post-run intent |
 | `result_shared` | P1 | Share sheet resolved or clipboard wrote | `game_id`, `outcome`, `score_kind`, `method: share_sheet \| clipboard`, `is_new_best` | Whether a result actually left the app |
+| `streak_shared` | P1 | The streak pop-up's share sheet resolved or clipboard wrote | `days_bucket: 1_2 \| 3_6 \| 7_13 \| 14_29 \| 30_plus`, `method` | Whether the daily streak is a share loop of its own |
+| `invite_shared` | P1 | A 1v1 or team invite link left the app | `kind: duel \| team`, `method` | Invites sent, to set against `duel_search_started` (`joined`) and `team_joined` |
 | `scores_viewed` | P2 | Scores screen mount | `game_id`, `run_count_bucket`, `has_highlight`, `auth_status` | Score-surface value |
 | `auth_prompt_viewed` | P1 | Scores screen shows eligible account prompt | `game_id`, `run_count_bucket` | Account CTA reach |
 | `auth_submitted` | P1 | Auth form after local validation (magic-link send or OTP code) | `mode: sign_in \| sign_up`, `validation_result`, `error_category?` | Form friction |

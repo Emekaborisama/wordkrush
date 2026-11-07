@@ -28,10 +28,17 @@ import { extname, join, posix, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { brotliCompress, constants, gzip } from 'node:zlib';
-import { CARD_IMAGE_ROUTE, cardFromId, cardId, isDrawableShare } from './og-card.mjs';
+import {
+  CARD_IMAGE_ROUTE,
+  DUEL_INVITE_CARD,
+  cardFromId,
+  cardId,
+  isDrawableShare,
+  teamInviteCard,
+} from './og-card.mjs';
 import { generateOgImagePng, generateOgDescription } from './og-image.mjs';
 import { preloadCardPhotos } from './og-photos.mjs';
-import { hasShareMarkers, shareDocument } from './share-document.mjs';
+import { hasShareMarkers, inviteDocument, shareDocument } from './share-document.mjs';
 
 const brotli = promisify(brotliCompress);
 const gzipped = promisify(gzip);
@@ -330,6 +337,57 @@ function handleShareRoute(pathname) {
   };
 }
 
+/** An HTML record for a generated page. */
+function htmlRecord(html) {
+  const body = Buffer.from(html, 'utf-8');
+  return {
+    body,
+    type: 'text/html; charset=utf-8',
+    cacheControl: 'public, max-age=3600',
+    etag: `"${createHash('sha1').update(body).digest('base64url').slice(0, 22)}"`,
+    encodings: new Map(),
+  };
+}
+
+/**
+ * The invite a link carries, if it carries one: `/duel/:room` for a 1v1,
+ * `/team/:code` for a team, and `/?team=CODE`, which team links used before
+ * 0.20 and which friends may still have in a chat.
+ *
+ * Returns null for anything else — including a malformed code, which still
+ * gets the playable page, exactly as before invites had their own preview.
+ * The room code never reaches the page or the card: it is a live channel, and
+ * the preview of a 1v1 is the same for every room.
+ */
+export function inviteFromUrl(url) {
+  const duel = /^\/duel\/([a-z0-9]{6,32})\/?$/.exec(url.pathname);
+  if (duel) return { kind: 'duel', pagePath: `/duel/${duel[1]}`, card: DUEL_INVITE_CARD };
+
+  const teamPath = /^\/team\/([A-Za-z0-9]{6})\/?$/.exec(url.pathname);
+  const raw = teamPath ? teamPath[1] : url.pathname === '/' ? url.searchParams.get('team') : null;
+  if (raw) {
+    const code = raw.toUpperCase();
+    const card = teamInviteCard(code);
+    if (card) return { kind: 'team', code, pagePath: `/team/${code}`, card };
+  }
+  return null;
+}
+
+function handleInviteRoute(url) {
+  const invite = inviteFromUrl(url);
+  if (!invite || !indexHtml) return null;
+  const description = generateOgDescription(invite.kind === 'team' ? { game: 'team', code: invite.code } : { game: 'duel' });
+  return htmlRecord(
+    inviteDocument(indexHtml, {
+      kind: invite.kind,
+      pagePath: invite.pagePath,
+      card: invite.card,
+      description,
+      imageVersion: OG_IMAGE_VERSION,
+    }),
+  );
+}
+
 /**
  * Render one card, or read the one already rendered for that id.
  *
@@ -383,11 +441,13 @@ async function handleCardImageRoute(pathname) {
 }
 
 /**
- * Handle /share/:id/og.png, the path share pages declared before 0.8.35.
+ * Handle /share/:id/og.png: a share's card, by its share token.
  *
- * X keeps an unfurled card against its URL for days, so this stays: the token
- * resolves to the same card id the short path would, and therefore to exactly
- * the same bytes.
+ * Share pages declared this path before 0.8.35, and X keeps an unfurled card
+ * against its URL for days. Since 0.21.0 it is also what the app fetches to
+ * attach the card itself to a share (`buildShareImageUrl`), so the app needs
+ * no copy of the card-id rules. Either way the token resolves to the same
+ * card id the short path would, and therefore to exactly the same bytes.
  */
 async function handleOgImageRoute(pathname) {
   const match = /^\/share\/([^/]+)\/og\.png$/.exec(pathname);
@@ -441,6 +501,7 @@ export async function handleRequest(req, res) {
   let record = await handleCardImageRoute(pathname);
   if (!record) record = await handleOgImageRoute(pathname);
   if (!record) record = handleShareRoute(pathname);
+  if (!record) record = handleInviteRoute(url);
   
   // Invalid share ID returns '404' sentinel, not null
   if (record === '404') {

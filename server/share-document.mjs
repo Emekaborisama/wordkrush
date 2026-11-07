@@ -35,6 +35,7 @@ const GAME_TITLES = {
   'more-or-less': 'Higher or Lower',
   clueless: 'Clueless',
   wordfall: 'Wordfall',
+  streak: 'Daily streak',
 };
 
 /**
@@ -46,6 +47,25 @@ const IMAGE_ALT = {
     'A Higher or Lower board: two stacked photo cards above the Higher and Lower buttons',
   clueless: 'A Clueless result: the spread of guesses from cold to found',
   wordfall: 'A Wordfall result: the word lengths cleared, longest last',
+  streak: 'The WordKrush cat cheering beside a flame and the number of days in a row played',
+};
+
+/**
+ * The invites a player sends: what the page says and what its card shows.
+ * They describe an invitation rather than a result, so they carry no payload
+ * beyond the room or team code already in the path.
+ */
+const INVITES = {
+  duel: {
+    title: 'WordKrush · 1v1 challenge',
+    alt: 'The WordKrush cat beside "1v1 challenge: same pairs, one minute" and an Accept button',
+    copy: 'Play Higher or Lower head to head, free in the browser.',
+  },
+  team: {
+    title: 'WordKrush · Join my team',
+    alt: 'The WordKrush cat beside "Join my team" and the invite code in letter tiles',
+    copy: 'Race friends live in WordKrush, free in the browser.',
+  },
 };
 
 export function gameTitle(game) {
@@ -107,14 +127,24 @@ function shareHead({ title, description, pageUrl, imageUrl, imageAlt }) {
  *
  * Spoiler-free like the card: the standing, never the pair or the values.
  */
-function shareCopy({ title, description, name }) {
+function shareCopy({ title, description, invitation }) {
   return [
     '<main id="wk-seo">',
     `<h1>${escapeHtml(title)}</h1>`,
     `<p>${escapeHtml(description)}</p>`,
-    `<p>Play ${escapeHtml(name)} free in the browser.</p>`,
+    `<p>${escapeHtml(invitation)}</p>`,
     '</main>',
   ].join('');
+}
+
+/** One page, one claim: the head and the crawler copy for a single card. */
+function cardDocument(shellHtml, { title, description, pageUrl, imageUrl, imageAlt, invitation }) {
+  const html = replaceBlock(
+    shellHtml,
+    HEAD_MARKERS,
+    shareHead({ title, description, pageUrl, imageUrl, imageAlt }),
+  );
+  return replaceBlock(html, COPY_MARKERS, shareCopy({ title, description, invitation }));
 }
 
 /**
@@ -131,17 +161,31 @@ function shareCopy({ title, description, name }) {
  */
 export function shareDocument(shellHtml, { shareId, shareData, description, imageVersion }) {
   const name = gameTitle(shareData.game);
-  const title = `WordKrush · ${name}`;
-  const pageUrl = `${SITE_URL}/share/${shareId}`;
-  const imageUrl = `${SITE_URL}${cardImagePath(cardId(shareData))}?v=${imageVersion}`;
-  const imageAlt = IMAGE_ALT[shareData.game];
+  const streak = shareData.game === 'streak';
+  return cardDocument(shellHtml, {
+    title: streak ? `WordKrush · ${shareData.days}-day streak` : `WordKrush · ${name}`,
+    description,
+    pageUrl: `${SITE_URL}/share/${shareId}`,
+    imageUrl: `${SITE_URL}${cardImagePath(cardId(shareData))}?v=${imageVersion}`,
+    imageAlt: IMAGE_ALT[shareData.game],
+    invitation: streak ? 'Play WordKrush free in the browser.' : `Play ${name} free in the browser.`,
+  });
+}
 
-  let html = replaceBlock(
-    shellHtml,
-    HEAD_MARKERS,
-    shareHead({ title, description, pageUrl, imageUrl, imageAlt }),
-  );
-  html = replaceBlock(html, COPY_MARKERS, shareCopy({ title, description, name }));
-
-  return html;
+/**
+ * The page a 1v1 or team invite link unfurls to (`/duel/:room`,
+ * `/team/:code`). It used to be the homepage's own tags, so a friend saw
+ * "free word games" and the logo rather than an invitation. `pagePath` is the
+ * canonical path the link used; `card` the card id from `og-card.mjs`.
+ */
+export function inviteDocument(shellHtml, { kind, pagePath, card, description, imageVersion }) {
+  const invite = INVITES[kind];
+  return cardDocument(shellHtml, {
+    title: invite.title,
+    description,
+    pageUrl: `${SITE_URL}${pagePath}`,
+    imageUrl: `${SITE_URL}${cardImagePath(card)}?v=${imageVersion}`,
+    imageAlt: invite.alt,
+    invitation: invite.copy,
+  });
 }

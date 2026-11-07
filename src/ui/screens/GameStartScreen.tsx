@@ -15,7 +15,9 @@ import {
   Stat,
   StrokeText,
 } from '../components';
+import { CatMascot } from '../mascot/CatMascot';
 import { palette, space, tone } from '../theme';
+import { useHeightClass } from '../useHeightClass';
 
 type Props = {
   gameId: string;
@@ -64,6 +66,9 @@ export function GameStartScreen({
   const { bestStreak, totalRuns } = board;
   const played = totalRuns > 0;
   const bestLabel = `${game?.scoreDirection === 'lower' ? 'FEWEST' : 'BEST'} ${(game?.scoreNoun ?? 'score').toUpperCase()}`;
+  // The cat perches on the card's corner, as the pre-level reference does,
+  // except on the shortest screens, where every pixel goes to Play.
+  const perch = useHeightClass() !== 'tight';
 
   return (
     // A bounded column, not a scroll view: the panel shrinks to fit and
@@ -71,74 +76,81 @@ export function GameStartScreen({
     <View style={[styles.root, styles.content]}>
       {/* Play sits in the fixed footer: on a short phone the goal scrolls and
           the main button never falls below the fold. */}
-      <Panel
-        title={game?.name ?? 'Play'}
-        onClose={onClose}
-        closeLabel="Back to all games"
-        scroll
-        footer={
-          <View style={styles.actions}>
-            <Button
-              title={playLabel}
-              size="lg"
-              tone="green"
-              onPress={onPlay}
-              disabled={playDisabled}
-              leading={playDisabled ? undefined : <GameIcon name="play" size={26} color={tone.green.outline} />}
-            />
-            <View style={styles.pair}>
-              {onRace ? (
-                <Button
-                  title={raceLabel}
-                  tone="blue"
-                  size="sm"
-                  onPress={onRace}
-                  disabled={raceDisabled}
-                  style={styles.flex}
-                />
+      <View style={[styles.cardWrap, perch && styles.perched]}>
+        {perch ? (
+          <View style={styles.cat} pointerEvents="box-none">
+            <CatMascot size={CAT} onPress={() => undefined} accessibilityLabel="The WordKrush cat. Tap to say hi" />
+          </View>
+        ) : null}
+        <Panel
+          title={game?.name ?? 'Play'}
+          onClose={onClose}
+          closeLabel="Back to all games"
+          scroll
+          footer={
+            <View style={styles.actions}>
+              <Button
+                title={playLabel}
+                size="lg"
+                tone="green"
+                onPress={onPlay}
+                disabled={playDisabled}
+                leading={playDisabled ? undefined : <GameIcon name="play" size={26} color={tone.green.outline} />}
+              />
+              <View style={styles.pair}>
+                {onRace ? (
+                  <Button
+                    title={raceLabel}
+                    tone="blue"
+                    size="sm"
+                    onPress={onRace}
+                    disabled={raceDisabled}
+                    style={styles.flex}
+                  />
+                ) : null}
+                <Button title="Scores" tone="purple" size="sm" onPress={onScores} style={styles.flex} />
+              </View>
+            </View>
+          }
+        >
+          <View style={styles.hero}>
+            <GameArtwork gameId={gameId} accent={accent} size={92} raised />
+            <View style={styles.flex}>
+              {game?.badge ? (
+                <StrokeText size={13} stroke={palette.coralEdge} strokeWidth={1.2} depth={0} align="left">
+                  {game.badge}
+                </StrokeText>
               ) : null}
-              <Button title="Scores" tone="purple" size="sm" onPress={onScores} style={styles.flex} />
+              <CreamBox style={styles.blurb}>
+                <CreamText style={styles.blurbText}>{game?.blurb ?? game?.tagline ?? ''}</CreamText>
+              </CreamBox>
             </View>
           </View>
-        }
-      >
-        <View style={styles.hero}>
-          <GameArtwork gameId={gameId} accent={accent} size={92} raised />
-          <View style={styles.flex}>
-            {game?.badge ? (
-              <StrokeText size={13} stroke={palette.coralEdge} strokeWidth={1.2} depth={0} align="left">
-                {game.badge}
-              </StrokeText>
-            ) : null}
-            <CreamBox style={styles.blurb}>
-              <CreamText style={styles.blurbText}>{game?.blurb ?? game?.tagline ?? ''}</CreamText>
-            </CreamBox>
-          </View>
-        </View>
-        <PanelDivider />
+          <PanelDivider />
 
-        {detail ? (
-          <CreamBox style={styles.goal}>
-            <CreamText variant="teal" style={styles.center}>
-              Goal
-            </CreamText>
-            {detail}
-          </CreamBox>
-        ) : null}
-
-        {played ? (
-          <View style={styles.stats}>
-            <CreamBox style={styles.flex}>
-              <Stat value={bestStreak} label={bestLabel} />
+          {detail ? (
+            <CreamBox style={styles.goal}>
+              <CreamText variant="teal" style={styles.center}>
+                Goal
+              </CreamText>
+              {detail}
             </CreamBox>
-            <CreamBox style={styles.flex}>
-              <Stat value={totalRuns} label={totalRuns === 1 ? 'RUN' : 'RUNS'} />
-            </CreamBox>
-          </View>
-        ) : null}
+          ) : null}
 
-        {onRace && raceHint ? <PanelText>{raceHint}</PanelText> : null}
-      </Panel>
+          {played ? (
+            <View style={styles.stats}>
+              <CreamBox style={styles.flex}>
+                <Stat value={bestStreak} label={bestLabel} />
+              </CreamBox>
+              <CreamBox style={styles.flex}>
+                <Stat value={totalRuns} label={totalRuns === 1 ? 'RUN' : 'RUNS'} />
+              </CreamBox>
+            </View>
+          ) : null}
+
+          {onRace && raceHint ? <PanelText>{raceHint}</PanelText> : null}
+        </Panel>
+      </View>
 
       {footer ? (
         <StrokeText size={12} stroke={palette.navyDeep} strokeWidth={1.2} depth={0} style={styles.footer}>
@@ -211,7 +223,14 @@ export function PathRail({ cleared, vaultOpen }: { cleared: number; vaultOpen: b
   );
 }
 
+/** Width of the perched cat; its book rests on the card's rim. */
+const CAT = 70;
+
 const styles = StyleSheet.create({
+  // Room above the card for the cat's head; the book overlaps the rim.
+  cardWrap: { flexShrink: 1, minHeight: 0 },
+  perched: { paddingTop: CAT * 0.62 },
+  cat: { position: 'absolute', top: 0, left: space.xs, zIndex: 2 },
   rail: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: space.xs },
   arrow: { transform: [{ rotate: '90deg' }] },
   root: { flex: 1 },

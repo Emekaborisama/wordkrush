@@ -54,11 +54,11 @@ export function openedAtPathname(): string {
   return window.location.pathname;
 }
 
-/** Leaves `/share/<token>` or `/duel/<code>` for `/` once it is read, keeping the query. */
+/** Leaves `/share/<token>`, `/duel/<code>` or `/team/<code>` for `/` once it is read, keeping the query. */
 export function clearSharePath(): void {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return;
   const { pathname } = window.location;
-  if (!pathname.startsWith('/share/') && !pathname.startsWith('/duel/')) return;
+  if (!['/share/', '/duel/', '/team/'].some((prefix) => pathname.startsWith(prefix))) return;
   window.history.replaceState(window.history.state, '', `/${window.location.search}${window.location.hash}`);
 }
 

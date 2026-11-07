@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Platform, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { captureAnalytics } from '../../analytics/client';
 import type { Profile } from '../../auth/auth';
 import { isBackendConfigured } from '../../auth/client';
@@ -7,7 +7,8 @@ import { LIVE_ROSTER_LABEL, PATH_GAME_IDS, type PathGameId } from '../../games/c
 import { GAMES } from '../../games/registry';
 import { createMatch, loadActiveMatch } from '../../live/api';
 import { clearExistingMembership, createTeam, joinTeam } from '../../teams/api';
-import { teamInviteUrl } from '../../teams/codes';
+import { prepareShareImage, sharePayload } from '../../native/share';
+import { teamSharePayload } from '../../teams/codes';
 import type { TeamSnapshot } from '../../teams/types';
 import {
   Badge,
@@ -43,6 +44,7 @@ export function TeamsScreen({ profile, pendingInviteCode, onNeedAuth, onOpenLobb
   const [name, setName] = useState('');
   const [code, setCode] = useState(pendingInviteCode ?? '');
   const [error, setError] = useState<string | null>(null);
+  const [inviteNote, setInviteNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -130,15 +132,22 @@ export function TeamsScreen({ profile, pendingInviteCode, onNeedAuth, onOpenLobb
     onOpenLobby(created.value.match.id);
   }
 
+  const inviteCode = snapshot?.team.inviteCode ?? null;
+  const teamName = snapshot?.team.name ?? '';
+  // Fetch the invite card while the room is on screen, so Share can attach it at once.
+  useEffect(() => {
+    if (inviteCode) prepareShareImage(teamSharePayload(inviteCode, teamName));
+  }, [inviteCode, teamName]);
+
   async function shareInvite() {
     if (!snapshot) return;
-    const origin = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : undefined;
-    const url = teamInviteUrl(snapshot.team.inviteCode, origin);
-    try {
-      await Share.share({ message: `Join ${snapshot.team.name} on WordKrush: ${url}` });
-    } catch {
-      setError(`Invite code ${snapshot.team.inviteCode}`);
+    const outcome = await sharePayload(teamSharePayload(snapshot.team.inviteCode, snapshot.team.name));
+    if (outcome === 'shared' || outcome === 'copied') {
+      captureAnalytics('invite_shared', { kind: 'team', method: outcome === 'shared' ? 'share_sheet' : 'clipboard' });
     }
+    if (outcome === 'copied') setInviteNote('Invite link copied');
+    else if (outcome === 'failed') setInviteNote(`Send your friends the code ${snapshot.team.inviteCode}`);
+    else setInviteNote(null);
   }
 
   if (!isBackendConfigured) {
@@ -213,6 +222,11 @@ export function TeamsScreen({ profile, pendingInviteCode, onNeedAuth, onOpenLobb
             {snapshot.team.inviteCode}
           </StrokeText>
           <Button title="Share invite link" size="md" tone="blue" onPress={() => void shareInvite()} />
+          {inviteNote ? (
+            <View accessibilityLiveRegion="polite">
+              <CreamText>{inviteNote}</CreamText>
+            </View>
+          ) : null}
         </CreamBox>
 
         <View style={styles.roster}>

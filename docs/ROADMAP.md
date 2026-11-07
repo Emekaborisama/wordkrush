@@ -82,6 +82,7 @@ Plan, calendar and scorecard: [marketing/LAUNCH-PLAN.md](marketing/LAUNCH-PLAN.m
 - [x] **In-run twists** (ST-118) — **Done** in 0.15.0. Rising chime, Mystery rounds every fifth pair, and "So close!" on a narrow miss.
 - [x] **Challenge a friend** (ST-120) — **Done** in 0.17.0. Shared Higher or Lower level results replay the same pairs against the sharer's streak.
 - [x] **Daily 10** (ST-121) — **Done** in 0.18.0. The same ten Higher or Lower pairs for everyone each day, one try, with a share grid.
+- [ ] **Mascot, rewards UI, level walk and share links** (branch `st-124_share_links_rewards_mascot_motion`) — **In review** for 0.21.0. The WordKrush cat as the guide and mascot; a streak pop-up with share; a 7-day chest track; the cat walks between levels; Clueless and Wordfall cards without broken emoji; streak, 1v1 and team links with their own cards; https team invites on every platform (D-074). Needs a Superthread card: none was available to this session.
 - [ ] **Weekly league** — Duolingo-style weekly board. Needs a Supabase view over `global_scores` by week, which is an owner-applied migration. Not started.
 - [ ] **Better sound effects** — owner asked (2026-10-24). Kenney's CC0 interface, jingle and casino packs are the candidates. They need converting from Ogg for iOS and auditioning by the owner. Not started.
 - [ ] **A better popularity number than Wikipedia pageviews** — owner asked (2026-10-24). Needs an owner decision on the source and its licence (D-012). Not started.
